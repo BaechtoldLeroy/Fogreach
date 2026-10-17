@@ -21,14 +21,22 @@ const NPC = {
 };
 const TICK = String.fromCharCode(96);
 
-function rew(r) {
+const SELTENHEIT = ['gewöhnlich', 'magisch', 'selten', 'legendär'];
+// Gewicht des Auftrags -> Anteil des Stufenbedarfs als Erfahrungs-Mindestlohn
+// (questSystem LOHN_ANTEIL). Die Zahl in der Definition bleibt Untergrenze.
+const GEWICHT = { neben: 'Neben', story: 'Story', boss: 'Boss', finale: 'Finale' };
+
+function rew(r, q) {
   if (!r) return '–';
   const p = [];
-  if (r.xp) p.push(r.xp + ' XP');
+  const anteil = window.questSystem.LOHN_ANTEIL[q && q.rewardTier];
+  if (r.xp || anteil) p.push('mind. ' + (r.xp || 0) + ' XP' + (anteil ? ' (bzw. ' + Math.round(anteil * 100) + ' % des Stufenbedarfs, ' + GEWICHT[q.rewardTier] + ')' : ''));
+  if (r.gold) p.push('mind. ' + r.gold + ' Gold (wächst mit der Tiefe ab ' + ((q && q.minDepth) || 1) + ')');
   if (r.materials) Object.entries(r.materials).forEach(([k, v]) => p.push(v + ' ' + k));
   if (r.druckblaetter) p.push(r.druckblaetter + ' Druckblätter');
   if (r.fragments) p.push(r.fragments + ' Wissens-Fragment(e)');
-  if (r.items) r.items.forEach((i) => p.push('**' + i.name + '** (' + (i.rarityLabel || '?') + ', iLvl ' + (i.itemLevel || '?') + ')'));
+  if (r.potions) p.push(r.potions + ' Heiltrank');
+  if (r.items) r.items.forEach((i) => p.push('**' + (i.name || 'Ausrüstungsstück') + '** (' + (SELTENHEIT[i.tier | 0]) + ', auf Spielerstufe gewürfelt)'));
   if (r.unlocks) p.push('schaltet frei: ' + r.unlocks.join(', '));
   if (r.info) p.push('Info: ' + r.info);
   return p.join(' · ') || '–';
@@ -186,7 +194,7 @@ Object.keys(byAct).map(Number).sort((a, b) => a - b).forEach((a) => {
     out += '- **Ziel:** ' + objStr(q) + '\n';
     out += '- **Vorbedingung:** ' + ((q.prerequisites && q.prerequisites.length)
       ? q.prerequisites.map((p) => (D[p] ? D[p].title : p)).join(' **+** ') : 'keine') + '\n';
-    out += '- **Belohnung:** ' + rew(q.rewards) + '\n\n';
+    out += '- **Belohnung:** ' + rew(q.rewards, q) + '\n\n';
     if (q.dialogueOffer) out += '**Angebot**\n\n' + quote(q.dialogueOffer) + '\n\n';
     if (q.dialogueProgress) out += '**Unterwegs**\n\n' + quote(q.dialogueProgress) + '\n\n';
     if (q.dialogueComplete) out += '**Abschluss**\n\n' + quote(q.dialogueComplete) + '\n\n';

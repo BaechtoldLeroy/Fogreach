@@ -161,30 +161,25 @@ test('Bot: der Schattendolch schlaegt Elaras Klinge nicht mehr', () => {
 });
 
 test('Elaras Klinge bleibt im Rahmen der Fundwaffen', () => {
-  // Vorher: 22 fester Schaden gegen ein Beutefeld, dessen bester Basiswert bei
-  // 9.1 endet (Kriegshammer) und mit dem staerksten Schadensaffix (+33%) auf
-  // rund 12.1 kommt. Ab Akt 2 konnte damit KEIN Waffendrop mehr ein Aufstieg
-  // sein — die halbe Beutetabelle war totes Material.
+  // Vorher: ein fester Schaden (erst 22, dann 7) gegen ein Beutefeld, das mit
+  // der Tiefe waechst. Eine feste Zahl ist auf genau einer Tiefe richtig: davor
+  // macht sie jeden Fund wertlos, danach ist sie selbst wertlos.
   //
-  // Jetzt: stark auf ihrer Zieltiefe (itemLevel 15, dort liegt das Beste bei
-  // etwa 4.9), aber von den Spaet-Tier-Waffen einholbar.
+  // Jetzt wuerfelt die Klinge beim Abgeben auf der Spielerstufe aus einer
+  // echten Schwertbasis. Ihr Schaden liegt damit im Band dieser Basis, wie
+  // bei jedem Fund — die Seltenheit und das Kennzeichen machen sie besonders.
   const qs = fs.readFileSync(path.join(WURZEL, 'js', 'questSystem.js'), 'utf8');
-  const m = qs.match(/key: 'ELARAS_KLINGE'[^}]*?damage:\s*([0-9.]+)/);
+  const m = qs.match(/\{ key: 'ELARAS_KLINGE'[^\n]*/);
   assert.ok(m, 'Elaras Klinge nicht gefunden');
-  const schaden = Number(m[1]);
-
-  // #135: Fundwaffen haben kein festes Band mehr — es waechst mit der Tiefe.
-  // Die Klinge muss deshalb gegen ZWEI Tiefen gemessen werden: auf ihrer
-  // eigenen (15) soll sie stark sein, spaeter einholbar.
+  assert.ok(!/damage:/.test(m[0]), 'die Klinge traegt wieder einen festen Schaden: ' + m[0]);
+  const basis = (m[0].match(/basis: '([A-Z_]+)'/) || [])[1];
   const LS = ladeLootSystem();
-  const basen = LS.ITEM_BASES.filter((b) => b.type === 'weapon' && b.damageKurve);
-  assert.ok(basen.length >= 10, 'keine Fundwaffen gelesen: ' + basen.length);
-  const besteAuf = (t) => Math.max.apply(null, basen.map((b) => LS.waffenBand(b, t).max));
-
-  assert.ok(schaden > besteAuf(15),
-    'die Questwaffe (' + schaden + ') schlaegt nicht einmal die Waffen ihrer '
-    + 'eigenen Zieltiefe (itemLevel 15, dort bis ' + besteAuf(15).toFixed(1) + ')');
-  assert.ok(schaden < besteAuf(30),
-    'die Questwaffe (' + schaden + ') liegt bis Tiefe 30 ueber jeder Fundwaffe ('
-    + besteAuf(30).toFixed(1) + ') — Waffendrops blieben damit wertlos');
+  const b = LS.ITEM_BASES.find((x) => x.key === basis);
+  assert.ok(b && b.type === 'weapon' && b.damageKurve, 'keine Fundwaffe als Basis: ' + basis);
+  [10, 20, 30].forEach((stufe) => {
+    const band = LS.waffenBand(b, stufe);
+    const it = LS.rollItem(basis, stufe, 3, null, { ohneDeckel: true });
+    assert.ok(it.damage >= band.min - 0.05 && it.damage <= band.max + 0.05,
+      'Stufe ' + stufe + ': Schaden ' + it.damage + ' ausserhalb ' + band.min + '..' + band.max);
+  });
 });

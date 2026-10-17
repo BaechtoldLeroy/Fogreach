@@ -161,6 +161,25 @@
   }
 
   /**
+   * Legt ein Stueck ab, das aus keinem Inventar kommt (Questlohn bei vollem
+   * Laufinventar). Kein Einfuehrungsschritt: der Spieler hat nichts getan.
+   * @returns {boolean} ob gelegt wurde
+   */
+  function einlagern(item) {
+    var G = _grid();
+    if (!G || !darfHinein(item)) return false;
+    var f = _sicherstellen();
+    var platz = G.findePlatz(f, item, undefined, mass());
+    if (!platz) return false;
+    var frei = f.findIndex(function (s) { return !s; });
+    if (frei < 0) return false;
+    item.gridX = platz.x;
+    item.gridY = platz.y;
+    f[frei] = item;
+    return true;
+  }
+
+  /**
    * Holt ein Stueck aus der Truhe zurueck ins Laufinventar.
    * Ebenfalls unteilbar: ohne Platz im Inventar passiert nichts.
    *
@@ -278,6 +297,7 @@
     anzahl: anzahl,
     darfHinein: darfHinein,
     hineinlegen: hineinlegen,
+    einlagern: einlagern,
     herausnehmen: herausnehmen,
     verschiebe: verschiebe,
     indexAn: indexAn,

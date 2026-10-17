@@ -236,6 +236,7 @@
       'story.unlock.shadow_skill': 'Shadow Arts',
       'story.unlock.story_ending': 'Epilogue',
       'story.unlock.elara_trust': "Elara's Trust",
+      'story.journal.reward': 'Reward: ',
 
       // === NPC dialogues — English (#89: v5) ===
       'story.npc.aldric.auftrag.0': "The cellar is full of vermin. Clean it up, Archivesmith.",
@@ -325,7 +326,8 @@
       'story.unlock.xp_bonus_10': '+10% XP',
       'story.unlock.shadow_skill': 'Schattenkunst',
       'story.unlock.story_ending': 'Epilog',
-      'story.unlock.elara_trust': 'Elaras Vertrauen'
+      'story.unlock.elara_trust': 'Elaras Vertrauen',
+      'story.journal.reward': 'Belohnung: '
     });
 
     // Convert STORY_ACTS[].name into getters
@@ -558,30 +560,15 @@
 
     if (window.questSystem) {
       completedQuests = window.questSystem.getCompletedQuests().map(function (q) {
+        // Was der Auftrag tatsaechlich brachte; Altstaende ohne Vermerk
+        // zeigen die Grundwerte (der damalige Stand ist nicht mehr bekannt).
+        var qsJ = window.questSystem;
         var rewardStr = '';
-        if (q.rewards) {
-          var parts = [];
-          if (q.rewards.xp) parts.push(q.rewards.xp + ' XP');
-          if (q.rewards.materials && q.rewards.materials.MAT) {
-            parts.push(q.rewards.materials.MAT + ' ' + _i18nLookup('inventory.material.MAT', 'Eisenbrocken'));
-          }
-          if (q.rewards.items && q.rewards.items.length > 0) {
-            var item = q.rewards.items[0];
-            parts.push((window.questSystem && window.questSystem.getRewardItemName)
-              ? window.questSystem.getRewardItemName(item)
-              : item.name);
-          }
-          if (q.rewards.unlocks) {
-            q.rewards.unlocks.forEach(function (u) {
-              parts.push(_i18nLookup('story.unlock.' + u, u));
-            });
-          }
-          if (q.rewards.info) {
-            parts.push((window.questSystem && window.questSystem.getRewardInfo)
-              ? window.questSystem.getRewardInfo(q)
-              : q.rewards.info);
-          }
-          rewardStr = parts.join(', ');
+        if (q.rewards && typeof qsJ.lohnTeile === 'function') {
+          var lohnJ = qsJ.getErhaltenerLohn(q.id);
+          if (lohnJ && !lohnJ.info) lohnJ = Object.assign({}, lohnJ, { info: qsJ.getRewardInfo(q) });
+          if (!lohnJ) lohnJ = qsJ.getQuestLohn(q, { xpFuerStufe: 0, maxTiefe: 1 });
+          rewardStr = qsJ.lohnTeile(lohnJ).join(', ');
         }
         var qTitle = window.questSystem && window.questSystem.getQuestTitle
           ? window.questSystem.getQuestTitle(q) : q.title;
@@ -1014,7 +1001,7 @@
 
         if (q.rewards) {
           var rewardLine = scene.add.text(leftX + 24, y,
-            'Belohnung: ' + q.rewards, {
+            _i18nLookup('story.journal.reward', 'Belohnung: ') + q.rewards, {
             fontFamily: 'monospace',
             fontSize: 11,
             color: '#6a8a6a',

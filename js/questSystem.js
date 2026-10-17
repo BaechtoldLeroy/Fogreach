@@ -43,6 +43,7 @@
         { type: 'kill', target: 'enemy', current: 0, required: 10 }
       ],
       rewards: { xp: 30, materials: { MAT: 5 }, druckblaetter: 2 },
+      rewardTier: 'neben',
       prerequisites: [],
       requiredAct: 0,
       // Auftakt-Seiten VOR dem eigentlichen Auftrag (nur beim ERSTEN Aldric-
@@ -70,6 +71,7 @@
         { type: 'explore', target: 'room', current: 0, required: 3 }
       ],
       rewards: { xp: 40, druckblaetter: 1 },
+      rewardTier: 'neben',
       prerequisites: [],
       requiredAct: 0,
       dialogueOffer: 'Stell sicher, dass alle Gänge sicher sind. Patrouilliere drei Räume.\n\nBist du bereit?',
@@ -109,7 +111,8 @@
       objectives: [
         { type: 'system', target: 'upgrade', current: 0, required: 1 }
       ],
-      rewards: { xp: 40, gold: 30 },
+      rewards: { xp: 40, materials: { MAT: 8 } },
+      rewardTier: 'neben',
       prerequisites: ['aldric_cleanup'],
       requiredAct: 0,
       dialogueOffer: 'Du trägst das, was Du unten gefunden hast, und Du trägst es, wie man ein Werkzeug trägt, das einem fremd ist.\n\nKomm mit in die Schmiede, die Tür gleich neben mir. Leg eines Deiner Stücke auf die Werkbank und drück auf „Ausbauen“ — dann wird es Deins. Diesmal geht es auf mich; danach kostet es Gold und Eisenbrocken, und Du machst es allein.',
@@ -126,7 +129,8 @@
       objectives: [
         { type: 'system', target: 'edikt', current: 0, required: 1 }
       ],
-      rewards: { xp: 40, gold: 30 },
+      rewards: { xp: 40, druckblaetter: 2 },
+      rewardTier: 'neben',
       prerequisites: ['aldric_cleanup'],
       requiredAct: 0,
       dialogueOffer: 'Der Rat schreibt jede Woche vor, was die Stadt denken soll. Wir können dasselbe — kleiner, aber wir können es.\n\nDu hast Druckblätter dabei, ich sehe sie. Komm rein in die Druckerei, gleich neben mir, und such Dir ein Edikt aus — ich setze es. Es wirkt, solange es hängt, und es kostet Dich Aufmerksamkeit beim Rat. Beides sollst Du einmal gespürt haben, bevor es darauf ankommt.',
@@ -144,6 +148,7 @@
         { type: 'system', target: 'markt', current: 0, required: 1 }
       ],
       rewards: { xp: 40, gold: 30 },
+      rewardTier: 'neben',
       prerequisites: ['aldric_cleanup'],
       requiredAct: 0,
       // Angeboten erst, wenn ihr Stand offen ist (Schwarzmarkt ab erreichter
@@ -172,7 +177,8 @@
         { type: 'system', target: 'talent', current: 0, required: 1 },
         { type: 'system', target: 'loadout', current: 0, required: 1 }
       ],
-      rewards: { xp: 40, gold: 30 },
+      rewards: { xp: 40, potions: 1 },
+      rewardTier: 'neben',
       prerequisites: ['aldric_cleanup'],
       requiredAct: 0,
       dialogueOffer: 'Der Rat führt über jeden Bürger eine Akte, und in Deiner steht ein Wort, das mich stört: unbestimmt.\n\nDas lässt sich ändern. Du sammelst unten Erfahrung, und Erfahrung wird zu Punkten. Setz einen. Wut, Ketten oder Schatten — such es Dir aus. Der Rat schätzt Leute, die sich festlegen.\n\nUnd dann: Ein Werkzeug, das Du nicht griffbereit hast, ist kein Werkzeug. Leg es auf eine Taste.',
@@ -194,7 +200,8 @@
       objectives: [
         { type: 'system', target: 'charakterwerte', current: 0, required: 1 }
       ],
-      rewards: { xp: 40, gold: 30 },
+      rewards: { xp: 40, potions: 1 },
+      rewardTier: 'neben',
       prerequisites: ['aldric_cleanup'],
       requiredAct: 0,
       gate: function () { return _spielerStufe() >= 2; },
@@ -216,6 +223,7 @@
         { type: 'system', target: 'truhe', current: 0, required: 1 }
       ],
       rewards: { xp: 40, gold: 30 },
+      rewardTier: 'neben',
       prerequisites: ['einfuehrung_schmiede'],
       requiredAct: 0,
       gate: function () { return _laeufeAbgeschlossen(); },
@@ -238,7 +246,8 @@
       objectives: [
         { type: 'system', target: 'wissen', current: 0, required: 1 }
       ],
-      rewards: { xp: 40, gold: 30 },
+      rewards: { xp: 40, fragments: 1 },
+      rewardTier: 'neben',
       prerequisites: ['einfuehrung_schmiede', 'harren_daughter_investigation'],
       // requiredAct 0, obwohl sie fruehestens in Akt 1 auftaucht: die
       // Voraussetzung oeffnet den Akt selbst, und der Akt-1-Bestand soll eine
@@ -263,7 +272,8 @@
       objectives: [
         { type: 'system', target: 'haendler', current: 0, required: 1 }
       ],
-      rewards: { xp: 40, gold: 30 },
+      rewards: { xp: 40, gold: 45 },
+      rewardTier: 'neben',
       prerequisites: ['einfuehrung_markt'],
       requiredAct: 0,
       dialogueOffer: 'Da unten läuft ein Alter mit einem Karren herum. Frag mich nicht, wie er hineinkommt — ich weiss es nicht, und ich will es nicht wissen.\n\nKauf ihm etwas ab. Irgendetwas. Er führt Zeug, das über meinen Tisch nie gehen würde, und tiefer unten hängen Amulette an seinem Karren. Ich will nur, dass Du einmal bei ihm gestanden hast.',
@@ -285,6 +295,7 @@
         { type: 'fetch', target: 'journal_fragment', current: 0, required: 1 }
       ],
       rewards: { xp: 50, fragments: 1 },
+      rewardTier: 'boss',
       // Akt 0 onboarding gates Akt 1: the player must complete Aldric's two
       // warmup quests (cleanup + patrol) before Harren approaches with the
       // mayor's-daughter investigation. Keeps the tutorial-to-narrative
@@ -316,6 +327,7 @@
         { type: 'fetch', target: 'verification_seal', current: 0, required: 1 }
       ],
       rewards: { xp: 75 },
+      rewardTier: 'story',
       prerequisites: ['harren_daughter_investigation'],
       requiredAct: 1,
       dialogueOffer: 'Du hast das Fragment gesehen. Gut. Dann weisst du auch, dass die Tochter neu klassifiziert werden muss — von "geflohen" zu "vermisste Person von Interesse". Eine reine Verwaltungsangelegenheit, verstehst du. Akten müssen ordnungsgemäss geführt werden.\n\nDas ratsgesiegelte Verifikationsdokument liegt in der versunkenen Registratur — dort unten, wo der Nebel die alten Akten verschluckt hat. Steig hinab, birg das Ratssiegel und bring es mir. Was dir dabei begegnet, ist nicht mein Ressort. Der Magistrat trägt die Verantwortung, nicht der Bürger.\n\nNimmst du den Auftrag an?',
@@ -334,6 +346,7 @@
         { type: 'kill', target: 'elite_enemy', current: 0, required: 3 }
       ],
       rewards: { xp: 90 },
+      rewardTier: 'story',
       prerequisites: ['harren_daughter_investigation'],
       requiredAct: 1,
       dialogueOffer: 'Du hast das Fragment gesehen, Archivschmied. Dann weisst du, dass die Tochter nicht aus eigenem Willen geflohen ist. Sie wurde von einer dunklen Hand geführt — die untere Kammern bersten vor solchen Schatten.\n\nReinige sie. Drei der Anführer dieser ketzerischen Präsenz lauern noch dort unten, tiefer als die ersten Gänge — steige bis Tiefe 3 hinab. Fälle sie im Namen der Ordnung. Die Seele der Tochter wird es dir danken — wenn das Licht sie wiederfindet.\n\nDie Reinigung ist eine geistliche Pflicht. Nimm sie an.',
@@ -355,6 +368,7 @@
         { type: 'kill', target: 'enemy', current: 0, required: 10 }
       ],
       rewards: { xp: 75 },
+      rewardTier: 'story',
       prerequisites: ['harren_daughter_investigation'],
       requiredAct: 1,
       dialogueOffer: 'Wenn eine Tochter aus dem Rathaus verschwinden kann, ist das ein Versagen der Garde — und das wird sich ändern. Ich brauche eine Patrouillen-Erweiterung. Heute. Geh in die unteren Kammern und demonstriere Kraft — zehn Störer fallen, das Edikt trägt sich von selbst durch die Strassen.\n\nFrag nicht, ob die Patrouillen schoner Lebensweise zuträglich sind. Frag nicht, wer entscheidet, wohin sie laufen. Loyalität ist die einzige Münze, die zählt. Das Edikt ist die Münze, die du in meine Hand legst.\n\nNimmst du den Auftrag an, Archivschmied?',
@@ -374,6 +388,7 @@
         { type: 'fetch', target: 'council_document', current: 0, required: 1 }
       ],
       rewards: { xp: 100, fragments: 1 },
+      rewardTier: 'story',
       prerequisites: ['harren_daughter_investigation'],
       requiredAct: 1,
       dialogueOffer: 'Du hast also das Fragment gefunden. Gut — dann lebst du nicht mehr ganz in ihrer Erzählung.\n\nIch will, dass DU siehst, was ich gesehen habe, bevor du weiter ihre Aufträge erledigst. Unten im Rathauskeller liegt ein Dokument, das die drei Ratsfraktionen nie zusammen unterzeichnet haben sollten — und doch ist ihr Siegel darauf. Alle drei.\n\nBring es mir. Dann reden wir.',
@@ -395,6 +410,7 @@
         { type: 'observe', target: 'collusion_reveal_seen', current: 0, required: 1 }
       ],
       rewards: { xp: 150, fragments: 1 },
+      rewardTier: 'boss',
       // #160: Die oeffentliche Sitzung verkuendet das Ergebnis der Abstimmung
       // aus faction_campaign — sie setzt sie deshalb voraus.
       prerequisites: ['magistrat_verification', 'klerus_purification', 'garde_patrol_expansion', 'widerstand_proof', 'faction_campaign'],
@@ -427,6 +443,7 @@
         { type: 'explore', target: 'room', current: 0, required: 3 }
       ],
       rewards: { xp: 60, info: 'Maras Netzwerk enthüllt', infoKey: 'quest.reward.info.mara_contact' },
+      rewardTier: 'story',
       prerequisites: [],
       requiredAct: 2,
       dialogueOffer: 'Du erinnerst dich nicht an mich. Aber ich an dich — du warst Archivschmied, bevor der Nebel dir die Erinnerung nahm, und du hast Fragen gestellt, die der Rat begraben wollte.\n\nIch bin die Späherin des Widerstands. Bevor ich dir mein Netzwerk öffne, will ich sehen, ob du noch sehen kannst: Geh hinab und kundschafte drei Kellerräume aus. Präg dir ein, was der Rat dort versteckt.',
@@ -444,6 +461,7 @@
         { type: 'fetch', target: 'document', current: 0, required: 2 }
       ],
       rewards: { xp: 100, unlocks: ['elara_trust'] },
+      rewardTier: 'story',
       // Feature 062: elara_trust auch als Story-Flag setzen (Regler 3 im Finale).
       completionFlags: ['elara_trust'],
       prerequisites: [],
@@ -463,6 +481,7 @@
         { type: 'kill', target: 'elite_enemy', current: 0, required: 5 }
       ],
       rewards: { xp: 80 },
+      rewardTier: 'story',
       prerequisites: [],
       requiredAct: 2,
       dialogueOffer: 'Diese Rüstungen sind für Gefangene, nicht Soldaten. Hilf mir, Beweise zu finden.\n\nBesiege fünf Elite-Wachen und bring mir ihre Befehle.',
@@ -487,6 +506,7 @@
         { type: 'fetch', target: 'seized_writings', current: 0, required: 3 }
       ],
       rewards: { xp: 60, druckblaetter: 2 },
+      rewardTier: 'story',
       // Feature 062: Backbone-Default der Gesuche-Wahl. Die Szenen-Wahl
       // (kept/surrendered) folgt mit dem Inszenierungs-Feature.
       completionFlags: ['petitions_surrendered'],
@@ -507,6 +527,7 @@
         { type: 'explore', target: 'room', current: 0, required: 3 }
       ],
       rewards: { xp: 70, druckblaetter: 1 },
+      rewardTier: 'story',
       prerequisites: ['council_seizure'],
       requiredAct: 2,
       dialogueOffer: 'Unten in den alten Gängen soll sich Gesindel zusammenrotten, heisst es. Durchkämm drei Kammern und melde, wer sich dort versammelt.\n\nBereit?',
@@ -524,6 +545,7 @@
         { type: 'fetch', target: 'interrogation_record', current: 0, required: 2 }
       ],
       rewards: { xp: 80, fragments: 1 },
+      rewardTier: 'story',
       prerequisites: ['mara_contact'],
       requiredAct: 2,
       dialogueOffer: 'Im Keller lagern Protokolle aus Verhören. Nicht von Dämonen — von Menschen. Bring mir zwei Abschriften. Vorsichtig.',
@@ -543,6 +565,7 @@
         { type: 'explore', target: 'room', current: 0, required: 2 }
       ],
       rewards: { xp: 120, fragments: 1 },
+      rewardTier: 'story',
       prerequisites: ['council_surveillance'],
       requiredAct: 3,
       dialogueOffer: 'Eine untere Kammer ist verseucht — Ketzerei. Reinige sie. Frag nicht, was du findest.\n\nGeh.',
@@ -561,6 +584,7 @@
         { type: 'kill', target: 'elite_enemy', current: 0, required: 3 }
       ],
       rewards: { xp: 200 },
+      rewardTier: 'boss',
       // Feature 062: der Bruch (Enttarnung) triggert jetzt Akt 4. Vorbedingungen:
       // die verseuchte Kammer gesehen UND Elaras zweite Wahrheit erfahren.
       prerequisites: ['verseuchte_kammer', 'elara_second_truth'],
@@ -590,6 +614,7 @@
         { type: 'observe', target: 'convoy_intel', current: 0, required: 1 }
       ],
       rewards: { xp: 90, druckblaetter: 2 },
+      rewardTier: 'story',
       prerequisites: ['mara_contact'],
       requiredAct: 2,
       dialogueOffer: 'Heute Nacht entladen sie im alten Lagerhaus einen Konvoi des Rats. Zieh die Wachuniform an, bleib im Schatten und hör zu — aber zieh keine Klinge, sonst fliegt die Verkleidung auf.\n\nUebernimmst du das?',
@@ -609,6 +634,7 @@
         { type: 'observe', target: 'archive_record', current: 0, required: 1 }
       ],
       rewards: { xp: 110, fragments: 1 },
+      rewardTier: 'story',
       prerequisites: ['espionage_convoy'],
       requiredAct: 3,
       dialogueOffer: 'Im Archiv des Rats liegt ein versiegelter Akt — und ich muss wissen, was darin steht. Das Archiv liegt tief unter dem Rathaus, ab Tiefe 12. Geh als Schreiber verkleidet hinein, hör ab, was die anderen flüstern, und birg den Akt. Werde nicht gesehen.\n\nTust du das für mich?',
@@ -628,6 +654,7 @@
         { type: 'observe', target: 'informant_id', current: 0, required: 1 }
       ],
       rewards: { xp: 120, fragments: 1 },
+      rewardTier: 'story',
       // Feature 062: setzt mole_evidence (Regler 3 im Finale). observe informant_id
       // von WP05 (espionageSystem) verdrahtet.
       completionFlags: ['mole_evidence'],
@@ -664,6 +691,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         { type: 'fetch', target: 'sealed_bundle', current: 0, required: 1 }
       ],
       rewards: { xp: 25, materials: { MAT: 3 } },
+      rewardTier: 'neben',
       prerequisites: [],
       requiredAct: 0,
       dialogueOffer: 'Es gibt da etwas im Keller... ein Bündel, versiegelt. Bring es mir, ohne dass jemand es sieht. Und öffne es nicht.\n\nNimmst du den Auftrag an?',
@@ -685,7 +713,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       objectives: [
         { type: 'boss_kill', target: 'zeremonienmeister', current: 0, required: 1 }
       ],
-      rewards: { xp: 150, items: [{ type: 'accessory', key: 'RITUAL_AMULETT', name: 'Ritualamulett', nameKey: 'quest.reward.RITUAL_AMULETT', iconKey: 'itAccessory', rarity: 'epic', rarityLabel: 'Episch', rarityKey: 'quest.rarity.epic', rarityValue: 3, itemLevel: 12, damage: 0, speed: 0, range: 0, armor: 5, crit: 0.05, hp: 20 }] },
+      rewards: { xp: 150, items: [{ key: 'RITUAL_AMULETT', basis: 'HD_SCHLANGENMASKE', tier: 2, name: 'Ritualamulett', nameKey: 'quest.reward.RITUAL_AMULETT', iconKey: 'itHeadSchlangenmaske', signatur: { armor: 0.12 } }] },
+      rewardTier: 'boss',
       prerequisites: ['elara_meeting'],
       requiredAct: 3,
       dialogueOffer: 'Tief unten ist eine Kammer — die Beschwörungskammer des Rats. Sie wird vom Zeremonienmeister gehalten, dem Meister der verbotenen Rituale. Steig auf Tiefe 20 hinab und fälle ihn.\n\nBist du bereit für die Wahrheit?',
@@ -705,6 +734,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         { type: 'fetch', target: 'print_plate', current: 0, required: 5 }
       ],
       rewards: { xp: 100, materials: { MAT: 20 } },
+      rewardTier: 'story',
       prerequisites: [],
       requiredAct: 3,
       dialogueOffer: 'Ich habe genug gedruckt, was der Rat will. Zeit für die Wahrheit.\n\nFinde fünf Druckplatten, tief im Keller, ab Tiefe 14 — sie enthalten die echte Geschichte.',
@@ -721,7 +751,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       objectives: [
         { type: 'boss_kill', target: 'kettenmeister', current: 0, required: 1 }
       ],
-      rewards: { xp: 200 },
+      rewards: { xp: 200, items: [{ tier: 2 }] },
+      rewardTier: 'boss',
       // Feature 062: Spionage zuerst, damit die Doppelphase atmet. Der Fall des
       // Kettenmeisters (Tiefe 10) sichert die ersten harten Beweise.
       prerequisites: ['mara_contact', 'espionage_convoy'],
@@ -747,6 +778,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         { type: 'craft', target: 'craft_item', current: 0, required: 3 }
       ],
       rewards: { xp: 150 },
+      rewardTier: 'story',
       prerequisites: ['branka_doubt'],
       requiredAct: 4,
       dialogueOffer: 'Wir brauchen Waffen. Nicht für den Rat — für UNS.\n\nStelle drei Gegenstände in der Schmiede her.',
@@ -765,6 +797,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         { type: 'dungeon_run', target: 'dungeon_complete', current: 0, required: 3 }
       ],
       rewards: { xp: 200, unlocks: ['xp_bonus_10'] },
+      rewardTier: 'story',
       prerequisites: ['thom_truth'],
       requiredAct: 4,
       dialogueOffer: 'Die oberen Gänge lesen unsere Wahrheit schon. Jetzt brauchen wir die Tiefe — dort, wo der Rat seine Geheimnisse hält.\n\nSchliesse drei Durchläufe ab Tiefe 22 ab, und ganz Fogreach wird die Wahrheit lesen.',
@@ -782,7 +815,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       objectives: [
         { type: 'dialogue', target: 'elara_gift', current: 0, required: 1 }
       ],
-      rewards: { xp: 0, items: [{ type: 'weapon', key: 'ELARAS_KLINGE', name: 'Elaras Klinge', nameKey: 'quest.reward.ELARAS_KLINGE', iconKey: 'itSword', rarity: 'legendary', rarityLabel: 'Legendär', rarityKey: 'quest.rarity.legendary', rarityValue: 4, itemLevel: 15, damage: 7, speed: 1.3, range: 120, armor: 0, crit: 0.15, hp: 0, elaraGift: true }] },
+      rewards: { xp: 100, items: [{ key: 'ELARAS_KLINGE', basis: 'WPN_EISENKLINGE', tier: 3, name: 'Elaras Klinge', nameKey: 'quest.reward.ELARAS_KLINGE', iconKey: 'itSword', elaraGift: true, signatur: { crit: 0.15 } }] },
+      rewardTier: 'story',
       prerequisites: ['elara_ritual'],
       requiredAct: 3,
       dialogueOffer: 'Nimm das. Ich habe es für dich geschmiedet. Für den Fall, dass...\n\nNimm Elaras Klinge an?',
@@ -803,7 +837,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       objectives: [
         { type: 'wave', target: 'reach_wave', current: 0, required: 30 }
       ],
-      rewards: { xp: 300 },
+      rewards: { xp: 300, items: [{ tier: 2 }] },
+      rewardTier: 'boss',
       prerequisites: ['schattenrat_finale'],
       requiredAct: 4,
       dialogueOffer: 'Aldric ist unter der Stadt verschwunden, mit dem Rest seiner Kettenwache. Solange sie da unten sind, schlafen die Gassen nicht. Dring bis Welle 30 vor und räum auf.\n\nBist du dabei?',
@@ -821,7 +856,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       objectives: [
         { type: 'boss_kill', target: 'schattenrat', current: 0, required: 1 }
       ],
-      rewards: { xp: 250 },
+      rewards: { xp: 250, items: [{ tier: 2 }] },
+      rewardTier: 'finale',
       prerequisites: [],
       requiredAct: 4,
       // #157: Nicht mehr der Schattenrat — Elara ist zur Quelle hinabgestiegen.
@@ -850,6 +886,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         { type: 'observe', target: 'edikte_plakatiert', current: 0, required: 1 }
       ],
       rewards: { xp: 60 },
+      rewardTier: 'story',
       prerequisites: ['harren_daughter_investigation'],
       requiredAct: 1,
       dialogueOffer: 'Diese Woche stimmt die Stadt ab. Drei Edikte, Magistrat, Klerus, Garde, und die Bürger wählen eines. Lass sie bei Thom drucken und häng sie an die Tafeln vor dem Rathaus. So sieht Ordnung aus, die gewählt ist.',
@@ -880,6 +917,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         { type: 'explore', target: 'room', current: 0, required: 6 }
       ],
       rewards: { xp: 70, gold: 140 },
+      rewardTier: 'neben',
       prerequisites: [],
       requiredAct: 0,
       gate: function () { return window.Anschlagtafel && window.Anschlagtafel.haengt('brett_kammern'); },
@@ -900,6 +938,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         { type: 'dungeon_run', target: 'dungeon_complete', current: 0, required: 2 }
       ],
       rewards: { xp: 110, gold: 220 },
+      rewardTier: 'neben',
       prerequisites: [],
       requiredAct: 0,
       gate: function () { return window.Anschlagtafel && window.Anschlagtafel.haengt('brett_laeufe'); },
@@ -920,6 +959,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         { type: 'wave', target: 'reach_wave', current: 0, required: 12 }
       ],
       rewards: { xp: 100, gold: 180 },
+      rewardTier: 'neben',
       prerequisites: [],
       requiredAct: 0,
       gate: function () { return window.Anschlagtafel && window.Anschlagtafel.haengt('brett_welle'); },
@@ -940,6 +980,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         { type: 'kill', target: 'elite_enemy', current: 0, required: 4 }
       ],
       rewards: { xp: 130, gold: 160 },
+      rewardTier: 'neben',
       prerequisites: [],
       requiredAct: 0,
       gate: function () { return window.Anschlagtafel && window.Anschlagtafel.haengt('brett_zeugen'); },
@@ -960,6 +1001,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         { type: 'kill', target: 'enemy', current: 0, required: 12 }
       ],
       rewards: { xp: 60, gold: 120 },
+      rewardTier: 'neben',
       prerequisites: [],
       requiredAct: 0,
       gate: function () { return window.Anschlagtafel && window.Anschlagtafel.haengt('brett_stoerer'); },
@@ -980,6 +1022,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         { type: 'kill', target: 'elite_enemy', current: 0, required: 3 }
       ],
       rewards: { xp: 90, gold: 200 },
+      rewardTier: 'neben',
       prerequisites: [],
       requiredAct: 0,
       gate: function () { return window.Anschlagtafel && window.Anschlagtafel.haengt('brett_anfuehrer'); },
@@ -1000,6 +1043,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         { type: 'explore', target: 'room', current: 0, required: 5 }
       ],
       rewards: { xp: 120, gold: 150, druckblaetter: 4 },
+      rewardTier: 'neben',
       prerequisites: [],
       requiredAct: 0,
       gate: function () { return window.Anschlagtafel && window.Anschlagtafel.haengt('brett_aufruf'); },
@@ -1022,6 +1066,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         { type: 'fetch', target: 'hundehalsband', current: 0, required: 1 }
       ],
       rewards: { xp: 80, gold: 40 },
+      rewardTier: 'neben',
       prerequisites: [],
       requiredAct: 3,
       dialogueOffer: 'Du gehst doch da runter. Mein Hund, Bruno, ist mir vor einer Woche in die Kanäle gelaufen. Er jagt Ratten, er kann nicht anders. Wenn Du tief unten, ab Tiefe 15, ein Halsband mit einer Messingmarke findest, dann bring es mir. Dann weiss ich wenigstens Bescheid.',
@@ -1040,6 +1085,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         { type: 'fetch', target: 'eichgewicht', current: 0, required: 1 }
       ],
       rewards: { xp: 150, materials: { MAT: 15 } },
+      rewardTier: 'neben',
       prerequisites: [],
       requiredAct: 4,
       dialogueOffer: 'Die zwei Händler vor meiner Werkstatt streiten seit Tagen, wessen Waage lügt. Jeden Morgen, laut, vor meiner Tür. Das alte Eichgewicht der Zunft liegt irgendwo unten, ab Tiefe 26, seit die Zunft sich aufgelöst hat. Bring es mir, und ich mache dem ein Ende. Bitte.',
@@ -1057,6 +1103,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         { type: 'kill', target: 'enemy', current: 0, required: 8 }
       ],
       rewards: { xp: 70 },
+      rewardTier: 'neben',
       prerequisites: [],
       requiredAct: 2,
       dialogueOffer: 'Ein Bezirk ist befallen. Reinige ihn. Wer das Licht scheut, hat etwas zu verbergen. Bring mir die Namen der Befallenen.',
@@ -1077,6 +1124,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         { type: 'observe', target: 'escort_route', current: 0, required: 1 }
       ],
       rewards: { xp: 90 },
+      rewardTier: 'neben',
       prerequisites: [],
       requiredAct: 3,
       dialogueOffer: 'Heute Nacht geht ein Transport. Die Route führt tief hinab, ab Tiefe 16. Sicher sie, frag nicht, was drin ist. Loyalität zahlt sich aus.',
@@ -1097,6 +1145,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         { type: 'fetch', target: 'memory_shard', current: 0, required: 3 }
       ],
       rewards: { xp: 150, fragments: 1 },
+      rewardTier: 'story',
       // Regler 4 im Finale (self_remembered).
       completionFlags: ['self_remembered'],
       prerequisites: ['branka_doubt'],
@@ -1118,6 +1167,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         { type: 'observe', target: 'erster_riss_gesehen', current: 0, required: 1 }
       ],
       rewards: { xp: 200, fragments: 2 },
+      rewardTier: 'story',
       // #156: Frueher "three_hands_seen" — die Blaetter-Enthuellung aus v4
       // ("drei Blaetter, eine Hand"). Die gibt es nicht mehr: Elaras Verrat
       // zeigt sich am Zeichen (Maulwurf, zeichen_bemerkt). Dieser Auftrag ist
@@ -1144,6 +1194,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         { type: 'dialogue', target: 'press_decision', current: 0, required: 1 }
       ],
       rewards: { xp: 500, unlocks: ['story_ending'] },
+      rewardTier: 'finale',
       // `unlocks` landet in window._questUnlocks, die Hub-Phase liest aber die
       // Flags (hubPhase.js -> getFlags()). Ohne diesen Zwilling bleibt der Hub
       // nach dem Story-Ende dauerhaft in Phase 'broken' und der gesamte
@@ -1156,6 +1207,30 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       dialogueProgress: 'Die Presse wartet.',
       dialogueComplete: 'Der Nebel dünnt aus — nicht weil jemand ihn vertreibt, sondern weil zu viele Menschen sich zu vieles gleichzeitig merken. Hart erkämpft, unvollständig, und frei.'
     }
+  };
+
+  // Lohnzeilen (Angebot, Abgabe, Toast, Journal), deutsch. Eine eigene
+  // Tabelle, weil sie auch ohne i18n (Tests) die Rueckfallfassung liefert.
+  var LOHN_DE = {
+    'quest.lohn.xp': '+{n} XP',
+    'quest.lohn.gold': '+{n} Gold',
+    'quest.lohn.mat': '+{n} Eisenbrocken',
+    'quest.lohn.druckblaetter': '+{n} Druckblätter',
+    'quest.lohn.fragment': '+1 Fragment',
+    'quest.lohn.fragmente': '+{n} Fragmente',
+    'quest.lohn.trank': '+1 Heiltrank',
+    'quest.lohn.traenke': '+{n} Heiltränke',
+    'quest.lohn.stueck': '{name} ({seltenheit})',
+    'quest.lohn.zufall': 'Ausrüstungsstück',
+    'quest.lohn.tier.0': 'Gewöhnlich',
+    'quest.lohn.tier.1': 'Magisch',
+    'quest.lohn.tier.2': 'Selten',
+    'quest.lohn.tier.3': 'Legendär',
+    'quest.lohn.toast': 'Auftrag abgeschlossen: {title}',
+    'quest.lohn.stufe': 'Stufe {level} erreicht — Talente unter [T]',
+    'quest.lohn.truhe': '{name} liegt in Deiner Truhe — das Inventar war voll',
+    'quest.lohn.ausstehend': '{name} wartet — Inventar und Truhe sind voll',
+    'quest.lohn.nachgereicht': 'Nachgereicht: {name}'
   };
 
   // ---- i18n bootstrap ----
@@ -1515,7 +1590,27 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.rarity.common': 'Common',
       'quest.rarity.rare': 'Rare',
       'quest.rarity.epic': 'Epic',
-      'quest.rarity.legendary': 'Legendary'
+      'quest.rarity.legendary': 'Legendary',
+      // Lohnzeilen (Angebot, Abgabe, Toast, Journal)
+      'quest.lohn.xp': '+{n} XP',
+      'quest.lohn.gold': '+{n} Gold',
+      'quest.lohn.mat': '+{n} Iron Chunks',
+      'quest.lohn.druckblaetter': '+{n} Print Sheets',
+      'quest.lohn.fragment': '+1 Fragment',
+      'quest.lohn.fragmente': '+{n} Fragments',
+      'quest.lohn.trank': '+1 Healing Potion',
+      'quest.lohn.traenke': '+{n} Healing Potions',
+      'quest.lohn.stueck': '{name} ({seltenheit})',
+      'quest.lohn.zufall': 'Piece of equipment',
+      'quest.lohn.tier.0': 'Common',
+      'quest.lohn.tier.1': 'Magic',
+      'quest.lohn.tier.2': 'Rare',
+      'quest.lohn.tier.3': 'Legendary',
+      'quest.lohn.toast': 'Task complete: {title}',
+      'quest.lohn.stufe': 'Level {level} reached — talents on [T]',
+      'quest.lohn.truhe': '{name} is in your chest — the inventory was full',
+      'quest.lohn.ausstehend': '{name} is waiting — inventory and chest are full',
+      'quest.lohn.nachgereicht': 'Delivered at last: {name}'
     });
 
     // Auto-add the German reward strings + rarity labels (DE source-of-truth)
@@ -1532,6 +1627,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.rarity.epic': 'Episch',
       'quest.rarity.legendary': 'Legendär'
     });
+    window.i18n.register('de', LOHN_DE);
 
     // Convert QUEST_DEFINITIONS title/description/dialogue* to live getters so
     // ANY consumer reading q.title etc. sees the active language without code
@@ -2007,6 +2103,277 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     return state.objectives.every(function (obj) { return obj.current >= obj.required; });
   }
 
+  // ---- Lohn ----
+  //
+  // Die Zahlen in den Definitionen sind der Lohn zu Beginn des Spiels. Fest
+  // gelassen, waeren sie spaeter Kleingeld: der Stufenbedarf waechst mit
+  // L^1.8, die Preise mit der Tiefe (preisNachTiefeneinkommen). Deshalb
+  // wird beim Abgeben skaliert — und die Zahl aus der Definition bleibt die
+  // Untergrenze, damit sich am Anfang nichts verschiebt.
+  //
+  // Erfahrung: ein Anteil des Bedarfs fuer die NAECHSTE Stufe, je nach Gewicht
+  // des Auftrags (rewardTier). Ein Bosskampf ist rund eine Stufe wert, ein
+  // Nebenauftrag knapp die Haelfte.
+  var LOHN_ANTEIL = { neben: 0.4, story: 0.7, boss: 1.0, finale: 1.5 };
+
+  /**
+   * Erfahrung und Gold, die dieser Auftrag JETZT einbringt. Reine Funktion.
+   *
+   * Gold waechst wie die Preise mit der tiefsten erreichten Tiefe: die Zahl in
+   * der Definition gilt auf der Tiefe, ab der der Auftrag zaehlt (minDepth,
+   * sonst 1), und bleibt damit auf jeder Tiefe gleich viele Tiefeneinkommen
+   * wert.
+   *
+   * @param {object} def   Quest-Definition (rewards, rewardTier, minDepth)
+   * @param {object} lage  { xpFuerStufe, maxTiefe }
+   * @returns {{xp:number, gold:number}}
+   */
+  function lohnBerechnen(def, lage) {
+    var r = (def && def.rewards) || {};
+    var l = lage || {};
+    var anteil = LOHN_ANTEIL[def && def.rewardTier] || LOHN_ANTEIL.neben;
+    var bedarf = Math.max(0, Number(l.xpFuerStufe) || 0);
+    var xp = Math.max(Number(r.xp) || 0, Math.round(anteil * bedarf));
+    var gold = 0;
+    var grund = Number(r.gold) || 0;
+    if (grund > 0) {
+      var bezug = Math.max(1, Number(def.minDepth) || 1);
+      var tiefe = Math.max(1, Number(l.maxTiefe) || 1);
+      gold = Math.max(grund, Math.round(grund * Math.max(1, tiefe / bezug)));
+    }
+    return { xp: Math.round(xp), gold: Math.round(gold) };
+  }
+
+  function _lohnLage() {
+    var stufe = _spielerStufe();
+    var bedarf = (typeof window.getNeededXP === 'function') ? window.getNeededXP(stufe) : 0;
+    var P = window.Persistence;
+    var tiefe = (P && typeof P.getMaxDepth === 'function') ? P.getMaxDepth() : 1;
+    return { stufe: stufe, xpFuerStufe: bedarf, maxTiefe: tiefe };
+  }
+
+  /**
+   * Alles, was der Auftrag jetzt einbringt — mit skalierter Erfahrung und Gold.
+   * Mit lageVorgabe { xpFuerStufe: 0, maxTiefe: 1 } die Grundwerte.
+   */
+  function getQuestLohn(questOrId, lageVorgabe) {
+    var def = (typeof questOrId === 'string') ? QUEST_DEFINITIONS[questOrId]
+      : (questOrId && QUEST_DEFINITIONS[questOrId.id]) || questOrId;
+    var r = (def && def.rewards) || {};
+    var lage = lageVorgabe || _lohnLage();
+    var zahl = lohnBerechnen(def, lage);
+    return {
+      xp: zahl.xp,
+      gold: zahl.gold,
+      mat: (r.materials && r.materials.MAT) | 0,
+      druckblaetter: r.druckblaetter | 0,
+      fragments: r.fragments | 0,
+      potions: r.potions | 0,
+      // Noch nicht gewuerfelt: Name und Seltenheit stehen fest, die Werte nicht.
+      items: (Array.isArray(r.items) ? r.items : []).map(function (spec) {
+        return { name: spec.nameKey ? questSystem.getRewardItemName(spec) : null,
+          nameKey: spec.nameKey || null, tier: spec.tier | 0 };
+      }),
+      unlocks: Array.isArray(r.unlocks) ? r.unlocks.slice() : [],
+      info: questSystem.getRewardInfo(def)
+    };
+  }
+
+  function _lohnT(key, params) {
+    var v = null;
+    if (window.i18n && typeof window.i18n.t === 'function') {
+      v = window.i18n.t(key, params);
+      if (typeof v !== 'string' || v.indexOf('[MISSING:') === 0) v = null;
+    }
+    if (v === null) {
+      v = LOHN_DE[key] || key;
+      Object.keys(params || {}).forEach(function (k) { v = v.split('{' + k + '}').join(String(params[k])); });
+    }
+    return v;
+  }
+
+  /**
+   * Der Lohn als einzelne, uebersetzte Zeilen ("+180 XP", "+650 Gold", …).
+   * Nimmt getQuestLohn() oder den Vermerk eines abgegebenen Auftrags.
+   */
+  function lohnTeile(lohn) {
+    if (!lohn) return [];
+    var t = [];
+    if (lohn.xp > 0) t.push(_lohnT('quest.lohn.xp', { n: lohn.xp }));
+    if (lohn.gold > 0) t.push(_lohnT('quest.lohn.gold', { n: lohn.gold }));
+    if (lohn.mat > 0) t.push(_lohnT('quest.lohn.mat', { n: lohn.mat }));
+    if (lohn.druckblaetter > 0) t.push(_lohnT('quest.lohn.druckblaetter', { n: lohn.druckblaetter }));
+    if (lohn.fragments > 0) t.push(lohn.fragments === 1 ? _lohnT('quest.lohn.fragment')
+      : _lohnT('quest.lohn.fragmente', { n: lohn.fragments }));
+    if (lohn.potions > 0) t.push(lohn.potions === 1 ? _lohnT('quest.lohn.trank')
+      : _lohnT('quest.lohn.traenke', { n: lohn.potions }));
+    (lohn.items || []).forEach(function (it) {
+      var name = it.nameKey ? questSystem.getRewardItemName(it) : (it.name || _lohnT('quest.lohn.zufall'));
+      t.push(_lohnT('quest.lohn.stueck', { name: name, seltenheit: _lohnT('quest.lohn.tier.' + (it.tier | 0)) }));
+    });
+    (lohn.unlocks || []).forEach(function (u) {
+      var v = (window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t('story.unlock.' + u) : null;
+      t.push((typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : u);
+    });
+    if (lohn.info) t.push(lohn.info);
+    return t;
+  }
+
+  /** Was ein abgegebener Auftrag tatsaechlich eingebracht hat (oder null). */
+  function getErhaltenerLohn(questId) {
+    var st = questState[questId];
+    return (st && st.lohn) ? st.lohn : null;
+  }
+
+  /**
+   * Erfahrungsbonus aus Freischaltungen ("+10 % XP", Die Pamphlete). Aus den
+   * abgeschlossenen Auftraegen abgeleitet statt in einem eigenen Feld
+   * gemerkt: er steht damit im Quest-Spielstand und gilt auch fuer Staende,
+   * die den Auftrag schon vor dieser Aenderung abgeschlossen hatten.
+   */
+  function getXpBonus() {
+    var b = 0;
+    Object.keys(QUEST_DEFINITIONS).forEach(function (id) {
+      var st = questState[id];
+      var u = QUEST_DEFINITIONS[id].rewards && QUEST_DEFINITIONS[id].rewards.unlocks;
+      if (st && st.status === 'completed' && Array.isArray(u) && u.indexOf('xp_bonus_10') >= 0) b += 0.10;
+    });
+    return b;
+  }
+
+  /**
+   * Wuerfelt ein Lohnstueck auf der Stufe des Spielers — mit derselben
+   * Wuerfelmaschine wie jeder Fund, damit es Seltenheit, Affixe und
+   * Mindeststufe traegt wie alles andere und nicht als Sonderling neben der
+   * Beute steht. Story-Stuecke behalten Namen, Bild und ihr Kennzeichen
+   * (signatur: Zielanteil je Wert, wie die wertKurve der Basen).
+   */
+  function _lohnStueckRollen(spec, stufe) {
+    var LS = window.LootSystem;
+    if (!spec || !LS || typeof LS.rollItem !== 'function') return null;
+    var iLevel = Math.max(1, stufe | 0);
+    var it;
+    try {
+      it = LS.rollItem(spec.basis || null, iLevel, spec.tier | 0, null, { ohneDeckel: true });
+    } catch (e) {
+      console.warn('[QuestSystem] Lohnstueck nicht gewuerfelt', e);
+      return null;
+    }
+    if (spec.key) it.key = spec.key;
+    if (spec.iconKey) it.iconKey = spec.iconKey;
+    if (spec.nameKey) {
+      it.nameKey = spec.nameKey;
+      it.name = it._baseName = questSystem.getRewardItemName(spec);
+      it.festerName = true;
+    }
+    if (spec.signatur && typeof LS.affixPunkte === 'function') {
+      Object.keys(spec.signatur).forEach(function (stat) {
+        var p = Math.round(LS.affixPunkte(spec.signatur[stat], iLevel) * 10) / 10;
+        it.baseStats[stat] = p;
+        it[stat] = p;
+      });
+    }
+    if (spec.elaraGift) it.elaraGift = true;
+    if (typeof window.computeItemLevelFromStats === 'function') {
+      it.itemLevel = window.computeItemLevelFromStats(it, iLevel);
+    }
+    if (typeof LS.composeName === 'function') it.displayName = LS.composeName(it);
+    return it;
+  }
+
+  /** Ein kleiner Heiltrank — dasselbe Stueck, das unten faellt. */
+  function _lohnTrank() {
+    if (typeof window.makePotionDrop === 'function') return window.makePotionDrop(1);
+    return { type: 'potion', potionTier: 1, name: 'Heiltrank (S)', nameKey: 'loot.potion.t1',
+      iconKey: 'itPotionMinor', stack: 1 };
+  }
+
+  function _stueckName(it) {
+    if (it && it.nameKey && window.i18n) {
+      var v = window.i18n.t(it.nameKey);
+      if (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) return v;
+    }
+    return (it && (it.displayName || it.name)) || '?';
+  }
+
+  // Lohnstuecke, die weder ins Inventar noch in die Truhe passten. Sie gehen
+  // nicht verloren, sondern warten im Quest-Spielstand auf Platz.
+  var _ausstehend = [];
+
+  function _laufInventar() {
+    if (typeof inventory !== 'undefined' && Array.isArray(inventory)) return inventory;
+    return Array.isArray(window.inventory) ? window.inventory : null;
+  }
+
+  /**
+   * Legt ein Lohnstueck ab: Inventar, sonst Hub-Truhe, sonst Warteliste.
+   * @returns {'inventar'|'truhe'|'ausstehend'}
+   */
+  function _stueckAblegen(it) {
+    var inv = _laufInventar();
+    // Traenke stapeln wie beim Aufheben unten (loot.js collectLoot).
+    if (it.type === 'potion' && inv) {
+      for (var i = 0; i < inv.length; i++) {
+        var s = inv[i];
+        if (s && s.type === 'potion' && s.potionTier === it.potionTier) {
+          s.stack = (s.stack || 1) + (it.stack || 1);
+          return 'inventar';
+        }
+      }
+    }
+    // Ueber InventoryGrid, sonst fehlt die Rasterlage und der Lohn ist im
+    // Inventar unsichtbar.
+    if (inv && window.InventoryGrid && typeof window.InventoryGrid.einfuegen === 'function') {
+      if (window.InventoryGrid.einfuegen(inv, it) >= 0) return 'inventar';
+    } else if (inv) {
+      var frei = inv.findIndex(function (slot) { return !slot; });
+      if (frei >= 0) { inv[frei] = it; return 'inventar'; }
+    }
+    if (window.HubTruhe && typeof window.HubTruhe.einlagern === 'function' && window.HubTruhe.einlagern(it)) {
+      return 'truhe';
+    }
+    _ausstehend.push(it);
+    return 'ausstehend';
+  }
+
+  /**
+   * Versucht, wartende Lohnstuecke abzulegen. Mit einer Szene meldet ein
+   * Toast, was angekommen ist.
+   * @returns {number} wie viele abgelegt wurden
+   */
+  function _ausstehendeAusliefern(scene) {
+    if (!_ausstehend.length) return 0;
+    var warten = _ausstehend;
+    _ausstehend = [];
+    var namen = [];
+    warten.forEach(function (it) {
+      if (_stueckAblegen(it) !== 'ausstehend') namen.push(it.displayName || _stueckName(it));
+    });
+    if (namen.length && scene && window.EventSystem && typeof window.EventSystem.showToast === 'function') {
+      try { window.EventSystem.showToast(scene, _lohnT('quest.lohn.nachgereicht', { name: namen.join(', ') }), 'quest_objective_done'); } catch (e) {}
+    }
+    if (namen.length && typeof refreshInventoryUI === 'function') { try { refreshInventoryUI(); } catch (e) {} }
+    return namen.length;
+  }
+
+  /** Ein Toast je Abgabe — aus completeQuest, damit kein Abgabeweg ihn vergisst. */
+  function _lohnToast(def, vermerk, stufeVorher, hinweise) {
+    try {
+      var teile = lohnTeile(vermerk);
+      var stufe = _spielerStufe();
+      if (stufe > stufeVorher) teile.push(_lohnT('quest.lohn.stufe', { level: stufe }));
+      var unter = [teile.join(' · ')].concat(hinweise || []).filter(Boolean).join('\n');
+      var title = getQuestField(def, 'title') || def.title || '';
+      var scene = _resolveActiveScene();
+      if (scene && window.EventSystem && typeof window.EventSystem.showToast === 'function') {
+        window.EventSystem.showToast(scene, _lohnT('quest.lohn.toast', { title: title }),
+          'quest_objective_done', false, unter ? { unter: unter } : undefined);
+      }
+    } catch (e) {
+      try { console.warn('[QuestSystem] Lohn-Toast fehlgeschlagen', e); } catch (_) {}
+    }
+  }
+
   function completeQuest(questId) {
     if (!isQuestReadyToComplete(questId)) return false;
     var def = QUEST_DEFINITIONS[questId];
@@ -2021,92 +2388,76 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       questState[questId].abgeschlossen = (questState[questId].abgeschlossen || 0) + 1;
     }
 
-    // Grant rewards
-    var rewards = def.rewards;
-    if (rewards.xp) {
+    // Lohn: skaliert im Moment der Abgabe, dann einzeln vergeben. Was
+    // tatsaechlich ankam, steht im Auftrag (Journal) und im Toast.
+    _ausstehendeAusliefern();
+    var rewards = def.rewards || {};
+    var stufeVorher = _spielerStufe();
+    var lohn = getQuestLohn(def);
+    var vermerk = { xp: lohn.xp, gold: lohn.gold, mat: lohn.mat, druckblaetter: lohn.druckblaetter,
+      fragments: lohn.fragments, potions: lohn.potions, unlocks: lohn.unlocks.slice(), items: [] };
+    var hinweise = [];
+    if (lohn.xp > 0) {
       // Über addXP vergeben, damit Level-Up + window-Spiegelung + HUD korrekt
       // laufen. Früher wurde nur window.playerXP hochgezählt -> nie ein
       // Level-Up ausgelöst und die Anzeige lief über (z.B. 290/136).
-      if (typeof addXP === 'function') addXP(rewards.xp);
-      else if (typeof window !== 'undefined' && typeof window.addXP === 'function') window.addXP(rewards.xp);
-      else if (typeof window !== 'undefined') { window.playerXP = (window.playerXP || 0) + rewards.xp; }
-      console.log('[QuestSystem] Granted ' + rewards.xp + ' XP');
+      if (typeof addXP === 'function') addXP(lohn.xp);
+      else if (typeof window !== 'undefined' && typeof window.addXP === 'function') window.addXP(lohn.xp);
+      else if (typeof window !== 'undefined') { window.playerXP = (window.playerXP || 0) + lohn.xp; }
     }
-    // #68: Gold. Stand als Feld in den Daten (buerger_hund), wurde aber nie
-    // ausgezahlt — LootSystem.grantGold ist der einzige Weg, auf dem Gold beim
+    // #68: LootSystem.grantGold ist der einzige Weg, auf dem Gold beim
     // Spieler ankommt.
-    if (typeof rewards.gold === 'number' && rewards.gold > 0
-        && window.LootSystem && typeof window.LootSystem.grantGold === 'function') {
-      try {
-        window.LootSystem.grantGold(rewards.gold | 0);
-        console.log('[QuestSystem] Granted ' + (rewards.gold | 0) + ' Gold');
-      } catch (_) {}
+    if (lohn.gold > 0 && window.LootSystem && typeof window.LootSystem.grantGold === 'function') {
+      try { window.LootSystem.grantGold(lohn.gold); } catch (_) {}
     }
     if (rewards.materials) {
       Object.keys(rewards.materials).forEach(function (key) {
         if (typeof changeMaterialCount === 'function') {
           changeMaterialCount(key, rewards.materials[key]);
-          console.log('[QuestSystem] Granted ' + rewards.materials[key] + ' ' + key);
         } else if (typeof materialCounts !== 'undefined') {
           materialCounts[key] = (materialCounts[key] || 0) + rewards.materials[key];
-          console.log('[QuestSystem] Granted ' + rewards.materials[key] + ' ' + key);
         }
       });
     }
-    if (rewards.items && Array.isArray(rewards.items)) {
-      rewards.items.forEach(function (item) {
-        if (typeof inventory !== 'undefined' && Array.isArray(inventory)) {
-          var kopie = Object.assign({}, item);
-          // Ueber InventoryGrid, sonst fehlt die Rasterlage und der Lohn ist
-          // im Inventar unsichtbar. Und: bei vollem Inventar NICHT mehr Platz 0
-          // ueberschreiben — das loeschte stillschweigend ein anderes Stueck.
-          var abgelegt = false;
-          if (window.InventoryGrid && typeof window.InventoryGrid.einlagern === 'function') {
-            abgelegt = window.InventoryGrid.einlagern(kopie) >= 0;
-          } else {
-            var idx = inventory.findIndex(function (slot) { return !slot; });
-            if (idx >= 0) { inventory[idx] = kopie; abgelegt = true; }
-          }
-          if (!abgelegt) {
-            console.warn('[QuestSystem] Inventar voll — Belohnung nicht vergeben: '
-              + (item.name || item.key || '?'));
-          }
-          if (typeof refreshInventoryUI === 'function') refreshInventoryUI();
-        }
+    var stuecke = [];
+    if (Array.isArray(rewards.items)) {
+      rewards.items.forEach(function (spec) {
+        var it = _lohnStueckRollen(spec, stufeVorher);
+        if (it) stuecke.push(it);
       });
     }
-    if (typeof rewards.druckblaetter === 'number' && rewards.druckblaetter > 0
+    for (var _t = 0; _t < (lohn.potions | 0); _t++) stuecke.push(_lohnTrank());
+    stuecke.forEach(function (it) {
+      if (it.type !== 'potion') {
+        vermerk.items.push({ name: it.displayName || it.name, nameKey: it.festerName ? it.nameKey : null, tier: it.tier | 0 });
+      }
+      var wohin = _stueckAblegen(it);
+      var name = it.displayName || _stueckName(it);
+      if (wohin === 'truhe') hinweise.push(_lohnT('quest.lohn.truhe', { name: name }));
+      else if (wohin === 'ausstehend') hinweise.push(_lohnT('quest.lohn.ausstehend', { name: name }));
+    });
+    if (stuecke.length && typeof refreshInventoryUI === 'function') {
+      try { refreshInventoryUI(); } catch (_) {}
+    }
+    if (lohn.druckblaetter > 0
         && window.PrintingHouse && typeof window.PrintingHouse.addDruckblaetter === 'function') {
-      try {
-        window.PrintingHouse.addDruckblaetter(rewards.druckblaetter | 0);
-        console.log('[QuestSystem] Granted ' + (rewards.druckblaetter | 0) + ' Druckblätter');
-      } catch (_) {}
+      try { window.PrintingHouse.addDruckblaetter(lohn.druckblaetter); } catch (_) {}
     }
-    if (rewards.unlocks && Array.isArray(rewards.unlocks)) {
-      rewards.unlocks.forEach(function (unlock) {
-        if (!window._questUnlocks) window._questUnlocks = {};
-        window._questUnlocks[unlock] = true;
-        console.log('[QuestSystem] Unlocked:', unlock);
-        // Apply XP bonus immediately if applicable
-        if (unlock === 'xp_bonus_10') {
-          window._questXpBonus = (window._questXpBonus || 0) + 0.10;
-          console.log('[QuestSystem] XP bonus now:', window._questXpBonus);
-        }
-      });
+    if (lohn.unlocks.length) {
+      if (!window._questUnlocks) window._questUnlocks = {};
+      lohn.unlocks.forEach(function (unlock) { window._questUnlocks[unlock] = true; });
     }
-
-    // Feature 050: Knowledge-Tree fragment reward dispatcher (C-05). Used
-    // by Q1 / Q5 / Q6 to grant lore-fragment currency via the canonical
-    // KnowledgeTree.addFragments() entry point.
-    if (rewards && typeof rewards.fragments === 'number' && rewards.fragments > 0
+    // Feature 050: Wissens-Fragmente ueber den einen Eingang des Wissensbaums.
+    if (lohn.fragments > 0
         && window.KnowledgeTree && typeof window.KnowledgeTree.addFragments === 'function') {
       try {
-        window.KnowledgeTree.addFragments(rewards.fragments);
-        console.log('[QuestSystem] Granted ' + rewards.fragments + ' Knowledge-Tree fragment(s)');
+        window.KnowledgeTree.addFragments(lohn.fragments);
       } catch (err) {
         console.warn('[QuestSystem] fragment grant failed', err);
       }
     }
+    questState[questId].lohn = vermerk;
+    _lohnToast(def, vermerk, stufeVorher, hinweise);
 
     // Feature 050 FR-08: Q6 completion advances the story arc to Act 2
     // (storySystem index 2 = 'erste_risse' — the "first cracks" beat that
@@ -2228,7 +2579,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     return {
       storyVersion: STORY_VERSION,
       quests: JSON.parse(JSON.stringify(questState)),
-      flags: JSON.parse(JSON.stringify(questFlags))
+      flags: JSON.parse(JSON.stringify(questFlags)),
+      ausstehend: JSON.parse(JSON.stringify(_ausstehend))
     };
   }
 
@@ -2236,6 +2588,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     if (!data || typeof data !== 'object') return;
     _initQuestState();
     questFlags = {};
+    // Wartende Lohnstuecke gehoeren zum Charakter, nicht zur Story — sie
+    // ueberstehen auch den Altstand-Reset unten.
+    _ausstehend = Array.isArray(data.ausstehend) ? data.ausstehend.filter(Boolean) : [];
     // Feature 062: Altstand-Reset. Ein Stand mit fehlender oder älterer
     // storyVersion trägt die inkompatible v3-Struktur (andere Quest-IDs,
     // entfernte final_truth). Statt fragiler Teilmigration: Story-/Quest-/Flag-
@@ -2392,6 +2747,15 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     areAllQuestChainsComplete: areAllQuestChainsComplete,
     isQuestReadyToComplete: isQuestReadyToComplete,
     completeQuest: completeQuest,
+    // Lohn: skaliert, als Zeilen, und was ein Auftrag tatsaechlich brachte.
+    LOHN_ANTEIL: LOHN_ANTEIL,
+    lohnBerechnen: lohnBerechnen,
+    getQuestLohn: getQuestLohn,
+    lohnTeile: lohnTeile,
+    getErhaltenerLohn: getErhaltenerLohn,
+    getXpBonus: getXpBonus,
+    ausstehendeAusliefern: _ausstehendeAusliefern,
+    getAusstehend: function () { return _ausstehend.slice(); },
     setFlag: setFlag,
     hasFlag: hasFlag,
     getFlags: getFlags,

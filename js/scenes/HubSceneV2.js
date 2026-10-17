@@ -580,6 +580,11 @@ class HubSceneV2 extends Phaser.Scene {
     // Initial render so quest indicators show the correct state at scene entry
     this._brettZeichenAnlegen();
     this._refreshQuestIndicators();
+    // Questlohn, der beim Abgeben keinen Platz fand: nach jedem Lauf ist das
+    // Inventar wieder leerer, also hier nachreichen.
+    if (window.questSystem && typeof window.questSystem.ausstehendeAusliefern === 'function') {
+      try { window.questSystem.ausstehendeAusliefern(this); } catch (e) { /* nie den Hub brechen */ }
+    }
 
     // Check for pending story events and show overlay
     this._checkStoryEvent();
@@ -1798,16 +1803,9 @@ class HubSceneV2 extends Phaser.Scene {
 
       // Choice page
       const chainNum = questData.chain || 1;
-      const rewardParts = [];
-      if (questData.rewards.xp) rewardParts.push(questData.rewards.xp + ' XP');
-      const _matName = (window.i18n ? window.i18n.t('inventory.material.MAT') : 'Eisenbrocken');
-      if (questData.rewards.materials && questData.rewards.materials.MAT) rewardParts.push(questData.rewards.materials.MAT + ' ' + _matName);
-      if (questData.rewards.items && questData.rewards.items.length > 0) rewardParts.push(questData.rewards.items[0].name);
-      if (questData.rewards.unlocks) {
-        questData.rewards.unlocks.forEach(u => {
-          rewardParts.push(_HUB_T('story.unlock.' + u));
-        });
-      }
+      // Mit den Werten, die der Spieler bei der Abgabe JETZT bekaeme.
+      const rewardParts = (qs && typeof qs.lohnTeile === 'function')
+        ? qs.lohnTeile(qs.getQuestLohn(questData.id)) : [];
       const rewardStr = rewardParts.length > 0 ? _HUB_T('hub.dialog.npc_quest.reward_label', { rewards: rewardParts.join(', ') }) : '';
 
       pages.push({
@@ -1869,11 +1867,8 @@ class HubSceneV2 extends Phaser.Scene {
       }
 
       // Reward page
-      const rewardParts = [];
-      const _matName = (window.i18n ? window.i18n.t('inventory.material.MAT') : 'Eisenbrocken');
-      if (questData.rewards && questData.rewards.xp) rewardParts.push(questData.rewards.xp + ' XP');
-      if (questData.rewards && questData.rewards.materials && questData.rewards.materials.MAT) rewardParts.push(questData.rewards.materials.MAT + ' ' + _matName);
-      if (questData.rewards && questData.rewards.items && questData.rewards.items.length > 0) rewardParts.push(questData.rewards.items[0].name);
+      const rewardParts = (qs && typeof qs.lohnTeile === 'function')
+        ? qs.lohnTeile(qs.getQuestLohn(questData.id)) : [];
       pages.push({
         text: _HUB_T('hub.dialog.npc_quest.reward_intro', { rewards: rewardParts.join('\n') }),
         choices: [

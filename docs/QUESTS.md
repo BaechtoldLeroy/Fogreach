@@ -127,7 +127,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `fetch` → `sealed_bundle` ×1
 - **Vorbedingung:** keine
-- **Belohnung:** 25 XP · 3 MAT
+- **Belohnung:** mind. 25 XP (bzw. 40 % des Stufenbedarfs, Neben) · 3 MAT
 
 **Angebot**
 
@@ -154,7 +154,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `kill` → `enemy` ×10
 - **Vorbedingung:** keine
-- **Belohnung:** 30 XP · 5 MAT · 2 Druckblätter
+- **Belohnung:** mind. 30 XP (bzw. 40 % des Stufenbedarfs, Neben) · 5 MAT · 2 Druckblätter
 
 **Angebot**
 
@@ -181,7 +181,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `system` → `upgrade` ×1
 - **Vorbedingung:** Säuberung der Keller
-- **Belohnung:** 40 XP
+- **Belohnung:** mind. 40 XP (bzw. 40 % des Stufenbedarfs, Neben) · 8 MAT
 
 **Angebot**
 
@@ -208,7 +208,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `system` → `edikt` ×1
 - **Vorbedingung:** Säuberung der Keller
-- **Belohnung:** 40 XP
+- **Belohnung:** mind. 40 XP (bzw. 40 % des Stufenbedarfs, Neben) · 2 Druckblätter
 
 **Angebot**
 
@@ -235,7 +235,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `system` → `markt` ×1
 - **Vorbedingung:** Säuberung der Keller
-- **Belohnung:** 40 XP
+- **Belohnung:** mind. 40 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 30 Gold (wächst mit der Tiefe ab 1)
 
 **Angebot**
 
@@ -262,7 +262,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `system` → `talent` ×1; `system` → `loadout` ×1
 - **Vorbedingung:** Säuberung der Keller
-- **Belohnung:** 40 XP
+- **Belohnung:** mind. 40 XP (bzw. 40 % des Stufenbedarfs, Neben) · 1 Heiltrank
 
 **Angebot**
 
@@ -291,7 +291,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `system` → `charakterwerte` ×1
 - **Vorbedingung:** Säuberung der Keller
-- **Belohnung:** 40 XP
+- **Belohnung:** mind. 40 XP (bzw. 40 % des Stufenbedarfs, Neben) · 1 Heiltrank
 
 **Angebot**
 
@@ -318,7 +318,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `fetch` → `journal_fragment` ×1
 - **Vorbedingung:** Säuberung der Keller **+** Keller-Patrouille
-- **Belohnung:** 50 XP · 1 Wissens-Fragment(e)
+- **Belohnung:** mind. 50 XP (bzw. 100 % des Stufenbedarfs, Boss) · 1 Wissens-Fragment(e)
 
 **Angebot**
 
@@ -347,7 +347,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `explore` → `room` ×6
 - **Vorbedingung:** keine
-- **Belohnung:** 70 XP
+- **Belohnung:** mind. 70 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 140 Gold (wächst mit der Tiefe ab 4)
 
 **Angebot**
 
@@ -372,7 +372,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `kill` → `enemy` ×12
 - **Vorbedingung:** keine
-- **Belohnung:** 60 XP
+- **Belohnung:** mind. 60 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 120 Gold (wächst mit der Tiefe ab 3)
 
 **Angebot**
 
@@ -397,7 +397,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `explore` → `room` ×3
 - **Vorbedingung:** keine
-- **Belohnung:** 40 XP · 1 Druckblätter
+- **Belohnung:** mind. 40 XP (bzw. 40 % des Stufenbedarfs, Neben) · 1 Druckblätter
 
 **Angebot**
 
@@ -422,7 +422,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `system` → `truhe` ×1
 - **Vorbedingung:** Der erste Schliff
-- **Belohnung:** 40 XP
+- **Belohnung:** mind. 40 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 30 Gold (wächst mit der Tiefe ab 1)
 
 **Angebot**
 
@@ -449,7 +449,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `system` → `wissen` ×1
 - **Vorbedingung:** Der erste Schliff **+** Die verschwundene Tochter
-- **Belohnung:** 40 XP
+- **Belohnung:** mind. 40 XP (bzw. 40 % des Stufenbedarfs, Neben) · 1 Wissens-Fragment(e)
 
 **Angebot**
 
@@ -476,7 +476,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `system` → `haendler` ×1
 - **Vorbedingung:** Was unter dem Tisch liegt
-- **Belohnung:** 40 XP
+- **Belohnung:** mind. 40 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 45 Gold (wächst mit der Tiefe ab 1)
 
 **Angebot**
 
@@ -503,7 +503,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `dungeon_run` → `dungeon_complete` ×2
 - **Vorbedingung:** keine
-- **Belohnung:** 110 XP
+- **Belohnung:** mind. 110 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 220 Gold (wächst mit der Tiefe ab 8)
 
 **Angebot**
 
@@ -528,7 +528,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `kill` → `elite_enemy` ×3
 - **Vorbedingung:** keine
-- **Belohnung:** 90 XP
+- **Belohnung:** mind. 90 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 200 Gold (wächst mit der Tiefe ab 6)
 
 **Angebot**
 
@@ -553,7 +553,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `wave` → `reach_wave` ×12
 - **Vorbedingung:** keine
-- **Belohnung:** 100 XP
+- **Belohnung:** mind. 100 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 180 Gold (wächst mit der Tiefe ab 6)
 
 **Angebot**
 
@@ -578,7 +578,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `explore` → `room` ×5
 - **Vorbedingung:** keine
-- **Belohnung:** 120 XP · 4 Druckblätter
+- **Belohnung:** mind. 120 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 150 Gold (wächst mit der Tiefe ab 10) · 4 Druckblätter
 
 **Angebot**
 
@@ -603,7 +603,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `kill` → `elite_enemy` ×4
 - **Vorbedingung:** keine
-- **Belohnung:** 130 XP
+- **Belohnung:** mind. 130 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 160 Gold (wächst mit der Tiefe ab 12)
 
 **Angebot**
 
@@ -630,7 +630,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `fetch` → `verification_seal` ×1
 - **Vorbedingung:** Die verschwundene Tochter
-- **Belohnung:** 75 XP
+- **Belohnung:** mind. 75 XP (bzw. 70 % des Stufenbedarfs, Story)
 
 **Angebot**
 
@@ -657,7 +657,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `kill` → `elite_enemy` ×3
 - **Vorbedingung:** Die verschwundene Tochter
-- **Belohnung:** 90 XP
+- **Belohnung:** mind. 90 XP (bzw. 70 % des Stufenbedarfs, Story)
 
 **Angebot**
 
@@ -684,7 +684,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `kill` → `enemy` ×10
 - **Vorbedingung:** Die verschwundene Tochter
-- **Belohnung:** 75 XP
+- **Belohnung:** mind. 75 XP (bzw. 70 % des Stufenbedarfs, Story)
 
 **Angebot**
 
@@ -711,7 +711,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `fetch` → `council_document` ×1
 - **Vorbedingung:** Die verschwundene Tochter
-- **Belohnung:** 100 XP · 1 Wissens-Fragment(e)
+- **Belohnung:** mind. 100 XP (bzw. 70 % des Stufenbedarfs, Story) · 1 Wissens-Fragment(e)
 
 **Angebot**
 
@@ -738,7 +738,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `observe` → `oeffentliche_sitzung` ×1; `observe` → `collusion_reveal_seen` ×1
 - **Vorbedingung:** Verifikation des Magistrats **+** Reinigung der unteren Kammern **+** Patrouillen-Erweiterung **+** Das Ratsdokument **+** Das Edikt der Woche
-- **Belohnung:** 150 XP · 1 Wissens-Fragment(e)
+- **Belohnung:** mind. 150 XP (bzw. 100 % des Stufenbedarfs, Boss) · 1 Wissens-Fragment(e)
 
 **Angebot**
 
@@ -761,7 +761,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `observe` → `edikte_gedruckt` ×1; `observe` → `edikte_plakatiert` ×1
 - **Vorbedingung:** Die verschwundene Tochter
-- **Belohnung:** 60 XP
+- **Belohnung:** mind. 60 XP (bzw. 70 % des Stufenbedarfs, Story)
 
 **Angebot**
 
@@ -786,7 +786,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `explore` → `room` ×3
 - **Vorbedingung:** keine
-- **Belohnung:** 60 XP · Info: Maras Netzwerk enthüllt
+- **Belohnung:** mind. 60 XP (bzw. 70 % des Stufenbedarfs, Story) · Info: Maras Netzwerk enthüllt
 
 **Angebot**
 
@@ -813,7 +813,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `fetch` → `document` ×2
 - **Vorbedingung:** keine
-- **Belohnung:** 100 XP · schaltet frei: elara_trust
+- **Belohnung:** mind. 100 XP (bzw. 70 % des Stufenbedarfs, Story) · schaltet frei: elara_trust
 
 **Angebot**
 
@@ -838,7 +838,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `fetch` → `seized_writings` ×3
 - **Vorbedingung:** keine
-- **Belohnung:** 60 XP · 2 Druckblätter
+- **Belohnung:** mind. 60 XP (bzw. 70 % des Stufenbedarfs, Story) · 2 Druckblätter
 
 **Angebot**
 
@@ -865,7 +865,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `kill` → `elite_enemy` ×5
 - **Vorbedingung:** keine
-- **Belohnung:** 80 XP
+- **Belohnung:** mind. 80 XP (bzw. 70 % des Stufenbedarfs, Story)
 
 **Angebot**
 
@@ -890,7 +890,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `explore` → `room` ×3
 - **Vorbedingung:** Beschlagnahme
-- **Belohnung:** 70 XP · 1 Druckblätter
+- **Belohnung:** mind. 70 XP (bzw. 70 % des Stufenbedarfs, Story) · 1 Druckblätter
 
 **Angebot**
 
@@ -917,7 +917,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `boss_kill` → `kettenmeister` ×1
 - **Vorbedingung:** Die Späherin **+** Der Konvoi
-- **Belohnung:** 200 XP
+- **Belohnung:** mind. 200 XP (bzw. 100 % des Stufenbedarfs, Boss) · **Ausrüstungsstück** (selten, auf Spielerstufe gewürfelt)
 
 **Angebot**
 
@@ -940,7 +940,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `fetch` → `interrogation_record` ×2
 - **Vorbedingung:** Die Späherin
-- **Belohnung:** 80 XP · 1 Wissens-Fragment(e)
+- **Belohnung:** mind. 80 XP (bzw. 70 % des Stufenbedarfs, Story) · 1 Wissens-Fragment(e)
 
 **Angebot**
 
@@ -963,7 +963,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `kill` → `enemy` ×8
 - **Vorbedingung:** keine
-- **Belohnung:** 70 XP
+- **Belohnung:** mind. 70 XP (bzw. 40 % des Stufenbedarfs, Neben)
 
 **Angebot**
 
@@ -986,7 +986,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `observe` → `convoy_intel` ×1
 - **Vorbedingung:** Die Späherin
-- **Belohnung:** 90 XP · 2 Druckblätter
+- **Belohnung:** mind. 90 XP (bzw. 70 % des Stufenbedarfs, Story) · 2 Druckblätter
 
 **Angebot**
 
@@ -1013,7 +1013,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `fetch` → `print_plate` ×5
 - **Vorbedingung:** keine
-- **Belohnung:** 100 XP · 20 MAT
+- **Belohnung:** mind. 100 XP (bzw. 70 % des Stufenbedarfs, Story) · 20 MAT
 
 **Angebot**
 
@@ -1038,7 +1038,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `fetch` → `hundehalsband` ×1
 - **Vorbedingung:** keine
-- **Belohnung:** 80 XP
+- **Belohnung:** mind. 80 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 40 Gold (wächst mit der Tiefe ab 15)
 
 **Angebot**
 
@@ -1061,7 +1061,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `boss_kill` → `zeremonienmeister` ×1
 - **Vorbedingung:** Elaras Geheimnis
-- **Belohnung:** 150 XP · **Ritualamulett** (Episch, iLvl 12)
+- **Belohnung:** mind. 150 XP (bzw. 100 % des Stufenbedarfs, Boss) · **Ritualamulett** (selten, auf Spielerstufe gewürfelt)
 
 **Angebot**
 
@@ -1086,7 +1086,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `dialogue` → `elara_gift` ×1
 - **Vorbedingung:** Die Ritualkammer
-- **Belohnung:** **Elaras Klinge** (Legendär, iLvl 15)
+- **Belohnung:** mind. 100 XP (bzw. 70 % des Stufenbedarfs, Story) · **Elaras Klinge** (legendär, auf Spielerstufe gewürfelt)
 
 **Angebot**
 
@@ -1111,7 +1111,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `observe` → `escort_route` ×1
 - **Vorbedingung:** keine
-- **Belohnung:** 90 XP
+- **Belohnung:** mind. 90 XP (bzw. 40 % des Stufenbedarfs, Neben)
 
 **Angebot**
 
@@ -1134,7 +1134,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `explore` → `room` ×2
 - **Vorbedingung:** Überwachung
-- **Belohnung:** 120 XP · 1 Wissens-Fragment(e)
+- **Belohnung:** mind. 120 XP (bzw. 70 % des Stufenbedarfs, Story) · 1 Wissens-Fragment(e)
 
 **Angebot**
 
@@ -1159,7 +1159,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `fetch` → `memory_shard` ×3
 - **Vorbedingung:** Zweifel der Schmiedin
-- **Belohnung:** 150 XP · 1 Wissens-Fragment(e)
+- **Belohnung:** mind. 150 XP (bzw. 70 % des Stufenbedarfs, Story) · 1 Wissens-Fragment(e)
 
 **Angebot**
 
@@ -1182,7 +1182,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `observe` → `erster_riss_gesehen` ×1
 - **Vorbedingung:** Verbotene Wahrheiten **+** Die Ritualkammer
-- **Belohnung:** 200 XP · 2 Wissens-Fragment(e)
+- **Belohnung:** mind. 200 XP (bzw. 70 % des Stufenbedarfs, Story) · 2 Wissens-Fragment(e)
 
 **Angebot**
 
@@ -1205,7 +1205,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `kill` → `elite_enemy` ×3
 - **Vorbedingung:** Die verseuchte Kammer **+** Elaras zweite Wahrheit
-- **Belohnung:** 200 XP
+- **Belohnung:** mind. 200 XP (bzw. 100 % des Stufenbedarfs, Boss)
 
 **Angebot**
 
@@ -1228,7 +1228,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `observe` → `archive_record` ×1
 - **Vorbedingung:** Der Konvoi
-- **Belohnung:** 110 XP · 1 Wissens-Fragment(e)
+- **Belohnung:** mind. 110 XP (bzw. 70 % des Stufenbedarfs, Story) · 1 Wissens-Fragment(e)
 
 **Angebot**
 
@@ -1257,7 +1257,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `dungeon_run` → `dungeon_complete` ×3
 - **Vorbedingung:** Verbotene Wahrheiten
-- **Belohnung:** 200 XP · schaltet frei: xp_bonus_10
+- **Belohnung:** mind. 200 XP (bzw. 70 % des Stufenbedarfs, Story) · schaltet frei: xp_bonus_10
 
 **Angebot**
 
@@ -1282,7 +1282,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `boss_kill` → `schattenrat` ×1
 - **Vorbedingung:** keine
-- **Belohnung:** 250 XP
+- **Belohnung:** mind. 250 XP (bzw. 150 % des Stufenbedarfs, Finale) · **Ausrüstungsstück** (selten, auf Spielerstufe gewürfelt)
 
 **Angebot**
 
@@ -1305,7 +1305,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `craft` → `craft_item` ×3
 - **Vorbedingung:** Zweifel der Schmiedin
-- **Belohnung:** 150 XP
+- **Belohnung:** mind. 150 XP (bzw. 70 % des Stufenbedarfs, Story)
 
 **Angebot**
 
@@ -1330,7 +1330,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `wave` → `reach_wave` ×30
 - **Vorbedingung:** Die Quelle
-- **Belohnung:** 300 XP
+- **Belohnung:** mind. 300 XP (bzw. 100 % des Stufenbedarfs, Boss) · **Ausrüstungsstück** (selten, auf Spielerstufe gewürfelt)
 
 **Angebot**
 
@@ -1355,7 +1355,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `fetch` → `eichgewicht` ×1
 - **Vorbedingung:** keine
-- **Belohnung:** 150 XP · 15 MAT
+- **Belohnung:** mind. 150 XP (bzw. 40 % des Stufenbedarfs, Neben) · 15 MAT
 
 **Angebot**
 
@@ -1378,7 +1378,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `dialogue` → `press_decision` ×1
 - **Vorbedingung:** Die Quelle
-- **Belohnung:** 500 XP · schaltet frei: story_ending
+- **Belohnung:** mind. 500 XP (bzw. 150 % des Stufenbedarfs, Finale) · schaltet frei: story_ending
 
 **Angebot**
 
@@ -1401,7 +1401,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 - **Ziel:** `observe` → `informant_id` ×1
 - **Vorbedingung:** Das versiegelte Archiv **+** Der Bruch
-- **Belohnung:** 120 XP · 1 Wissens-Fragment(e)
+- **Belohnung:** mind. 120 XP (bzw. 70 % des Stufenbedarfs, Story) · 1 Wissens-Fragment(e)
 
 **Angebot**
 

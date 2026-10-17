@@ -141,14 +141,18 @@ EINFUEHRUNGEN.forEach(({ ziel, quest, npc, vorher, danach }) => {
   });
 });
 
-test('Die Belohnung ist klein — Gold und Erfahrung, sonst nichts', () => {
+test('Die Belohnung ist klein — Erfahrung und genau eine passende Gabe', () => {
   // Klein genug, dass niemand sie abarbeiten MUSS, gross genug, sie mitzunehmen.
+  // Die Gabe passt zum System (Schmiede: Eisenbrocken, Presse: Druckblaetter …),
+  // siehe tests/questLohn.test.js.
   const qs = frisch();
   EINFUEHRUNGEN.forEach(({ quest }) => {
     const r = qs.QUEST_DEFINITIONS[quest].rewards || {};
-    assert.deepStrictEqual(Object.keys(r).sort(), ['gold', 'xp'],
-      quest + ' belohnt mehr als Gold und Erfahrung: ' + Object.keys(r).join(','));
-    assert.ok(r.gold <= 50 && r.xp <= 60, quest + ' belohnt zu gut');
+    const gaben = Object.keys(r).filter((k) => k !== 'xp');
+    assert.strictEqual(gaben.length, 1, quest + ' belohnt mit ' + gaben.join(','));
+    assert.ok(r.xp <= 60, quest + ' belohnt zu gut');
+    assert.ok(!r.gold || r.gold <= 50, quest + ' zahlt zu viel Gold');
+    assert.ok(!r.items, quest + ' verschenkt Ausruestung');
   });
 });
 

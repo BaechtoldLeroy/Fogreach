@@ -4784,6 +4784,9 @@ function zeigeKritText(scene, x, y, schaden) {
   } catch (e) { /* rein optisch */ }
 }
 
+// Bruchteil des Questbonus, der noch keinen ganzen Erfahrungspunkt ergab.
+let _questXpRest = 0;
+
 function addXP(amount = 1) {
   // Issue #26 — Knowledge-Tree xpMult wraps the incoming amount once at the
   // function boundary so every call site (lore-fragment, enemy kill, quest
@@ -4797,6 +4800,16 @@ function addXP(amount = 1) {
   if (window.LootSystem && typeof window.LootSystem.getBonus === 'function') {
     const _xpFind = Math.max(0, window.LootSystem.getBonus('xp_gain') || 0);
     if (_xpFind > 0) amount = Math.round(amount * (1 + _xpFind));
+  }
+  // Freigeschalteter Questbonus ("+10 % XP", Die Pamphlete). Der Bruchteil
+  // wird mitgefuehrt: Kills geben je 1 XP, gerundet bliebe der Bonus dort
+  // wirkungslos.
+  const _questBonus = (window.questSystem && typeof window.questSystem.getXpBonus === 'function')
+    ? Math.max(0, window.questSystem.getXpBonus() || 0) : 0;
+  if (_questBonus > 0) {
+    const _roh = amount * (1 + _questBonus) + _questXpRest;
+    amount = Math.floor(_roh + 1e-9);
+    _questXpRest = Math.max(0, _roh - amount);
   }
   // Run-summary: track the scaled amount (what the player actually got).
   if (window.runStats) window.runStats.xpGained += amount;

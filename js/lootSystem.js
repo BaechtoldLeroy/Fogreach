@@ -1533,6 +1533,9 @@ if (window.i18n) {
     } else {
       baseName = item._baseName || item.name || (window.i18n ? window.i18n.t('loot.fallback.item') : 'Item');
     }
+    // Story-Lohn (Elaras Klinge, Ritualamulett) heisst, wie er heisst — die
+    // Affixe stehen im Tooltip, nicht im Namen.
+    if (item.festerName) return baseName;
     if (!item.tier || item.tier === 0 || !item.affixes || item.affixes.length === 0) {
       return baseName;
     }
