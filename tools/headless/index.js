@@ -548,7 +548,7 @@ function decorate(h) {
        *   Tuer  — [E] oeffnet sie. Vorher wurde nur gedrueckt, wenn der
        *           aktuelle WEGPUNKT eine Tuer war; liegt sie zwischen zwei
        *           Wegpunkten, lief der Bot dagegen. Gemessen: 500 Runden auf
-       *           demselben Pixel gegen proc_door_closed_192x24.
+       *           demselben Pixel gegen eine 192 px-Tuer.
        *   Gegner— schubst physisch (main.js:2875 Kollider), ist aber ausserhalb
        *           von 60 px kein Angriffsziel. Gemessen: haengengeblieben mit
        *           einem Gegner auf 73 px, ohne dass ihn etwas beruehrte.

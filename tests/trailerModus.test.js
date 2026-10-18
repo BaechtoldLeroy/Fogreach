@@ -136,7 +136,7 @@ for (const n of Object.keys(ERWARTET)) {
 // Einstellung nicht anhalten: sie laeuft ohne Taste durch.
 // (Der Testkopf schaltet die Zwischenszene sonst ab; die Einstellung zeigt
 // sie bewusst und schaltet sie fuer den Kettenmeister selbst ein.)
-const STOERER = `function (o) { return o && o.texture && /^(stair|proc_door|door)/i.test(o.texture.key); }`;
+const STOERER = `function (o) { return o && o.texture && /^(stair|tor_neu|door)/i.test(o.texture.key); }`;
 function bossBild() {
   return H.run(`(function () {
     var gs = window.game.scene.getScene('GameScene');

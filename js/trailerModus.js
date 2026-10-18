@@ -643,7 +643,7 @@
   function bildStoerer(gs) {
     var out = [];
     ((gs.children && gs.children.list) || []).forEach(function (o) {
-      if (o && o.visible && o.texture && /^(stair|proc_door|door)/i.test(o.texture.key)) out.push({ x: o.x, y: o.y });
+      if (o && o.visible && o.texture && /^(stair|tor_neu|door)/i.test(o.texture.key)) out.push({ x: o.x, y: o.y });
     });
     (gs._doors || []).forEach(function (d) { if (d && d.active !== false) out.push({ x: d.x, y: d.y }); });
     return out;
@@ -1024,7 +1024,7 @@
       // Treppen und Tueren kommen in dieser Einstellung gar nicht ins Bild —
       // auch nicht am Rand (die Treppe ist der Durchgang des Raums).
       ((gs.children && gs.children.list) || []).forEach(function (o) {
-        if (o && o.texture && /^(stair|proc_door|door)/i.test(o.texture.key)) {
+        if (o && o.texture && /^(stair|tor_neu|door)/i.test(o.texture.key)) {
           kameras(gs).forEach(function (k) { try { k.ignore(o); } catch (e) {} });
           o.__trailerStoerer = true;
         }

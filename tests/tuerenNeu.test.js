@@ -1,10 +1,10 @@
-// tests/tuerenNeu.test.js — Die neuen Kellertore (Vorschau ?debug=1&tueren=neu).
+// tests/tuerenNeu.test.js — Die Kellertore.
 //
 // Eichentor mit Messing und Kette aus Pixelbildern (assets/sprites/tueren/,
 // tools/tuerenBauen.js), je Laenge (4-6 Kacheln) und Richtung aus Stuecken
 // zusammengesetzt, vier Bilder von zu bis offen. Das Bild ist 64 px tief, der
 // Koerper bleibt der alte 24 px-Riegel: Weg, Sicht und [E] wie vorher.
-// Ohne Flagge bleiben die gezeichneten Tueren.
+// Sie brauchen keine Flagge; die alten gezeichneten Tueren gibt es nicht mehr.
 
 const { test, before, after, describe } = require('node:test');
 const assert = require('node:assert');
@@ -54,10 +54,10 @@ function tuerWahl(o) {
   })()`;
 }
 
-describe('mit ?tueren=neu', () => {
+describe('Kellertore', () => {
   let H = null;
   before(async () => {
-    H = await launchDungeon({ depth: 3, zusatz: '&debug=1&tueren=neu&room=bsp' });
+    H = await launchDungeon({ depth: 3, zusatz: '&room=bsp' });
     assert.ok(raumMitToren(H) > 0, 'kein Raum mit Toren beider Richtungen');
     gegnerWeg(H);
     for (let i = 0; i < 10; i++) { H.step(2); await flush(); }
@@ -178,42 +178,16 @@ describe('mit ?tueren=neu', () => {
     });
   }
 
-  test('Flagge weg (DebugGate gestubbt): neue Tuer wird die alte Zeichnung', () => {
-    const k = H.run(`(function () {
-      var G = window.DebugGate, alt = G.flagge;
-      G.flagge = function () { return null; };
-      try {
-        var t = window.DoorSystem.spawnDoor(${GS}, -500, -500, 'horizontal', 5);
-        var k = t.texture.key; t.destroy(); return k;
-      } finally { G.flagge = alt; }
-    })()`);
-    assert.strictEqual(k, 'proc_door_closed_160x24');
-  });
-});
-
-describe('ohne Flagge', () => {
-  let H = null;
-  before(async () => {
-    H = await launchDungeon({ depth: 3, zusatz: '&room=bsp' });
-    assert.ok(raumMitToren(H) > 0, 'kein Raum mit Tueren beider Richtungen');
-  });
-  after(async () => { if (H) await H.shutdown(); });
-
-  test('die alten Tueren: gezeichnet, Bild = Koerper, keine Torstuecke geladen', () => {
+  test('ohne Flagge: neu gesetzte Tuer ist ein Tor, die alte Zeichnung ist weg', () => {
     const r = H.run(`(function () {
-      var sc = ${GS};
-      return {
-        tueren: sc._doors.filter(function (d) { return d.active; }).map(function (d) {
-          return { k: d.texture.key, w: d.displayWidth, h: d.displayHeight, bw: d.body.width, bh: d.body.height };
-        }),
-        tor: Object.keys(window.game.textures.list).filter(function (k) { return /^tor_/.test(k); })
-      };
+      var t = window.DoorSystem.spawnDoor(${GS}, -500, -500, 'horizontal', 5);
+      var k = t.texture.key, f = String(t.frame.name); t.destroy();
+      return { k: k, f: f, zeichner: typeof window.DoorSystem.generateDoorTextures,
+        alt: Object.keys(window.game.textures.list).filter(function (n) { return /^proc_door/.test(n); }) };
     })()`);
-    assert.ok(r.tueren.length >= 2);
-    for (const d of r.tueren) {
-      assert.ok(/^proc_door_closed_/.test(d.k), 'nicht die alte Tuer: ' + d.k);
-      assert.deepStrictEqual([d.w, d.h], [d.bw, d.bh]);
-    }
-    assert.deepStrictEqual(Array.from(r.tor), [], 'Torstuecke ohne Flagge geladen');
+    assert.strictEqual(r.k, 'tor_neu_waag_160');
+    assert.strictEqual(r.f, '0');
+    assert.strictEqual(r.zeichner, 'undefined', 'die alte Tuerzeichnung gibt es noch');
+    assert.deepStrictEqual(Array.from(r.alt), [], 'alte gezeichnete Tuertexturen gibt es noch');
   });
 });
