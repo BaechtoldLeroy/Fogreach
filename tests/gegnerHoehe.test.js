@@ -65,9 +65,9 @@ function gewoehnlicheHoehe(typ, name) {
 // Schattenschleicher 35, Magier 45, Priester 54, Brute 55.
 const ERWARTET = [
   // die Kleinen, mit Absicht
-  [1, 'Imp', 44], [16, 'Alarmwicht', 44],
+  [1, 'Imp', 44],
   // alles mit Menschengestalt — EINE Stufe
-  [2, 'Bogenschuetze', 52], [4, 'Magier', 52], [5, 'Schattenschleicher', 52],
+  [2, 'Bogenschuetze', 52], [16, 'Spitzel', 52], [4, 'Magier', 52], [5, 'Schattenschleicher', 52],
   [12, 'Priester', 52], [13, 'Beschwoerer', 52],
   [14, 'Springer', 52],
   // darueber, der Reihe nach

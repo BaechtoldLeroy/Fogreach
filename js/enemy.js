@@ -956,7 +956,8 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
       // Spiels und in seiner dunkelbraunen Palette kaum von der Wand zu
       // unterscheiden — ausgerechnet der Gegner, den man zuerst sehen muss,
       // weil er wegrennt und Verstaerkung holt.
-      gegnerAufHoeheSkalieren(enemy, 44);
+      // Seit b455 Spitzel (Menschengestalt): dieselbe Stufe wie die anderen Menschen.
+      gegnerAufHoeheSkalieren(enemy, 52);
       enemy._spritePrefix = 'alarm';
       enemy._spriteDir = 'right';
     }
