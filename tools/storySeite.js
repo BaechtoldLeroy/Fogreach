@@ -2,7 +2,7 @@
  * tools/storySeite.js — die teilbare Seite "Fogreach Dossier": Geschichte und
  * alle Auftraege auf einen Blick.
  *
- * Die Geschichte folgt der Story-Bibel v5 (kitty-specs/062-.../Fogreach_Story_v5.md),
+ * Die Geschichte folgt dem Story-Kern v6.1 (kitty-specs/062-.../Fogreach_Story_v6.md),
  * die Akt-Einleitungen kommen aus dem Spiel (js/storySystem.js, ACT_NARRATIVES),
  * die Auftraege direkt aus js/questSystem.js (QUEST_DEFINITIONS). So bleibt die
  * Seite beim naechsten Aufruf auf dem Stand des Spiels.
@@ -21,7 +21,9 @@ const ZIEL = path.resolve(process.argv[2] || path.join(ROOT, 'docs', 'storySeite
 
 global.window = {};
 require(path.join(ROOT, 'js', 'questSystem.js'));
+require(path.join(ROOT, 'js', 'storyDialog.js'));
 const D = window.questSystem.QUEST_DEFINITIONS;
+const WAHL = (window.storyDialog && window.storyDialog.byQuest) || {};
 
 // Die Akt-Einleitungen, wie das Spiel sie zeigt.
 const storyQuelle = fs.readFileSync(path.join(ROOT, 'js', 'storySystem.js'), 'utf8');
@@ -46,29 +48,30 @@ const TYP = {
   wave: 'Standhalten', dialogue: 'Gespräch'
 };
 
-// Die Akte: Geschichte aus der Story-Bibel v5, Akt-Index wie im Spiel (storySystem).
+// Die Akte: Geschichte aus dem Story-Kern v6.1, Akt-Index wie im Spiel (storySystem).
 const AKTE = [
   { idx: 0, id: 'auftrag', titel: 'Der Dienst', label: 'Prolog',
-    inhalt: 'Du erwachst in der Archivschmiede, ohne Erinnerung an die Zeit davor. Ratsherr Aldric schickt Dich in die Keller unter dem Rathaus. Die ersten Aufträge führen Dich durch die Stadt und ihre Werkstätten: Schmiede, Presse, Schwarzmarkt, Talente und Wissen. Harrens Tochter ist verschwunden.',
+    inhalt: 'Du erwachst in der Archivschmiede ohne Erinnerung. Aldric schickt Dich in die Keller. Die Einführungen zeigen Schmiede, Presse, Schwarzmarkt und Wissensbaum. Mara behandelt Dich wie einen Fremden, lässt aber einen Satz fallen, der zu viel weiss. Harrens Tochter ist verschwunden, ihr Tagebuch nennt alle drei Fraktionen.',
     boss: null, momente: [] },
   { idx: 1, id: 'treuer_diener', titel: 'Treuer Diener', label: 'Akt 1',
-    inhalt: 'Aufträge für Rat, Klerus und Garde. Elara rettet Dich und gibt Dir erste Aufträge. Erst die öffentliche Ratssitzung, dann die geheime: Die drei Fraktionen sind eins, ihr Zeichen ist das des Schattenrats. Harren bittet Dich, im Rathaus zu bleiben.',
+    inhalt: 'Elara rettet Dich im Keller vor der Kettenwache und gibt Dir erst danach Aufträge: das versiegelte Bündel, dann das Dokument mit den drei Siegeln. Du arbeitest für Magistrat, Klerus und Garde. Die Stadt stimmt über das Edikt der Woche ab; in der öffentlichen Sitzung wird verkündet: Egal was gewinnt, die Patrouillen verdoppeln sich. In der geheimen Sitzung siehst Du ein Gesicht, drei Masken, das Zeichen der drei Ketten. Harren bittet Dich zu bleiben: «Räum weiter für sie, und heimlich für mich.»',
     boss: null,
     momente: ['Sie rettet Dich: Im Keller, umzingelt von der Kettenwache, taucht Elara auf und bringt Dich raus. Erst danach gibt sie Dir einen Auftrag.',
-      'Ihr Versteck: Sie zeigt Dir einen Ort, den sonst niemand kennt. „Hier vergisst der Nebel einen nicht so schnell.“'] },
+      'Ihr Versteck: Sie zeigt Dir einen Ort, den sonst niemand kennt. «Hier vergisst der Nebel einen nicht so schnell.»'] },
   { idx: 2, id: 'erste_risse', titel: 'Das Doppelspiel', label: 'Akt 2',
-    inhalt: 'Außen Rat, innen Widerstand. Die Abstimmung über das Edikt der Woche: Egal was gewinnt, die Patrouillen verdoppeln sich. Am Ende erfährst Du, dass Elara Harrens Tochter ist, und erlebst das Wiedersehen.',
+    inhalt: 'Aussen Rat, innen Widerstand. Mara sagt Dir, dass sie Dich von früher kennt, und öffnet Dir ihr Netz. Elara zeigt Dir, dass die Verschwundenen für Rituale gebraucht werden. Beim Konvoi siehst Du versiegelte Phiolen; was darin ist, weisst Du noch nicht. Der Kettenmeister fällt. Am Ende erfährst Du, dass Elara Harrens Tochter ist; ihm erzählt sie, sie sei aus eigenem Willen geflohen.',
     boss: 'Kettenmeister (Tiefe 10)',
-    momente: ['Sie hilft Dir, Dich zu erinnern: ein Werkzeug aus Deiner alten Werkstatt. „Ich habe es aufgehoben.“',
+    momente: ['Dein alter Hammer: «Ich habe ihn aufgehoben.» Deine Hände erkennen ihn, Du selbst nicht.',
       'Ihre Angst: wie es ist, die eigene Familie nicht sehen zu dürfen.',
       'Das Wiedersehen mit Harren. Sie zögert einen Atemzug zu lang, bevor sie ihn umarmt.'] },
   { idx: 3, id: 'wahrheit', titel: 'Die Enttarnung', label: 'Akt 3',
-    inhalt: 'Aktionen des Widerstands schlagen fehl, Maras Leute werden verhaftet. Es gibt einen Maulwurf. Elara schenkt Dir eine Klinge. Aldric enttarnt Dich, Du wirst gejagt, Elara versteckt Dich. Du folgst dem Maulwurf und siehst Elara mit Aldric, das Zeichen an ihrem Ring. Aufgedeckt wird, dass sie zum Schattenrat gehört; wofür sie Dich braucht, noch nicht.',
+    inhalt: 'Der Widerstand verliert, Maras Leute werden verhaftet, bevor sie losgehen. Es gibt einen Maulwurf. Im Ratsarchiv findest Du Elaras Akte: «Vermisst, Fall geschlossen», datiert vor dem Tag ihres Verschwindens. In der verseuchten Kammer siehst Du, wo Menschen abgefüllt werden. Am Schacht zur Esse erklärt Elara Dir, wie man sie «zerstört»: indem man ihre Bindung löst. Aldric enttarnt Dich, Branka bringt Dich in Elaras Versteck. Du folgst dem Maulwurf bis in die Ratskammer: Elara neben Aldric, an ihrem Ring das Zeichen.',
     boss: 'Zeremonienmeister (Tiefe 20)',
-    momente: ['Die Klinge: „Ich habe sie für Dich geschmiedet. Für den Fall, dass …“',
-      'Die Nacht nach dem Bruch: Du wirst gejagt, sie versteckt Dich und bleibt bei Dir.'] },
+    momente: ['Die Klinge: «Ich habe sie für Dich schmieden lassen.» Wer sie im Inventar genauer ansieht, findet das Zeichen der drei Ketten im Stahl.',
+      'Eine wahre Meldung, die sie verschweigt: «Nicht alles hilft.»',
+      'Die Nacht nach dem Bruch: Branka bringt Dich zu ihr, sie bleibt die Nacht bei Dir.'] },
   { idx: 4, id: 'bruch', titel: 'Die Quelle', label: 'Akt 4',
-    inhalt: 'Du gehst trotzdem hinab, jetzt, um die Quelle zu zerstören. Elara erwartet Dich dort und leugnet nichts: Niemand sonst hätte diese Kammern überstanden. Sie greift nach der Quelle. Harren ist Dir gefolgt, redet sie mit ihrem Kindernamen an; für einen Moment zögert sie, dann nimmt die Quelle sie, und sie stößt ihn weg. Er stirbt. Im Kampf löscht sie Teile der Arena, lässt Besiegte zurückkehren und greift nach Deiner Erinnerung; ihre eigene Klinge trifft sie. Danach druckst Du alles, und der Nebel bricht, weil zu viele Menschen sich zu vieles merken.',
+    inhalt: 'Das Rathaus ist zu, oben bleibt Dir kein Ort. Elara ist zur Esse hinabgestiegen, und Du folgst ihr, um sie zu zerstören. Harren folgt Dir ohne Amulett; mit jeder Tiefe nimmt ihm der Nebel mehr, bis nur «Lene» bleibt. An der Esse, mit erhobenem Hammer, durchschaust Du, was Deine Hände tun, und hältst inne. «Alles haben wir vorausgesehen. Nur nicht, dass Du es merkst.» Harren erreicht sie, sie stösst ihn bewusst weg, nimmt Deinen Hammer, und die Esse nimmt sie. Der letzte Schlag ist Handwerk: Du löst die Bindung in die andere Richtung, die Esse zerbricht. Mara verlangt, dass Du Elara richtest. Danach druckst Du alles, und die Stadt glaubt es, weil sie sich erinnert. In «Die letzte Wache» führt Mara Dich zu Aldric, leer vom Nebel.',
     boss: 'Elara, besessen (Tiefe 30)', momente: [] }
 ];
 
@@ -88,10 +91,18 @@ function questZeile(id) {
   if (q.minDepth) fakten.push('<span>ab Tiefe <b>' + q.minDepth + '</b></span>');
   const vor = (q.prerequisites || []).map((p) => (D[p] && D[p].title) || p);
   if (vor.length) fakten.push('<span>nach <b>' + esc(vor.join(', ')) + '</b></span>');
+  if (q.turnInNpcId) fakten.push('<span>Abgabe bei <b>' + esc(NPC[q.turnInNpcId] || q.turnInNpcId) + '</b></span>');
   const wer = q.npcId || 'unbekannt';
   const dialog = [];
   if (q.dialogueOffer) dialog.push('<div class="dialog"><span class="etikett">Angebot</span>' + esc(q.dialogueOffer) + '</div>');
   if (q.dialogueComplete) dialog.push('<div class="dialog"><span class="etikett">Abschluss</span>' + esc(q.dialogueComplete) + '</div>');
+  // v6.1: zwei Abschluesse, die Wahl beim Abgeben (storyDialog mit setFlags).
+  const wahl = WAHL[q.id];
+  if (wahl && (wahl.choices || []).some((c) => c.setFlags && c.setFlags.length)) {
+    wahl.choices.forEach((c) => {
+      dialog.push('<div class="dialog"><span class="etikett">' + esc(c.label) + '</span>' + esc(c.response || '') + '</div>');
+    });
+  }
   return '<details class="quest" data-wer="' + esc(wer) + '" data-wer-name="' + esc(NPC[wer] || wer) + '">'
     + '<summary><span class="q-titel">' + esc(q.title) + '</span><span class="q-wer">' + esc(NPC[wer] || wer) + '</span>'
     + '<span class="q-was">' + esc(q.description) + '</span></summary>'

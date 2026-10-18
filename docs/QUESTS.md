@@ -9,22 +9,22 @@ _Neu erzeugen:_ `node tools/genQuestDoc.js`
 
 ## Prämisse
 
-Du spielst den **Archivschmied**, einen Handwerker im Dienst des Rats, ohne Erinnerung an die Zeit vor dem Unfall in der Schmiede. Unter der Stadt liegt der Nebel: ein Kellerlabyrinth, in das der Rat Dich zum Aufräumen schickt.
+Unter Fogreach brennt eine **Esse**, die Erinnerungen verbrennt. Ihr Rauch ist der Nebel, und wer ihn atmet, vergisst. Der Kettenrat tritt als drei streitende Fraktionen auf, Magistrat, Klerus und Garde; innen gehören ihre Spitzen demselben Kreis an, dem **Schattenrat**. Er füttert die Esse mit beschlagnahmten Schriften und mit den Erinnerungen der Verschwundenen.
 
-Nach außen streiten Magistrat, Klerus und Garde; innen gehören ihre Spitzen demselben Kreis an, dem **Schattenrat**. Er nährt die Quelle des Nebels mit den Erinnerungen der Bürger. Und weil ein Volk ohne Ventil gefährlich wird, führt er auch den Widerstand selbst: durch **Elara**, die Tochter des Bürgermeisters, deren Flucht inszeniert war.
+Du bist der **Archivschmied**, der letzte Mensch, der die Esse erneuern kann. Der Rat hat Dich geleert, damit der Nebel Dich in der Tiefe nicht auslöscht, und gibt Dir einen Widerstand, den er selbst anführt: durch **Elara**, Harrens Tochter. Sie lehrt Dich, die Esse zu «zerstören», indem man ihre Bindung löst. In Wahrheit ist genau dieses Lösen das Erneuern.
 
-> Du hast geglaubt, Du arbeitest für den Rat, dann gegen ihn. In Wahrheit hast Du die ganze Zeit für ihn gearbeitet, auch auf der anderen Seite.
+> Du hast geglaubt, Du arbeitest für den Rat, dann gegen ihn. In Wahrheit hast Du die ganze Zeit für ihn gearbeitet, auch auf der anderen Seite. Er brauchte nie Dein Ja, nur Deine Hände.
 
 ## Charaktere
 
 | Figur | Rolle | Kern |
 |---|---|---|
-| **Archivschmied** (Du) | Handwerker im Ratsdienst | Amnesie. Der Jedermann, der anfängt zu fragen. |
-| **Elara** | Harrens Tochter, Gesicht des Widerstands, **Mitglied des Schattenrats** | Lenkt den Widerstand für den Rat. Braucht Dich, um die Quelle zu öffnen. Endgegnerin, besessen von der Quelle. |
-| **Ratsherr Aldric** | Auftraggeber, Stimme des Schattenrats im Rat | Elaras Mentor. Der Einzige im offenen Rat, der von ihr weiss. |
-| **Bürgermeister Harren** | Vater, ehrlich | Will sein Kind zurück. Stirbt im Finale, als er zu ihr durchdringen will. |
-| **Mara** | Späherin, Schwarzmarkt | Merkt als Erste, dass der Widerstand verraten wird. |
-| **Branka** | Archivschmiedin | Moralischer Kompass, hilft Dir, Dich zu erinnern. |
+| **Archivschmied** (Du) | Letzter seines Handwerks, geleert vom Rat | Erst Ordnung, dann die Wahrheit, am Ende die eigene Geschichte. |
+| **Elara** (Kindername Lene) | Harrens Tochter, Gesicht des Widerstands, **Mitglied des Schattenrats** | Soll Dich zur Esse bringen, damit Du sie erneuerst. Stösst im Finale ihren Vater weg; die Esse nimmt sie. |
+| **Ratsherr Aldric** | Auftraggeber, Stimme des Schattenrats im Rat | Hat Dich geleert. Flieht nach dem Bruch der Esse in die Tiefe und wird selbst leer. |
+| **Bürgermeister Harren** | Amt ohne Macht, kein Mitglied des Widerstands | Will sein Kind zurück. Steigt ohne Amulett hinab und verliert unterwegs alles bis auf «Lene». |
+| **Mara** | Späherin, Schwarzmarkt, kennt Dich von früher | Merkt als Erste, dass der Widerstand verraten wird. Verlangt, dass Du Elara richtest. |
+| **Branka** | Schmiedemeisterin | Moralischer Kompass, hilft Dir, Dich zu erinnern, und warnt vor dem Preis. |
 | **Setzer Thom** | Druckerei | Die Presse ist die Bühne des Endes. |
 | **Klerus-Priester**, **Stadtwache** | Fraktionsstimmen | Nennen Flucht „Besessenheit“ und Aufräumen „Reinigung“; antworten mit mehr Patrouillen. |
 
@@ -45,8 +45,8 @@ Der Bogen ist **rein quest-getrieben**: ein Akt steigt nur, wenn eine Quest ihn 
 | `0` | Der Dienst | _Startzustand_ |
 | `1` | Treuer Diener | Abschluss von **Die verschwundene Tochter** |
 | `2` | Das Doppelspiel | Abschluss von **Die geheime Sitzung** |
-| `3` | Die Enttarnung | Abschluss von **Maras Warnung** |
-| `4` | Die Quelle | Abschluss von **Der Bruch** |
+| `3` | Die Enttarnung | Abschluss von **Der Kettenmeister** |
+| `4` | Die Quelle | Abschluss von **Der Maulwurf** |
 
 Jeder Akt hat einen Trigger — die Leiter ist lückenlos.
 
@@ -111,40 +111,14 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 | Boss | Tiefe | Quest |
 |---|---|---|
-| Kettenmeister | 10 | Maras Warnung |
+| Kettenmeister | 10 | Der Kettenmeister (Mara) |
 | Zeremonienmeister | 20 | Die Ritualkammer (Elara) |
-| Schattenrat | 30 | Die Quelle (Harren) |
+| _Nachhall (Stufe 2)_ | 25 | _Was der Rauch behält (Mara), noch nicht im Spiel_ |
+| Elara, besessen | 30 | Die Quelle (Branka, Abgabe bei Thom) |
 
 ---
 
 # Akt-Index 0 — Der Dienst
-
-## Das versiegelte Bündel
-
-`resistance_fetch_01` · **NPC:** Elara · **Kette:** 0
-
-> Hol das versiegelte Bündel aus dem Keller. Niemand darf es sehen, und öffne es nicht.
-
-- **Ziel:** `fetch` → `sealed_bundle` ×1
-- **Vorbedingung:** keine
-- **Belohnung:** mind. 25 XP (bzw. 40 % des Stufenbedarfs, Neben) · 3 MAT
-
-**Angebot**
-
-> Es gibt da etwas im Keller... ein Bündel, versiegelt. Bring es mir, ohne dass jemand es sieht. Und öffne es nicht.
-> 
-> Nimmst du den Auftrag an?
-
-**Unterwegs**
-
-> Das Bündel liegt irgendwo da unten. Sieh dich um — und lass es zu.
-
-**Abschluss**
-
-> Du hast es. Und du hast es nicht geöffnet. Gut.
-> 
-> (Auf dem Wachs des Siegels: drei Ketten, ineinander verschlungen. Du hast dieses Zeichen noch nie gesehen.)
-
 
 ## Säuberung der Keller
 
@@ -234,7 +208,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > Kauf Mara auf dem Schwarzmarkt etwas ab.
 
 - **Ziel:** `system` → `markt` ×1
-- **Vorbedingung:** Säuberung der Keller
+- **Vorbedingung:** Säuberung der Keller (dazu eine Bedingung im Code, `gate`)
 - **Belohnung:** mind. 40 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 30 Gold (wächst mit der Tiefe ab 1)
 
 **Angebot**
@@ -249,7 +223,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Abschluss**
 
-> (Sie zählt das Gold nicht nach.) Gut. Und jetzt vergiss, dass ich Dir das gezeigt habe.
+> (Sie zählt das Gold nicht nach.) Gut. Du legst es immer noch zuerst auf den Tisch und fragst erst danach. (Sie stockt, als hätte sie schon zu viel gesagt.) Und jetzt vergiss, dass ich Dir das gezeigt habe.
 > 
 > Was ich nicht habe, hat vielleicht der Alte mit dem Karren, da unten. Wer mit vollen Taschen hochkommt und sie wieder mit runternimmt, hat etwas nicht verstanden.
 
@@ -290,7 +264,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > Sieh Dir Deine Charakterwerte an (C oder Dein Porträt oben links).
 
 - **Ziel:** `system` → `charakterwerte` ×1
-- **Vorbedingung:** Säuberung der Keller
+- **Vorbedingung:** Säuberung der Keller (dazu eine Bedingung im Code, `gate`)
 - **Belohnung:** mind. 40 XP (bzw. 40 % des Stufenbedarfs, Neben) · 1 Heiltrank
 
 **Angebot**
@@ -346,7 +320,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > Ein Rats-Aushang: räume 6 Kammern ab Tiefe 4.
 
 - **Ziel:** `explore` → `room` ×6
-- **Vorbedingung:** keine
+- **Vorbedingung:** keine (dazu eine Bedingung im Code, `gate`)
 - **Belohnung:** mind. 70 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 140 Gold (wächst mit der Tiefe ab 4)
 
 **Angebot**
@@ -371,7 +345,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > Ein Rats-Aushang: besiege 12 Gegner ab Tiefe 3.
 
 - **Ziel:** `kill` → `enemy` ×12
-- **Vorbedingung:** keine
+- **Vorbedingung:** keine (dazu eine Bedingung im Code, `gate`)
 - **Belohnung:** mind. 60 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 120 Gold (wächst mit der Tiefe ab 3)
 
 **Angebot**
@@ -421,7 +395,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > Leg in der Truhe unter der Schmiede einen Gegenstand ab.
 
 - **Ziel:** `system` → `truhe` ×1
-- **Vorbedingung:** Der erste Schliff
+- **Vorbedingung:** Der erste Schliff (dazu eine Bedingung im Code, `gate`)
 - **Belohnung:** mind. 40 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 30 Gold (wächst mit der Tiefe ab 1)
 
 **Angebot**
@@ -502,7 +476,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > Ein Rats-Aushang: schliesse 2 Läufe ab Tiefe 8 ab.
 
 - **Ziel:** `dungeon_run` → `dungeon_complete` ×2
-- **Vorbedingung:** keine
+- **Vorbedingung:** keine (dazu eine Bedingung im Code, `gate`)
 - **Belohnung:** mind. 110 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 220 Gold (wächst mit der Tiefe ab 8)
 
 **Angebot**
@@ -527,7 +501,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > Ein Rats-Aushang: besiege 3 Elite-Gegner ab Tiefe 6.
 
 - **Ziel:** `kill` → `elite_enemy` ×3
-- **Vorbedingung:** keine
+- **Vorbedingung:** keine (dazu eine Bedingung im Code, `gate`)
 - **Belohnung:** mind. 90 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 200 Gold (wächst mit der Tiefe ab 6)
 
 **Angebot**
@@ -552,7 +526,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > Ein Rats-Aushang: überstehe Welle 12 ab Tiefe 6.
 
 - **Ziel:** `wave` → `reach_wave` ×12
-- **Vorbedingung:** keine
+- **Vorbedingung:** keine (dazu eine Bedingung im Code, `gate`)
 - **Belohnung:** mind. 100 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 180 Gold (wächst mit der Tiefe ab 6)
 
 **Angebot**
@@ -577,7 +551,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > Ein Aufruf des Widerstands: räume 5 Kammern ab Tiefe 10.
 
 - **Ziel:** `explore` → `room` ×5
-- **Vorbedingung:** keine
+- **Vorbedingung:** keine (dazu eine Bedingung im Code, `gate`)
 - **Belohnung:** mind. 120 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 150 Gold (wächst mit der Tiefe ab 10) · 4 Druckblätter
 
 **Angebot**
@@ -602,7 +576,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > Ein Aufruf des Widerstands: besiege 4 Elite-Gegner ab Tiefe 12.
 
 - **Ziel:** `kill` → `elite_enemy` ×4
-- **Vorbedingung:** keine
+- **Vorbedingung:** keine (dazu eine Bedingung im Code, `gate`)
 - **Belohnung:** mind. 130 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 160 Gold (wächst mit der Tiefe ab 12)
 
 **Angebot**
@@ -621,6 +595,33 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 
 # Akt-Index 1 — Treuer Diener
+
+## Das versiegelte Bündel
+
+`resistance_fetch_01` · **NPC:** Elara · **Kette:** 0
+
+> Hol das versiegelte Bündel aus dem Keller. Niemand darf es sehen, und öffne es nicht.
+
+- **Ziel:** `fetch` → `sealed_bundle` ×1
+- **Vorbedingung:** Die verschwundene Tochter (dazu eine Bedingung im Code, `gate`)
+- **Belohnung:** mind. 25 XP (bzw. 40 % des Stufenbedarfs, Neben) · 3 MAT
+
+**Angebot**
+
+> Du stehst noch. Gut. Dann kannst Du mir gleich einen Gefallen tun.
+> 
+> Irgendwo hier unten liegt ein Bündel, versiegelt. Bring es mir, ohne dass jemand es sieht. Und öffne es nicht. Danach reden wir über den Rat.
+
+**Unterwegs**
+
+> Das Bündel liegt irgendwo da unten. Sieh Dich um, und lass es zu.
+
+**Abschluss**
+
+> Du hast es. Und Du hast es nicht geöffnet. Gut. Jetzt weiss ich, dass ich Dir trauen kann.
+> 
+> (Auf dem Wachs des Siegels: drei Ketten, ineinander verschlungen. Du hast dieses Zeichen noch nie gesehen.)
+
 
 ## Verifikation des Magistrats
 
@@ -646,7 +647,14 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Abschluss**
 
-> Hervorragend. Das Dokument ist im Archiv. Die Tochter ist nun offiziell eine Person von Interesse. Was das in der Praxis bedeutet, geht dich nichts an. Der Magistrat dankt dir.
+> (Aldric streckt die Hand aus, ohne von seinen Akten aufzusehen.) Das Siegel, Archivschmied. Die Neuklassifizierung wartet.
+> 
+> (Das Wachs in Deiner Hand ist noch weich. Ein Druck mit dem Daumen, und es hält nicht mehr. Niemand würde es merken, ausser jemand, der Siegel macht.)
+
+**Entscheidung beim Abgeben**
+
+- _Das Siegel abliefern_ (`verification_sealed`): ALDRIC: Das Dokument ist im Archiv. Die Tochter ist nun offiziell eine Person von Interesse. Was das in der Praxis bedeutet, geht Dich nichts an. Der Magistrat dankt Dir.
+- _Es unbemerkt beschädigen_ (`verification_refused`): (Du drückst den Daumen ins weiche Wachs, bevor Du es übergibst. Aldric siegelt, ohne hinzusehen.) ALDRIC: Gut. Der Magistrat dankt Dir. (Das Siegel wird nicht halten. Wer genau hinsieht, merkt es. Branka sieht immer genau hin.)
 
 
 ## Reinigung der unteren Kammern
@@ -710,12 +718,12 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > Finde ein verstecktes Ratsdokument im Rathauskeller, ein paar Räume tiefer.
 
 - **Ziel:** `fetch` → `council_document` ×1
-- **Vorbedingung:** Die verschwundene Tochter
+- **Vorbedingung:** Die verschwundene Tochter **+** Das versiegelte Bündel
 - **Belohnung:** mind. 100 XP (bzw. 70 % des Stufenbedarfs, Story) · 1 Wissens-Fragment(e)
 
 **Angebot**
 
-> Du hast also das Fragment gefunden. Gut — dann lebst du nicht mehr ganz in ihrer Erzählung.
+> Du hast mir das Bündel gebracht und es nicht geöffnet. Gut. Dann kann ich Dir zeigen, was ich gesehen habe, bevor Du weiter ihre Aufträge erledigst.
 > 
 > Ich will, dass DU siehst, was ich gesehen habe, bevor du weiter ihre Aufträge erledigst. Unten im Rathauskeller liegt ein Dokument, das die drei Ratsfraktionen nie zusammen unterzeichnet haben sollten — und doch ist ihr Siegel darauf. Alle drei.
 > 
@@ -750,7 +758,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Abschluss**
 
-> Jetzt hast du es gesehen. Ein Gesicht, drei Masken. Du hast für jede gearbeitet. Du könntest fliehen — aber ein Handwerker, der weiter im Rathaus aus und ein geht, sieht Dinge, die ein Flüchtiger nie sieht. Bleib, wo du bist. Räum weiter für sie, und räum heimlich für uns. Es ist gefährlicher. Es ist auch das Einzige, was nützt.
+> Jetzt hast Du es gesehen. Ein Gesicht, drei Masken. Du hast für jede gearbeitet. Du könntest fliehen, aber ein Handwerker, der weiter im Rathaus aus und ein geht, sieht Dinge, die ein Flüchtiger nie sieht. Bleib, wo Du bist. Räum weiter für sie, und heimlich für mich. Es ist gefährlicher. Es ist auch das Einzige, was nützt.
 
 
 ## Das Edikt der Woche
@@ -790,9 +798,9 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Angebot**
 
-> Du erinnerst dich nicht an mich. Aber ich an dich — du warst Archivschmied, bevor der Nebel dir die Erinnerung nahm, und du hast Fragen gestellt, die der Rat begraben wollte.
+> Du hast an meinem Tisch gekauft und nie gefragt, warum ich weiss, wie Du bezahlst. (Sie schiebt die Ware beiseite.) Ich kenne Dich von früher, Archivschmied. Von bevor Du Dein Gedächtnis verloren hast. Du hast damals Fragen gestellt, die der Rat begraben wollte.
 > 
-> Ich bin die Späherin des Widerstands. Bevor ich dir mein Netzwerk öffne, will ich sehen, ob du noch sehen kannst: Geh hinab und kundschafte drei Kellerräume aus. Präg dir ein, was der Rat dort versteckt.
+> Bevor ich Dir mein Netz öffne, will ich sehen, ob Du noch sehen kannst. Geh hinab und kundschafte drei Kellerräume aus. Präg Dir ein, was der Rat dort versteckt.
 
 **Unterwegs**
 
@@ -856,6 +864,11 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > 
 > (Bevor du sie abgibst, fällt dein Blick auf eine Zeile. Es sind keine Pamphlete. Es sind Gesuche — Bürger, die nach verschwundenen Angehörigen fragen.)
 
+**Entscheidung beim Abgeben**
+
+- _Abgeben_ (`petitions_surrendered`): Du gibst sie ab.
+- _Heimlich behalten_ (`petitions_kept`): Du steckst sie ein. Mara wird wissen wollen, wer da fragt.
+
 
 ## Zweifel der Schmiedin
 
@@ -909,7 +922,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > (Keine Verschwörer. Nur Menschen, die sich im Dunkeln verstecken — vor dem Rat, nicht gegen ihn.)
 
 
-## Maras Warnung
+## Der Kettenmeister
 
 `mara_warning` · **NPC:** Mara vom Untergrund · **Kette:** 2
 
@@ -975,7 +988,14 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Abschluss**
 
-> Du bringst die Namen. (Die Befallenen hatten Gesichter. Keins davon kanntest Du, und doch kam Dir jedes bekannt vor.) (Eine Abschrift steckt schon bei Mara, bevor der Rat die Liste sieht. Wer draufsteht, verschwindet. Aber vielleicht nicht mehr alle. Vielleicht warnt jemand rechtzeitig.)
+> Du bringst die Namen? (Der Priester streckt die Hand nach der Liste aus.)
+> 
+> (Die Befallenen hatten Gesichter. Keins davon kanntest Du, und doch kam Dir jedes bekannt vor. Mara hat Dir eine Abschrift abgenommen, bevor Du hergekommen bist. Noch hast Du die Liste in der Hand.)
+
+**Entscheidung beim Abgeben**
+
+- _Die Liste abliefern_ (`namen_abgeliefert`): PRIESTER: Das Licht dankt Dir. (Er faltet die Liste, ohne sie zu lesen. Morgen früh steht die Kettenwache vor jeder Tür, deren Name darauf steht.)
+- _Erst die Leute warnen_ (`namen_gewarnt`): (Du gibst Mara ein Zeichen und lässt Dir Zeit auf dem Weg zum Rathaus. In der Nacht leeren sich die Häuser auf der Liste.) PRIESTER: Leer? Alle? (Er sieht Dich lange an.) Der Befall wandert. Das Licht wird ihn finden.
 
 
 ## Der Konvoi
@@ -1000,7 +1020,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Abschluss**
 
-> Du hast es gehört. Keine Vorräte, keine Waffen. Reagenzien, versiegelte Phiolen, Kreidesteine — Ritual-Komponenten. Der Rat schickt keine Patrouille los. Er rüstet eine Beschwörung aus.
+> Du hast es gehört. Keine Vorräte, keine Waffen. Kisten voller Phiolen, jede mit dem Wachs des Rats versiegelt. Was darin ist, sagt keiner, auch nicht, wenn sie unter sich sind. Nur wohin sie gehen: hinab, mit dem nächsten Transport.
 
 
 # Akt-Index 3 — Die Enttarnung
@@ -1028,6 +1048,11 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 **Abschluss**
 
 > Fantastisch! Diese Platten enthalten Beweise, die der Rat vernichten wollte. Die Wahrheit geht in Druck.
+
+**Entscheidung beim Abgeben**
+
+- _Ich stehe dahinter._ (`thom_ally`): THOM: Dann sind wir zwei. Das reicht, um anzufangen.
+- _Wahrheit hat einen Preis._ (`thom_ally`): THOM: Den zahle ich. Gut, dass Du ihn kennst. Wir halten zusammen.
 
 
 ## Ein Hund namens Bruno
@@ -1065,24 +1090,30 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Angebot**
 
-> Tief unten ist eine Kammer — die Beschwörungskammer des Rats. Sie wird vom Zeremonienmeister gehalten, dem Meister der verbotenen Rituale. Steig auf Tiefe 20 hinab und fälle ihn.
+> Unter der Ritualkammer des Rats liegt ein Schacht. Er führt hinab zu dem, was den Nebel macht. Der Zeremonienmeister hält die Kammer davor. Steig auf Tiefe 20 hinab und fälle ihn. Dann zeige ich Dir, wohin der Schacht führt.
 > 
-> Bist du bereit für die Wahrheit?
+> Bist Du bereit für die Wahrheit?
 
 **Unterwegs**
 
-> Der Zeremonienmeister hält die Kammer noch. Du findest ihn auf Tiefe 20 — solange er lebt, kommst du nicht an die Wahrheit.
+> Der Zeremonienmeister hält die Kammer noch. Du findest ihn auf Tiefe 20. Solange er lebt, kommst Du nicht an den Schacht.
 
 **Abschluss**
 
-> Der Zeremonienmeister ist gefallen. Du hast sie gefunden — die Beschwörungskammer des Rats. Nimm dieses Amulett; es schützt vor ihrer dunklen Magie.
+> Der Zeremonienmeister ist gefallen. (Hinter ihm der Schacht. Tief unten ein Glühen, rot wie eine Esse, und daraus steigt der Rauch auf, grau und dicht.)
+> 
+> Das ist sie. Die Esse. Sie verbrennt, was in den Phiolen ist: Erinnerungen. Ihr Rauch ist der Nebel.
+> 
+> Zerschlagen kann man sie nicht. Man muss ihre Bindung lösen, so wie Du ein Siegel löst. Ein Schlag an der richtigen Stelle, in der richtigen Richtung. Deine Hände wissen, wie das geht. Ich zeige Dir die Stelle, wenn es so weit ist.
+> 
+> Nimm dieses Amulett. Es schützt vor dem Nebel, wenn Du tiefer gehst.
 
 
 ## Elaras Geschenk
 
 `elara_blade` · **NPC:** Elara · **Kette:** 3
 
-> Elara hat eine besondere Waffe für dich geschmiedet.
+> Elara hat eine besondere Klinge für Dich schmieden lassen.
 
 - **Ziel:** `dialogue` → `elara_gift` ×1
 - **Vorbedingung:** Die Ritualkammer
@@ -1090,17 +1121,17 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Angebot**
 
-> Nimm das. Ich habe es für dich geschmiedet. Für den Fall, dass...
+> Nimm das. Ich habe sie für Dich schmieden lassen. Für den Fall, dass...
 > 
-> Nimm Elaras Klinge an?
+> Nimmst Du Elaras Klinge an?
 
 **Unterwegs**
 
-> Die Klinge wartet auf dich.
+> Die Klinge wartet auf Dich.
 
 **Abschluss**
 
-> Möge sie dich beschützen. Egal was kommt.
+> Möge sie Dich beschützen. Egal was kommt.
 
 
 ## Nachteskorte
@@ -1148,14 +1179,16 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Abschluss**
 
-> Du stehst in der Kammer. Blut, Symbole, Ketten — und kein Ketzer weit und breit. Das ist keine Verseuchung. Das ist eine Beschwörungskammer. Aldric hat dich hergeschickt, um seine eigene Spur zu verwischen. (Du prägst dir jedes Symbol ein. Mara soll das sehen. Und Aldric soll glauben, du hättest nur geputzt.)
+> Du stehst in der Kammer. Kein Ketzer weit und breit. Auf dem Boden ein Kreidekreis, an seinem Rand Ketten, in den Stein geschlagen. Daneben Kisten voller leerer Phiolen, sauber aufgereiht, jede mit einem Etikett, auf dem noch kein Name steht.
+> 
+> (Hier werden Menschen abgefüllt. Aldric hat Dich geschickt, um die Spuren zu verwischen. Du prägst Dir alles ein. Mara soll es wissen, und Aldric soll glauben, Du hättest nur geputzt.)
 
 
 ## Wer du warst
 
 `who_you_were` · **NPC:** Schmiedemeisterin Branka · **Kette:** 4 · **Fortschritt erst ab Tiefe 17**
 
-> Bring Branka drei Splitter deiner alten Akte aus der Tiefe (ab Tiefe 17).
+> Bring Branka drei Splitter Deiner Phiole aus der Tiefe (ab Tiefe 17).
 
 - **Ziel:** `fetch` → `memory_shard` ×3
 - **Vorbedingung:** Zweifel der Schmiedin
@@ -1163,15 +1196,26 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Angebot**
 
-> Ich habe etwas gefunden, das dich betrifft. Eine Akte mit deinem Zeichen, halb vom Nebel gefressen. Bring mir drei Splitter davon aus der Tiefe, dann setzen wir zusammen, wer du warst.
+> Unten haben Leute Scherben gefunden. Dickes Glas, und in jede ist ein Zeichen geritzt. Deins. (Sie sieht Dich lange an.) Das war eine Phiole, Archivschmied. Was in ihr war, warst Du.
+> 
+> Bring mir drei Splitter aus der Tiefe. Was noch an ihnen haftet, binden wir hier an Metall. Dann kann der Nebel es Dir nicht wieder nehmen.
 
 **Unterwegs**
 
-> Die Splitter liegen tief — ab Tiefe 17. Such weiter.
+> Die Splitter liegen tief, ab Tiefe 17. Such weiter.
 
 **Abschluss**
 
-> Da bist du. Vor dem Unfall, vor dem Nebel. Du hast nicht immer nur aufgeräumt. Du hast einmal dieselben Fragen gestellt, die du jetzt wieder stellst. Der Nebel hat dich nicht zufällig getroffen. Man hat ihn nach dir geschickt.
+> Da bist Du. (Die Splitter liegen auf dem Amboss, und mit jedem Schlag kommt etwas zurück: eine Werkstatt, Siegel, Druckplatten für den Rat. Und ein Nein.)
+> 
+> Du hast für sie geschmiedet. Dann hast Du verstanden, wofür, und Dich geweigert. Es war kein Unfall. Sie haben Dich geleert, weil sie Dich brauchten, nicht weil Du ihnen gefährlich warst.
+> 
+> (Sie legt den Hammer weg.) Hör mir zu. Was wir hier gebunden haben, bleibt Dir. Aber Du bist nicht mehr leer, und der Nebel dort unten merkt das. Je mehr Du weisst, wer Du bist, desto mehr hat er Dir zu nehmen.
+
+**Entscheidung beim Abgeben**
+
+- _Ja. Sag es mir._ (`branka_ally`): BRANKA: Jemand, der nicht aufhören konnte zu fragen. Wie jetzt. Wir stehen zusammen, wenn es soweit ist.
+- _Später. Erst der Rat._ (`branka_ally`): BRANKA: Auch recht. Aber ich vergesse nicht, dass Du gefragt hast.
 
 
 ## Elaras zweite Wahrheit
@@ -1201,7 +1245,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 `bruch_confrontation` · **NPC:** Schmiedemeisterin Branka · **Kette:** 5 · **Fortschritt erst ab Tiefe 8**
 
-> Aldric hat Wachen auf dich gehetzt. Schlag dich zu Branka durch — besiege 3 Elite-Wachen. Sie stellen dich erst in der Tiefe (ab Tiefe 8).
+> Aldric hat Wachen auf Dich gehetzt. Schlag Dich durch, besiege 3 Elite-Wachen. Sie stellen Dich erst in der Tiefe (ab Tiefe 8). Branka weiss ein Versteck.
 
 - **Ziel:** `kill` → `elite_enemy` ×3
 - **Vorbedingung:** Die verseuchte Kammer **+** Elaras zweite Wahrheit
@@ -1209,15 +1253,17 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Angebot**
 
-> Aldric weiss es. Dein Doppelspiel ist aufgeflogen, seine Elite-Wachen riegeln die tiefen Gänge ab, ab Tiefe 8 stellst du sie. Schlag dich durch und komm zu mir.
+> Aldric weiss es. Dein Doppelspiel ist aufgeflogen, seine Elite-Wachen riegeln die tiefen Gänge ab, ab Tiefe 8 stellst Du sie. Schlag Dich durch und komm zu mir. Ich kenne einen Ort, an dem Dich keiner sucht.
 
 **Unterwegs**
 
-> Aldrics Elite-Wachen halten die Tiefe. Ab Tiefe 8 stellst du sie.
+> Aldrics Elite-Wachen halten die Tiefe. Ab Tiefe 8 stellst Du sie.
 
 **Abschluss**
 
-> Du stellst zu viele Fragen, hat er gesagt. Jetzt stellst du gar keine mehr, du weisst es. Die Tarnung ist verbrannt, der Bruch ist da. Mara, Thom, ich, wir sind bereit.
+> Du stellst zu viele Fragen, hat er gesagt. Jetzt fragst Du nicht mehr, Du weisst es. Die Tarnung ist verbrannt, oben ist kein Ort mehr für Dich.
+> 
+> (Branka zieht Dir eine Kapuze über und führt Dich durch die Kanäle, bis zu einem Spalt in der Kellerwand.) Elara wartet dort unten. Bei ihr findet Dich keiner. Geh. Ich halte die Schmiede offen.
 
 
 ## Das versiegelte Archiv
@@ -1227,14 +1273,16 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > Infiltriere verkleidet das Council-Archiv (ab Tiefe 12), höre die Schreiber ab und birg den versiegelten Akt.
 
 - **Ziel:** `observe` → `archive_record` ×1
-- **Vorbedingung:** Der Konvoi
+- **Vorbedingung:** keine (dazu eine Bedingung im Code, `gate`)
 - **Belohnung:** mind. 110 XP (bzw. 70 % des Stufenbedarfs, Story) · 1 Wissens-Fragment(e)
 
 **Angebot**
 
-> Im Archiv des Rats liegt ein versiegelter Akt — und ich muss wissen, was darin steht. Das Archiv liegt tief unter dem Rathaus, ab Tiefe 12. Geh als Schreiber verkleidet hinein, hör ab, was die anderen flüstern, und birg den Akt. Werde nicht gesehen.
+> Sie war hier. Lene. Sie sagt, sie sei geflohen, aus eigenem Willen, und dass sie nicht bleiben kann. (Er dreht den Amtsring an seinem Finger.) Ich will ihr glauben, Archivschmied. Aber ich will es lesen.
 > 
-> Tust du das für mich?
+> Im Archiv des Rats liegt ihre Akte, versiegelt, tief unter dem Rathaus, ab Tiefe 12. Geh als Schreiber verkleidet hinein, hör ab, was die anderen flüstern, und bring mir die Akte. Werde nicht gesehen.
+> 
+> Tust Du das für mich?
 
 **Unterwegs**
 
@@ -1245,6 +1293,31 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > Du hast den Akt. "Vermisst, Fall geschlossen" — das Verschwinden seiner Tochter, sauber abgelegt, Datum, Siegel, Unterschrift. Und das Datum liegt vor dem Tag, an dem sie verschwand.
 > 
 > (Harren liest es zweimal.) Sie haben es geplant. Jemand im Rat hat Lenes Verschwinden abgeheftet, bevor es geschah.
+
+
+## Der Maulwurf
+
+`espionage_informant` · **NPC:** Mara vom Untergrund · **Kette:** 8 · **Fortschritt erst ab Tiefe 23**
+
+> Enttarne verkleidet einen Council-Maulwurf in den Reihen des Widerstands (ab Tiefe 23).
+
+- **Ziel:** `observe` → `informant_id` ×1
+- **Vorbedingung:** Das versiegelte Archiv **+** Der Bruch
+- **Belohnung:** mind. 120 XP (bzw. 70 % des Stufenbedarfs, Story) · 1 Wissens-Fragment(e)
+
+**Angebot**
+
+> Jemand verrät uns. Was wir hinter verschlossenen Türen beschliessen, weiss der Rat am nächsten Morgen. Misch dich verkleidet unter unsere eigenen Leute am Treffpunkt, tief unten, ab Tiefe 23, und finde heraus, wer der Maulwurf ist. Beweg dich leise — sie kennen dein Gesicht nicht in dieser Montur.
+> 
+> Findest du den Verräter?
+
+**Unterwegs**
+
+> Noch hast du den Maulwurf nicht. Bleib unauffällig am Treffpunkt (ab Tiefe 23) und hör ab, wer Nachrichten nach draussen schmuggelt.
+
+**Abschluss**
+
+> Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neben Aldric. An ihrem Ring das Zeichen der drei Ketten. Sie hat uns alle geführt — direkt in seine Hände.
 
 
 # Akt-Index 4 — Die Quelle
@@ -1261,40 +1334,46 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Angebot**
 
-> Die oberen Gänge lesen unsere Wahrheit schon. Jetzt brauchen wir die Tiefe — dort, wo der Rat seine Geheimnisse hält.
+> Die oberen Gänge lesen unsere Wahrheit schon. Jetzt brauchen wir die Tiefe, dort, wo der Rat seine Geheimnisse hält.
 > 
-> Schliesse drei Durchläufe ab Tiefe 22 ab, und ganz Fogreach wird die Wahrheit lesen.
+> Schliess drei Durchläufe ab Tiefe 22 ab und nimm die Blätter mit hinunter. Wer dort unten liest, liest dort, wo der Rat es nicht erwartet.
 
 **Unterwegs**
 
-> Nur tiefe Durchläufe zählen — ab Tiefe 22. Schliess drei davon ab; jeder verbreitet unsere Botschaft in die untersten Gänge.
+> Nur tiefe Durchläufe zählen, ab Tiefe 22. Schliess drei davon ab. Jeder trägt unsere Blätter weiter hinunter.
 
 **Abschluss**
 
-> Die ganze Stadt liest unsere Wahrheiten! Die Bürger sind aufgewacht. Deine Erfahrung wächst nun schneller. (+10% XP)
+> Die unteren Gänge lesen mit. Die Blätter wandern von Hand zu Hand, bis hinab zu den Kammern des Rats. Und der Rat merkt es: Gestern hat die Garde zwei Drucker verhört, die nie für mich gearbeitet haben. (Er grinst schief.)
+> 
+> Deine Erfahrung wächst nun schneller. (+10% XP)
 
 
 ## Die Quelle
 
-`schattenrat_finale` · **NPC:** Bürgermeister Harren · **Kette:** 2
+`schattenrat_finale` · **NPC:** Schmiedemeisterin Branka · **Abgabe bei:** Setzer Thom · **Kette:** 2
 
-> Steige auf Tiefe 30 hinab, zur Quelle des Nebels. Elara ist schon dort.
+> Steig auf Tiefe 30 hinab, zur Esse unter der Stadt. Elara ist schon dort. Danach wartet Thom an der Presse.
 
 - **Ziel:** `boss_kill` → `schattenrat` ×1
-- **Vorbedingung:** keine
+- **Vorbedingung:** Der Maulwurf
 - **Belohnung:** mind. 250 XP (bzw. 150 % des Stufenbedarfs, Finale) · **Ausrüstungsstück** (selten, auf Spielerstufe gewürfelt)
 
 **Angebot**
 
-> Elara ist hinabgestiegen. Zur Quelle, auf Tiefe 30. Ich weiss jetzt, was sie ist, Archivschmied. Sie ist trotzdem meine Tochter. Geh. Ich komme nach.
+> Elara ist hinabgestiegen, zur Esse, auf Tiefe 30. Sie trägt ein echtes Amulett des Rats. Du hast nur Deine Hände. (Sie legt Dir den Hammer in die Hand.) Die reichen. Du bist der Einzige, der eine solche Bindung lösen kann.
+> 
+> Und noch etwas. Harren hat gefragt, wohin Du gehst. Ich habe es ihm nicht gesagt. Er wird es trotzdem herausfinden.
 
 **Unterwegs**
 
-> Die Quelle liegt auf Tiefe 30. Beeil Dich.
+> Die Esse liegt auf Tiefe 30. Je tiefer Du gehst, desto mehr will der Nebel von Dir. Halt fest, was Du bist.
 
 **Abschluss**
 
-> Die Quelle ist zerbrochen. Jetzt gehört die Presse Dir. Geh zu Thom, es ist Zeit.
+> (Thom wischt sich die Hände am Kittel ab, als Du hereinkommst. Er fragt nicht, wie es unten war. Er sieht es Dir an.)
+> 
+> Die Esse ist zerbrochen. Draussen bleiben die Leute auf der Strasse stehen und sagen Namen, die sie seit Jahren nicht mehr gesagt haben. (Er klopft auf die Presse.) Jetzt glauben sie, was sie lesen, weil sie es selbst wieder wissen. Die Platten liegen bereit.
 
 
 ## Waffen für den Widerstand
@@ -1326,24 +1405,26 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 `mara_assault` · **NPC:** Mara vom Untergrund · **Kette:** 3
 
-> Dring bis Welle 30 vor und zerschlag, was von der Kettenwache übrig ist.
+> Dring bis Welle 30 vor. Dort unten führt Mara Dich zu Aldric.
 
-- **Ziel:** `wave` → `reach_wave` ×30
+- **Ziel:** `wave` → `reach_wave` ×30; `observe` → `aldric_gefunden` ×1
 - **Vorbedingung:** Die Quelle
 - **Belohnung:** mind. 300 XP (bzw. 100 % des Stufenbedarfs, Boss) · **Ausrüstungsstück** (selten, auf Spielerstufe gewürfelt)
 
 **Angebot**
 
-> Aldric ist unter der Stadt verschwunden, mit dem Rest seiner Kettenwache. Solange sie da unten sind, schlafen die Gassen nicht. Dring bis Welle 30 vor und räum auf.
+> Aldric ist nach dem Bruch der Esse in die Tiefe geflohen, mit dem Rest seiner Kettenwache. Oben steht sein Name schon auf jedem Blatt. Unten weiss er vielleicht nicht einmal mehr, dass es seiner ist.
 > 
-> Bist du dabei?
+> Dring bis Welle 30 vor. Ich finde ihn, und dann bringe ich Dich zu ihm. Bist Du dabei?
 
 **Unterwegs**
 
-> Die Kettenwache hält sich noch in der Tiefe. Dring weiter vor — Welle 30.
+> Die Kettenwache hält sich noch in der Tiefe. Dring weiter vor, bis Welle 30. Dort warte ich auf Dich.
 
 **Abschluss**
 
+> Er ist leer. Der Mann, der andere hat leeren lassen. (Mara sieht lange in die Flamme ihrer Lampe.) Ich dachte, ich würde mich freuen.
+> 
 > Die Kettenwache ist zerschlagen. Die Gänge unter der Stadt gehören wieder niemandem. Das ist mehr, als diese Stadt lange hatte.
 
 
@@ -1374,7 +1455,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 `the_reckoning` · **NPC:** Setzer Thom · **Kette:** 6
 
-> Die Quelle ist zerbrochen. Thom wartet an der Presse. Die Stadt soll alles erfahren.
+> Die Esse ist zerbrochen. Thom wartet an der Presse. Die Stadt soll alles erfahren.
 
 - **Ziel:** `dialogue` → `press_decision` ×1
 - **Vorbedingung:** Die Quelle
@@ -1382,7 +1463,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Angebot**
 
-> Die Platten liegen. Alles, was Du gesehen hast, kommt drauf: der Rat, Aldric, der Widerstand, sie. Morgen liest es die ganze Stadt.
+> Die Platten liegen. Alles kommt drauf, zuoberst Aldrics Name. Dann der Rat, der Widerstand, sie. Und die Namen der Verschwundenen. Kein Siegel steht darunter, und die Stadt wird es trotzdem glauben, weil sie sich gerade selbst wieder erinnert.
 
 **Unterwegs**
 
@@ -1390,30 +1471,5 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 **Abschluss**
 
-> Der Nebel dünnt aus — nicht weil jemand ihn vertreibt, sondern weil zu viele Menschen sich zu vieles gleichzeitig merken. Hart erkämpft, unvollständig, und frei.
-
-
-## Der Maulwurf
-
-`espionage_informant` · **NPC:** Mara vom Untergrund · **Kette:** 8 · **Fortschritt erst ab Tiefe 23**
-
-> Enttarne verkleidet einen Council-Maulwurf in den Reihen des Widerstands (ab Tiefe 23).
-
-- **Ziel:** `observe` → `informant_id` ×1
-- **Vorbedingung:** Das versiegelte Archiv **+** Der Bruch
-- **Belohnung:** mind. 120 XP (bzw. 70 % des Stufenbedarfs, Story) · 1 Wissens-Fragment(e)
-
-**Angebot**
-
-> Jemand verrät uns. Was wir hinter verschlossenen Türen beschliessen, weiss der Rat am nächsten Morgen. Misch dich verkleidet unter unsere eigenen Leute am Treffpunkt, tief unten, ab Tiefe 23, und finde heraus, wer der Maulwurf ist. Beweg dich leise — sie kennen dein Gesicht nicht in dieser Montur.
-> 
-> Findest du den Verräter?
-
-**Unterwegs**
-
-> Noch hast du den Maulwurf nicht. Bleib unauffällig am Treffpunkt (ab Tiefe 23) und hör ab, wer Nachrichten nach draussen schmuggelt.
-
-**Abschluss**
-
-> Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neben Aldric. An ihrem Ring das Zeichen der drei Ketten. Sie hat uns alle geführt — direkt in seine Hände.
+> Der Nebel dünnt aus. Nicht weil jemand ihn vertreibt, sondern weil zu viele Menschen sich zu vieles gleichzeitig merken. Was an tausend Orten steht, kann niemand mehr verbrennen.
 

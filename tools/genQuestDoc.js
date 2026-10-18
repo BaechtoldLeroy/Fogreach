@@ -10,7 +10,10 @@ const fs = require('fs');
 const ROOT = path.resolve(process.argv[2] || path.join(__dirname, '..'));
 global.window = {};
 require(path.join(ROOT, 'js', 'questSystem.js'));
+require(path.join(ROOT, 'js', 'storyDialog.js'));
 const D = window.questSystem.QUEST_DEFINITIONS;
+// Entscheidungen beim Abgeben (storyDialog, Auswahl mit setFlags).
+const WAHL = (window.storyDialog && window.storyDialog.byQuest) || {};
 
 // Story v5: fünf Akte (Index 0 = Der Dienst), Namen wie in js/storySystem.js.
 const ACTS = ['Der Dienst', 'Treuer Diener', 'Das Doppelspiel', 'Die Enttarnung', 'Die Quelle'];
@@ -60,19 +63,19 @@ out += '_Quest-Daten automatisch generiert aus_ `js/questSystem.js` _(QUEST_DEFI
 out += '_Neu erzeugen:_ `node tools/genQuestDoc.js`\n\n';
 out += '---\n\n';
 out += '# Kontext\n\n';
-// Kontext nach der Story-Bibel v5 (kitty-specs/062-story-v4-quest-backbone/research/Fogreach_Story_v5.md).
+// Kontext nach dem Story-Kern v6.1 (kitty-specs/062-story-v4-quest-backbone/research/Fogreach_Story_v6.md).
 out += '## Prämisse\n\n';
-out += 'Du spielst den **Archivschmied**, einen Handwerker im Dienst des Rats, ohne Erinnerung an die Zeit vor dem Unfall in der Schmiede. Unter der Stadt liegt der Nebel: ein Kellerlabyrinth, in das der Rat Dich zum Aufräumen schickt.\n\n';
-out += 'Nach außen streiten Magistrat, Klerus und Garde; innen gehören ihre Spitzen demselben Kreis an, dem **Schattenrat**. Er nährt die Quelle des Nebels mit den Erinnerungen der Bürger. Und weil ein Volk ohne Ventil gefährlich wird, führt er auch den Widerstand selbst: durch **Elara**, die Tochter des Bürgermeisters, deren Flucht inszeniert war.\n\n';
-out += '> Du hast geglaubt, Du arbeitest für den Rat, dann gegen ihn. In Wahrheit hast Du die ganze Zeit für ihn gearbeitet, auch auf der anderen Seite.\n\n';
+out += 'Unter Fogreach brennt eine **Esse**, die Erinnerungen verbrennt. Ihr Rauch ist der Nebel, und wer ihn atmet, vergisst. Der Kettenrat tritt als drei streitende Fraktionen auf, Magistrat, Klerus und Garde; innen gehören ihre Spitzen demselben Kreis an, dem **Schattenrat**. Er füttert die Esse mit beschlagnahmten Schriften und mit den Erinnerungen der Verschwundenen.\n\n';
+out += 'Du bist der **Archivschmied**, der letzte Mensch, der die Esse erneuern kann. Der Rat hat Dich geleert, damit der Nebel Dich in der Tiefe nicht auslöscht, und gibt Dir einen Widerstand, den er selbst anführt: durch **Elara**, Harrens Tochter. Sie lehrt Dich, die Esse zu «zerstören», indem man ihre Bindung löst. In Wahrheit ist genau dieses Lösen das Erneuern.\n\n';
+out += '> Du hast geglaubt, Du arbeitest für den Rat, dann gegen ihn. In Wahrheit hast Du die ganze Zeit für ihn gearbeitet, auch auf der anderen Seite. Er brauchte nie Dein Ja, nur Deine Hände.\n\n';
 out += '## Charaktere\n\n';
 out += '| Figur | Rolle | Kern |\n|---|---|---|\n';
-out += '| **Archivschmied** (Du) | Handwerker im Ratsdienst | Amnesie. Der Jedermann, der anfängt zu fragen. |\n';
-out += '| **Elara** | Harrens Tochter, Gesicht des Widerstands, **Mitglied des Schattenrats** | Lenkt den Widerstand für den Rat. Braucht Dich, um die Quelle zu öffnen. Endgegnerin, besessen von der Quelle. |\n';
-out += '| **Ratsherr Aldric** | Auftraggeber, Stimme des Schattenrats im Rat | Elaras Mentor. Der Einzige im offenen Rat, der von ihr weiss. |\n';
-out += '| **Bürgermeister Harren** | Vater, ehrlich | Will sein Kind zurück. Stirbt im Finale, als er zu ihr durchdringen will. |\n';
-out += '| **Mara** | Späherin, Schwarzmarkt | Merkt als Erste, dass der Widerstand verraten wird. |\n';
-out += '| **Branka** | Archivschmiedin | Moralischer Kompass, hilft Dir, Dich zu erinnern. |\n';
+out += '| **Archivschmied** (Du) | Letzter seines Handwerks, geleert vom Rat | Erst Ordnung, dann die Wahrheit, am Ende die eigene Geschichte. |\n';
+out += '| **Elara** (Kindername Lene) | Harrens Tochter, Gesicht des Widerstands, **Mitglied des Schattenrats** | Soll Dich zur Esse bringen, damit Du sie erneuerst. Stösst im Finale ihren Vater weg; die Esse nimmt sie. |\n';
+out += '| **Ratsherr Aldric** | Auftraggeber, Stimme des Schattenrats im Rat | Hat Dich geleert. Flieht nach dem Bruch der Esse in die Tiefe und wird selbst leer. |\n';
+out += '| **Bürgermeister Harren** | Amt ohne Macht, kein Mitglied des Widerstands | Will sein Kind zurück. Steigt ohne Amulett hinab und verliert unterwegs alles bis auf «Lene». |\n';
+out += '| **Mara** | Späherin, Schwarzmarkt, kennt Dich von früher | Merkt als Erste, dass der Widerstand verraten wird. Verlangt, dass Du Elara richtest. |\n';
+out += '| **Branka** | Schmiedemeisterin | Moralischer Kompass, hilft Dir, Dich zu erinnern, und warnt vor dem Preis. |\n';
 out += '| **Setzer Thom** | Druckerei | Die Presse ist die Bühne des Endes. |\n';
 out += '| **Klerus-Priester**, **Stadtwache** | Fraktionsstimmen | Nennen Flucht „Besessenheit“ und Aufräumen „Reinigung“; antworten mit mehr Patrouillen. |\n\n';
 out += '## Fraktionen\n\n';
@@ -175,9 +178,10 @@ out += '**Eine Unstimmigkeit in der Reihenfolge.** Die Keller-Patrouille trägt 
 out += '## Boss-Leiter ↔ Quest-Leiter\n\n';
 out += 'Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):\n\n';
 out += '| Boss | Tiefe | Quest |\n|---|---|---|\n';
-out += '| Kettenmeister | 10 | Maras Warnung |\n';
+out += '| Kettenmeister | 10 | Der Kettenmeister (Mara) |\n';
 out += '| Zeremonienmeister | 20 | Die Ritualkammer (Elara) |\n';
-out += '| Schattenrat | 30 | Die Quelle (Harren) |\n\n';
+out += '| _Nachhall (Stufe 2)_ | 25 | _Was der Rauch behält (Mara), noch nicht im Spiel_ |\n';
+out += '| Elara, besessen | 30 | Die Quelle (Branka, Abgabe bei Thom) |\n\n';
 out += '---\n';
 
 const byAct = {};
@@ -188,16 +192,27 @@ Object.keys(byAct).map(Number).sort((a, b) => a - b).forEach((a) => {
   byAct[a].sort((x, y) => (x.chain || 0) - (y.chain || 0)).forEach((q) => {
     out += '\n## ' + q.title + '\n\n';
     out += TICK + q.id + TICK + ' · **NPC:** ' + (NPC[q.npcId] || q.npcId)
+      + (q.turnInNpcId ? ' · **Abgabe bei:** ' + (NPC[q.turnInNpcId] || q.turnInNpcId) : '')
       + ' · **Kette:** ' + (q.chain || 0)
       + (q.minDepth ? ' · **Fortschritt erst ab Tiefe ' + q.minDepth + '**' : '') + '\n\n';
     out += quote(q.description) + '\n\n';
     out += '- **Ziel:** ' + objStr(q) + '\n';
     out += '- **Vorbedingung:** ' + ((q.prerequisites && q.prerequisites.length)
-      ? q.prerequisites.map((p) => (D[p] ? D[p].title : p)).join(' **+** ') : 'keine') + '\n';
+      ? q.prerequisites.map((p) => (D[p] ? D[p].title : p)).join(' **+** ') : 'keine')
+      + (typeof q.gate === 'function' ? ' (dazu eine Bedingung im Code, ' + TICK + 'gate' + TICK + ')' : '') + '\n';
     out += '- **Belohnung:** ' + rew(q.rewards, q) + '\n\n';
     if (q.dialogueOffer) out += '**Angebot**\n\n' + quote(q.dialogueOffer) + '\n\n';
     if (q.dialogueProgress) out += '**Unterwegs**\n\n' + quote(q.dialogueProgress) + '\n\n';
     if (q.dialogueComplete) out += '**Abschluss**\n\n' + quote(q.dialogueComplete) + '\n\n';
+    const wahl = WAHL[q.id];
+    if (wahl && (wahl.choices || []).some((c) => c.setFlags && c.setFlags.length)) {
+      out += '**Entscheidung beim Abgeben**\n\n';
+      wahl.choices.forEach((c) => {
+        out += '- _' + c.label + '_ (' + (c.setFlags || []).map((f) => TICK + f + TICK).join(', ') + '): '
+          + String(c.response || '').replace(/\n+/g, ' ') + '\n';
+      });
+      out += '\n';
+    }
   });
 });
 
