@@ -1,10 +1,13 @@
 // tests/finaleQuelle.test.js — das Finale an der Quelle und der Konvoi (#158).
 //
-// Story-Bibel v5, Abschnitt 8/9. Geprueft am laufenden Spiel, mit den echten
+// Story-Kern v6.1, Das Finale. Geprueft am laufenden Spiel, mit den echten
 // Dialogen (EventSystem.showEventChoiceDialog) und echten Knoepfen:
-//   * Vor dem Kampf: Elara, Harren folgt, Harren stirbt  -> harren_dead
-//   * Nach dem Kampf: verschonen oder richten           -> elara_spared/killed,
-//     die letzte Quest ist erfuellt (Harren kann sie nicht mehr annehmen)
+//   * Vor dem Kampf: der erhobene Hammer, Elaras Satz, Harren ruft "Lene",
+//     sie stoesst ihn weg (harren_dead) BEVOR sie den Hammer nimmt und die
+//     Esse sie nimmt
+//   * Nach dem Kampf: der letzte Schlag als Handwerk, Mara verlangt das
+//     Urteil, verschonen oder richten (elara_spared/killed); das Ziel ist
+//     erfuellt, abgegeben wird bei Thom
 //   * Am Konvoi: still bleiben oder die Klinge ziehen    -> convoy_blown (#84),
 //     im Messing-Dialog nach der Abhoer-Szene, genau einmal (b447)
 
@@ -73,30 +76,42 @@ function klick(n) {
 }
 const flag = (n) => H.run(`window.questSystem.hasFlag('${n}')`);
 
-test('Vor dem Kampf: Elara an der Quelle, Harren folgt ihr und stirbt', () => {
+test('Vor dem Kampf: der erhobene Hammer, Harren, dann nimmt die Esse sie (v6.1)', () => {
   stand(FINALE_AKTIV, {});
   const b = L.spawnBoss();
   assert.strictEqual(b.type, 'elaraBesessen');
   H.step(2);
   const erste = H.run('window.__dialogLog[0]');
-  assert.ok(erste && /genau so weit gekommen/.test(erste.text), 'die Szene an der Quelle startet nicht: ' + JSON.stringify(erste));
+  assert.ok(erste && /löse die Bindung/.test(erste.text), 'die Szene an der Esse startet nicht: ' + JSON.stringify(erste));
   assert.strictEqual(H.run('!!window.eventChoiceOpen'), true, 'das Spiel laeuft waehrend der Szene weiter');
+  const genommen = () => H.run(`!!window.game.scene.getScene('GameScene').__quelleNahmSie`);
 
   let d = klick(0);
-  assert.ok(/geführt werden/.test(d.text));
+  assert.ok(/Du setzt den Hammer an die Bindung/.test(d.text), d.text);
   d = klick(0);
-  assert.ok(/HARREN: Lene/.test(d.text), 'Harren kommt nicht');
-  assert.strictEqual(H.run(`!!window.game.scene.getScene('GameScene').__quelleNahmSie`), false,
-    'der Moment kommt zu frueh');
+  assert.ok(/Du hältst inne/.test(d.text) && /Erneuern/.test(d.text), 'der erhobene Hammer fehlt: ' + d.text);
   d = klick(0);
-  assert.ok(/steht nicht mehr auf/.test(d.text));
-  // #89: Der Moment, in dem die Quelle sie nimmt, ist inszeniert (Blitz,
-  // Stoss, die Quelle flammt auf) — nicht nur eine Textseite.
-  assert.strictEqual(H.run(`!!window.game.scene.getScene('GameScene').__quelleNahmSie`), true,
-    'Harrens Tod ist nur eine Textseite');
+  assert.ok(/Alles haben wir vorausgesehen\. Nur nicht, dass Du es merkst\./.test(d.text), d.text);
+  d = klick(0);
+  assert.ok(/Nur Deine Hände/.test(d.text), 'sie spricht den Plan nicht aus: ' + d.text);
+  d = klick(0);
+  assert.ok(/HARREN: Lene\./.test(d.text), 'Harren kommt nicht');
+  d = klick(0);
+  assert.ok(/stösst sie ihn weg/.test(d.text) && /bewusst/.test(d.text), d.text);
+  // Ihr Punkt ohne Rueckkehr liegt VOR der Besessenheit.
+  assert.strictEqual(genommen(), false, 'die Esse nimmt sie schon, bevor sie ihn wegstoesst');
   assert.strictEqual(flag('harren_dead'), false, 'Harren stirbt schon, bevor man es gelesen hat');
-  klick(0);
+  d = klick(0);
   assert.strictEqual(flag('harren_dead'), true, 'harren_dead nicht gesetzt');
+  assert.ok(/reisst Dir den Hammer/.test(d.text), 'sie nimmt den Hammer nicht: ' + d.text);
+  assert.strictEqual(genommen(), false, 'die Esse nimmt sie, bevor sie es selbst versucht');
+  d = klick(0);
+  assert.ok(/keine Archivschmiedin/.test(d.text) && /schmiedet die Esse sie/.test(d.text), d.text);
+  // #89: Der Moment ist inszeniert (Blitz, Stoss), nicht nur eine Textseite.
+  assert.strictEqual(genommen(), true, 'die Besessenheit ist nur eine Textseite');
+  assert.deepStrictEqual(Array.from(d.wahlen), ['Kämpfen']);
+  klick(0);
+  assert.strictEqual(H.run('!!window.eventChoiceOpen'), false, 'der Kampf beginnt nicht');
 });
 
 test('Wer Harren schon hat sterben sehen, kommt direkt zum Kampf', () => {
@@ -104,7 +119,7 @@ test('Wer Harren schon hat sterben sehen, kommt direkt zum Kampf', () => {
   L.spawnBoss();
   H.step(2);
   const log = H.run('window.__dialogLog.map(function (d) { return d.text; })');
-  assert.ok(!log.some((t) => /genau so weit gekommen/.test(t)), 'die Szene spielt ein zweites Mal');
+  assert.ok(!log.some((t) => /löse die Bindung/.test(t)), 'die Szene spielt ein zweites Mal');
 });
 
 function elaraBesiegen() {
@@ -119,26 +134,41 @@ function elaraBesiegen() {
   H.step(2);
 }
 
-test('Nach dem Kampf: verschonen — und die letzte Quest ist erfuellt', () => {
+test('Nach dem Kampf: der letzte Schlag, Mara verlangt das Urteil, verschonen (v6.1)', () => {
   stand(FINALE_AKTIV, { harren_dead: true, elara_trust: true });
   elaraBesiegen();
   let d = H.run('window.__dialogLog[window.__dialogLog.length - 1]');
-  assert.ok(d && /Die Quelle zerbricht/.test(d.text), 'keine Szene nach dem Kampf: ' + JSON.stringify(d));
+  assert.ok(d && /Ihre eigene Klinge/.test(d.text), 'keine Szene nach dem Kampf: ' + JSON.stringify(d));
   d = klick(0);
-  assert.ok(/Bis zuletzt/.test(d.text), 'ihre letzten Worte kennen das Vertrauen nicht: ' + d.text);
+  // Der letzte Schlag ist Handwerk: die Bindung in die andere Richtung.
+  assert.ok(/in die andere Richtung/.test(d.text) && /kein neuer Rauch/.test(d.text), d.text);
   d = klick(0);
+  assert.ok(/Bis zum letzten Schlag/.test(d.text), 'ihre letzten Worte kennen das Vertrauen nicht: ' + d.text);
+  d = klick(0);
+  assert.ok(/MARA:/.test(d.text) && /Richte sie/.test(d.text), 'Mara verlangt kein Urteil: ' + d.text);
   assert.strictEqual(JSON.stringify(d.wahlen), JSON.stringify(['Verschonen', 'Richten']));
   klick(0);
   assert.strictEqual(flag('elara_spared'), true);
   assert.strictEqual(flag('elara_killed'), false);
   klick(0);
-  const status = H.run(`(window.questSystem.getQuestSaveData().quests.schattenrat_finale || {}).status`);
-  assert.strictEqual(status, 'completed', 'die letzte Quest bleibt offen — Harren kann sie nicht mehr annehmen');
+  // v6.1: Abgegeben wird oben bei Thom. Unten ist nur das Ziel erfuellt.
+  const q = H.run(`(function () { var qs = window.questSystem;
+    return { status: (qs.getQuestSaveData().quests.schattenrat_finale || {}).status,
+      bereit: qs.isQuestReadyToComplete('schattenrat_finale'),
+      thom: qs.getActiveQuestsAt('thom').map(function (x) { return x.id; }),
+      branka: qs.getActiveQuestsAt('branka').map(function (x) { return x.id; }),
+      wartet: _elaraWartet() }; })()`);
+  assert.strictEqual(q.status, 'active', 'die Quelle ist schon unten abgeschlossen');
+  assert.strictEqual(q.bereit, true, 'das Ziel der Quelle ist nach dem Sieg nicht erfuellt');
+  assert.ok(Array.from(q.thom).indexOf('schattenrat_finale') >= 0, 'Thom nimmt die Quelle nicht ab');
+  assert.ok(Array.from(q.branka).indexOf('schattenrat_finale') < 0, 'Branka will sie noch einmal abnehmen');
+  assert.strictEqual(q.wartet, false, 'Elara wartet nach dem entschiedenen Kampf erneut auf Tiefe 30');
 });
 
 test('Nach dem Kampf: richten', () => {
   stand(FINALE_AKTIV, { harren_dead: true, zeichen_bemerkt: true });
   elaraBesiegen();
+  klick(0);
   let d = klick(0);
   assert.ok(/nie ganz getraut/.test(d.text));
   assert.ok(/Das Zeichen/.test(d.text), 'wer das Zeichen erkannt hat, dem sagt sie es');

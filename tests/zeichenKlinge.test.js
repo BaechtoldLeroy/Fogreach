@@ -68,6 +68,40 @@ test('Nach der Sitzung erkennt man es — und der Verrat gilt als vorhergesehen'
   assert.strictEqual(r.regler, true, 'der Finale-Regler "Verrat vorhergesehen" bleibt aus');
 });
 
+// v6.1: "Wer sie im Inventar genauer ansieht, findet das Zeichen der drei
+// Ketten im Stahl." Der echte Weg: Elaras Geschenk abholen, das Inventar
+// oeffnen und mit dem Zeiger auf die Klinge gehen. Erst das Hinsehen setzt
+// zeichen_bemerkt ("Zeichen entdeckt", Startvorteil im Endkampf).
+test('Im Inventar: wer die Klinge genauer ansieht, entdeckt das Zeichen (v6.1)', () => {
+  stand({ council_collusion_reveal: { status: 'completed', objectives: [] },
+    elara_ritual: { status: 'completed', objectives: [] } });
+  const r = H.run(`(function () {
+    var qs = window.questSystem;
+    for (var i = 0; i < inventory.length; i++) inventory[i] = null;
+    if (!qs.acceptQuest('elara_blade') || !qs.completeQuest('elara_blade')) return { fehler: 'Geschenk nicht abgeholt' };
+    var nachGeschenk = qs.hasFlag('zeichen_bemerkt');
+    var idx = inventory.findIndex(function (it) { return it && it.key === 'ELARAS_KLINGE'; });
+    if (idx < 0) return { fehler: 'die Klinge liegt nicht im Inventar' };
+    openInventory();
+    refreshInventoryUI();
+    // Das Rasterfeld, auf dem die Klinge liegt (Zeiger darueber = hinsehen).
+    var it = inventory[idx];
+    var zelle = (invUI.zellen || []).filter(function (z) { return z.c === it.gridX && z.r === it.gridY; })[0];
+    if (!zelle) return { fehler: 'kein Rasterfeld unter der Klinge' };
+    var vorHover = qs.hasFlag('zeichen_bemerkt');
+    zelle.bg.emit('pointerover', { x: 200, y: 200, worldX: 200, worldY: 200 });
+    var nachHover = qs.hasFlag('zeichen_bemerkt');
+    closeInventory();
+    return { nachGeschenk: nachGeschenk, vorHover: vorHover, nachHover: nachHover,
+      regler: window.QuestFinale.computeFinaleState(qs.getFlags()).betrayalForeseen };
+  })()`);
+  assert.ok(!r.fehler, r.fehler);
+  assert.strictEqual(r.nachGeschenk, false, 'das Zeichen gilt schon beim Annehmen als entdeckt');
+  assert.strictEqual(r.vorHover, false, 'das Oeffnen des Inventars allein entdeckt das Zeichen');
+  assert.strictEqual(r.nachHover, true, 'das Ansehen der Klinge setzt zeichen_bemerkt nicht');
+  assert.strictEqual(r.regler, true);
+});
+
 test('Andere Stuecke tragen keine Gravur', () => {
   const r = H.run(`(function () {
     var it = window.LootSystem.rollItem(null, 5, 2);

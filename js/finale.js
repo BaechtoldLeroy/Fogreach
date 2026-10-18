@@ -8,12 +8,22 @@
 //                              Netz (convoy_blade_drawn, convoy_blown) — Mara
 //                              kommt im Endkampf nicht.
 //   vorKampf(scene, boss, weiter)
-//                              Tiefe 30: Elara an der Quelle, Harren folgt ihr
-//                              und stirbt (harren_dead). Danach der Kampf.
-//   nachKampf(scene)           Die Quelle zerbricht, Elara liegt am Boden.
-//                              Verschonen oder richten (elara_spared/killed),
-//                              dann ist die letzte Quest erfuellt. Die Presse
-//                              im Hub ist der Epilog (HubSceneV2, questFinale).
+//                              Tiefe 30, Story-Kern v6.1: der erhobene Hammer
+//                              (Du merkst, dass Loesen hier Erneuern heisst),
+//                              Elara spricht den Plan aus, Harren ruft "Lene",
+//                              sie stoesst ihn bewusst weg (harren_dead), nimmt
+//                              Deinen Hammer, und die Esse nimmt sie. Danach
+//                              der Kampf (bestehende Mechanik).
+//   nachKampf(scene)           Der letzte Schlag ist Handwerk: Du loest die
+//                              Bindung in die andere Richtung, die Esse
+//                              zerbricht. Mara verlangt, dass Du Elara richtest:
+//                              verschonen oder richten (elara_spared/killed).
+//                              Das Ziel der Quelle ist erfuellt; abgegeben wird
+//                              sie oben bei Thom (turnInNpcId), danach die
+//                              Presse als Epilog (HubSceneV2, questFinale).
+//
+// TODO(Stufe 3): der erhobene Hammer, Elaras Griff nach Deiner Erinnerung und
+// der letzte Schlag sind hier Text. Spielerisch folgen sie spaeter.
 //
 // Alle drei halten die Spieluhr an, der Kampf wartet also, solange gelesen
 // wird. Vor- und Nachkampf laufen ueber EventSystem.showEventChoiceDialog; der
@@ -276,30 +286,58 @@
   }
 
   // --- Tiefe 30: vor dem Kampf -------------------------------------------------
+  // v6.1, Das Finale 1 bis 3. Die Reihenfolge traegt die Geschichte: Elara
+  // stoesst ihren Vater weg, BEVOR die Esse sie nimmt. Das ist ihr Punkt ohne
+  // Rueckkehr, keine Besessenheit.
+  /** Die Seiten vor dem Kampf, ohne Rueckrufe (auch fuer Tests). */
+  function vorKampfSeiten() {
+    var seiten = [
+      // Elara empfaengt Dich als Verbuendete.
+      _t('(Die Esse. Ein Schacht aus Glut und Rauch, so hoch wie das Rathaus. Davor, ohne Kapuze: Elara. An ihrem Hals ein Amulett des Rats, ein echtes.)\n\nELARA: Du bist da. Ich wusste es. Jetzt löse die Bindung, so wie ich es Dir gezeigt habe, und die Esse ist Geschichte.',
+        '(The forge. A shaft of embers and smoke, as tall as the town hall. Before it, hood down: Elara. Around her neck an amulet of the council, a true one.)\n\nELARA: You are here. I knew it. Now loosen the binding, the way I showed you, and the forge is history.'),
+      // 1. Der erhobene Hammer.
+      _t('(Du setzt den Hammer an die Bindung, an der Stelle, die sie Dir gezeigt hat. Deine Hände wissen, was zu tun ist. Sie wissen es zu gut.)',
+        '(You set the hammer to the binding, at the spot she showed you. Your hands know what to do. They know it too well.)'),
+      _t('(Mitten im Schlag erkennst Du den Griff. Das ist kein Lösen. Das ist das Erneuern, das Du schon einmal verweigert hast, damals, als Du noch wusstest, wer Du bist.)\n\n(Du hältst inne. Der Hammer bleibt oben.)',
+        '(In the middle of the strike you recognise the grip. This is no loosening. This is the renewal you refused once before, back when you still knew who you were.)\n\n(You stop. The hammer stays raised.)'),
+      _t('ELARA: (leise) Alles haben wir vorausgesehen. Nur nicht, dass Du es merkst.',
+        'ELARA: (quietly) We foresaw everything. Except that you would notice.'),
+      _t('ELARA: Der Rat hat Dich geleert, damit der Nebel Dich hier unten nicht auslöscht. Ich habe Dir einen Widerstand gegeben, damit Du hinab willst. Und ich habe Dir gezeigt, wie man die Bindung löst, damit Du sie erneuerst.\n\nWir brauchten nie Dein Ja, Archivschmied. Nur Deine Hände.',
+        'ELARA: The council emptied you so the fog would not wipe you out down here. I gave you a resistance so you would want to come down. And I showed you how to loosen the binding so you would renew it.\n\nWe never needed your yes, Archivesmith. Only your hands.'),
+      // 2. Harren.
+      _t('(Schritte hinter Dir. Harren, ohne Amulett, grau vom Nebel. Er hat alles verloren, was er war. Bis auf eines.)\n\nHARREN: Lene.\n\n(Sie zögert. Einen Atemzug lang ist sie wieder ein Kind am Fenster.)',
+        '(Footsteps behind you. Harren, without an amulet, grey with fog. He has lost everything he was. All but one thing.)\n\nHARREN: Lene.\n\n(She hesitates. For one breath she is a child at the window again.)'),
+      _t('(Dann stösst sie ihn weg. Mit eigener Hand, bewusst, ohne den Blick abzuwenden. Er stürzt gegen den Rand des Schachts und steht nicht mehr auf.)\n\nELARA: Die Esse braucht keinen Vater.',
+        '(Then she pushes him away. With her own hand, deliberately, without looking away. He falls against the rim of the shaft and does not get up again.)\n\nELARA: The forge needs no father.'),
+      // 3. Elara nimmt Deinen Hammer, und die Esse nimmt sie.
+      _t('(Sie reisst Dir den Hammer aus der Hand.)\n\nELARA: Dann mache ich es selbst.\n\n(Sie schlägt gegen die Bindung. Einmal, zweimal. Die Glut antwortet.)',
+        '(She tears the hammer from your hand.)\n\nELARA: Then I will do it myself.\n\n(She strikes the binding. Once, twice. The embers answer.)'),
+      _t('(Doch sie ist keine Archivschmiedin. Die Bindung entgleitet ihr. Statt dass sie die Esse schmiedet, schmiedet die Esse sie. Der Rauch kriecht in sie hinein, und was sich aufrichtet, ist nicht mehr Elara.)',
+        '(But she is no Archivesmith. The binding slips away from her. Instead of her forging the forge, the forge forges her. The smoke crawls into her, and what rises is no longer Elara.)')
+    ];
+    return seiten;
+  }
+
   // Gibt true zurueck, wenn die Szene laeuft (dann ruft sie `weiter` selbst).
   function vorKampf(scene, boss, weiter) {
     if (!scene || !_dialogDa()) return false;
     if (_flag('harren_dead')) return false;   // schon gesehen: gleich der Kampf
 
-    _seiten(scene, [
-      { text: _t(
-        '(Die Quelle. Ein Schacht aus Licht und Nebel, und davor, ohne Kapuze: Elara.)\n\nELARA: Du bist genau so weit gekommen, wie ich Dich brauchte. Niemand sonst hätte diese Kammern überstanden. Danke.',
-        '(The source. A shaft of light and fog, and before it, hood down: Elara.)\n\nELARA: You came exactly as far as I needed you to. Nobody else would have survived these chambers. Thank you.') },
-      { text: _t(
-        'ELARA: Die Stadt will geführt werden. Sie weiss es nur nicht. Der Nebel nimmt ihnen die Last, sich an alles zu erinnern.\n\n(Sie streckt die Hand nach der Quelle aus.)',
-        'ELARA: The city wants to be led. It just does not know it. The fog takes from them the burden of remembering everything.\n\n(She reaches out toward the source.)') },
-      { text: _t(
-        '(Schritte hinter Dir. Harren. Er ist Dir gefolgt, den ganzen Weg.)\n\nHARREN: Lene. Komm nach Hause.\n\n(Für einen Atemzug zögert sie.)',
-        '(Footsteps behind you. Harren. He followed you, all the way down.)\n\nHARREN: Lene. Come home.\n\n(For one breath, she hesitates.)') },
-      { text: _t(
-        '(Dann nimmt die Quelle sie. Was einmal Elara war, stösst ihn fort. Er fällt, und er steht nicht mehr auf.)',
-        '(Then the source takes her. What was once Elara throws him aside. He falls, and he does not get up again.)'),
-        weiter: _t('Kämpfen', 'Fight'),
-        // #89: Der Moment, in dem die Quelle sie nimmt und Harren faellt,
-        // ist mehr als eine Textseite.
-        beiAnzeige: function () { _quelleNimmtSie(scene); },
-        danach: function () { _setzen('harren_dead'); } }
-    ], function () { if (typeof weiter === 'function') weiter(); });
+    var texte = vorKampfSeiten();
+    var seiten = texte.map(function (text, i) {
+      var s = { text: text };
+      // Harren faellt auf der Seite, auf der sie ihn wegstoesst (vor der Esse).
+      if (i === 6) s.danach = function () { _setzen('harren_dead'); };
+      if (i === texte.length - 1) {
+        s.weiter = _t('Kämpfen', 'Fight');
+        // #89: Der Moment, in dem die Esse sie nimmt, ist mehr als eine Textseite.
+        s.beiAnzeige = function () { _quelleNimmtSie(scene); };
+        // Wer die Szene vorzeitig verlaesst, soll sie nicht noch einmal sehen.
+        s.danach = function () { _setzen('harren_dead'); };
+      }
+      return s;
+    });
+    _seiten(scene, seiten, function () { if (typeof weiter === 'function') weiter(); });
     return true;
   }
 
@@ -327,8 +365,8 @@
   function _letzteWorte() {
     var teile = [];
     if (_flag('elara_trust')) {
-      teile.push(_t('ELARA: Du hast mir vertraut. Bis zuletzt. Das war das Einzige, was ich nie geplant hatte.',
-        'ELARA: You trusted me. Until the end. That was the only thing I never planned for.'));
+      teile.push(_t('ELARA: Du hast mir vertraut. Bis zum letzten Schlag. Und dann hast Du Dich erinnert.',
+        'ELARA: You trusted me. Until the last strike. And then you remembered.'));
     } else {
       teile.push(_t('ELARA: Du hast mir nie ganz getraut. Klug. Klüger als er.',
         'ELARA: You never fully trusted me. Wise. Wiser than him.'));
@@ -340,10 +378,15 @@
     return teile.join('\n\n');
   }
 
+  // v6.1: Das Ziel ist mit dem Sieg erfuellt (onBossKilled); abgegeben wird
+  // die Quelle oben bei Thom (turnInNpcId), und dort spricht er den Abschluss.
+  // Faellt der Abschuss aus irgendeinem Grund nicht ins Ziel (Debug-Boss),
+  // hier nachziehen, damit die Abgabe moeglich bleibt.
   function _quelleAbschliessen(scene) {
     var qs = _qs();
-    if (qs && typeof qs.completeQuest === 'function') {
-      try { qs.completeQuest('schattenrat_finale'); } catch (e) {}
+    if (qs && typeof qs.isQuestReadyToComplete === 'function' && !qs.isQuestReadyToComplete('schattenrat_finale')
+        && typeof qs.updateQuestProgress === 'function') {
+      try { qs.updateQuestProgress('boss_kill', 'schattenrat', 1); } catch (e) {}
     }
     try {
       if (window.EventSystem && typeof window.EventSystem.showEventToast === 'function') {
@@ -373,12 +416,9 @@
       scene._quelleGlow = null;
     } catch (e) {}
 
-    _seiten(scene, [
-      { text: _t(
-        '(Die Quelle zerbricht. Der Nebel fällt in sich zusammen wie ein nasses Tuch.)\n\n(Elara liegt am Boden. Wieder sie selbst. Gebrochen.)',
-        '(The source breaks. The fog collapses like a wet cloth.)\n\n(Elara lies on the ground. Herself again. Broken.)') },
-      { text: _letzteWorte() },
-      { text: _t('(Ihre Klinge liegt in Deiner Hand. Was tust Du?)', '(Her blade is in your hand. What do you do?)'),
+    _seiten(scene, nachKampfSeiten().map(function (text) { return { text: text }; }).concat([
+      { text: _t('MARA: (Sie kommt die letzten Stufen herab, den Bogen gesenkt.) Sie hat ihren Vater getötet. Mit eigener Hand, und sie wusste, was sie tut. Richte sie, Archivschmied.\n\n(Elaras Klinge liegt in Deiner Hand. Was tust Du?)',
+        'MARA: (She comes down the last steps, bow lowered.) She killed her father. With her own hand, and she knew what she was doing. Judge her, Archivesmith.\n\n(Elara\'s blade is in your hand. What do you do?)'),
         auswahl: [
           {
             label: _t('Verschonen', 'Spare her'),
@@ -397,9 +437,25 @@
             }
           }
         ] }
-    ]);
+    ]));
     return true;
   }
 
-  window.Finale = { konvoi: konvoi, vorKampf: vorKampf, nachKampf: nachKampf };
+  /**
+   * Die Seiten nach dem Kampf bis zur Wahl (v6.1, Das Finale 4 bis 6): ihre
+   * eigene Klinge trifft sie, der letzte Schlag ist Handwerk, ihre letzten
+   * Worte. Die Wahl selbst stellt Mara (nachKampf).
+   */
+  function nachKampfSeiten() {
+    return [
+      _t('(Elaras Hieb geht fehl. Ihre eigene Klinge, die in Deiner Hand, trifft sie. Sie sinkt in die Knie, und der Rauch weicht aus ihr wie aus einem erkalteten Ofen.)',
+        '(Elara\'s blow goes wide. Her own blade, the one in your hand, strikes her. She sinks to her knees, and the smoke leaves her like a cooling furnace.)'),
+      _t('(Der Hammer liegt neben ihr. Du hebst ihn auf und setzt ihn noch einmal an die Bindung. Diesmal in die andere Richtung, so wie nur ein Archivschmied es kann.)\n\n(Ein Schlag. Die Bindung löst sich wirklich. Die Esse reisst von oben bis unten, die Glut erlischt, und es kommt kein neuer Rauch nach.)',
+        '(The hammer lies beside her. You pick it up and set it to the binding once more. This time in the other direction, the way only an Archivesmith can.)\n\n(One strike. The binding truly comes loose. The forge splits from top to bottom, the embers die, and no new smoke follows.)'),
+      _letzteWorte()
+    ];
+  }
+
+  window.Finale = { konvoi: konvoi, vorKampf: vorKampf, nachKampf: nachKampf,
+    vorKampfSeiten: vorKampfSeiten, nachKampfSeiten: nachKampfSeiten };
 })();

@@ -76,9 +76,15 @@
   // Das Ende steht fest (Bibel v5, Abschnitt 9): Endkampf, Presse, der Nebel
   // bricht. Die Entscheidungen unterwegs faerben, was danach erzaehlt wird.
   // Reine Funktion wie computeFinaleState: Flags rein, Absaetze raus.
+  // v6.1: Die Presse druckt alles, und die Stadt glaubt es ohne Siegel, weil
+  // sie sich mit dem Bruch der Esse selbst wieder erinnert. Danach gibst Du
+  // neue Druckplatten weg. TODO(Stufe 2): die Namen aus dem Nachhall.
   var EPILOG = {
     de: {
-      presse: 'Thom setzt die ganze Nacht. Am Morgen hängen die Blätter an jeder Tür: der Schattenrat, Aldric, die inszenierte Flucht, der gelenkte Widerstand. Und Elara.',
+      presse: 'Mit der Esse kehren Bruchstücke zurück. Die Leute bleiben auf der Strasse stehen und erinnern sich an Namen, an Gesichter, an Tage.',
+      druck: 'Thom setzt die ganze Nacht, und Du druckst alles: zuoberst Aldrics Namen, dann den Rat, den Widerstand, Elara und die Namen der Verschwundenen.',
+      glauben: 'Kein Blatt trägt ein Siegel. Die Stadt glaubt ihnen trotzdem, denn sie bestätigen, was jeder gerade selbst wieder weiss. Was an tausend Orten steht, kann niemand mehr verbrennen.',
+      platten: 'Danach schmiedest Du neue Druckplatten und gibst sie weg. Der Mann, der die Siegel des Rats gemacht hat, macht jetzt Werkzeug für alle.',
       nebel: 'Der Nebel bricht. Nicht, weil ihn jemand vertreibt, sondern weil zu viele Menschen sich zu vieles zugleich merken.',
       harren: 'Harren liegt unter dem Brunnen begraben. Neben seinen Namen hat jemand einen zweiten geritzt: Lene.',
       elaraLebt: 'Elara lebt, hinter den Gittern des Rathauskellers, in den sie Dich einst hinabgeschickt hat. Jeden Tag fragt sie die Wache, ob die Presse noch läuft.',
@@ -86,8 +92,12 @@
       vieleZurueck: 'Viele der Verschwundenen kehren zurück. Die Namen auf den Gesuchen, die Du behalten hast, wurden rechtzeitig gewarnt.',
       wenigeZurueck: 'Nur wenige der Verschwundenen kehren zurück. Die Namen auf den Gesuchen, die Du abgeliefert hast, standen zuerst auf den Listen des Rats.',
       einigeZurueck: 'Einige der Verschwundenen kehren zurück, blinzelnd, als kämen sie aus einem langen Schlaf.',
+      namenGewarnt: 'Viele der Verschwundenen kehren zurück. Wen Du vor der Kettenwache gewarnt hast, war rechtzeitig fort und kommt jetzt aus den Kanälen hoch.',
+      namenAbgeliefert: 'Nur wenige der Verschwundenen kehren zurück. Die Namen auf der Liste, die Du dem Priester gegeben hast, standen als erste in den Büchern des Rats.',
+      aldricErzaehlt: 'Aldric lebt in einer Kammer unter dem Rathaus. Er hat seine Geschichte aus Deinem Mund gehört und liest sie jeden Tag auf Thoms Blättern nach, als ginge es um einen Fremden.',
+      aldricVerschwiegen: 'Aldric irrt durch die unteren Gänge. Sein Name steht an jeder Tür der Stadt, und er weiss nicht, dass es seiner ist.',
       konvoiMann: 'Einer von ihnen ist der Mann vom Konvoi. Er erkennt Dich sofort.',
-      branka: 'Branka steht neben Dir an der Presse. Sie hat nicht vergessen, dass Du das Siegel verweigert hast.',
+      branka: 'Branka steht neben Dir an der Presse. Sie hat das gesprungene Siegel damals gesehen und nie ein Wort darüber verloren.',
       brankaAlt: 'Branka steht neben Dir an der Presse.',
       mara: 'Mara verteilt die Blätter in den Gassen, in denen ihr Netz noch steht.',
       maraFort: 'Mara bleibt verschwunden. Ihr Netz ist seit dem Konvoi zerrissen.',
@@ -97,7 +107,10 @@
       namenlos: 'Wer Du warst, bleibt im Nebel. Die Stadt nennt Dich den Archivschmied, und es genügt.'
     },
     en: {
-      presse: 'Thom sets type all night. By morning the sheets hang on every door: the Shadow Council, Aldric, the staged escape, the steered resistance. And Elara.',
+      presse: 'With the forge, fragments come back. People stop in the street and remember names, faces, days.',
+      druck: 'Thom sets type all night, and you print everything: Aldric\'s name at the top, then the council, the resistance, Elara and the names of the disappeared.',
+      glauben: 'No sheet bears a seal. The city believes them anyway, because they confirm what everyone has just come to know again. What stands in a thousand places, nobody can burn any more.',
+      platten: 'Afterwards you forge new printing plates and give them away. The man who made the council\'s seals now makes tools for everyone.',
       nebel: 'The fog breaks. Not because anyone drives it away, but because too many people remember too much at once.',
       harren: 'Harren lies buried beneath the fountain. Next to his name someone has carved a second one: Lene.',
       elaraLebt: 'Elara lives, behind the bars of the town hall cellar she once sent you down into. Every day she asks the guard whether the press is still running.',
@@ -105,8 +118,12 @@
       vieleZurueck: 'Many of the disappeared come back. The names on the petitions you kept were warned in time.',
       wenigeZurueck: 'Only a few of the disappeared come back. The names on the petitions you handed over were the first on the council\'s lists.',
       einigeZurueck: 'Some of the disappeared come back, blinking, as if from a long sleep.',
+      namenGewarnt: 'Many of the disappeared come back. Those you warned about the chain guard got away in time and now climb up out of the canals.',
+      namenAbgeliefert: 'Only a few of the disappeared come back. The names on the list you gave the priest were the first in the council\'s books.',
+      aldricErzaehlt: 'Aldric lives in a chamber beneath the town hall. He heard his story from your mouth and reads it again every day on Thom\'s sheets, as if it were about a stranger.',
+      aldricVerschwiegen: 'Aldric wanders the lower passages. His name is on every door in the city, and he does not know it is his.',
       konvoiMann: 'One of them is the man from the convoy. He recognizes you at once.',
-      branka: 'Branka stands beside you at the press. She has not forgotten that you refused the seal.',
+      branka: 'Branka stands beside you at the press. She saw the cracked seal back then and never said a word about it.',
       brankaAlt: 'Branka stands beside you at the press.',
       mara: 'Mara hands out the sheets in the alleys where her network still holds.',
       maraFort: 'Mara stays gone. Her network has been torn since the convoy.',
@@ -126,11 +143,15 @@
   function epilog(flags, lang) {
     var T = EPILOG[lang === 'en' ? 'en' : 'de'];
     var st = computeFinaleState(flags);
-    var out = [T.presse, T.nebel];
+    var out = [T.presse, T.druck, T.glauben, T.nebel];
     if (flag(flags, 'harren_dead')) out.push(T.harren);
     out.push(st.elara === 'lives' ? T.elaraLebt : T.elaraTot);
 
-    var zurueck = flag(flags, 'petitions_kept') ? T.vieleZurueck
+    // v6.1: Maras Namensliste (klerus_district_purge) entscheidet. Die Gesuche
+    // aus v5 nur noch fuer Staende, in denen diese Wahl noch nicht fiel.
+    var zurueck = flag(flags, 'namen_gewarnt') ? T.namenGewarnt
+      : flag(flags, 'namen_abgeliefert') ? T.namenAbgeliefert
+      : flag(flags, 'petitions_kept') ? T.vieleZurueck
       : flag(flags, 'petitions_surrendered') ? T.wenigeZurueck : T.einigeZurueck;
     if (flag(flags, 'convoy_blade_drawn')) zurueck += ' ' + T.konvoiMann;
     out.push(zurueck);
@@ -141,6 +162,11 @@
     if (st.allies.thom) out.push(T.thom);
     if (st.aloneAtEnd) out.push(T.allein);
 
+    // v6.1: Aldrics Ende, sobald Die letzte Wache gespielt ist.
+    if (flag(flags, 'aldric_erzaehlt')) out.push(T.aldricErzaehlt);
+    else if (flag(flags, 'aldric_verschwiegen')) out.push(T.aldricVerschwiegen);
+
+    out.push(T.platten);
     out.push(st.remembered ? T.erinnert : T.namenlos);
     return out;
   }

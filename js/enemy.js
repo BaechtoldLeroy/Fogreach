@@ -3359,7 +3359,8 @@ const BOSS_DEFINITIONS = {
     baseDamage: 16,
     // 3.0 auf den Rahmen = 284 px sichtbar; dieselbe Groesse, jetzt gemessen.
     scale: 2.95,
-    loreIntro: 'Die Quelle hat sie genommen. Was einmal Elara war, greift nach allem, woran Du Dich erinnerst.',
+    // v6.1: Sie wollte die Esse selbst schmieden, und die Esse hat sie genommen.
+    loreIntro: 'Die Esse hat sie genommen. Was einmal Elara war, greift nach allem, woran Du Dich erinnerst.',
     attacks: ['shadowDash', 'vergesseneRufen', 'nebelAusloeschung'],
     attackCooldown: 3000,
   },
@@ -3379,7 +3380,7 @@ if (window.i18n && typeof window.i18n.binden === 'function') {
     'boss.shadowCouncillor.name': 'Shadow Councillor',
     'boss.shadowCouncillor.lore': 'A member of the Chain Council himself steps out of the shadows — and with him the source of the fog he guards.',
     'boss.elaraBesessen.name': 'Elara, possessed',
-    'boss.elaraBesessen.lore': 'The source has taken her. What was once Elara reaches for everything you remember.'
+    'boss.elaraBesessen.lore': 'The forge has taken her. What was once Elara reaches for everything you remember.'
   });
 }
 
@@ -3394,6 +3395,9 @@ function _elaraWartet() {
     var qs = window.questSystem;
     if (!qs || typeof qs.getActiveQuests !== 'function') return false;
     if (typeof qs.hasFlag === 'function' && qs.hasFlag('story_ending')) return false;
+    // v6.1: Die Quelle wird oben bei Thom abgegeben und laeuft bis dahin
+    // weiter. Ist der Kampf entschieden, wartet unten niemand mehr.
+    if (typeof qs.hasFlag === 'function' && (qs.hasFlag('elara_spared') || qs.hasFlag('elara_killed'))) return false;
     return (qs.getActiveQuests() || []).some(function (q) { return q && q.id === 'schattenrat_finale'; });
   } catch (e) { return false; }
 }

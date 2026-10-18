@@ -886,9 +886,10 @@ class HubSceneV2 extends Phaser.Scene {
       // Gegenstück: NPC VERSCHWINDET, sobald ein Flag gesetzt ist. Bisher gab
       // es nur "ab jetzt sichtbar" — Aldric stand deshalb auch im Epilog noch
       // im Hub, obwohl der Rat da enttarnt und die Wahrheit gedruckt ist.
+      // Auch als Liste: verschwindet bei der ersten gesetzten (Harren, v6.1).
       if (isVisible && npc.hiddenAfterFlag && window.questSystem
           && typeof window.questSystem.hasFlag === 'function') {
-        if (window.questSystem.hasFlag(npc.hiddenAfterFlag)) isVisible = false;
+        if ([].concat(npc.hiddenAfterFlag).some((f) => window.questSystem.hasFlag(f))) isVisible = false;
       }
       // #161: Mara fehlt im Epilog, wenn ihr Netz am Konvoi verbrannt ist.
       if (isVisible && this._epilogOhne(npc)) isVisible = false;
@@ -1245,7 +1246,10 @@ class HubSceneV2 extends Phaser.Scene {
     const aldricBlocked = (npcId === 'aldric' && window.HubPhase
       && window.HubPhase.aldricBlocksQuests(this._hubPhase));
     // Check for active quests for this NPC
-    const active = qs.getActiveQuests ? qs.getActiveQuests().filter(q => q.npcId === npcId) : [];
+    // v6.1: Ein fertiger Auftrag zeigt sein "?" bei dem, der ihn abnimmt
+    // (turnInNpcId, Die Quelle -> Thom), nicht beim Geber.
+    const active = qs.getActiveQuestsAt ? qs.getActiveQuestsAt(npcId)
+      : (qs.getActiveQuests ? qs.getActiveQuests().filter(q => q.npcId === npcId) : []);
     const readyToComplete = active.filter(q => qs.isQuestReadyToComplete && qs.isQuestReadyToComplete(q.id));
     const inProgress = active.filter(q => !qs.isQuestReadyToComplete || !qs.isQuestReadyToComplete(q.id));
     // Quest abgeschlossen → "?" zur Abgabe (höchste Prio). In Arbeit → "…"
@@ -1343,7 +1347,7 @@ class HubSceneV2 extends Phaser.Scene {
       }
       if (data.visibleAfterQuest && !completedIds.has(data.visibleAfterQuest)) shouldBeVisible = false;
       if (data.visibleAfterFlag && !hasFlag(data.visibleAfterFlag)) shouldBeVisible = false;
-      if (data.hiddenAfterFlag && hasFlag(data.hiddenAfterFlag)) shouldBeVisible = false;
+      if (data.hiddenAfterFlag && [].concat(data.hiddenAfterFlag).some(hasFlag)) shouldBeVisible = false;
       if (this._epilogOhne(data)) shouldBeVisible = false;
       if (!sprite) return;
       if (shouldBeVisible && !sprite.active) {
@@ -1654,7 +1658,7 @@ class HubSceneV2 extends Phaser.Scene {
 
     if (qs && npcId) {
       // Check if there is an active quest ready to turn in
-      const activeForNpc = qs.getActiveQuests(npcId);
+      const activeForNpc = qs.getActiveQuestsAt ? qs.getActiveQuestsAt(npcId) : qs.getActiveQuests(npcId);
       const readyToTurnIn = activeForNpc.find(q => qs.isQuestReadyToComplete(q.id));
       if (readyToTurnIn) {
         questMode = 'turnin';
@@ -5115,8 +5119,8 @@ class HubSceneV2 extends Phaser.Scene {
 
     const en = (lang === 'en');
     const pages = [{ text: en
-      ? 'THOM: The plates are set. Everything you saw goes on them: the council, Aldric, the resistance, her. Pull the lever when you are ready.'
-      : 'THOM: Die Platten liegen. Alles, was Du gesehen hast, kommt drauf: der Rat, Aldric, der Widerstand, sie. Zieh den Hebel, wenn Du so weit bist.',
+      ? 'THOM: The plates are set. Everything goes on them, Aldric\'s name at the top, then the council, the resistance, her. No seal. They will believe it anyway, because they remember. Pull the lever when you are ready.'
+      : 'THOM: Die Platten liegen. Alles kommt drauf, zuoberst Aldrics Name, dann der Rat, der Widerstand, sie. Kein Siegel. Sie werden es trotzdem glauben, weil sie sich erinnern. Zieh den Hebel, wenn Du so weit bist.',
       choices: null }];
     // Zwei Absaetze je Seite: lang genug, um zu tragen, kurz genug fuer Mobile.
     for (let i = 0; i < absaetze.length; i += 2) {

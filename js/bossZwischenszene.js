@@ -57,8 +57,8 @@
     'bossintro.shadowCouncillor.beiname': 'Der innere Kreis des Kettenrats',
     'bossintro.shadowCouncillor.1': 'Du hast für uns gearbeitet, Archivschmied. Auf beiden Seiten.',
     'bossintro.shadowCouncillor.2': 'Wer bestimmt, woran sich die Stadt erinnert, beherrscht sie. Heute vergisst sie Dich.',
-    'bossintro.elaraBesessen.beiname': 'Gefäß der Quelle',
-    'bossintro.elaraBesessen.1': 'Die Quelle flüstert Deinen Namen. Gleich hat sie ihn vergessen.',
+    'bossintro.elaraBesessen.beiname': 'Geschmiedet von der Esse',
+    'bossintro.elaraBesessen.1': 'Die Esse flüstert Deinen Namen. Gleich hat sie ihn vergessen.',
     'bossintro.elaraBesessen.2': 'Bleib. Lass sie nehmen, woran Du Dich erinnerst. Es tut nicht weh.'
   };
   var EN = {
@@ -74,8 +74,8 @@
     'bossintro.shadowCouncillor.beiname': 'Inner circle of the Chain Council',
     'bossintro.shadowCouncillor.1': 'You worked for us, Archivesmith. On both sides.',
     'bossintro.shadowCouncillor.2': 'Whoever decides what the city remembers rules it. Today it forgets you.',
-    'bossintro.elaraBesessen.beiname': 'Vessel of the Source',
-    'bossintro.elaraBesessen.1': 'The source whispers your name. Soon it will have forgotten it.',
+    'bossintro.elaraBesessen.beiname': 'Shaped by the Forge',
+    'bossintro.elaraBesessen.1': 'The forge whispers your name. Soon it will have forgotten it.',
     'bossintro.elaraBesessen.2': 'Stay. Let it take what you remember. It does not hurt.'
   };
   if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.register === 'function') {
