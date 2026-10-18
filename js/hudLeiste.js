@@ -43,6 +43,7 @@
   if (typeof window !== 'undefined' && window.i18n) {
     window.i18n.register('de', {
       'hud.leiste.taste.leer': 'Leer',
+      'hud.leiste.taste.leer_kurz': 'Leer',
       'hud.leiste.ersatz.attack': 'Hieb',
       'hud.leiste.ersatz.roll': 'Rolle',
       'hud.leiste.ersatz.potion': 'Trank',
@@ -50,6 +51,7 @@
     });
     window.i18n.register('en', {
       'hud.leiste.taste.leer': 'Space',
+      'hud.leiste.taste.leer_kurz': 'Spc',
       'hud.leiste.ersatz.attack': 'Hit',
       'hud.leiste.ersatz.roll': 'Roll',
       'hud.leiste.ersatz.potion': 'Potion',
@@ -251,7 +253,14 @@
   var _leiste = null;
 
   function _tastenText(key, idx) {
-    if (key === 'attack') return T('hud.leiste.taste.leer', 'Leer');
+    if (key === 'attack') {
+      // Mit Zusatztaste (Einstellungen) knapp beide: "Leer/X", passt ins Feld.
+      var zusatz = { x: 'X', y: 'Y', num0: 'N0' }[
+        window.InputScheme && typeof window.InputScheme.getExtraAttackKey === 'function'
+          ? window.InputScheme.getExtraAttackKey() : 'none'];
+      return zusatz ? T('hud.leiste.taste.leer_kurz', 'Leer') + '/' + zusatz
+        : T('hud.leiste.taste.leer', 'Leer');
+    }
     if (key === 'roll') return 'Shift';
     if (key === 'potion') return 'F';
     var IS = window.InputScheme;

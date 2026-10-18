@@ -19,6 +19,7 @@ function makeStub() {
   let lastMoveDir = { x: 0, y: 0 };
   let suppressFlags = { invOpen: false, playerDeathHandled: false, isReturningToHub: false };
   let storedScheme = 'classic';
+  let extraAttackKey = 'none';
 
   const primitives = {
     getKeyDown: (name) => !!keysDown[name],
@@ -40,6 +41,7 @@ function makeStub() {
     getPlayerPos: () => playerPos,
     getLastMoveDir: () => ({ ...lastMoveDir }),
     getSuppressFlags: () => ({ ...suppressFlags }),
+    getExtraAttackKey: () => extraAttackKey,
     persistence: {
       getControlScheme: () => storedScheme,
       setControlScheme: (v) => { storedScheme = v; }
@@ -57,6 +59,7 @@ function makeStub() {
     setLastMoveDir(x, y) { lastMoveDir = { x, y }; },
     setSuppress(flags) { suppressFlags = { ...suppressFlags, ...flags }; },
     setStoredScheme(v) { storedScheme = v; },
+    setExtraAttackKey(v) { extraAttackKey = v; },
     getStoredScheme() { return storedScheme; }
   };
 }
@@ -199,6 +202,69 @@ test('isBasicAttackTriggered suppressed when inventory is open', () => {
   stub.setSuppress({ invOpen: true });
   stub.pressKey('space');
   assert.strictEqual(IS.isBasicAttackTriggered(), false);
+});
+
+// --- Zusaetzliche Angriffstaste (gegen Tastatur-Ghosting) ---
+
+test('extra attack key: none by default, X/Y/Numpad 0 do not attack', () => {
+  const { IS, stub } = fresh();
+  assert.strictEqual(IS.getExtraAttackKey(), 'none');
+  ['x', 'y', 'numpad0'].forEach((k) => stub.pressKey(k));
+  assert.strictEqual(IS.isBasicAttackTriggered(), false);
+});
+
+test('extra attack key triggers attack edge-triggered in both schemes', () => {
+  [['x', 'x'], ['y', 'y'], ['num0', 'numpad0']].forEach(([setting, key]) => {
+    ['classic', 'arpg'].forEach((scheme) => {
+      const { IS, stub } = fresh();
+      stub.setStoredScheme(scheme);
+      stub.setExtraAttackKey(setting);
+      assert.strictEqual(IS.getScheme(), scheme);
+      assert.strictEqual(IS.getExtraAttackKey(), setting);
+      stub.pressKey(key);
+      assert.strictEqual(IS.isBasicAttackTriggered(), true, setting + ' in ' + scheme);
+      assert.strictEqual(IS.isBasicAttackTriggered(), false, 'debounced ' + setting);
+      // Space keeps working alongside.
+      stub.pressKey('space');
+      assert.strictEqual(IS.isBasicAttackTriggered(), true, 'space with ' + setting);
+    });
+  });
+});
+
+test('extra attack key: only the chosen key attacks', () => {
+  const { IS, stub } = fresh();
+  stub.setExtraAttackKey('x');
+  stub.pressKey('y');
+  stub.pressKey('numpad0');
+  assert.strictEqual(IS.isBasicAttackTriggered(), false);
+});
+
+test('extra attack key: unknown setting falls back to none', () => {
+  const { IS, stub } = fresh();
+  stub.setExtraAttackKey('z');
+  assert.strictEqual(IS.getExtraAttackKey(), 'none');
+  stub.pressKey('z');
+  assert.strictEqual(IS.isBasicAttackTriggered(), false);
+});
+
+test('extra attack key: primitives without getExtraAttackKey mean none', () => {
+  const { IS, stub } = fresh();
+  const p = { ...stub.primitives };
+  delete p.getExtraAttackKey;
+  IS._configureForTest(p);
+  assert.strictEqual(IS.getExtraAttackKey(), 'none');
+  stub.pressKey('x');
+  assert.strictEqual(IS.isBasicAttackTriggered(), false);
+});
+
+test('extra attack key suppressed in dialogs, inventory, death, hub return', () => {
+  ['eventChoiceOpen', 'invOpen', 'playerDeathHandled', 'isReturningToHub'].forEach((flag) => {
+    const { IS, stub } = fresh();
+    stub.setExtraAttackKey('x');
+    stub.setSuppress({ [flag]: true });
+    stub.pressKey('x');
+    assert.strictEqual(IS.isBasicAttackTriggered(), false, flag);
+  });
 });
 
 // --- Ability slot triggers ---

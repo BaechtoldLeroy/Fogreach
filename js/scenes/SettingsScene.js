@@ -41,6 +41,12 @@
       'settings.debug.toast_added_iron': '+100 Eisenbrocken',
       'settings.section.gameplay': 'GAMEPLAY',
       'settings.gameplay.skip_tutorial': 'Tutorial überspringen',
+      'settings.extra_attack.label': 'Zusätzliche Angriffstaste',
+      'settings.extra_attack.none': 'Keine',
+      'settings.extra_attack.x': 'X',
+      'settings.extra_attack.y': 'Y',
+      'settings.extra_attack.num0': 'Num 0',
+      'settings.extra_attack.hint': 'Hilft, wenn Pfeiltasten + Leertaste nicht gleichzeitig gehen',
       'settings.close': 'Schliessen [ESC]',
       'settings.toggle.on': 'AN',
       'settings.toggle.off': 'AUS'
@@ -82,6 +88,12 @@
       'settings.debug.toast_added_iron': '+100 Iron Chunks',
       'settings.section.gameplay': 'GAMEPLAY',
       'settings.gameplay.skip_tutorial': 'Skip Tutorial',
+      'settings.extra_attack.label': 'Extra attack key',
+      'settings.extra_attack.none': 'None',
+      'settings.extra_attack.x': 'X',
+      'settings.extra_attack.y': 'Y',
+      'settings.extra_attack.num0': 'Numpad 0',
+      'settings.extra_attack.hint': 'Helps when arrow keys + Space cannot be pressed together',
       'settings.close': 'Close [ESC]',
       'settings.toggle.on': 'ON',
       'settings.toggle.off': 'OFF'
@@ -93,6 +105,7 @@
   const STORAGE_KEY = 'demonfall_settings_v1';
 
   const MOBILE_BUTTON_SCALES = [0.8, 1.0, 1.2];
+  const EXTRA_ATTACK_KEYS = ['none', 'x', 'y', 'num0'];
 
   const DEFAULTS = {
     master: 0.5,
@@ -105,6 +118,9 @@
     vollbildStart: true,
     reducedEffects: false, // mobile performance: fewer particles, simpler fog
     movementWeight: 0.0, // 0 = instant (current), 1.0 = D2-like weight
+    // Angriff zusaetzlich zur Leertaste: 'none' | 'x' | 'y' | 'num0' (gegen
+    // Tastatur-Ghosting bei Pfeil-hoch + Pfeil-links + Leertaste).
+    extraAttackKey: 'none',
     debug: {
       autostart: false,
       noFow: false
@@ -166,6 +182,8 @@
     window.__MOVEMENT_WEIGHT__ = typeof settings.movementWeight === 'number'
       ? Math.max(0, Math.min(1, settings.movementWeight))
       : 0;
+    window.__EXTRA_ATTACK_KEY__ = EXTRA_ATTACK_KEYS.indexOf(settings.extraAttackKey) !== -1
+      ? settings.extraAttackKey : 'none';
 
     const m = (settings.mobile && typeof settings.mobile === 'object')
       ? settings.mobile : DEFAULTS.mobile;
@@ -282,7 +300,8 @@
         this._toggleRow(RIGHT_C, rightY, T('settings.mobile.d2_controls'), 'mobile.d2Controls', COL_W); rightY += 28;
       } else {
         this._sectionLabel(RIGHT_LBL, rightY, T('settings.section.input')); rightY += 18;
-        this._schemeRow(RIGHT_C, rightY, COL_W); rightY += 28;
+        this._schemeRow(RIGHT_C, rightY, COL_W); rightY += 22;
+        rightY += this._extraAttackRow(RIGHT_C, rightY, COL_W) + 6;
       }
 
       this._sectionLabel(RIGHT_LBL, rightY, T('settings.section.tutorial')); rightY += 18;
@@ -693,6 +712,46 @@
         }
         refresh();
       });
+    }
+
+    // Zweite Angriffstaste neben der Leertaste. Der Wert steht weiter rechts
+    // als in den anderen Zeilen, weil die Beschriftung laenger ist. Gibt die
+    // belegte Hoehe zurueck (der Hinweis darunter darf umbrechen).
+    _extraAttackRow(centerX, y, panelW) {
+      const left = centerX - panelW / 2 + 20;
+      this.add.text(left, y, T('settings.extra_attack.label') + ':', {
+        fontFamily: 'monospace', fontSize: '13px', color: '#f1e9d8'
+      }).setScrollFactor(0).setDepth(2002);
+
+      const valueX = centerX + 112;
+      const valueText = this.add.text(valueX, y, '', {
+        fontFamily: 'monospace', fontSize: '13px', color: '#ffd166'
+      }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(2002);
+      const jetzt = () => {
+        const v = this._getSetting('extraAttackKey');
+        return EXTRA_ATTACK_KEYS.indexOf(v) !== -1 ? v : 'none';
+      };
+      const refresh = () => valueText.setText(T('settings.extra_attack.' + jetzt()));
+      refresh();
+
+      const btnBg = this.add.rectangle(valueX, y + 8, 72, 22, 0x2a2a2a)
+        .setStrokeStyle(1, 0x666666).setScrollFactor(0).setDepth(2001)
+        .setInteractive({ useHandCursor: true });
+      btnBg.on('pointerdown', () => {
+        const next = EXTRA_ATTACK_KEYS[(EXTRA_ATTACK_KEYS.indexOf(jetzt()) + 1) % EXTRA_ATTACK_KEYS.length];
+        this._setSetting('extraAttackKey', next);
+        refresh();
+        // Die Faehigkeitsleiste zeigt die Zusatztaste am Angriffsfeld.
+        if (typeof window._refreshAbilityHUD === 'function') {
+          try { window._refreshAbilityHUD(); } catch (e) {}
+        }
+      });
+
+      const hint = this.add.text(left, y + 20, T('settings.extra_attack.hint'), {
+        fontFamily: 'monospace', fontSize: '10px', color: '#9a917f',
+        wordWrap: { width: panelW - 30 }
+      }).setScrollFactor(0).setDepth(2002);
+      return 20 + Math.ceil(hint.height);
     }
 
     _fullscreenRow(centerX, y, panelW) {

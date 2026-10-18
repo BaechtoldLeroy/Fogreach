@@ -36,6 +36,10 @@
   const SUPPORTED = ['classic', 'arpg'];
   const DEFAULT_SCHEME = 'classic';
   const DEAD_ZONE_PX = 20;
+  // Zusaetzliche Angriffstaste neben der Leertaste: manche Tastaturen melden
+  // Pfeil-hoch + Pfeil-links + Leertaste nicht gleichzeitig (Ghosting), dann
+  // geht der Hieb nach links oben verloren. Wert -> Name der Taste in keys.
+  const EXTRA_ATTACK_KEYS = { none: null, x: 'x', y: 'y', num0: 'numpad0' };
 
   const state = {
     scheme: null,                 // lazy-init from Persistence on first getScheme()
@@ -74,7 +78,12 @@
       three: kb.addKey('THREE'),
       four:  kb.addKey('FOUR'),
       // 054 WP01: Shift triggers Dodge-Roll (both schemes).
-      shift: kb.addKey('SHIFT')
+      shift: kb.addKey('SHIFT'),
+      // Zusaetzliche Angriffstasten ohne Capture: X/Y sollen in Textfeldern
+      // weiter tippbar bleiben.
+      x:       kb.addKey('X', false),
+      y:       kb.addKey('Y', false),
+      numpad0: kb.addKey('NUMPAD_ZERO', false)
     };
     return {
       getKeyDown(name) {
@@ -112,6 +121,9 @@
           return { x: d.x, y: d.y };
         }
         return { x: 0, y: 0 };
+      },
+      getExtraAttackKey() {
+        return window.__EXTRA_ATTACK_KEY__ || 'none';
       },
       getSuppressFlags() {
         return {
@@ -253,12 +265,21 @@
     // flag is set by markPrimaryButtonJustDown() from the consumer's UI-aware
     // pointerdown handler.
     const space = typeof p.isKeyJustDown === 'function' && p.isKeyJustDown('space');
+    const extraName = EXTRA_ATTACK_KEYS[getExtraAttackKey()];
+    const extra = !!extraName && typeof p.isKeyJustDown === 'function' && p.isKeyJustDown(extraName);
     let mouse = false;
     if (state.pointerJustDown) {
       state.pointerJustDown = false;
       mouse = true;
     }
-    return space || mouse;
+    return space || extra || mouse;
+  }
+
+  // 'none' | 'x' | 'y' | 'num0' — unbekannte Werte zaehlen als 'none'.
+  function getExtraAttackKey() {
+    const p = _requirePrimitives();
+    const v = (p && typeof p.getExtraAttackKey === 'function') ? p.getExtraAttackKey() : 'none';
+    return Object.prototype.hasOwnProperty.call(EXTRA_ATTACK_KEYS, v) ? v : 'none';
   }
 
   // Internal mapping: slot index (1..4) → physical key name per scheme.
@@ -357,6 +378,7 @@
     onChange,
     getMovementInput,
     isBasicAttackTriggered,
+    getExtraAttackKey,
     markPrimaryButtonJustDown,
     consumeAbilityTrigger,
     consumeAbilityReleaseTrigger,
@@ -366,6 +388,7 @@
     shouldSuppressCombatInput,
     _configureForTest,
     _DEAD_ZONE_PX: DEAD_ZONE_PX,
-    _SUPPORTED: SUPPORTED
+    _SUPPORTED: SUPPORTED,
+    _EXTRA_ATTACK_KEYS: Object.keys(EXTRA_ATTACK_KEYS)
   };
 })();
