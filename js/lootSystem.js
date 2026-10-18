@@ -1757,6 +1757,58 @@ if (window.i18n) {
     return true;
   }
 
+  // Werte, die der Opferstein mit dem Stueck hebt oder senkt: die Machtwerte
+  // wie beim Ausbau, dazu 'sicht' — beim Talglicht ist sie der einzige Wert,
+  // ohne sie haette der Stein dort nichts zu veraendern.
+  var SKALIERBARE_GRUNDWERTE = ['hp', 'damage', 'armor', 'crit', 'move', 'block', 'brand', 'sicht'];
+
+  function _grundwertSkaliert(stat, v, f) {
+    // sicht ist eine ganze Prozentzahl (Tooltip ohne Nachkomma), der Rest
+    // steht mit einer Nachkommastelle da — wie nach rollItem und ausbauen.
+    if (stat === 'sicht') return Math.max(1, Math.round(v * f));
+    return Math.max(0.1, Math.round(v * f * 10) / 10);
+  }
+
+  /**
+   * Eine KOPIE des Stuecks, deren Zahlen mit f multipliziert sind (#71,
+   * Opferstein). Alles andere bleibt: Basis, Seltenheit, Affix-ARTEN, Ausbau,
+   * Name, iLevel und Sondermerker wie elaraGift oder festerName. So bleibt
+   * ein Stueck nach dem Stein wiedererkennbar — es ist dasselbe, nur
+   * staerker oder schwaecher.
+   *
+   * Tempo und Reichweite bleiben unberuehrt: sie sind die Eigenart der Basis,
+   * nicht ihre Staerke (s. _hebbarerGrundwert).
+   */
+  function werteSkaliert(item, f) {
+    if (!item || !(f > 0)) return null;
+    var neu = Object.assign({}, item);
+    neu.baseStats = Object.assign({}, item.baseStats || {});
+    for (var i = 0; i < SKALIERBARE_GRUNDWERTE.length; i++) {
+      var k = SKALIERBARE_GRUNDWERTE[i];
+      if (typeof item[k] === 'number' && item[k] > 0) neu[k] = _grundwertSkaliert(k, item[k], f);
+      if (typeof neu.baseStats[k] === 'number' && neu.baseStats[k] > 0) {
+        neu.baseStats[k] = _grundwertSkaliert(k, neu.baseStats[k], f);
+      }
+    }
+    neu.affixes = Array.isArray(item.affixes) ? item.affixes.map(function (inst) {
+      if (!inst || typeof inst.value !== 'number') return inst;
+      var def = null;
+      for (var d = 0; d < AFFIX_DEFS.length; d++) {
+        if (AFFIX_DEFS[d].id === inst.defId) { def = AFFIX_DEFS[d]; break; }
+      }
+      var flach = !!(def && _wirkungFuer(def.statKey).einheit === 'flach');
+      var kopie = Object.assign({}, inst);
+      // Wie beim Wurf: flache Werte ganzzahlig und mindestens 1, damit kein
+      // Affix stumm auf 0 faellt und trotzdem seinen Platz belegt.
+      kopie.value = flach
+        ? Math.max(1, Math.round(inst.value * f))
+        : Math.max(0.1, Math.round(inst.value * f * 10) / 10);
+      return kopie;
+    }) : item.affixes;
+    try { neu.displayName = composeName(neu); } catch (e) {}
+    return neu;
+  }
+
   // ---------------------------------------------------------------------------
   // WP03: Gold Currency
   //
@@ -2434,6 +2486,8 @@ if (window.i18n) {
     ausbauMaxStufen: ausbauMaxStufen,
     ausbauRueckgabe: ausbauRueckgabe,
     ausbauBrockenGesamt: ausbauBrockenGesamt,
+    // #71: Opferstein — dasselbe Stueck mit gehobenen oder gesenkten Werten.
+    werteSkaliert: werteSkaliert,
     AUSBAU_JE_STUFE: AUSBAU_JE_STUFE,
     AUSBAU_STUFEN: AUSBAU_STUFEN,
     // i18n helper: always re-resolves item name + affixes against current

@@ -89,8 +89,10 @@
       'event.altar.choice_ignore': 'Nichts hergeben',
       'event.altar.nothing_equipped': 'Du trägst nichts, das er annehmen würde.',
       'event.altar.better': 'Der Stein gibt mehr zurück, als er nahm.',
-      'event.altar.same': 'Ein Tausch ohne Gewinn.',
+      'event.altar.better_stat': 'Der Stein gibt mehr zurück, als er nahm. {stat} {vorher} → {nachher}',
+      'event.altar.refused': 'Der Stein verweigert das Opfer.',
       'event.altar.worse': 'Der Stein gibt weniger zurück, als er nahm.',
+      'event.altar.worse_stat': 'Der Stein gibt weniger zurück, als er nahm. {stat} {vorher} → {nachher}',
       'event.altar.slot.weapon': 'Waffe',
       'event.altar.slot.head': 'Kopf',
       'event.altar.slot.body': 'Rüstung',
@@ -226,8 +228,10 @@
       'event.altar.choice_ignore': 'Give nothing',
       'event.altar.nothing_equipped': 'You carry nothing it would accept.',
       'event.altar.better': 'The stone gives back more than it took.',
-      'event.altar.same': 'An even trade — no better, no worse.',
-      'event.altar.worse': 'The stone gave back worse. Bad luck.',
+      'event.altar.better_stat': 'The stone gives back more than it took. {stat} {vorher} → {nachher}',
+      'event.altar.refused': 'The stone refuses the offering.',
+      'event.altar.worse': 'The stone gives back less than it took.',
+      'event.altar.worse_stat': 'The stone gives back less than it took. {stat} {vorher} → {nachher}',
       'event.altar.slot.weapon': 'weapon',
       'event.altar.slot.head': 'head',
       'event.altar.slot.body': 'body',
@@ -1244,33 +1248,70 @@
   // Zurueck kommt kein garantierter Aufstieg, sondern ein Wagnis — aber ein
   // EHRLICHES.
   //
-  // Frueher wurde einfach neu gewuerfelt und hinterher verglichen. Das klang
-  // nach Muenzwurf und war keiner: man traegt das BESTE aus allem, was man
-  // gefunden hat, und ein einzelner Wurf tritt gegen ein Maximum an. Gemessen
-  // ueber je 5000 Umwuerfe lag die Gewinnquote bei
-  //     bestes aus  1 Fund  ->  53 %
-  //     bestes aus  3 Funden -> 28 %
-  //     bestes aus 10 Funden -> 11 %
-  //     bestes aus 20 Funden ->  7 %
-  // Der Stein war also praktisch ein Zerstoerer, kein Wagnis.
+  // Erster Fehler: neu wuerfeln und hinterher vergleichen. Man traegt das
+  // BESTE aus allem Gefundenen, ein einzelner Wurf trat gegen ein Maximum an
+  // (bestes aus 20 Funden -> 7 % Gewinn). Der Stein war ein Zerstoerer.
   //
-  // Jetzt faellt ZUERST die Entscheidung (besser oder schlechter, halb und
-  // halb), und DANACH wird ein Stueck gesucht, das auf dieser Seite liegt.
-  // Der Betrag ist multiplikativ symmetrisch: besser mal (1+s), schlechter
-  // geteilt durch (1+s). Ein Paar aus Gewinn und Verlust ist damit exakt
-  // neutral — wichtig, weil der Stein mehrfach je Lauf vorkommen kann.
+  // Zweiter Fehler (bis b450): erst die Seite festlegen, dann unter 60
+  // frischen Wuerfen den suchen, der dem Ziel am naechsten kommt. Die Muenze
+  // war fair, der Betrag nicht: gute Stuecke erreichten das Gewinnziel selten
+  // und landeten knapp ueber dem alten Wert (+8 bis +11 %), waehrend die
+  // Verlustseite ihr Ziel immer traf (-18 %). Dazu tauschte der Stein die
+  // Affix-ARTEN, hob flache Stuecke auf die aktuelle Tiefe, und weil die
+  // Item-Staerke von den Affixen getragen wird, fiel der Schaden einer
+  // "besseren" Waffe in 20 bis 50 % der Faelle. Questgegenstaende liess
+  // rollItem scheitern — sie kamen immer als "kein Gewinn" zurueck.
+  //
+  // Jetzt bleibt das Stueck DASSELBE. Nur seine Zahlen (Hauptwert und
+  // Affixwerte) werden gemeinsam mit einem Faktor skaliert, bis die
+  // Item-Staerke genau auf dem Ziel liegt: besser mal (1+s), schlechter
+  // geteilt durch (1+s). Ein Gewinn und ein Verlust heben sich damit exakt
+  // auf, und weil alle Werte in dieselbe Richtung gehen, kann der Hauptwert
+  // der Meldung nicht widersprechen.
   var ALTAR_SLOTS = ['weapon', 'head', 'body', 'boots', 'offhand'];
 
-  // Halb und halb. Der Stein kostet ein getragenes Stueck; ein fairer
-  // Muenzwurf ist der Preis wert, ein guenstiger waere geschenkt.
-  var UMWURF_CHANCE_BESSER = 0.5;
-  // Wie deutlich der Unterschied ausfaellt: 10 bis 35 Prozent.
+  // 60 zu 40. Bei exakt symmetrischem Betrag waere ein Muenzwurf auf Dauer
+  // nur ein Nullsummenspiel — er kostet ein getragenes Stueck und eine
+  // Entscheidung, also soll er sich im Mittel leicht lohnen (rund +4 % je
+  // Stein im Log-Mittel), ohne ein sicherer Aufstieg zu sein.
+  var UMWURF_CHANCE_BESSER = 0.6;
+  // Wie deutlich der Unterschied ausfaellt: 10 bis 35 Prozent — gedeckelt auf
+  // das, was das Stueck in BEIDE Richtungen hergibt (s. opferUmwurf).
   var UMWURF_MIN_SPANNE = 0.10;
   var UMWURF_MAX_SPANNE = 0.35;
-  // Ziehungen je Stufe. 60 reicht: selbst gegen ein Stueck, das das beste aus
-  // zwanzig Funden ist (Trefferquote 7 %), landet man damit zu 99 % auf der
-  // gewollten Seite.
-  var UMWURF_ZIEHUNGEN = 60;
+  // Wie genau das Ziel getroffen werden muss: 2 %, mindestens ein Punkt —
+  // die Item-Staerke ist ganzzahlig, und kleine Stuecke springen in Punkten.
+  var UMWURF_TOLERANZ = 0.02;
+  // Wie weit der Faktor reichen darf. Affixe tragen einen festen Grundbetrag
+  // (10 je Affix in computeItemPower), den der Faktor nicht bewegt; bei
+  // schwachen Zahlen muesste er deshalb weit ausschlagen. Jenseits dieser
+  // Grenzen waere das Stueck nicht mehr wiederzuerkennen — dann verweigert
+  // der Stein lieber, als still etwas anderes zu liefern.
+  var UMWURF_FAKTOR_MIN = 0.4;
+  var UMWURF_FAKTOR_MAX = 2.5;
+  // Unter 5 % lohnt kein Opfer — und eine Meldung "mehr zurueck" fuer einen
+  // Punkt waere geflunkert.
+  var UMWURF_MIN_WIRKSAM = 0.05;
+
+  // Der Wert, an dem man ein Stueck dieses Platzes misst. Fuer die Nebenhand
+  // entscheidet die Basis: Schilde ueber Block und Ruestung, die Glutschale
+  // ueber Brand, Lichter ueber Sicht, Zweitwaffen ueber Krit.
+  var ALTAR_HAUPTWERT = {
+    weapon: ['damage'],
+    head: ['armor'],
+    body: ['armor'],
+    boots: ['move'],
+    offhand: ['block', 'armor', 'brand', 'sicht', 'crit']
+  };
+
+  /** Welcher Wert gilt bei diesem Stueck als Hauptwert? null, wenn keiner. */
+  function opferHauptwert(slot, it) {
+    var liste = ALTAR_HAUPTWERT[slot] || [];
+    for (var i = 0; i < liste.length; i++) {
+      if (it && typeof it[liste[i]] === 'number' && it[liste[i]] > 0) return liste[i];
+    }
+    return null;
+  }
 
   /** Welche angelegten Stuecke koennte der Stein annehmen? */
   function opferKandidaten() {
@@ -1280,106 +1321,158 @@
     ALTAR_SLOTS.forEach(function (slot) {
       var it = eq[slot];
       // Amulette bleiben aussen vor: sie tragen keine Werte, nur einen Effekt.
-      if (it && it.key && !it.isAmulet && it.type !== 'amulet') {
-        aus.push({ slot: slot, item: it });
-      }
+      if (!it || !it.key || it.isAmulet || it.type === 'amulet') return;
+      // Was der Stein ohnehin verweigern muesste, bietet er gar nicht erst an.
+      // Gemessen trifft das vor allem graue Waffen der ersten Tiefen: ihre
+      // Staerke steckt im Tempo der Basis, der Schaden bewegt sie kaum.
+      if (opferSpielraum(it) < UMWURF_MIN_WIRKSAM) return;
+      aus.push({ slot: slot, item: it });
     });
     return aus;
   }
 
   /**
-   * Wirft ein angelegtes Stueck neu.
-   *
-   * @returns {{alt:number, neu:number, item:object}|null} Item-Staerke vorher
-   *          und nachher, plus das neue Stueck.
+   * Wie weit kann dieses Stueck in BEIDE Richtungen, als Anteil der Staerke?
+   * Infinity, wenn sich das nicht rechnen laesst (dann entscheidet erst der
+   * Umwurf selbst).
    */
-  /**
-   * Ein Kandidat fuer den Umwurf — gleiche Basis, gleiche Seltenheit.
-   *
-   * Der Schwierigkeitsaufschlag muss mit: getragene Stuecke kommen aus einem
-   * Abwurf und sind dort mit dem Regler multipliziert worden (loot.js:416).
-   * Ohne diesen Schritt trat auf "schwer" ein Stueck mit x1,5 gegen eines mit
-   * x1,0 an, und der Vergleich war schief.
-   */
-  function _umwurfKandidat(key, iLevel, stufe, ausbau) {
-    var it = null;
-    // ohneDeckel: der Umwurf behaelt die Seltenheit des getragenen Stuecks —
-    // er zieht dafuer auch auf flachen Stufen, wo sonst der Tiefen-Deckel
-    // greifen wuerde (lootSystem.tierDeckel).
-    try { it = window.LootSystem.rollItem(key, Math.max(1, Math.round(iLevel)), stufe, undefined, { ohneDeckel: true }); } catch (e) {}
-    if (it && typeof window._applyDifficultyToRolledItem === 'function') {
-      try { it = window._applyDifficultyToRolledItem(it, Math.max(1, Math.round(iLevel))); } catch (e) {}
-    }
-    // Der AUSBAU wandert mit. Gemeldet: "der Opferstein hat den Ausbau des
-    // Items zurueckgesetzt". Gemessen ging er in 200 von 200 Tauschen
-    // verloren — der Stein wuerfelte ein frisches Stueck und schrieb es
-    // ungebaut in den Platz. Damit war jeder Umwurf zugleich eine stille
-    // Enteignung von Gold und Brocken, unabhaengig davon, wie die Muenze fiel.
-    //
-    // Er wird VOR dem Vergleich angelegt, nicht danach: sonst traete ein
-    // ungebautes Stueck gegen ein ausgebautes an, und die Seite, auf der das
-    // Ergebnis landet, waere gar nicht die ausgewuerfelte.
-    if (it && ausbau > 0 && window.LootSystem
-        && typeof window.LootSystem.ausbauen === 'function') {
-      for (var a = 0; a < ausbau; a++) {
-        if (!window.LootSystem.ausbauen(it)) break;   // Decke der Seltenheit
-      }
-    }
-    return it;
+  function opferSpielraum(it) {
+    var LS = window.LootSystem;
+    var staerke = window.computeItemPower;
+    if (!it || !LS || typeof LS.werteSkaliert !== 'function'
+        || typeof staerke !== 'function') return Infinity;
+    var p = staerke(it);
+    if (!(p > 0)) return 0;
+    var pMin = staerke(LS.werteSkaliert(it, UMWURF_FAKTOR_MIN));
+    var pMax = staerke(LS.werteSkaliert(it, UMWURF_FAKTOR_MAX));
+    return Math.min(p / Math.max(1, pMin) - 1, pMax / p - 1);
   }
 
   /**
-   * Wirft ein angelegtes Stueck neu — auf die vorher ausgewuerfelte Seite.
+   * Die Entscheidung des Steins, getrennt vom Stueck: welche Seite, wie weit.
+   * Als eigene Funktion, damit sich die Quote ohne Zufallsstatistik pruefen
+   * laesst (tests/opferstein.test.js).
    *
+   * @param {function():number} [rng]
+   * @returns {{besser:boolean, spanne:number}}
+   */
+  function opferWurf(rng) {
+    var r = (typeof rng === 'function') ? rng : Math.random;
+    var besser = r() < UMWURF_CHANCE_BESSER;
+    var spanne = UMWURF_MIN_SPANNE + r() * (UMWURF_MAX_SPANNE - UMWURF_MIN_SPANNE);
+    return { besser: besser, spanne: spanne };
+  }
+
+  /**
+   * Sucht den Faktor, mit dem das Stueck die Ziel-Staerke erreicht.
+   * Die Staerke steigt mit dem Faktor (jede Zahl waechst mit ihm, Rundung
+   * hin oder her), also genuegt eine Halbierung des Intervalls.
+   */
+  function _opferFaktor(alt, ziel, besser, staerke) {
+    var LS = window.LootSystem;
+    var lo = besser ? 1 : UMWURF_FAKTOR_MIN;
+    var hi = besser ? UMWURF_FAKTOR_MAX : 1;
+    var best = null, bestAbstand = Infinity;
+    for (var i = 0; i < 40; i++) {
+      var f = (lo + hi) / 2;
+      var k = LS.werteSkaliert(alt, f);
+      var p = staerke(k);
+      var d = Math.abs(p - ziel);
+      if (d < bestAbstand) { bestAbstand = d; best = { item: k, p: p, f: f }; }
+      if (p < ziel) lo = f; else hi = f;
+    }
+    return best;
+  }
+
+  /**
+   * Wirft ein angelegtes Stueck um — auf die vorher ausgewuerfelte Seite.
+   *
+   * Das iLevel bleibt das des Stuecks; die Tiefe dient nur als Ersatz fuer
+   * die angezeigte Gegenstandsstufe, wenn das Stueck keine eigene kennt.
+   *
+   * @param {string} slot
+   * @param {number} tiefe
+   * @param {{besser:boolean, spanne:number}} [wurf] fuer Tests vorgegeben
    * @returns {{alt:number, neu:number, item:object, besser:boolean,
+   *            spanne:number, ziel:number,
+   *            haupt:{stat:string, vorher:number, nachher:number}|null,
    *            unveraendert?:boolean}|null}
    */
-  function opferUmwurf(slot, tiefe) {
+  function opferUmwurf(slot, tiefe, wurf) {
     var eq = window.equipment;
-    if (!eq || !eq[slot] || !window.LootSystem
-        || typeof window.LootSystem.rollItem !== 'function') return null;
+    var LS = window.LootSystem;
+    if (!eq || !eq[slot] || !LS || typeof LS.werteSkaliert !== 'function') return null;
     var alt = eq[slot];
-    var stufe = (typeof alt.tier === 'number') ? alt.tier : 0;
-    var ausbau = (typeof window.LootSystem.ausbauStufe === 'function')
-      ? window.LootSystem.ausbauStufe(alt) : 0;
     var staerke = (typeof window.computeItemPower === 'function')
-      ? window.computeItemPower : function () { return 0; };
-    var altP = staerke(alt);
+      ? window.computeItemPower : null;
+    var w = wurf || opferWurf();
+    var altP = staerke ? staerke(alt) : 0;
+    var stat = opferHauptwert(slot, alt);
+    var verweigert = {
+      alt: altP, neu: altP, item: alt, besser: w.besser, spanne: w.spanne,
+      ziel: altP, haupt: null, unveraendert: true
+    };
+    if (!staerke || !(altP > 0)) return verweigert;
 
-    // 1. Erst die Entscheidung.
-    var besser = Math.random() < UMWURF_CHANCE_BESSER;
-    var s = UMWURF_MIN_SPANNE + Math.random() * (UMWURF_MAX_SPANNE - UMWURF_MIN_SPANNE);
-    var ziel = besser ? altP * (1 + s) : altP / (1 + s);
+    // Wie weit kann DIESES Stueck ueberhaupt in beide Richtungen? Bei flachen,
+    // seltenen Stuecken traegt der feste Affix-Grundbetrag fast die ganze
+    // Staerke — ein Verlust von 35 % ist dort mit keinem Faktor zu erreichen.
+    // Die Spanne wird deshalb fuer BEIDE Seiten auf das gedeckelt, was beide
+    // erreichen: der Deckel haengt am Stueck, nicht an der Muenze, und
+    // Gewinn und Verlust bleiben genau gleich gross. Ein Stueck, das sich
+    // kaum noch bewegen laesst, bietet opferKandidaten gar nicht erst an;
+    // kommt es trotzdem hierher, verweigert der Stein — auf beiden Seiten.
+    var spanne = Math.min(w.spanne, opferSpielraum(alt));
+    if (!(spanne >= UMWURF_MIN_WIRKSAM)) return verweigert;
+    var ziel = w.besser ? altP * (1 + spanne) : altP / (1 + spanne);
+    verweigert.spanne = spanne;
 
-    // 2. Dann ein Stueck suchen, das auf dieser Seite liegt. Anker ist der
-    //    Gegenstandsstufe des getragenen Stuecks, mindestens die aktuelle
-    //    Tiefe. Findet sich nichts, wird der Hebel groesser: die Affixwerte
-    //    haengen an iLevel (_affixValueScale), also hilft ein Sprung dort.
-    var iL = Math.max(1, alt.iLevel || tiefe || 1, tiefe || 1);
-    var stufen = besser ? [iL, iL + 6, iL + 15] : [iL, Math.max(1, iL - 6), 1];
-    var best = null, bestAbstand = Infinity;
-    for (var st = 0; st < stufen.length && !best; st++) {
-      for (var i = 0; i < UMWURF_ZIEHUNGEN; i++) {
-        var k = _umwurfKandidat(alt.key, stufen[st], stufe, ausbau);
-        if (!k) continue;
-        var p = staerke(k);
-        if (besser ? (p <= altP) : (p >= altP)) continue;
-        var d = Math.abs(p - ziel);
-        if (d < bestAbstand) { bestAbstand = d; best = k; }
-      }
+    var t = _opferFaktor(alt, ziel, w.besser, staerke);
+    // Nicht erreichbar (Faktorgrenzen, Mindestwerte) oder auf der falschen
+    // Seite: NICHT tauschen. Lieber ehrlich verweigern als ein anderes
+    // Ergebnis als das ausgewuerfelte liefern.
+    if (!t || Math.abs(t.p - ziel) > Math.max(1, ziel * UMWURF_TOLERANZ)
+        || (w.besser ? t.p <= altP : t.p >= altP)) return verweigert;
+    var neu = t.item;
+    if (stat) {
+      var vorher = alt[stat], nachher = neu[stat];
+      if (w.besser ? nachher < vorher : nachher > vorher) return verweigert;
+    }
+    if (typeof window.computeItemLevelFromStats === 'function') {
+      try { neu.itemLevel = window.computeItemLevelFromStats(neu, alt.iLevel || tiefe || 1); } catch (e) {}
     }
 
-    // 3. Nichts gefunden: das Stueck steht am Anschlag dessen, was seine Basis
-    //    und Seltenheit hergeben. Dann NICHT tauschen — lieber "kein Gewinn"
-    //    melden als ein Stueck stillschweigend gegen ein gleichwertiges.
-    if (!best) return { alt: altP, neu: altP, item: alt, besser: besser, unveraendert: true };
-
-    eq[slot] = best;
+    eq[slot] = neu;
     if (typeof recalcDerived === 'function') recalcDerived(0, 0);
     if (typeof window.updateInventoryUI === 'function') {
       try { window.updateInventoryUI(); } catch (e) {}
     }
-    return { alt: altP, neu: staerke(best), item: best, besser: besser };
+    return {
+      alt: altP, neu: t.p, item: neu, besser: w.besser, spanne: spanne, ziel: ziel,
+      haupt: stat ? { stat: stat, vorher: alt[stat], nachher: neu[stat] } : null
+    };
+  }
+
+  function _opferZahl(stat, v) {
+    // Wie der Tooltip (inventory.js pushStat): Sicht ganzzahlig mit %, der
+    // Rest mit einer Nachkommastelle.
+    var n = Number(v) || 0;
+    return stat === 'sicht' ? n.toFixed(0) + '%' : n.toFixed(1);
+  }
+
+  /** Die Meldung zum Ergebnis von opferUmwurf. */
+  function opferMeldung(r) {
+    if (!r) return '';
+    if (r.unveraendert) return T('event.altar.refused');
+    var seite = r.besser ? 'better' : 'worse';
+    // Die Item-Staerke ist eine interne Kennzahl und sagt am Bildschirmrand
+    // niemandem etwas — der Hauptwert schon, und er steht so im Tooltip.
+    if (!r.haupt) return T('event.altar.' + seite);
+    return T('event.altar.' + seite + '_stat', {
+      stat: T('inventory.label.' + r.haupt.stat),
+      vorher: _opferZahl(r.haupt.stat, r.haupt.vorher),
+      nachher: _opferZahl(r.haupt.stat, r.haupt.nachher)
+    });
   }
 
   // --- Kettenschloss (#71) -------------------------------------------------
@@ -1451,12 +1544,7 @@
             callback: function () {
               var r = opferUmwurf(k.slot, tiefe);
               if (!r) return;
-              var schluessel = (r.neu > r.alt) ? 'better'
-                             : (r.neu === r.alt) ? 'same' : 'worse';
-              // Ohne Zahlen: die Item-Staerke ist eine interne Kennzahl, und
-              // "18 -> 21" sagt am Bildschirmrand niemandem etwas. Was das
-              // Stueck taugt, steht im Tooltip.
-              showEventToast(scene, T('event.altar.' + schluessel), 'sacrifice_altar');
+              showEventToast(scene, opferMeldung(r), 'sacrifice_altar');
             }
           };
         });
@@ -2959,6 +3047,11 @@
     wachenBeimDurchwuehlen: wachenBeimDurchwuehlen,
     opferKandidaten: opferKandidaten,
     opferUmwurf: opferUmwurf,
+    opferWurf: opferWurf,
+    opferMeldung: opferMeldung,
+    opferHauptwert: opferHauptwert,
+    opferSpielraum: opferSpielraum,
+    UMWURF_CHANCE_BESSER: UMWURF_CHANCE_BESSER,
     schreinAngebote: schreinAngebote,
     schreinAnwenden: schreinAnwenden,
     SCHREIN_SEGEN: SCHREIN_SEGEN,
