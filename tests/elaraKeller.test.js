@@ -309,3 +309,141 @@ test('Waehrend des Hinterhalts ist die Treppe schon zu (nicht erst ab Elara)', (
   assert.ok(t.gesamt > 0, 'der Raum hat gar keine Treppe');
   assert.strictEqual(t.offen, 0, t.offen + ' von ' + t.gesamt + ' Treppen standen waehrend des Hinterhalts offen');
 });
+
+// ---------------------------------------------------------------------------
+// Gemeldet: die Kettenwache im Hinterhalt liess sich besiegen. Sie soll
+// massiv mehr Leben haben, haerter zuschlagen und — solange der Hinterhalt
+// laeuft — gar nicht fallen koennen, gleich womit man sie trifft.
+// ---------------------------------------------------------------------------
+
+/** Startet den Hinterhalt im aktuellen Raum und taktet, bis die Wachen stehen. */
+function hinterhaltAufbauen() {
+  H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    enemies.getChildren().slice().forEach(function (e) { try { e.destroy(); } catch (x) {} });
+    window.eventChoiceOpen = false;
+    if (typeof window.resumeGameClock === 'function') window.resumeGameClock(sc);
+    _hinterhaltStarten(sc, sc.currentRoom.id);
+    return 1;
+  })()`);
+  for (let i = 0; i < 40 && !H.run('!!(_hinterhalt && _hinterhalt.gesetzt)'); i++) H.step(6);
+  assert.ok(H.run('!!(_hinterhalt && _hinterhalt.gesetzt)'), 'der Hinterhalt setzte keine Wachen');
+  const n = H.run('_hinterhalt.gegner.filter(function (g) { return g && g.active; }).length');
+  assert.ok(n > 0, 'keine Wache steht');
+  return n;
+}
+
+const gerettet = () => H.run(`!!questSystem.hasFlag('elara_rettung_gesehen')`);
+
+test('Die Kettenwache im Hinterhalt hat das 25-fache Leben und dreifachen Schaden', () => {
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    enemies.getChildren().slice().forEach(function (e) { try { e.destroy(); } catch (x) {} });
+    // Kein zufaelliger Elite, sonst vergleicht man Aepfel mit Birnen.
+    var zufall = Math.random;
+    Math.random = function () { return 0.999; };
+    try {
+      var ref = spawnEnemy.call(sc, player.x + 200, player.y, 6);
+      var basis = { hp: ref.hp, damage: ref.damage };
+      ref.destroy();
+      var h = { raum: 3, timer: null, seit: 0, gegner: [], gesetzt: false };
+      _hinterhaltGegnerSetzen(sc, h);
+      var g = h.gegner[0];
+      var r = { basis: basis, hp: g && g.hp, maxHp: g && g.maxHp, damage: g && g.damage,
+        lf: HINTERHALT_LEBEN_FAKTOR, sf: HINTERHALT_SCHADEN_FAKTOR };
+      h.gegner.forEach(function (w) { try { w.destroy(); } catch (x) {} });
+      return r;
+    } finally { Math.random = zufall; }
+  })()`);
+  assert.ok(r.lf >= 20, 'Lebensfaktor nur ' + r.lf);
+  assert.ok(r.sf >= 3, 'Schadensfaktor nur ' + r.sf);
+  assert.strictEqual(r.hp, Math.round(r.basis.hp * r.lf), 'Leben ' + r.hp + ' statt ' + r.basis.hp + ' x ' + r.lf);
+  assert.strictEqual(r.maxHp, r.hp);
+  assert.strictEqual(r.damage, Math.max(1, Math.round(r.basis.damage * r.sf)),
+    'Schaden ' + r.damage + ' statt ' + r.basis.damage + ' x ' + r.sf);
+});
+
+test('Im Hinterhalt faellt keine Wache, gleich womit man sie trifft', () => {
+  hinterhaltAufbauen();
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var wachen = _hinterhalt.gegner.filter(function (g) { return g && g.active; });
+    var altSchaden = weaponDamage, altKrit = playerCritChance;
+    var proben = [];
+    try {
+      weaponDamage = 1e6;
+      playerCritChance = 0.95;
+      wachen.forEach(function (g) {
+        g.shieldActive = false;
+        // Waffentreffer mit Krit, wie ein voll ausgebauter Spaetaufbau.
+        dealDamageToEnemy(sc, g, 50, 'attack');
+        handleEnemyHit(sc, g);
+        proben.push({ weg: 'Treffer', hp: g.hp, aktiv: g.active });
+        // Faehigkeit.
+        dealDamageToEnemy(sc, g, 50, 'whirlwind');
+        handleEnemyHit(sc, g);
+        proben.push({ weg: 'Faehigkeit', hp: g.hp, aktiv: g.active });
+        // Schaden ueber Zeit.
+        window.statusEffectManager._applyTickDamage(g, 1e9, 'burn');
+        proben.push({ weg: 'Brand', hp: g.hp, aktiv: g.active });
+        // Direkter Abzug (Amulett, Kettenblitz) und Exekution (hp = 0).
+        g.hp -= 1e9; handleEnemyHit(sc, g);
+        proben.push({ weg: 'Abzug', hp: g.hp, aktiv: g.active });
+        g.hp = 0; handleEnemyHit(sc, g);
+        proben.push({ weg: 'Exekution', hp: g.hp, aktiv: g.active });
+        g.hp = NaN; handleEnemyHit(sc, g);
+        proben.push({ weg: 'NaN', hp: g.hp, aktiv: g.active });
+      });
+    } finally { weaponDamage = altSchaden; playerCritChance = altKrit; }
+    return { proben: proben, aktiv: !!_hinterhalt };
+  })()`);
+  H.run('_hinterhaltAbbrechen(); 1');
+  assert.ok(r.aktiv, 'der Hinterhalt endete mitten in der Probe');
+  assert.ok(r.proben.length > 0, 'keine Probe gelaufen');
+  r.proben.forEach((p) => {
+    assert.ok(p.aktiv, 'eine Wache fiel durch ' + p.weg);
+    assert.ok(p.hp >= 1, 'eine Wache sank durch ' + p.weg + ' auf ' + p.hp + ' LP');
+  });
+});
+
+test('Die Wachen bringen den Spieler in Not, toeten ihn aber nicht — dann rettet Elara', () => {
+  H.run('window._playerInvincible = false; playerHealth = playerMaxHealth; 1');
+  hinterhaltAufbauen();
+  // Was toeten wuerde, wird abgefangen: harter Treffer, Brand, direkter Abzug.
+  const lp = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var g = _hinterhalt.gegner.filter(function (w) { return w && w.active; })[0];
+    var aus = [];
+    playerHealth = 3; applyPlayerDamage(1e6, sc, g); aus.push(playerHealth);
+    playerHealth = 3; window.statusEffectManager._applyTickDamage(player, 1e6, 'burn'); aus.push(playerHealth);
+    playerHealth = 3; addPlayerHealth(-1e6); aus.push(playerHealth);
+    playerHealth = playerMaxHealth;
+    return aus;
+  })()`);
+  lp.forEach((x) => assert.ok(x >= 1, 'der Spieler sank im Hinterhalt auf ' + x + ' LP: ' + lp.join(', ')));
+  // Die Wachen selbst schlagen zu, bis er in Not ist — nicht erst nach 30 s.
+  let min = Infinity, seit = 0;
+  for (let i = 0; i < 2400 && !gerettet(); i++) {
+    H.step(1);
+    const z = H.run('({ lp: playerHealth, seit: _hinterhalt ? _hinterhalt.seit : -1 })');
+    if (z.lp < min) min = z.lp;
+    if (z.seit >= 0) seit = z.seit;
+  }
+  assert.ok(gerettet(), 'Elara kam nicht');
+  assert.ok(min >= 1, 'der Spieler sank auf ' + min + ' LP');
+  assert.ok(seit < 20000, 'die Wachen brauchten ' + seit + ' ms bis zur Not');
+  H.run('window.eventChoiceOpen = false; 1');
+  H.step(60);
+  const rest = H.run('enemies.getChildren().filter(function (e) { return e && e.active && e._hinterhalt; }).length');
+  assert.strictEqual(rest, 0, 'nach der Rettung stehen noch ' + rest + ' Wachen');
+  assert.ok(elaraDa(), 'Elara steht nicht im Raum');
+  H.run('window._playerInvincible = true; playerHealth = playerMaxHealth; 1');
+});
+
+test('Sind die Wachen doch fort, rettet Elara sofort statt im leeren Raum zu warten', () => {
+  hinterhaltAufbauen();
+  H.run('_hinterhalt.gegner.forEach(function (g) { try { g.destroy(); } catch (x) {} }); 1');
+  for (let i = 0; i < 30 && !gerettet(); i++) H.step(1);
+  assert.ok(gerettet(), 'ohne Wachen kam keine Rettung (nach 30 Bildern)');
+  assert.ok(elaraDa(), 'Elara steht nicht im Raum');
+});

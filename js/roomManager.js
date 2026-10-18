@@ -4160,7 +4160,9 @@ function _elaraSzene(scene, key, amEnde) {
 // Handwerker vergessen zu machen.
 //
 // Der Raum ist bewusst nicht zu gewinnen. Die Kettenwache kommt in Akt 1
-// sonst gar nicht vor, und hier traegt sie das Vierfache an Leben. Faellt
+// sonst gar nicht vor, und hier traegt sie das 25-fache an Leben und schlaegt
+// dreimal so hart zu. Mehr noch: solange der Hinterhalt laeuft, faellt keine
+// Wache unter 1 LP — gleich, womit man sie trifft. Faellt
 // der Spieler unter die Haelfte seiner Lebenspunkte — oder haelt er sich 30
 // Sekunden lang, weil er gut ausweicht —, quillt Nebel aus den Fugen, loest
 // den ganzen Hinterhalt auf, und Elara tritt heraus. Dass der Nebel ihr
@@ -4174,8 +4176,12 @@ function _elaraSzene(scene, key, amEnde) {
 // ---------------------------------------------------------------------------
 var HINTERHALT_AB_RAUM = 3;          // erst ab dem dritten Raum des Laufs
 var HINTERHALT_GEGNER = 4;           // so viele Kettenwachen
-var HINTERHALT_LEBEN_FAKTOR = 4;     // unbesiegbar, nicht nur schwer
-var HINTERHALT_SCHADEN_FAKTOR = 1.5;
+// Gemeldet: mit dem Vierfachen an Leben und 1,5-fachem Schaden hat ein
+// Spieler die Wachen besiegt. Jetzt treiben sie ihn binnen Sekunden in die
+// Not, und die Untergrenze (_hinterhaltWacheSchuetzen) macht das Besiegen
+// unmoeglich, auch wenn ein starker Aufbau das Leben doch wegschlaegt.
+var HINTERHALT_LEBEN_FAKTOR = 25;    // unbesiegbar, nicht nur schwer
+var HINTERHALT_SCHADEN_FAKTOR = 3;
 var HINTERHALT_RING_PX = 190;        // so weit um den Spieler tauchen sie auf
 var ELARA_RETTUNG_ANTEIL = 0.5;      // unter diesem LP-Anteil greift sie ein
 var HINTERHALT_SPAETESTENS_MS = 30000;
@@ -4225,6 +4231,30 @@ function _hinterhaltSchutzEinbauen(h) {
     return echt.apply(this, arguments);
   };
   window.applyPlayerDamage = h.schutz;
+}
+
+/**
+ * Haelt die Wache waehrend des Hinterhalts bei mindestens 1 LP.
+ *
+ * Gegner-Leben wird an vielen Stellen direkt beschrieben (Treffer, Krit,
+ * Brand, Amulett, Exekution, Kettenblitz ...). Statt jede davon abzufangen,
+ * sitzt die Untergrenze im Feld selbst: jeder Schreibzugriff auf hp geht
+ * hier durch, und ohne hp <= 0 loest kein Todespfad aus. Auch waehrend
+ * Elaras Nebel sie ausblendet, bleibt sie stehen — vertrieben, nicht
+ * erschlagen.
+ */
+function _hinterhaltWacheSchuetzen(g, h) {
+  var leben = g.hp;
+  Object.defineProperty(g, 'hp', {
+    configurable: true,
+    enumerable: true,
+    get: function () { return leben; },
+    set: function (wert) {
+      var n = Number(wert);
+      if ((_hinterhalt === h || g._vomNebelVertrieben) && !(n >= 1)) n = 1;
+      leben = n;
+    }
+  });
 }
 
 /** Ob an (x, y) eine Wache oder Elara stehen kann. */
@@ -4288,6 +4318,7 @@ function _hinterhaltGegnerSetzen(scene, h) {
     g.damage = Math.max(1, Math.round((g.damage || 1) * HINTERHALT_SCHADEN_FAKTOR));
     if (typeof g.baseDamage === 'number') g.baseDamage = g.damage;
     g._hinterhalt = true;
+    _hinterhaltWacheSchuetzen(g, h);
     h.gegner.push(g);
   }
   try {
@@ -4327,10 +4358,13 @@ function _hinterhaltStarten(scene, roomId) {
       return;
     }
     h.seit += 100;
+    // Sind die Wachen trotz allem fort (oder nie erschienen), stuende der
+    // Spieler in einem leeren Raum vor gesperrter Treppe. Dann gleich retten.
+    var stehen = h.gegner.some(function (g) { return g && g.active; });
     var max = (typeof playerMaxHealth === 'number' && playerMaxHealth > 0) ? playerMaxHealth : 0;
     var lp = (typeof playerHealth === 'number') ? playerHealth : max;
     var inNot = max > 0 && lp / max < ELARA_RETTUNG_ANTEIL;
-    if (inNot || h.seit >= HINTERHALT_SPAETESTENS_MS) {
+    if (inNot || !stehen || h.seit >= HINTERHALT_SPAETESTENS_MS) {
       _hinterhaltAbbrechen();
       _elaraRettet(scene);
     }
