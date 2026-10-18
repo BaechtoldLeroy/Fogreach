@@ -21,6 +21,17 @@ test('ohne Flagge ist der Trailer-Modus aus und nichts davon geladen', () => {
   assert.strictEqual(H.run('!!window.setPlayerHealth.__trailer'), false);
 });
 
+// Hochkant (b446) haengt nur am Trailer: das Spiel selbst bleibt quer.
+test('ohne Flagge: Canvas 960x480, eine Kamera, kein Zoom', () => {
+  const r = H.run(`JSON.stringify({
+    groesse: [window.game.config.width, window.game.config.height, window.game.scale.width, window.game.scale.height],
+    hochkant: TRAILER_HOCHKANT,
+    kameras: window.game.scene.getScene('GameScene').cameras.cameras.length,
+    zoom: window.game.scene.getScene('GameScene').cameras.main.zoom
+  })`);
+  assert.strictEqual(r, JSON.stringify({ groesse: [960, 480, 960, 480], hochkant: false, kameras: 1, zoom: 1 }));
+});
+
 test('ohne Flagge bleibt das HUD im Bild', () => {
   const r = H.run(`(function () {
     var gs = window.game.scene.getScene('GameScene');

@@ -34,6 +34,19 @@
   var HAUPTSZENEN = ['HubSceneV2', 'GameScene'];
   var HILFE_MS = 3000;
 
+  // Hochkant (9:16 fuer Reels/Shorts): main.js stellt das Canvas im
+  // Trailer-Modus auf 540x960, mit &quer=1 bleibt es 960x480. Im Hochformat
+  // geht die Kamera nah an die Figuren (Zoom), die Choreografie laeuft
+  // senkrecht statt waagerecht, und die Aufnahme wird doppelt so gross
+  // (1080x1920) gespeichert.
+  var HOCHKANT = (function () {
+    var g = spiel();
+    return !!(g && g.config && Number(g.config.height) > Number(g.config.width));
+  })();
+  // Kamera-Zoom im Hochformat: im Dungeon steht der Spieler damit etwa so
+  // gross im Bild wie quer (72 px auf 480 Bildhoehe).
+  var NAH = 1.8;
+
   var S = {
     einstellung: null, // zuletzt gestartete Einstellung (0 ist das Inventar)
     lauf: 0,          // zaehlt hoch; alte Ablaeufe erkennen sich daran als veraltet
@@ -153,6 +166,58 @@
     });
   }
 
+  // ---------------------------------------------------------------------
+  // Hochkant: eine zweite Kamera ohne Zoom fuer alles am Bildschirm Klebende
+  // ---------------------------------------------------------------------
+  // Phaser zoomt Objekte mit scrollFactor 0 mit (um die Bildmitte). Im
+  // Hochformat steht die Hauptkamera aber nah an den Figuren — Dialog,
+  // Boss-Plakette, Inventar und Sitzungsbuehne waeren vergroessert und
+  // abgeschnitten. Sie gehen darum auf eine eigene Kamera ohne Zoom; die
+  // Hauptkamera zeigt nur die Welt. Unter Tiefe 1001 bleibt alles auf der
+  // Hauptkamera: Sichtfeld-Abdunklung und Nebelschleier rechnen mit ihrem Zoom.
+  function uiKamera(sc) {
+    var k = sc.__trailerUiKam;
+    if (!k || kameras(sc).indexOf(k) === -1) {
+      k = sc.cameras.add(0, 0, sc.scale.width, sc.scale.height, false, 'trailerUi');
+      sc.__trailerUiKam = k;
+    }
+    return k;
+  }
+
+  function kamerasVerteilen(sc) {
+    var ui = uiKamera(sc), haupt = sc.cameras.main;
+    if (!ui || !haupt || ui === haupt) return;
+    var liste = (sc.children && sc.children.list) || [];
+    for (var i = 0; i < liste.length; i++) {
+      var o = liste[i];
+      if (!o || o.cameraFilter === undefined) continue;
+      if (o.scrollFactorX === 0 && o.depth >= 1001) {
+        o.cameraFilter |= haupt.id;
+        // Versteckte HUD-Teile bleiben auch fuer die zweite Kamera weg.
+        if (!o.__trailerVersteckt) o.cameraFilter &= ~ui.id;
+        o.__trailerUi = true;
+      } else {
+        if (o.__trailerUi) { o.cameraFilter &= ~haupt.id; o.__trailerUi = false; }
+        o.cameraFilter |= ui.id;
+      }
+    }
+  }
+
+  // Das HUD ist fuer 960x480 gebaut. Hochkant zeigt H nur, was ganz ins
+  // Bild passt (Lebens- und Faehigkeitsleiste links oben) — halb
+  // abgeschnittene Teile sahen kaputt aus.
+  function hudBeschneiden(sc) {
+    var ui = sc.__trailerUiKam;
+    if (!ui) return;
+    var w = sc.scale.width, h = sc.scale.height;
+    hudObjekte(sc).forEach(function (o) {
+      if (!o.getBounds) return;
+      var b;
+      try { b = o.getBounds(); } catch (e) { return; }
+      if (b.left < -1 || b.top < -1 || b.right > w + 1 || b.bottom > h + 1) o.cameraFilter |= ui.id;
+    });
+  }
+
   /** Alles, was jetzt neu entsteht, gehoert zum Bild und wird nie versteckt. */
   function behalten(sc, fn) {
     var vorher = ((sc.children && sc.children.list) || []).slice();
@@ -255,10 +320,12 @@
     constructor() { super({ key: 'TrailerOverlay' }); }
     create() {
       var w = this.scale.width, h = this.scale.height;
-      var bh = Math.round(h * 0.12);
+      // Hochkant markieren die Balken die Zonen, die Reels/Shorts/TikTok mit
+      // ihrer Oberflaeche belegen (oben 12 %, unten 20 %): Platz fuer Texttafeln.
+      var oben = Math.round(h * 0.12), unten = Math.round(h * (HOCHKANT ? 0.20 : 0.12));
       this.balken = [
-        this.add.rectangle(w / 2, bh / 2, w, bh, 0x000000, 1),
-        this.add.rectangle(w / 2, h - bh / 2, w, bh, 0x000000, 1)
+        this.add.rectangle(w / 2, oben / 2, w, oben, 0x000000, 1),
+        this.add.rectangle(w / 2, h - unten / 2, w, unten, 0x000000, 1)
       ];
       this.balken.forEach(function (b) { b.setDepth(10).setVisible(S.letterbox); });
       this.vorhang = this.add.rectangle(w / 2, h / 2, w, h, 0x000000, 1).setDepth(20).setVisible(false);
@@ -390,11 +457,14 @@
         });
       }
       var ty = h / 2 - 60;
+      // Der Schriftzug (199 px breit) in ganzen Pixeln: quer dreifach,
+      // hochkant so gross, wie er mit Rand ins schmale Bild passt.
+      var ts = Math.max(1, Math.min(3, Math.floor((w - 40) / 199)));
       this.titelSchein = hat('start_schein')
-        ? this.add.image(cx, ty, 'start_schein').setScale(10, 2.4).setAlpha(0).setBlendMode(ADD).setDepth(7)
+        ? this.add.image(cx, ty, 'start_schein').setScale(10 * ts / 3, 2.4).setAlpha(0).setBlendMode(ADD).setDepth(7)
         : null;
       this.titel = hat('start_titel')
-        ? this.add.sprite(cx, ty, 'start_titel', 0).setScale(3).setAlpha(0).setDepth(8)
+        ? this.add.sprite(cx, ty, 'start_titel', 0).setScale(ts).setAlpha(0).setDepth(8)
         : null;
 
       var self2 = this;
@@ -561,6 +631,20 @@
     return cam;
   }
 
+  /** Hochkant: Kamera nah an die Figuren (quer bleibt alles bei Zoom 1). */
+  function nah(sc, zoom) {
+    if (HOCHKANT && sc && sc.cameras && sc.cameras.main) sc.cameras.main.setZoom(zoom || NAH);
+  }
+
+  // Die Kampf-Choreografie laeuft quer nach rechts, hochkant nach unten — auf
+  // die Kamera zu, so bleibt sie im schmalen Bild und man sieht Gesichter.
+  var RX = HOCHKANT ? 0 : 1, RY = HOCHKANT ? 1 : 0;
+
+  /** Punkt `d` in Laufrichtung vor p, `seit` quer dazu versetzt. */
+  function vor(p, d, seit) {
+    return HOCHKANT ? { x: p.x + seit, y: p.y + d } : { x: p.x + d, y: p.y + seit };
+  }
+
   // Nebelschleier ueber dem Hub, der sich lichtet (Einstellung 1).
   function nebelSchleier(sc, dauer) {
     if (!sc.textures.exists('start_nebel_a')) return;
@@ -638,6 +722,37 @@
     if (player.body && player.body.reset) player.body.reset(x, y);
   }
 
+  /**
+   * Hochkant: den Spieler nahe der Raummitte auf freien Boden stellen. Er
+   * kommt an der Tuer herein, am Raumrand — im schmalen Bild laege der Kampf
+   * dann am Rand des Sichtkreises, halb im Dunkel. `vorne`: so viel freie
+   * Strecke braucht die Choreografie in Laufrichtung (nach unten).
+   */
+  function zurRaummitte(gs, vorne) {
+    var r = gs.currentRoom, p0 = spielerPos();
+    if (!HOCHKANT || !r || !r.origin || !p0) return;
+    var frei = function (x, y) { return typeof gs.isPointAccessible !== 'function' || gs.isPointAccessible(x, y); };
+    var hind = hindernisse();
+    var cx = r.origin.x + r.w / 2, cy = r.origin.y + r.h / 2 - vorne / 2;
+    var bester = null;
+    for (var dy = -192; dy <= 192; dy += 16) {
+      for (var dx = -192; dx <= 192; dx += 16) {
+        var x = cx + dx, y = cy + dy, ok = true;
+        for (var a = 0; a < 8 && ok; a++) ok = frei(x + Math.cos(a * Math.PI / 4) * 70, y + Math.sin(a * Math.PI / 4) * 70);
+        for (var d = 0; d <= vorne && ok; d += 20) ok = frei(x - 30, y + d) && frei(x + 30, y + d);
+        if (!ok) continue;
+        var s = { x: x, y: y }, e = { x: x, y: y + vorne };
+        if (hind.some(function (o) { return abstandZurStrecke(o, s, e) < 48; })) continue;
+        var wert = Math.hypot(dx, dy);
+        if (!bester || wert < bester.wert) bester = { wert: wert, x: x, y: y };
+      }
+    }
+    if (!bester) return;
+    stellen(bester.x, bester.y);
+    // Mit der Kamera zusammen: sie soll nicht erst hinterherfahren.
+    gs.cameras.main.centerOn(bester.x, bester.y + vorne / 3);
+  }
+
   // Was im Bossbild stoert: Treppen (Durchgaenge), Tueren — und zwischen den
   // beiden Kaempfern auch Hindernisse wie Saeulen und Kisten.
   function bildStoerer(gs) {
@@ -672,15 +787,20 @@
     var wb = gs.physics.world.bounds;
     var frei = function (x, y) { return typeof gs.isPointAccessible !== 'function' || gs.isPointAccessible(x, y); };
     var stoerer = bildStoerer(gs), hind = hindernisse();
-    var halbB = gs.cameras.main.width / 2, halbH = gs.cameras.main.height / 2;
+    // Der Ausschnitt, den die Kamera mit ihrem Zoom zeigt.
+    var zoom = gs.cameras.main.zoom || 1;
+    var halbB = gs.cameras.main.width / 2 / zoom, halbH = gs.cameras.main.height / 2 / zoom;
+    // Quer steht der Boss rechts neben dem Spieler, hochkant ueber ihm.
     var ABSTAND = 170, RAND = 160, bester = null;
-    for (var y = wb.y + RAND; y <= wb.bottom - RAND; y += 32) {
-      for (var x = wb.x + RAND; x <= wb.right - RAND - ABSTAND; x += 32) {
-        var s = { x: x, y: y }, b = { x: x + ABSTAND, y: y - 10 };
+    var ox = HOCHKANT ? 10 : ABSTAND, oy = HOCHKANT ? -ABSTAND : -10;
+    for (var y = wb.y + RAND + (HOCHKANT ? ABSTAND : 0); y <= wb.bottom - RAND; y += 32) {
+      for (var x = wb.x + RAND; x <= wb.right - RAND - Math.max(ox, 0); x += 32) {
+        var s = { x: x, y: y }, b = { x: x + ox, y: y + oy };
         var ok = true;
         for (var i = 0; i <= 8 && ok; i++) {
-          var px = x + ABSTAND * i / 8, py = y - 10 * i / 8;
-          ok = frei(px, py) && frei(px, py - 40) && frei(px, py + 40);
+          var px = x + ox * i / 8, py = y + oy * i / 8;
+          ok = HOCHKANT ? (frei(px, py) && frei(px - 40, py) && frei(px + 40, py))
+            : (frei(px, py) && frei(px, py - 40) && frei(px, py + 40));
         }
         if (!ok) continue;
         var nah = Infinity;
@@ -785,6 +905,22 @@
     return true;
   }
 
+  /**
+   * Hochkant: der Tooltip gross und mittig unter dem Raster statt am Zeiger —
+   * dort ist Platz, und auf dem Telefon soll man ihn lesen koennen.
+   */
+  function tooltipUnterRaster() {
+    if (typeof tooltip === 'undefined' || !tooltip || typeof invUI === 'undefined' || !invUI || !invUI.panel) return;
+    var sc = tooltip.scene;
+    var w = sc.scale.width, h = sc.scale.height;
+    var unten = invUI.panel.getBounds().bottom;
+    var tw = tooltip._width || 200, th = tooltip._height || 120;
+    // Bis knapp ueber die untere Schutzzone (20 %) der Plattformen.
+    var m = Math.min(1.6, (w - 24) / tw, (h * 0.8 - 12 - (unten + 14)) / th);
+    tooltip.setScale(m);
+    tooltip.setPosition(Math.round((w - tw * m) / 2), Math.round(unten + 14));
+  }
+
   // ---------------------------------------------------------------------
   // Einstellung 8: die Presse
   // ---------------------------------------------------------------------
@@ -818,8 +954,10 @@
     if (hub.player) hub.player.setVisible(false);
     behalten(hub, function () {
       hub.add.rectangle(b / 2, h / 2, b, h, 0x07060a, 1).setScrollFactor(0).setDepth(2499).setName('trailerPresseGrund');
+      // Ganze Pixel, und hochkant nicht breiter als das Bild (128 px je Stufe).
+      var skala = HOCHKANT ? Math.floor(b / 128) : Math.max(3, Math.floor(h / 170));
       window.Druckerpresse.stampfen(hub, b / 2, h / 2 + 10, {
-        skala: Math.max(3, Math.floor(h / 170)), stoesse: 3, tiefe: 2500, fest: true, blaetter: 14
+        skala: skala, stoesse: 3, tiefe: 2500, fest: true, blaetter: HOCHKANT ? 20 : 14
       });
     });
     cam.fadeIn(400, 0, 0, 0);
@@ -834,19 +972,22 @@
     0: { name: 'Inventar', kurz: 'inventar', ziel: 'dungeon', samen: 1410, aufbau: function (gs) {
       S.ruhe = 'alle';
       beuteFuellen();
+      nah(gs);
+      zurRaummitte(gs, 0);
       gs.cameras.main.fadeIn(250, 0, 0, 0);
       plan(500, function () { if (typeof openInventory === 'function') openInventory(); });
-      plan(1700, function () { tooltipZeigen(S.prunkstueck); });
+      plan(1700, function () { if (tooltipZeigen(S.prunkstueck) && HOCHKANT) tooltipUnterRaster(); });
     } },
 
     // 1 — Nebelstadt: Schwarz, Nebel lichtet sich, Fahrt ueber den Platz zum Rathaus.
     1: { name: 'Nebelstadt', kurz: 'nebelstadt', ziel: 'hub', aufbau: function (hub) {
       if (hub.player) hub.player.setVisible(false);
       var t = rathausTuer(hub);
-      var cam = kameraAuf(hub, t.x, 560, 1.12);
+      // Hochkant: ein Schwenk von unten (Brunnen) hinauf zum Rathaus.
+      var cam = HOCHKANT ? kameraAuf(hub, t.x, t.y + 420, 1.3) : kameraAuf(hub, t.x, 560, 1.12);
       cam.fadeIn(1800, 0, 0, 0);
       nebelSchleier(hub, 3600);
-      cam.pan(t.x, t.y - 70, 4600, 'Sine.easeInOut');
+      cam.pan(t.x, HOCHKANT ? t.y - 40 : t.y - 70, 4600, 'Sine.easeInOut');
     } },
 
     // 2 — Der Rat: Aldric vor dem Rathaus, der Messing-Dialog geht auf.
@@ -854,10 +995,12 @@
       var a = npc(hub, 'aldric');
       var ax = a ? a.sprite.x : 768, ay = a ? a.sprite.y : 205;
       hubSpielerStellen(hub, ax - 40, ay + 46);
-      // Aldric im oberen Drittel — darunter geht der Dialog auf.
-      var cam = kameraAuf(hub, ax - 60, ay + 120, 1);
+      // Aldric im oberen Drittel — darunter geht der Dialog auf. Hochkant
+      // nah: Aldric und der Spieler gross, der Dialog darunter.
+      var cam = HOCHKANT ? kameraAuf(hub, ax - 34, ay + 84, 2) : kameraAuf(hub, ax - 60, ay + 120, 1);
       cam.fadeIn(500, 0, 0, 0);
-      cam.pan(ax - 30, ay + 104, 3500, 'Sine.easeInOut');
+      if (HOCHKANT) cam.pan(ax - 20, ay + 74, 3500, 'Sine.easeInOut');
+      else cam.pan(ax - 30, ay + 104, 3500, 'Sine.easeInOut');
       plan(700, function () {
         var name = (window.i18n ? window.i18n.t('hub.npc.aldric.name') : 'Ratsherr Aldric');
         behalten(hub, function () {
@@ -871,6 +1014,14 @@
         ((c && c.list) || []).forEach(function (o) {
           if (o && o.type === 'Text' && String(o.text).indexOf(hinweis) !== -1) o.setVisible(false);
         });
+        // Der Dialog ist 540 breit und saesse hochkant in der unteren
+        // Schutzzone (20 %): etwas schmaler, ueber die Zone gehoben.
+        if (HOCHKANT && c) {
+          var h = hub.scale.height;
+          c.setScale(0.94);
+          var b = c.getBounds();
+          c.y += Math.round(h * 0.8 - 16 - b.bottom);
+        }
       });
     } },
 
@@ -878,7 +1029,7 @@
     3: { name: 'Abstieg', kurz: 'abstieg', ziel: 'hub', aufbau: function (hub) {
       var t = rathausTuer(hub);
       hubSpielerStellen(hub, t.x, t.y + 40);
-      var cam = kameraAuf(hub, t.x, t.y - 10, 1.25);
+      var cam = HOCHKANT ? kameraAuf(hub, t.x, t.y + 10, NAH) : kameraAuf(hub, t.x, t.y - 10, 1.25);
       cam.fadeIn(400, 0, 0, 0);
       plan(900, function () { gehen('up', true); });
       plan(1500, function () { cam.fadeOut(700, 0, 0, 0); });
@@ -888,6 +1039,10 @@
         abstieg(hub, 3003, {}, function (gs) {
           S.ruhe = 'alle';
           vorhang(false);
+          nah(gs);
+          // Hochkant steht der Spieler im oberen Drittel: er kommt an der
+          // Oberkante des Raums herein, darunter liegt der Keller.
+          if (HOCHKANT) gs.cameras.main.setFollowOffset(0, -100);
           gs.cameras.main.fadeIn(1400, 0, 0, 0);
         });
       });
@@ -899,6 +1054,7 @@
       lernen(['whirlwind', 'charge', 'hammer']);
       var p0 = spielerPos();
       if (!p0) return;
+      zurRaummitte(gs, 200);
       var ring = function (r, n, typ) {
         var p = spielerPos();
         for (var i = 0; i < n; i++) {
@@ -906,38 +1062,41 @@
           gegner(gs, p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, typ);
         }
       };
+      nah(gs);
       gs.cameras.main.fadeIn(250, 0, 0, 0);
       // Schlag 1: Wirbelwind in eine Gruppe.
       plan(150, function () { ring(62, 5, 1); });
-      plan(500, function () { faehigkeit(gs, 'slot1', 1, 0); });
+      plan(500, function () { faehigkeit(gs, 'slot1', RX, RY); });
       // Schlag 2: Ansturm durch eine Reihe.
       plan(1900, function () {
         trailerGegnerWeg();
         var p = spielerPos();
-        [70, 120, 170].forEach(function (d, i) { gegner(gs, p.x + d, p.y + (i % 2 ? 10 : -10), 3); });
+        [70, 120, 170].forEach(function (d, i) { var q = vor(p, d, i % 2 ? 10 : -10); gegner(gs, q.x, q.y, 3); });
       });
-      plan(2200, function () { faehigkeit(gs, 'slot2', 1, 0); });
+      plan(2200, function () { faehigkeit(gs, 'slot2', RX, RY); });
       // Schlag 3: Hammer der Ahnen, aufgeladen.
       plan(3300, function () {
         trailerGegnerWeg();
         var p = spielerPos();
-        gegner(gs, p.x + 52, p.y - 20, 3);
-        gegner(gs, p.x + 58, p.y + 22, 1);
-        faehigkeit(gs, 'slot3', 1, 0);
+        var a = vor(p, 52, -20), b = vor(p, 58, 22);
+        gegner(gs, a.x, a.y, 3);
+        gegner(gs, b.x, b.y, 1);
+        faehigkeit(gs, 'slot3', RX, RY);
       });
-      plan(4000, function () { loslassen(gs, 'slot3', 1, 0); });
+      plan(4000, function () { loslassen(gs, 'slot3', RX, RY); });
       // Schlag 4: eine Kettenwache faellt. Ihr Schild nimmt den ersten Hieb
       // (weisser Blitz), der zweite faellt sie.
       var wache = null;
       var hieb = function () {
-        mitBlick(1, 0, function () {
+        mitBlick(RX, RY, function () {
           if (typeof attack === 'function') { try { attack.call(gs); } catch (e) {} }
         });
       };
       plan(4900, function () {
         trailerGegnerWeg();
         var p = spielerPos();
-        wache = gegner(gs, p.x + 40, p.y, 6);
+        var q = vor(p, 40, 0);
+        wache = gegner(gs, q.x, q.y, 6);
         if (wache) wache.hp = 1;
       });
       plan(5050, hieb);
@@ -967,6 +1126,8 @@
         player.setPosition(g0.x + 80, g0.y + 230);
         if (player.body && player.body.reset) player.body.reset(player.x, player.y);
       }
+      // Etwas weiter als im Kampf: Wache, Kegel und Spieler muessen ins Bild.
+      nah(gs, 1.5);
       gs.cameras.main.fadeIn(600, 0, 0, 0);
       plan(300, function () { gehen('up', true); });
       plan(2000, function () { S.verdacht = 0.62; });
@@ -981,6 +1142,17 @@
       cam.fadeIn(900, 0, 0, 0);
       SB.laden(hub, function () {
         behalten(hub, function () { hub.__trailerBuehne = SB.geheim(hub); });
+        var box = hub.__trailerBuehne && hub.__trailerBuehne.box;
+        if (box) {
+          // Hochkant liegt die Buehne auf der Kamera ohne Zoom: die langsame
+          // Fahrt heran macht ihr Rahmen selbst, um die Tischmitte.
+          var m = box.scale, z = 1.07, fx = box.__mitte.x, fy = box.__mitte.y;
+          hub.tweens.add({
+            targets: box, scale: m * z, x: fx - (fx - box.x) * z, y: fy - (fy - box.y) * z,
+            duration: 4200, ease: 'Sine.easeInOut'
+          });
+          return;
+        }
         cam.setZoom(1);
         cam.zoomTo(1.07, 4200, 'Sine.easeInOut');
       });
@@ -992,6 +1164,7 @@
     7: { name: 'Boss', kurz: 'boss', ziel: 'dungeon', samen: 1307, aufbau: function (gs) {
       S.ruhe = 'boss';
       lernen(['whirlwind', 'charge', 'hammer']);
+      nah(gs);
       var wb = gs.physics.world.bounds;
       var platz = bossPlatz(gs) || {
         spieler: { x: wb.centerX - 85, y: wb.centerY + 60 }, boss: { x: wb.centerX + 85, y: wb.centerY + 50 }
@@ -1040,6 +1213,13 @@
       plan(5900, blaettern);
       plan(7000, function () {
         if (!boss.active) return;
+        if (HOCHKANT) {
+          // Von unten an den Boss heran, der Hammer schlaegt nach oben.
+          stellen(boss.x, boss.y + 58);
+          boss.__trailerDx = 0;
+          faehigkeit(gs, 'slot3', 0, -1);
+          return;
+        }
         var dx = boss.x >= player.x ? 1 : -1;
         stellen(boss.x - dx * 58, boss.y + 6);
         boss.__trailerDx = dx;
@@ -1047,7 +1227,8 @@
       });
       plan(7500, function () {
         zeitlupeSetzen(true);
-        loslassen(gs, 'slot3', boss.__trailerDx || 1, 0);
+        if (HOCHKANT) loslassen(gs, 'slot3', 0, -1);
+        else loslassen(gs, 'slot3', boss.__trailerDx || 1, 0);
         gs.cameras.main.shake(900, 0.018);
       });
       plan(9700, function () { zeitlupeSetzen(S.zeitlupeTaste); });
@@ -1152,16 +1333,45 @@
     return '';
   }
 
+  // Hochkant nimmt eine doppelt so grosse Leinwand auf (1080x1920): nach
+  // jedem Bild wird das Spielbild mit harten Pixeln hineinkopiert. Reels und
+  // Shorts wollen Full-HD hochkant; ein 540x960-Video skaliert die Plattform
+  // weich und verwaschen hoch.
+  function aufnahmeQuelle(cv) {
+    if (!HOCHKANT) return { canvas: cv, loesen: function () {} };
+    var f = Math.max(1, Math.round(1920 / (cv.height || 960)));
+    var gross = null, ctx = null;
+    try {
+      gross = document.createElement('canvas');
+      gross.width = (cv.width || 540) * f;
+      gross.height = (cv.height || 960) * f;
+      ctx = gross.getContext ? gross.getContext('2d') : null;
+    } catch (e) { ctx = null; }
+    if (!ctx) return null;
+    var kopieren = function () {
+      try { ctx.imageSmoothingEnabled = false; ctx.drawImage(cv, 0, 0, gross.width, gross.height); } catch (e) {}
+    };
+    // Gleich nach dem Zeichnen, solange der WebGL-Puffer noch steht.
+    var g = spiel();
+    g.events.on('postrender', kopieren);
+    kopieren();
+    return { canvas: gross, loesen: function () { g.events.off('postrender', kopieren); } };
+  }
+
   function aufnahmeStarten() {
     var g = spiel();
     var cv = g && g.canvas;
-    if (!cv || typeof cv.captureStream !== 'function' || typeof window.MediaRecorder !== 'function') {
+    var quelle = (cv && typeof window.MediaRecorder === 'function') ? aufnahmeQuelle(cv) : null;
+    if (!quelle || typeof quelle.canvas.captureStream !== 'function') {
+      if (quelle) quelle.loesen();
       meldung('Aufnahme hier nicht möglich (Browser ohne MediaRecorder/captureStream).');
       return false;
     }
+    A.quelle = quelle;
+    A.groesse = quelle.canvas.width + 'x' + quelle.canvas.height;
     var strom, rec;
     try {
-      strom = cv.captureStream(60);
+      strom = quelle.canvas.captureStream(60);
       var ton = tonAbgreifen();
       if (ton && ton.stream) ton.stream.getAudioTracks().forEach(function (t) { strom.addTrack(t); });
       A.mime = mimeWahl();
@@ -1170,6 +1380,7 @@
       rec = new window.MediaRecorder(strom, opts);
     } catch (e) {
       tonLoesen();
+      quelleLoesen();
       meldung('Aufnahme konnte nicht starten: ' + ((e && e.message) || e));
       return false;
     }
@@ -1208,14 +1419,20 @@
     return true;
   }
 
+  function quelleLoesen() {
+    if (A.quelle) A.quelle.loesen();
+    A.quelle = null;
+  }
+
   function speichern() {
     tonLoesen();
+    quelleLoesen();
     var name = A.datei || 'fogreach_frei.webm';
     var teile = A.teile;
     A.teile = [];
     var blob = null;
     try { blob = new Blob(teile, { type: A.mime || 'video/webm' }); } catch (e) { blob = null; }
-    TM.letzteAufnahme = { datei: name, teile: teile.length, mime: A.mime, mitTon: !!A.mitTon };
+    TM.letzteAufnahme = { datei: name, teile: teile.length, mime: A.mime, mitTon: !!A.mitTon, groesse: A.groesse };
     if (!blob) return;
     try {
       var url = URL.createObjectURL(blob);
@@ -1275,7 +1492,12 @@
     HAUPTSZENEN.forEach(function (key) {
       if (!laeuft(key)) return;
       var sc = szene(key);
+      if (HOCHKANT) uiKamera(sc);
       if (S.hud) hudZeigen(sc); else hudVerstecken(sc);
+      if (HOCHKANT) {
+        kamerasVerteilen(sc);
+        if (S.hud) hudBeschneiden(sc);
+      }
     });
     g.scene.getScenes(true).forEach(zeitAnwenden);
 
@@ -1351,7 +1573,7 @@
   TM.EINSTELLUNGEN = EINSTELLUNGEN;
   TM.zustand = function () {
     return {
-      einstellung: S.einstellung, hud: S.hud, zeitlupe: S.zeitlupe, letterbox: S.letterbox,
+      hochkant: HOCHKANT, einstellung: S.einstellung, hud: S.hud, zeitlupe: S.zeitlupe, letterbox: S.letterbox,
       aufnahme: !!A.rec, uhr: S.uhr, seit: (S.aufbauAb == null ? -1 : S.uhr - S.aufbauAb), offen: S.plan.length, hubGesehen: S.hubGesehen, wartend: S.wartend
     };
   };

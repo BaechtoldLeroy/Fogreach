@@ -221,7 +221,11 @@
     var mobil = _mobil(scene);
 
     var b = scene.scale.width, h = scene.scale.height;
-    var obenH = Math.round(h * 0.12), untenH = Math.round(h * 0.22);
+    // Hochkant (nur der Trailer-Modus) ist der untere Balken hoeher: die Rede
+    // steht dann ueber den unteren 20 %, die Reels/Shorts mit ihrer Oberflaeche
+    // belegen, und in groesserer Schrift.
+    var hochkant = h > b;
+    var obenH = Math.round(h * 0.12), untenH = Math.round(h * (hochkant ? 0.34 : 0.22));
     var kam = scene.cameras && scene.cameras.main;
     var zoomVorher = (kam && typeof kam.zoom === 'number') ? kam.zoom : 1;
     var figur = (typeof window !== 'undefined') ? window.player : null;
@@ -360,7 +364,8 @@
     // --- Kamera vom Spieler zum Boss ----------------------------------------
     // Ziel so, dass der Boss in der Mitte des freien Streifens zwischen den
     // Balken steht, nicht in der Bildmitte (die unten im Textbalken laege).
-    var versatzY = (untenH - obenH) / 2;
+    // (In Weltpixeln: der Trailer zoomt hochkant nah heran.)
+    var versatzY = (untenH - obenH) / 2 / (zoomVorher || 1);
     if (kam) {
       try {
         if (typeof kam.stopFollow === 'function') kam.stopFollow();
@@ -407,9 +412,13 @@
       try {
         var sicht = kam && kam.worldView;
         if (boss && sicht && sicht.width) {
-          if (boss.x - sicht.x < b / 2) px = b - 24 - pw / 2;
+          // Weltabstand mal Zoom = Abstand auf dem Bildschirm.
+          var z = kam.zoom || 1;
+          if ((boss.x - sicht.x) * z < b / 2) px = b - 24 - pw / 2;
           var kopf = boss.getBounds ? boss.getBounds().top : boss.y;
-          if (kopf - sicht.y < obenH + 14 + ph + 10) py = h - untenH - 14 - ph / 2;
+          // Hochkant bleibt sie oben: der Streifen ist hoch genug, unten
+          // stuende sie auf dem Spieler.
+          if (!hochkant && (kopf - sicht.y) * z < obenH + 14 + ph + 10) py = h - untenH - 14 - ph / 2;
         }
       } catch (e) {}
       var platte;
@@ -450,17 +459,18 @@
     // --- Rede, Seite fuer Seite -------------------------------------------
     var sprecher = null, rede = null, weiterKnopf = null;
     var bereitAb = Date.now() + frist(EINGABE_AB);
-    var textB = b - 48 - 150;
+    var textB = hochkant ? b - 48 : b - 48 - 150;
+    var schrift = hochkant ? '20px' : '16px';
 
     function zeigeSeite(n) {
       zustand.seite = n;
       zustand.phase = 'rede';
       if (!sprecher) {
         sprecher = neu(scene.add.text(24, h - untenH + 10, String(def.name || '').toUpperCase(), {
-          fontFamily: 'serif', fontSize: '16px', fontStyle: 'bold', color: '#ffd166'
+          fontFamily: 'serif', fontSize: schrift, fontStyle: 'bold', color: '#ffd166'
         }).setDepth(1102)).setName('bossintroSprecher');
-        rede = neu(scene.add.text(24, h - untenH + 34, '', {
-          fontFamily: 'monospace', fontSize: '16px', color: '#efe6d2', lineSpacing: 4,
+        rede = neu(scene.add.text(24, h - untenH + (hochkant ? 40 : 34), '', {
+          fontFamily: 'monospace', fontSize: schrift, color: '#efe6d2', lineSpacing: 4,
           wordWrap: { width: textB }
         }).setDepth(1102)).setName('bossintroRede');
       }

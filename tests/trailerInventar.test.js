@@ -37,9 +37,19 @@ test('Taste 0: Inventar voller Beute, offen, Tooltip eines legendaeren Stuecks',
     var tip = (typeof tooltip !== 'undefined') ? tooltip : null;
     var gs = window.game.scene.getScene('GameScene');
     var kam = gs.cameras.main;
-    var panelImBild = !!(invUI.panel && invUI.panel.visible && !(invUI.panel.cameraFilter & kam.id));
+    // Hochkant zeichnet die zweite Kamera (ohne Zoom) das Inventar, die
+    // Hauptkamera nicht.
+    var ui = gs.__trailerUiKam;
+    var panelImBild = !!(invUI.panel && invUI.panel.visible && ui
+      && !(invUI.panel.cameraFilter & ui.id) && (invUI.panel.cameraFilter & kam.id));
+    // ... und ganz im schmalen Bild, der Tooltip darunter ueber den unteren 20 %.
+    var w = gs.scale.width, h = gs.scale.height;
+    var pb = invUI.panel.getBounds(), tb = tip.getBounds();
+    var passt = pb.left >= 0 && pb.right <= w && pb.top >= h * 0.12
+      && tb.left >= 0 && tb.right <= w && tb.top >= pb.bottom && tb.bottom <= h * 0.8;
     return {
-      szene: gs.sys.isActive(), offen: invOpen, panelImBild: panelImBild,
+      szene: gs.sys.isActive(), offen: invOpen, panelImBild: panelImBild, passt: passt,
+      massstab: tip.scaleX, zoom: kam.zoom,
       stuecke: inv.length,
       legendaer: inv.filter(function (i) { return i.tier === 3; }).length,
       amulett: inv.some(function (i) { return i.type === 'amulet'; }) && !!eq.amulet,
@@ -52,6 +62,9 @@ test('Taste 0: Inventar voller Beute, offen, Tooltip eines legendaeren Stuecks',
   assert.ok(r.szene, 'nicht im Dungeon');
   assert.strictEqual(r.offen, true, 'das Inventar ist nicht offen');
   assert.ok(r.panelImBild, 'das Inventar ist nicht im Bild (vom HUD-Ausblenden erfasst?)');
+  assert.ok(r.passt, 'Inventar/Tooltip passen hochkant nicht ins Bild');
+  assert.ok(r.massstab > 1.2, 'der Tooltip ist hochkant nicht vergroessert: ' + r.massstab);
+  assert.strictEqual(r.zoom, 1.8, 'die Welt dahinter steht nicht nah');
   assert.ok(r.stuecke >= 9, 'zu wenig Beute im Raster: ' + r.stuecke);
   assert.ok(r.legendaer >= 1, 'kein legendaeres Stueck im Raster');
   assert.ok(r.amulett, 'kein Amulett in Raster und Platz');
@@ -88,6 +101,8 @@ test('Aufnahme in Einstellung 0 heisst fogreach_0_inventar_01.webm', () => {
     document.createElement = function (t) {
       var el = echtA.call(document, t);
       if (String(t).toLowerCase() === 'a') { el.click = function () { window.__dateiname = el.download; }; }
+      // Hochkant nimmt eine eigene, doppelt so grosse Leinwand auf.
+      if (String(t).toLowerCase() === 'canvas') el.captureStream = canvas.captureStream;
       return el;
     };
     try {

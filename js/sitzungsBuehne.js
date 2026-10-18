@@ -140,9 +140,9 @@
   }
 
   // Ein warmer Schein hinter dem, der spricht. Unsichtbar, solange erzaehlt wird.
-  function _lichtkegel(scene, teile, y, tiefe) {
+  function _lichtkegel(scene, teile, y, tiefe, x) {
     var g = scene.add.graphics().setScrollFactor(0).setDepth(tiefe);
-    g.setPosition(scene.cameras.main.width / 2, y);
+    g.setPosition(typeof x === 'number' ? x : scene.cameras.main.width / 2, y);
     [[110, 0.05], [80, 0.07], [55, 0.09]].forEach(function (r) {
       g.fillStyle(0xffd08a, r[1]); g.fillEllipse(0, 0, r[0] * 1.3, r[0] * 2);
     });
@@ -287,7 +287,11 @@
    */
   function geheim(scene) {
     var cam = scene.cameras.main;
-    var w = cam.width, h = cam.height;
+    // Hochkant (nur der Trailer-Modus, 540x960): die Buehne entsteht wie
+    // immer quer (960x480) und wird unten beschnitten und vergroessert in die
+    // Bildmitte gesetzt.
+    var hochkant = cam.height > cam.width;
+    var w = hochkant ? 960 : cam.width, h = hochkant ? 480 : cam.height;
     var teile = [];
     var T = 2480;
     teile.push(scene.add.rectangle(w / 2, h / 2, w, h, 0x030205, 1).setScrollFactor(0).setDepth(T));
@@ -301,7 +305,7 @@
 
     // Die drei hinter dem Tisch; ueber Aldric haengt das Siegel an der Wand.
     var fussY = 272;
-    var licht = _lichtkegel(scene, teile, fussY - 90, T + 3);
+    var licht = _lichtkegel(scene, teile, fussY - 90, T + 3, w / 2);
     var figuren = [
       _figur(scene, teile, 'klerus', w / 2 - 160, fussY, 2.1, T + 4),
       _figur(scene, teile, 'aldric', w / 2, fussY, 2.1, T + 4),
@@ -338,8 +342,11 @@
     tafel.fillStyle(0x030205, 0.92); tafel.fillRect(0, tafelY, w, h - tafelY);
     teile.push(tafel);
 
+    var box = hochkant ? _hochkantRahmen(scene, teile, w, hoch, platteY, T) : null;
+
     var folgen = null;
     var buehne = {
+      box: box,
       teile: teile, figuren: figuren, textOben: tafelY - 4,
       folgen: function (textObj) {
         if (folgen) folgen.loesen();
@@ -351,6 +358,34 @@
     };
     buehne.destroy = function () { _abbau(scene, teile, folgen)(); };
     return buehne;
+  }
+
+  /**
+   * Hochkant: die quer gebaute Buehne in einen Rahmen, der die Breite mit dem
+   * Tisch und den drei Figuren fuellt; die Tischmitte steht bei 55 % der Hoehe.
+   * Darueber und darunter bleibt es dunkel — Platz fuer Texttafeln.
+   */
+  function _hochkantRahmen(scene, teile, w, hoch, platteY, T) {
+    var cam = scene.cameras.main;
+    var sw = cam.width, sh = cam.height;
+    var m = sw / 470;
+    // Die Oberkante des Saalbilds weich ins Dunkel auslaufen lassen.
+    var kante = scene.add.graphics().setScrollFactor(0).setDepth(T + 9);
+    for (var s = 0; s < 10; s++) {
+      kante.fillStyle(0x030205, 1 - s / 10);
+      kante.fillRect(0, -hoch + s * 4, w, 4);
+    }
+    teile.push(kante);
+    var inhalt = teile.slice().sort(function (a, b) { return a.depth - b.depth; });
+    var mitte = { x: sw / 2, y: Math.round(sh * 0.55) };
+    var box = scene.add.container(mitte.x - (w / 2) * m, mitte.y - platteY * m).setScrollFactor(0).setDepth(T);
+    box.setScale(m);
+    box.add(inhalt);
+    box.__mitte = mitte;
+    // Dahinter das ganze Bild schwarz (das Rechteck der Buehne deckt nur ihr Querformat).
+    teile.unshift(scene.add.rectangle(sw / 2, sh / 2, sw, sh, 0x030205, 1).setScrollFactor(0).setDepth(T - 1));
+    teile.push(box);
+    return box;
   }
 
   /**

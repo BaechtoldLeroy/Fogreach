@@ -59,6 +59,12 @@ const GameScene = {
 // Render-Scale-Pattern oder Post-Boot Canvas-Resize-Approach. Bis dahin
 // Config wie vor 052-Start.
 
+// Trailer-Modus (js/trailerModus.js) dreht hochkant: 9:16 fuer Reels/Shorts.
+// ?trailer=1&quer=1 behaelt das Querformat. Ohne Trailer-Flagge bleibt alles
+// bei 960x480.
+const TRAILER_HOCHKANT = !!(typeof window !== 'undefined' && window.DebugGate
+  && window.DebugGate.an('trailer') && !window.DebugGate.an('quer'));
+
 const config = {
   // pixelArt: true keeps Phaser sampling textures with NEAREST filter
   // (required for the procedurally-generated floor + obstacle textures to
@@ -76,8 +82,8 @@ const config = {
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
-    width: 960,     // Canvas-Breite (Player 72px = 15% von 480px)
-    height: 480,    // Canvas-Höhe
+    width: TRAILER_HOCHKANT ? 540 : 960,   // Canvas-Breite (Player 72px = 15% von 480px)
+    height: TRAILER_HOCHKANT ? 960 : 480,  // Canvas-Höhe
     zoom: 1
   },
   backgroundColor: '#2d2d2d',

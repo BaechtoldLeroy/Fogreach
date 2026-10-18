@@ -350,6 +350,13 @@ https://baechtoldleroy.github.io/Fogreach/?debug=1&trailer=1
 
 Was die Flagge aendert:
 
+- **Hochkant 9:16** (seit b446): das Spielbild ist 540×960 statt 960×480, fuer
+  Reels, TikTok und Shorts. Die Kamera geht nah an die Figuren (Zoom 1,3 bis 2),
+  die Kampf-Choreografie laeuft senkrecht; Dialog, Boss-Plakette, Inventar,
+  Sitzungsbuehne liegen auf einer zweiten Kamera ohne Zoom und sind fuer die
+  schmale Breite eingepasst. `?trailer=1&quer=1` behaelt das Querformat
+  960×480 mit den Einstellungen wie zuvor. Ohne `trailer` aendert `quer` nichts.
+
 - **Kein HUD**: Lebensleiste, Faehigkeitenleiste, Minikarte, Questanzeige,
   Hub-Knoepfe, [E]-Hinweise, Tutorial-Hinweise, Toasts — alles, was am
   Bildschirm klebt (Tiefe 1001 bis 2400), wird per Kamera ausgeblendet.
@@ -366,8 +373,8 @@ Was die Flagge aendert:
 | `0`–`9` | Einstellung aus dem Drehbuch aufbauen (Tabelle unten; `0` = Inventar) |
 | `R` | Aufnahme starten / stoppen — das Spiel nimmt sich selbst auf (siehe „Trailer aufnehmen“) |
 | `Z` | Zeitlupe an/aus — Spieluhr, Physik, Tweens, Animationen auf 0.3x; bleibt ueber Einstellungen hinweg an |
-| `L` | Letterbox-Balken an/aus |
-| `H` | HUD einblenden / wieder ausblenden (fuer Schnittbilder mit Oberflaeche) |
+| `L` | Letterbox-Balken an/aus — hochkant die Schutzzonen der Plattformen (oben 12 %, unten 20 %), quer je 12 % |
+| `H` | HUD einblenden / wieder ausblenden (fuer Schnittbilder mit Oberflaeche); hochkant nur die Teile, die ganz ins schmale Bild passen |
 | `M` | Ton an/aus |
 
 Im Trailer-Modus gehoeren diese Tasten dem Trailer: `1`–`4` und `R` loesen
@@ -406,7 +413,9 @@ Download-Ordner. Kein OBS noetig.
 
 1. Spiel lokal starten (`npx http-server -p 8123 -c-1 .`) und im Browser
    (Chrome oder Edge) `http://localhost:8123/?trailer=1` oeffnen.
-2. `F11` druecken (Vollbild), damit das Spielbild gross aufgenommen wird.
+2. Die Aufnahme hat eine feste Groesse, egal wie gross das Fenster ist:
+   hochkant 1080×1920 (das 540×960-Spielbild mit harten Pixeln verdoppelt),
+   quer (`&quer=1`) 960×480.
 3. Einmal ins Spiel klicken, damit der Ton freigegeben ist, und warten, bis der
    Hub steht.
 4. Die Taste der Einstellung druecken, z. B. `4`.

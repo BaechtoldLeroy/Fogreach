@@ -38,6 +38,16 @@ async function bisSeit(ms, maxRunden) {
 
 function aktiv(key) { return H.activeScenes().indexOf(key) !== -1; }
 
+// Hochkant (Standard mit ?trailer=1) zeigt eine zweite Kamera ohne Zoom alles
+// am Bildschirm Klebende; "im Bild" heisst darum: irgendeine Kamera der Szene
+// zeichnet es.
+// KAMERA_ZEIGT fragt nur die Kameras, IM_BILD auch visible.
+const KAMERA_ZEIGT = `function (o) {
+  if (!o || !o.scene) return false;
+  return o.scene.cameras.cameras.some(function (k) { return (o.cameraFilter & k.id) === 0; });
+}`;
+const IM_BILD = `function (o) { return !!o && o.visible !== false && (${KAMERA_ZEIGT})(o); }`;
+
 before(async () => {
   H = await launch({ search: '?trailer=1', renderer: 'canvas', waitFor: 'StartScene' });
   const ok = await H.waitForScene('HubSceneV2', { maxRounds: 300 });
@@ -56,8 +66,7 @@ test('Trailer-Modus ist an, der Spielstand liegt im Sandkasten', () => {
 test('im Hub ist das HUD weg: Menueknoepfe, Beschriftungen, Tutorial-Hinweis', () => {
   const r = H.run(`(function () {
     var hub = window.game.scene.getScene('HubSceneV2');
-    var id = hub.cameras.main.id;
-    var weg = function (o) { return !!o && (o.cameraFilter & id) !== 0; };
+    var weg = function (o) { return !!o && !(${KAMERA_ZEIGT})(o); };
     var band = hub.children.list.filter(function (o) {
       return o.scrollFactorX === 0 && o.depth >= 1001 && o.depth < 2400 && !o.__trailerBild;
     });
@@ -76,7 +85,7 @@ test('im Hub ist das HUD weg: Menueknoepfe, Beschriftungen, Tutorial-Hinweis', (
 test('Taste H blendet das HUD ein und wieder aus', () => {
   const sichtbar = () => H.run(`(function () {
     var hub = window.game.scene.getScene('HubSceneV2');
-    return (hub._hubMenuBtn.cameraFilter & hub.cameras.main.id) === 0;
+    return (${IM_BILD})(hub._hubMenuBtn);
   })()`);
   H.run(`window.TrailerModus.taste('h')`);
   H.step(2);
@@ -100,6 +109,36 @@ test('Einstellung 4 zweimal: dieselbe Raumfolge (fester Zufall)', async () => {
   assert.ok(erst.split(',').length > 3);
   assert.strictEqual(ohneZeit(dann), ohneZeit(erst));
 });
+
+test('hochkant: ?trailer=1 laeuft auf einem 9:16-Canvas (540x960)', () => {
+  assert.strictEqual(H.run('JSON.stringify([window.game.scale.width, window.game.scale.height, window.game.canvas.width, window.game.canvas.height])'),
+    '[540,960,540,960]');
+  assert.strictEqual(zustand().hochkant, true);
+});
+
+// Hochkant: was eine Einstellung zeigt, muss ganz ins schmale Bild passen.
+// INNEN(b, unten): Rechteck im Canvas, optional unten nur bis `unten`
+// (die unteren 20 % belegen Reels/Shorts mit ihrer Oberflaeche).
+const INNEN = `function (b, unten) { return b.left >= -1 && b.right <= 541 && b.top >= -1 && b.bottom <= (unten || 961); }`;
+// AUF_UI(o): nur die Kamera ohne Zoom zeichnet es, nicht die Hauptkamera.
+const AUF_UI = `function (o) { var s = o.scene, ui = s.__trailerUiKam; return !!ui && (o.cameraFilter & s.cameras.main.id) !== 0 && (o.cameraFilter & ui.id) === 0; }`;
+const HUB = `window.game.scene.getScene('HubSceneV2')`;
+const GS = `window.game.scene.getScene('GameScene')`;
+const HOCH = {
+  1: `${HUB}.cameras.main.zoom === 1.3`,
+  2: `(function () { var hub = ${HUB}, c = hub._dialogContainer;
+        return hub.cameras.main.zoom === 2 && (${AUF_UI})(c) && (${INNEN})(c.getBounds(), 768); })()`,
+  3: `${GS}.cameras.main.zoom === 1.8`,
+  4: `${GS}.cameras.main.zoom === 1.8`,
+  5: `${GS}.cameras.main.zoom === 1.5`,
+  6: `(function () { var b = ${HUB}.__trailerBuehne;
+        return !!b.box && (${AUF_UI})(b.box) && b.figuren.length === 3
+          && b.figuren.every(function (f) { return (${INNEN})(f.getBounds(), 768) && f.getBounds().top > 115; }); })()`,
+  7: `${GS}.cameras.main.zoom === 1.8`,
+  8: `(function () { var p = ${HUB}.children.list.filter(function (o) { return o.name === 'druckerpresse'; })[0];
+        return (${AUF_UI})(p) && (${INNEN})(p.getBounds()); })()`,
+  9: `(${INNEN})(window.game.scene.getScene('TrailerTitel').titel.getBounds())`,
+};
 
 // Wo jede Einstellung landen muss, und woran man sieht, dass sie aufgebaut ist.
 const ERWARTET = {
@@ -126,6 +165,7 @@ for (const n of Object.keys(ERWARTET)) {
     assert.ok(aktiv(e.szene), 'Einstellung ' + n + ' steht in ' + H.activeScenes().join(','));
     if (e.auch) assert.ok(aktiv(e.auch), e.auch + ' fehlt');
     if (e.pruef) assert.strictEqual(H.run(e.pruef), true, 'Einstellung ' + n + ': ' + e.pruef);
+    assert.strictEqual(H.run(HOCH[n]), true, 'Einstellung ' + n + ' hochkant: ' + HOCH[n]);
     assert.ok(aktiv('TrailerOverlay'), 'das Overlay ist verschwunden');
   });
 }
@@ -155,7 +195,7 @@ function bossBild() {
     });
     var zwischen = boss ? Math.min.apply(null, stoerer.map(function (o) { return strecke(o, player, boss); }).concat([9999])) : -1;
     var teil = function (n) { return z && z.teile.filter(function (o) { return o.name === n; })[0]; };
-    var weg = function (o) { return !o || (o.cameraFilter & cam.id) !== 0 || !o.visible; };
+    var weg = function (o) { return !(${IM_BILD})(o); };
     return {
       phase: z ? z.phase + ':' + z.seite : null, boss: !!boss, stoerer: stoerer.length,
       sichtbar: sichtbar.length, zwischen: Math.round(zwischen),
@@ -176,6 +216,20 @@ test('Einstellung 7: Zwischenszene laeuft ohne Taste durch, keine Treppe/Tuer im
   assert.ok(b.stoerer > 0, 'der Raum hat keine Treppe — der Test misst nichts');
   assert.strictEqual(b.sichtbar, 0, 'Treppe/Tuer im Bild');
   assert.ok(b.zwischen >= 150, 'Treppe/Tuer zu nah an der Strecke Spieler-Boss: ' + b.zwischen);
+  // Hochkant: Plakette und Rede ganz im Bild, die Rede ueber den unteren
+  // 20 %, beide auf der Kamera ohne Zoom; der Boss steht ueber dem Spieler.
+  const hoch = H.run(`(function () {
+    var gs = ${GS}, z = gs.__bossZwischenszene;
+    var teil = function (n) { return z.teile.filter(function (o) { return o.name === n; })[0]; };
+    var name = teil('bossintroName'), rede = teil('bossintroRede');
+    var boss = enemies.getChildren().filter(function (e) { return e.active && e.isBoss; })[0];
+    return {
+      name: !!name && (${INNEN})(name.getBounds(), 768) && (${AUF_UI})(name),
+      rede: !!rede && (${INNEN})(rede.getBounds(), 768) && (${AUF_UI})(rede),
+      ueber: boss.y < player.y - 100
+    };
+  })()`);
+  assert.strictEqual(JSON.stringify(hoch), JSON.stringify({ name: true, rede: true, ueber: true }));
   assert.ok(await bisSeit(4600));
   assert.match(String(bossBild().phase), /^rede:1/, 'zweite Seite kommt nicht von selbst');
   assert.ok(await bisSeit(7600));
@@ -195,11 +249,13 @@ test('im Dungeon ist das HUD weg (Lebensleiste, Faehigkeiten, Minikarte)', async
   assert.ok(await bisSeit(300));
   const r = H.run(`(function () {
     var gs = window.game.scene.getScene('GameScene');
-    var id = gs.cameras.main.id;
     var band = gs.children.list.filter(function (o) {
       return o.scrollFactorX === 0 && o.depth >= 1001 && o.depth < 2400 && !o.__trailerBild;
     });
-    return { n: band.length, sichtbar: band.filter(function (o) { return (o.cameraFilter & id) === 0; }).length };
+    // (Unsichtbares zaehlt mit: das Spiel schaltet visible selbst um.)
+    return { n: band.length, sichtbar: band.filter(function (o) {
+      return gs.cameras.cameras.some(function (k) { return (o.cameraFilter & k.id) === 0; });
+    }).length };
   })()`);
   assert.ok(r.n > 10, 'HUD nicht gefunden (' + r.n + ')');
   assert.strictEqual(r.sichtbar, 0);
@@ -241,6 +297,8 @@ test('Taste Z verlangsamt die Spieluhr (gameNow) auf etwa 0.3', () => {
 test('Taste L schaltet die Letterbox, Tasten kommen auch ueber keydown an', () => {
   const box = () => H.run(`window.game.scene.getScene('TrailerOverlay').balken[0].visible`);
   assert.strictEqual(box(), false);
+  // Hochkant decken die Balken die Zonen der Plattform-Oberflaeche ab: oben 12 %, unten 20 %.
+  assert.strictEqual(H.run(`JSON.stringify(window.game.scene.getScene('TrailerOverlay').balken.map(function (b) { return b.height; }))`), '[115,192]');
   H.dispatch('keydown', { key: 'l', preventDefault() {}, stopImmediatePropagation() {} });
   assert.strictEqual(box(), true);
   H.dispatch('keydown', { key: 'L', preventDefault() {}, stopImmediatePropagation() {} });
@@ -266,12 +324,17 @@ test('Taste R nimmt auf und speichert fogreach_<nr>_<name>_<lauf>.webm', () => {
     MR.prototype.start = function (ms) { this.ms = ms; this.ondataavailable({ data: { size: 1234 } }); };
     MR.prototype.stop = function () { this.gestoppt = true; this.onstop(); };
     window.MediaRecorder = MR;
-    window.game.canvas.captureStream = function (fps) { window.__fps = fps; return { addTrack: function () {} }; };
+    // Hochkant nimmt eine eigene, doppelt so grosse Leinwand auf; das
+    // Spiel-Canvas selbst darf dann nicht die Quelle sein.
+    window.__postrenderVorher = window.game.events.listenerCount('postrender');
+    var strom = function (fps) { window.__fps = fps; window.__quelle = this; return { addTrack: function () {} }; };
+    window.game.canvas.captureStream = strom;
     window.URL = { createObjectURL: function () { return 'blob:probe'; }, revokeObjectURL: function () {} };
     var erzeugen = document.createElement;
     document.createElement = function (tag) {
       var el = erzeugen(tag);
       if (String(tag).toLowerCase() === 'a') el.click = function () { window.__laden.push(el.download); };
+      if (String(tag).toLowerCase() === 'canvas') el.captureStream = strom;
       return el;
     };
   })()`);
@@ -282,6 +345,8 @@ test('Taste R nimmt auf und speichert fogreach_<nr>_<name>_<lauf>.webm', () => {
   assert.match(opts, /vp9/);
   assert.match(opts, /12000000/);
   assert.strictEqual(H.run('window.__fps'), 60);
+  assert.strictEqual(H.run('window.__quelle !== window.game.canvas'), true, 'hochkant nimmt das kleine Spiel-Canvas auf');
+  assert.strictEqual(H.run('window.__quelle.width + "x" + window.__quelle.height'), '1080x1920');
   H.step(10);
   H.run(`window.TrailerModus.taste('r')`);
   assert.strictEqual(zustand().aufnahme, false, 'zweites R stoppt nicht');
@@ -291,6 +356,9 @@ test('Taste R nimmt auf und speichert fogreach_<nr>_<name>_<lauf>.webm', () => {
   H.run(`window.TrailerModus.taste('r')`);
   assert.deepStrictEqual(H.run('window.__laden.join(",")'), 'fogreach_4_kampf_01.webm,fogreach_4_kampf_02.webm');
   assert.strictEqual(H.run('window.TrailerModus.letzteAufnahme.teile'), 1);
+  assert.strictEqual(H.run('window.TrailerModus.letzteAufnahme.groesse'), '1080x1920');
+  // Die Kopie ins grosse Bild haengt nach dem Stopp nicht mehr am Spiel.
+  assert.strictEqual(H.run(`window.game.events.listenerCount('postrender')`), H.run('window.__postrenderVorher'));
 });
 
 test('kein Spielstand wird geschrieben — auch nicht durch saveGame', () => {

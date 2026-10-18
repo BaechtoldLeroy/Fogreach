@@ -1510,9 +1510,16 @@ function equipPos(key, index) {
     const w = scene.scale.width;
     const h = scene.scale.height;
     invUI.overlay.setSize(w, h);
-    const s = Math.min(w / BASE_W, h / BASE_H);
+    let s = Math.min(w / BASE_W, h / BASE_H);
+    let y = h / 2;
+    // Hochkant (nur der Trailer-Modus, 540x960): das Panel fuellt die Breite
+    // und rueckt nach oben — darunter ist Platz fuer den Tooltip.
+    if (h > w) {
+      s = (w - 12) / PANEL_W;
+      y = Math.round(h * 0.34);
+    }
     invUI.panel.setScale(s);
-    invUI.panel.setPosition(w / 2, h / 2);
+    invUI.panel.setPosition(w / 2, y);
   }
   invUI._scene = scene;
   invUI._placeHandler = place;

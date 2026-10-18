@@ -109,7 +109,10 @@ describe('Trailer', () => {
     const r = H.run(`(function () {
       var s = ${HUB}.children.list.filter(function (o) { return o.name === 'druckerpresse'; })[0];
       var kam = ${HUB}.cameras.main;
-      return { breite: s.displayWidth, schirm: kam.width, imBild: !(s.cameraFilter & kam.id) };
+      // Hochkant (b446) zeichnet sie die zweite Kamera ohne Zoom: im Bild,
+      // wenn irgendeine Kamera sie zeigt.
+      var imBild = ${HUB}.cameras.cameras.some(function (k) { return (s.cameraFilter & k.id) === 0; });
+      return { breite: s.displayWidth, schirm: kam.width, imBild: imBild };
     })()`);
     assert.ok(r.breite >= r.schirm * 0.2, 'die Presse ist zu klein: ' + r.breite);
     assert.ok(r.imBild, 'die Presse wird als HUD ausgeblendet');
