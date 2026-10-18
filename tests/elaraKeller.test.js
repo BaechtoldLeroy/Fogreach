@@ -67,7 +67,7 @@ test('Die Rettung stellt sie vor — und nimmt noch keinen Auftrag an', () => {
     'der Auftrag kam ohne [E]: ' + texte.join(' | '));
   assert.strictEqual(flagge('elaraMet'), false, 'elaraMet wurde schon gesetzt');
   assert.strictEqual(
-    H.run(`questSystem.getActiveQuests().some(function (q) { return q.id === 'widerstand_proof'; })`),
+    H.run(`questSystem.getActiveQuests().some(function (q) { return q.id === 'resistance_fetch_01'; })`),
     false, 'die Quest laeuft schon');
 });
 
@@ -93,7 +93,7 @@ test('Erst [E] bei ihr bringt den Auftrag', () => {
   })()`);
   assert.strictEqual(flagge('elaraMet'), true, 'elaraMet nicht gesetzt');
   assert.strictEqual(
-    H.run(`questSystem.getActiveQuests().some(function (q) { return q.id === 'widerstand_proof'; })`),
+    H.run(`questSystem.getActiveQuests().some(function (q) { return q.id === 'resistance_fetch_01'; })`),
     true, 'die Quest wurde nicht angenommen');
 });
 

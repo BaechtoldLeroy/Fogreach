@@ -954,6 +954,13 @@ function preload() {
   if (!this.textures.exists('elara_right0')) {
     this.load.image('elara_right0', 'assets/npc/elara/right0.png');
   }
+  // v6.1: Harrens Abstieg und Aldrics Ende (roomManager, Tiefenbegegnungen).
+  if (!this.textures.exists('harren_right0')) {
+    this.load.image('harren_right0', 'assets/npc/harren/right0.png');
+  }
+  if (!this.textures.exists('aldric_right0')) {
+    this.load.image('aldric_right0', 'assets/npc/aldric/right0.png');
+  }
   // #192: Elaras eingerichtete Kammer — die Requisiten.
   if (typeof window.versteckBilderVorladen === 'function') {
     try { window.versteckBilderVorladen(this); } catch (e) { /* nicht fatal */ }

@@ -144,7 +144,7 @@ test('Der Hinterhalt: ab Raum 3 stellt die Kettenwache den Spieler, Elara rettet
   assert.strictEqual(b.lebt, true, 'der Spieler hat den Hinterhalt nicht ueberlebt');
   assert.strictEqual(b.steht, true, 'ihr Sprite steht nach der Rettung nicht im Raum');
   assert.strictEqual(b.getroffen, false, 'der Auftrag kam ohne [E]');
-  assert.strictEqual(Array.from(b.auftrag).indexOf('widerstand_proof'), -1, 'die Quest lief ohne [E]');
+  assert.strictEqual(Array.from(b.auftrag).indexOf('resistance_fetch_01'), -1, 'die Quest lief ohne [E]');
 
   // Zu ihr gehen und ansprechen.
   H.run(`(function () {
@@ -159,7 +159,7 @@ test('Der Hinterhalt: ab Raum 3 stellt die Kettenwache den Spieler, Elara rettet
   const c = H.run(`({ getroffen: window.questSystem.hasFlag('elaraMet'),
     auftrag: window.questSystem.getActiveQuests().map(function (q) { return q.id; }) })`);
   assert.strictEqual(c.getroffen, true, 'nach dem Gespraech gilt Elara nicht als getroffen');
-  assert.ok(Array.from(c.auftrag).indexOf('widerstand_proof') >= 0, 'ihr erster Auftrag wurde nicht vergeben');
+  assert.ok(Array.from(c.auftrag).indexOf('resistance_fetch_01') >= 0, 'ihr erster Auftrag wurde nicht vergeben');
 });
 
 test('Auch Schaden ueber Zeit toetet im Hinterhalt nicht', () => {

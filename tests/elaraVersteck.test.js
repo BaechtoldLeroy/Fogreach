@@ -104,13 +104,14 @@ test('Zweiter Besuch: nach elara_meeting die Werkstatt-Szene im Versteck', () =>
   assert.strictEqual(r.besuch, 'werkstatt');
   H.run(`window._versteckSzeneSpielen(window.game.scene.getScene('GameScene'), 'werkstatt')`);
   const text = H.run(`window.__dialogLog[0] || ''`);
-  assert.ok(/Werkzeug|alten Werkstatt/.test(text), 'nicht die Werkstatt-Szene: ' + text);
+  assert.ok(/Hammer/.test(text) && /aufgehoben/.test(text), 'nicht die Werkstatt-Szene (v6.1: Dein alter Hammer): ' + text);
   H.run('window.__durchklicken()');
   assert.strictEqual(H.run(`window.questSystem.hasFlag('elara_camp_seen')`), true);
 });
 
 test('Dritter Besuch: die Nacht nach dem Bruch', () => {
-  stand({ harren_daughter_investigation: FERTIG, widerstand_proof: FERTIG, elara_meeting: FERTIG },
+  // v6.1: die Nacht folgt auf den Bruch (nicht mehr auf Akt 4).
+  stand({ harren_daughter_investigation: FERTIG, widerstand_proof: FERTIG, elara_meeting: FERTIG, bruch_confrontation: FERTIG },
         { elaraMet: true, elara_versteck_gesehen: true, elara_camp_seen: true }, 4);
   lauf();
   const r = versteckBetreten();
@@ -151,7 +152,8 @@ test('Mitten im Lauf: der naechste Raum wird zum Versteck, nie der Finalraum', (
 // --- #161: Die Flucht nach dem Bruch -----------------------------------------
 
 test('Nach dem Bruch: erst die Flucht vor der Kettenwache, dann das Versteck', () => {
-  stand({ harren_daughter_investigation: FERTIG, widerstand_proof: FERTIG, elara_meeting: FERTIG },
+  // v6.1: die Nacht folgt auf den Bruch (nicht mehr auf Akt 4).
+  stand({ harren_daughter_investigation: FERTIG, widerstand_proof: FERTIG, elara_meeting: FERTIG, bruch_confrontation: FERTIG },
         { elaraMet: true, elara_versteck_gesehen: true, elara_camp_seen: true }, 4);
   const r = H.run(`(function () {
     window.DUNGEON_DEPTH = 5; initDungeonRun();

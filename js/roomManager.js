@@ -1110,6 +1110,8 @@ function enterRoom(scene, roomId) {
 
   // Story-driven Elara cellar encounter — see _maybeFireElaraCellarEncounter.
   if (!_versteckRaum) _maybeFireElaraCellarEncounter(scene, roomId);
+  // v6.1: Harrens Abstieg und Aldrics Ende (Akt 4).
+  if (!_versteckRaum) _tiefenBegegnung(scene, roomId);
 
   // Feature 055: Espionage-Mission starten, wenn dieser Raum espionage-
   // Metadaten trägt UND eine passende observe-Quest aktiv ist.
@@ -2729,7 +2731,7 @@ function _debugRaumStil() {
  *
  *   ?versteck=1            die erste Szene (sie zeigt Dir ihr Versteck)
  *   ?versteck=werkstatt    ihre Werkstatt
- *   ?versteck=bruch_nacht  die Nacht nach dem Bruch (Akt 4)
+ *   ?versteck=bruch_nacht  die Nacht nach dem Bruch (Ende Akt 3)
  *   ?versteck=leer         nur der Raum, ohne sie
  */
 function _debugVersteck() {
@@ -2761,7 +2763,7 @@ function _debugVersteckStandSetzen(szene) {
   st.quests = st.quests || {};
   var fertig = function (id) { st.quests[id] = { status: 'completed', objectives: [] }; };
   if (szene === 'werkstatt') { fertig('widerstand_proof'); fertig('elara_meeting'); st.flags.elara_versteck_gesehen = true; }
-  else if (szene === 'bruch_nacht') { fertig('widerstand_proof'); fertig('elara_meeting'); st.flags.elara_versteck_gesehen = true; st.flags.elara_camp_seen = true; }
+  else if (szene === 'bruch_nacht') { fertig('widerstand_proof'); fertig('elara_meeting'); fertig('bruch_confrontation'); st.flags.elara_versteck_gesehen = true; st.flags.elara_camp_seen = true; }
   else fertig('widerstand_proof');
   try { qs.loadQuestSaveData(st); } catch (e) {}
   if (szene === 'bruch_nacht' && window.storySystem && typeof window.storySystem.advanceToAct === 'function') {
@@ -3270,6 +3272,7 @@ let _elaraWartetZiel = null;
 let _elaraTreppeSperrRaum = null;
 
 function _resetElaraEncounterRunState() {
+  _tiefenBegegnungAb = 2;
   _elaraDocSpawnTarget = null;
   _elaraTreppeSperrRaum = null;
   _elaraWartetZiel = null;
@@ -3291,7 +3294,9 @@ function _rollDistance() {
 //   Stage 1 — Offer:
 //     Q1 done, Q5 not active/completed, elaraMet flag not set.
 //     Spawn Elara sprite in the current room (roomId >= 2).
-//     E → dialog → setFlag('elaraMet') + acceptQuest('widerstand_proof').
+//     E → dialog → setFlag('elaraMet') + acceptQuest('resistance_fetch_01')
+//     (v6.1: erst das Buendel; das Ratsdokument bietet sie danach ueber
+//     _elaraSpaetereAuftraege an).
 //
 //   Stage 1.5 — Document drop:
 //     Q5 active, document not yet picked up.
@@ -3512,11 +3517,11 @@ function _maybeFireElaraCellarEncounter(scene, roomId) {
  * vorbei ist — sie steht damit immer noch vor einem, nie dahinter. Eine
  * pflichtgemaesse Story-Quest darf keine Zufallsbegegnung sein.
  */
-// #155: Das Buendel steht vorn (Akt 1, direkt nach dem Versteck), die Klinge
-// zwischen Ritualkammer und Riss (Akt 3). Vorher gab es beide nur im Hub, und
-// Elara steht erst ab Akt 4 im Hub — die Klinge kam damit NACH dem Bruch, fuer
-// den sie gedacht ist.
-var ELARA_AUFTRAEGE = ['resistance_fetch_01', 'elara_meeting', 'elara_ritual', 'elara_blade', 'elara_second_truth'];
+// #155: Das Buendel steht vorn, die Klinge zwischen Ritualkammer und Riss
+// (Akt 3). v6.1: Die Rettung gibt das Buendel (Stufe 1, _showElaraDialog),
+// danach erst bietet sie hier das Ratsdokument an. Angenommen, gesucht und
+// abgegeben wird es weiter ueber die Stufen 1.5 und 2 oben.
+var ELARA_AUFTRAEGE = ['resistance_fetch_01', 'widerstand_proof', 'elara_meeting', 'elara_ritual', 'elara_blade', 'elara_second_truth'];
 var _elaraSpaetSpawnZiel = null;
 
 function _elaraSpaetereAuftraege(scene, roomId) {
@@ -3609,21 +3614,24 @@ var ELARA_SZENEN = {
           antwort: _elaraT('ELARA: Muss es nicht. Es ist meine Wahl.', 'ELARA: It need not be. It is my choice.') }
       ] }
   ]; } },
+  // v6.1: Dein alter Hammer. Ein Werkzeug, keine Erinnerung: Deine Hand
+  // erkennt ihn, Du selbst nicht. Elara fuettert Dich mit Wissen, nicht mit
+  // Erinnerung, und lenkt ab, wenn Du nach Dir fragst.
   werkstatt: { flag: 'elara_camp_seen', seiten: function () { return [
     { text: _elaraT(
-        '(Elara legt etwas Kleines vor Dich hin, abgegriffen, alt. Ein Werkzeug. Deins.)\n\nELARA: Das lag in Deiner alten Werkstatt, bevor der Nebel Dich holte. Ich habe es aufgehoben.',
-        '(Elara puts something small in front of you, worn, old. A tool. Yours.)\n\nELARA: This was in your old workshop before the fog took you. I kept it.'),
+        '(Elara legt einen Hammer vor Dich hin. Der Stiel ist dunkel und glatt, dort, wo eine Hand ihn jahrelang gehalten hat.)\n\nELARA: Deiner. Ich habe ihn aufgehoben.\n\n(Du nimmst ihn. Deine Hand schliesst sich um den Stiel, als hätte sie nie losgelassen. Du selbst erinnerst Dich an nichts.)',
+        '(Elara puts a hammer in front of you. The handle is dark and smooth where a hand held it for years.)\n\nELARA: Yours. I kept it.\n\n(You take it. Your hand closes around the handle as if it had never let go. You yourself remember nothing.)'),
       wahlen: [
         { label: _elaraT('Wer war ich?', 'Who was I?'),
-          antwort: _elaraT('ELARA: Jemand, der nicht aufhören konnte zu fragen. Wie jetzt. Frag Branka, sie weiss mehr.', 'ELARA: Someone who could not stop asking. Like now. Ask Branka, she knows more.') },
+          antwort: _elaraT('ELARA: Ein Handwerker. Der Rest ist nicht wichtig. Wichtig ist, was Deine Hände noch können.', 'ELARA: A craftsman. The rest does not matter. What matters is what your hands can still do.') },
         { label: _elaraT('Warum tust Du das?', 'Why are you doing this?'),
           antwort: _elaraT('ELARA: Weil niemand etwas aufhebt, wenn ich es nicht tue. (Sie lächelt. Es erreicht ihre Augen nicht ganz.)', 'ELARA: Because nobody keeps anything if I do not. (She smiles. It does not quite reach her eyes.)') }
       ] }
   ]; } },
   klinge: { flag: 'elara_klinge_erhalten', seiten: function () { return [
     { text: _elaraT(
-        'ELARA: Nimm das. Ich habe es für Dich geschmiedet. Für den Fall, dass...\n\n(Eine schmale Klinge, gut ausgewogen. Nahe am Heft ist etwas Kleines eingraviert.)',
-        'ELARA: Take this. I forged it for you. In case...\n\n(A slender blade, well balanced. Something small is engraved near the hilt.)'),
+        'ELARA: Nimm das. Ich habe sie für Dich schmieden lassen. Für den Fall, dass...\n\n(Eine schmale Klinge, gut ausgewogen. Nahe am Heft ist etwas Kleines eingraviert.)',
+        'ELARA: Take this. I had it forged for you. In case...\n\n(A slender blade, well balanced. Something small is engraved near the hilt.)'),
       wahlen: [
         { label: _elaraT('Für welchen Fall?', 'In case of what?'),
           antwort: _elaraT('ELARA: (zögert) Für jeden. Man weiss nie, wer am Ende vor einem steht.', 'ELARA: (hesitates) Any. You never know who will stand before you in the end.') },
@@ -3664,10 +3672,11 @@ function _versteckErledigt(id) {
 function versteckBesuchFaellig() {
   if (_versteckErledigt('widerstand_proof') && !_versteckFlag('elara_versteck_gesehen')) return 'versteck';
   if (_versteckErledigt('elara_meeting') && !_versteckFlag('elara_camp_seen')) return 'werkstatt';
-  var akt = (window.storySystem && typeof window.storySystem.getCurrentActIndex === 'function')
-    ? window.storySystem.getCurrentActIndex() : 0;
   // Die Nacht nur VOR dem Verrat: danach waere sie kein Vertrauen mehr, sondern Hohn.
-  if (akt >= 4 && !_versteckFlag('bruch_nacht_gesehen') && !_versteckFlag('elara_verrat_gesehen')) return 'bruch_nacht';
+  // v6.1: nach dem Bruch (Branka bringt Dich her), nicht mehr am Akt: Akt 4
+  // beginnt erst mit dem Maulwurf.
+  if (_versteckErledigt('bruch_confrontation') && !_versteckFlag('bruch_nacht_gesehen')
+      && !_versteckFlag('elara_verrat_gesehen')) return 'bruch_nacht';
   return null;
 }
 if (typeof window !== 'undefined') window.versteckBesuchFaellig = versteckBesuchFaellig;
@@ -4158,6 +4167,170 @@ function _elaraSzene(scene, key, amEnde) {
 }
 
 // ---------------------------------------------------------------------------
+// v6.1: Begegnungen auf dem Weg nach unten (Akt 4).
+//
+// Harrens Abstieg: Er folgt Dir ohne Amulett, und mit jeder Tiefe nimmt ihm der
+// Nebel mehr: erst sein Amt, dann die Stadt, dann Deinen Namen. Unten bleibt
+// nur "Lene". Drei Begegnungen, solange "Die Quelle" laeuft, in fester
+// Reihenfolge (jede setzt ihr Flag, die naechste verlangt das vorige).
+//
+// Aldrics Ende: In "Die letzte Wache" fuehrt Mara Dich bei Welle 30 zu ihm.
+// Er ist leer und fragt, wer er ist. Sagst Du es ihm (aldric_erzaehlt) oder
+// schweigst Du (aldric_verschwiegen)? Das liest der Epilog.
+//
+// Muster wie bei Elara: spawnEventObject, [E], Dialogseiten. Eine Begegnung
+// je Raum, die naechste fruehestens zwei Raeume spaeter, damit ein Spieler,
+// der schon tief steht, alle in einem Lauf sieht.
+// ---------------------------------------------------------------------------
+var HARREN_FIGUR_HOEHE = 52;
+var ALDRIC_FIGUR_HOEHE = 54;
+var _tiefenBegegnungAb = 2;
+
+var HARREN_ABSTIEG = [
+  { flag: 'harren_abstieg_1', abTiefe: 24, seiten: function () { return [
+    { text: _elaraT(
+        '(Mitten im Gang, an die Wand gelehnt: Harren. Kein Amulett, nur sein Mantel, schwer vom Nebel. Er hat auf Dich gewartet.)\n\nHARREN: Archivschmied. Gut. Ich wusste, dass Du hier entlang kommst.',
+        '(In the middle of the passage, leaning against the wall: Harren. No amulet, only his coat, heavy with fog. He has been waiting for you.)\n\nHARREN: Archivesmith. Good. I knew you would come this way.') },
+    { text: _elaraT(
+        'HARREN: Sie sagen, ich hätte ein Amt. Oben. (Er tastet nach der Kette um seinen Hals und findet sie nicht.) Ich weiss nicht mehr, welches. Es war wohl nicht wichtig.',
+        'HARREN: They say I hold an office. Up above. (He gropes for the chain around his neck and does not find it.) I no longer know which. It cannot have mattered much.'),
+      wahlen: [
+        { label: _elaraT('Geh zurück nach oben, Harren.', 'Go back up, Harren.'),
+          antwort: _elaraT('HARREN: Oben wartet niemand auf mich. Sie ist unten.', 'HARREN: Nobody is waiting for me up there. She is down here.') },
+        { label: _elaraT('Bleib bei mir.', 'Stay with me.'),
+          antwort: _elaraT('HARREN: Geh Du voraus. Ich finde den Weg. Ich muss nur an sie denken.', 'HARREN: You go ahead. I will find the way. I only have to think of her.') }
+      ] }
+  ]; } },
+  { flag: 'harren_abstieg_2', abTiefe: 26, seiten: function () { return [
+    { text: _elaraT(
+        '(Harren sitzt auf einer Stufe und sieht Dir entgegen. Der Nebel hängt in seinem Bart wie Reif.)\n\nHARREN: Archivschmied. Du kommst von oben? (Er runzelt die Stirn.) Was ist oben?',
+        '(Harren sits on a step and watches you come. The fog hangs in his beard like frost.)\n\nHARREN: Archivesmith. You come from above? (He frowns.) What is above?') },
+    { text: _elaraT(
+        'HARREN: Da war eine Stadt, glaube ich. Ein Platz mit einem Brunnen. Und ein Fenster, in das ich jeden Abend ein Licht gestellt habe. (Er schüttelt den Kopf.) Wie sie hiess, weiss ich nicht mehr. Nur das Licht.',
+        'HARREN: There was a city, I think. A square with a fountain. And a window where I put a light every evening. (He shakes his head.) What it was called, I no longer know. Only the light.'),
+      wahlen: [
+        { label: _elaraT('Fogreach. Die Stadt heisst Fogreach.', 'Fogreach. The city is called Fogreach.'),
+          antwort: _elaraT('HARREN: (Er wiederholt es leise, zweimal. Es bleibt nicht.) Danke. Sag es mir noch einmal, wenn wir uns wiedersehen.', 'HARREN: (He repeats it quietly, twice. It does not stay.) Thank you. Tell me again when we meet next.') },
+        { label: _elaraT('(schweigen)', '(stay silent)'),
+          antwort: _elaraT('(Er wartet nicht auf eine Antwort. Er steht auf und geht weiter hinab.)', '(He does not wait for an answer. He gets up and goes on down.)') }
+      ] }
+  ]; } },
+  { flag: 'harren_abstieg_3', abTiefe: 28, seiten: function () { return [
+    { text: _elaraT(
+        '(Harren steht am Rand eines Schachts und sieht hinunter, wo es rot glimmt. Als Du näher kommst, dreht er sich um. In seinem Blick ist nichts mehr, das Dich kennt.)',
+        '(Harren stands at the edge of a shaft and looks down to where something glows red. As you come closer he turns. There is nothing left in his eyes that knows you.)') },
+    { text: _elaraT(
+        'HARREN: Lene.\n\n(Mehr sagt er nicht, und er sagt es nicht zu Dir. Dann geht er weiter, hinab, auf die Glut zu.)',
+        'HARREN: Lene.\n\n(That is all he says, and he does not say it to you. Then he goes on, down, towards the glow.)') }
+  ]; } }
+];
+
+var ALDRIC_ENDE = { seiten: function () { return [
+  { text: _elaraT(
+      '(Mara wartet an einer Biegung, die Lampe abgeblendet. Sie sagt nichts, sie nickt nur in die Kammer dahinter.)',
+      '(Mara waits at a bend, her lamp shuttered. She says nothing, she only nods towards the chamber beyond.)') },
+  { text: _elaraT(
+      '(Auf dem Boden, an die Wand gelehnt: Aldric. Kein Mantel, kein Siegelring. Seine Augen gehen über Dich hinweg, so wie Deine damals in der Schmiede über alles hinweggingen.)\n\nALDRIC: Du... kennst Du mich? Weisst Du, wer ich bin?',
+      '(On the floor, leaning against the wall: Aldric. No coat, no signet ring. His eyes pass over you, the way yours once passed over everything in the forge.)\n\nALDRIC: You... do you know me? Do you know who I am?'),
+    wahlen: [
+      { label: _elaraT('Ihm sagen, wer er war', 'Tell him who he was'), flags: ['aldric_erzaehlt'],
+        antwort: _elaraT('(Du sagst es ihm. Ratsherr Aldric. Der Kettenrat, die Esse, die Phiolen, Dein eigener Amboss. Er hört zu wie jemand, dem man von einem Fremden erzählt.)\n\nALDRIC: Das klingt nach einem schlechten Menschen. (Er sieht auf seine Hände.) Danke, dass Du es mir gesagt hast.',
+          '(You tell him. Councillor Aldric. The Chain Council, the forge, the vials, your own anvil. He listens like someone being told about a stranger.)\n\nALDRIC: That sounds like a bad man. (He looks at his hands.) Thank you for telling me.') },
+      { label: _elaraT('Schweigen', 'Stay silent'), flags: ['aldric_verschwiegen'],
+        antwort: _elaraT('(Du sagst nichts. Er wartet, dann senkt er den Blick.)\n\nALDRIC: Schon gut. Vielleicht ist es besser so.\n\n(Der Mann, der andere geleert hat, ist selbst leer. Seine Geschichte bleibt bei Dir.)',
+          '(You say nothing. He waits, then lowers his eyes.)\n\nALDRIC: Never mind. Perhaps it is better this way.\n\n(The man who emptied others is empty himself. His story stays with you.)') }
+    ] },
+  { text: _elaraT('MARA: (leise) Lass ihn hier. Hier unten tut er niemandem mehr etwas.',
+      'MARA: (quietly) Leave him here. Down here he can no longer hurt anyone.') }
+]; } };
+
+function _bgFlag(n) {
+  var qs = window.questSystem;
+  return !!(qs && typeof qs.hasFlag === 'function' && qs.hasFlag(n));
+}
+function _bgAktiv(id) {
+  var qs = window.questSystem;
+  if (!qs || typeof qs.getActiveQuests !== 'function') return null;
+  return (qs.getActiveQuests() || []).filter(function (q) { return q && q.id === id; })[0] || null;
+}
+
+/**
+ * Welche Begegnung ist bei dieser Tiefe faellig? Reine Abfrage (auch fuer Tests).
+ * @returns {{art:'harren', schritt:object, nr:number}|{art:'aldric'}|null}
+ */
+function tiefenBegegnungFaellig(tiefe) {
+  var t = (typeof tiefe === 'number') ? tiefe
+    : ((typeof window !== 'undefined' && typeof window.DUNGEON_DEPTH === 'number') ? window.DUNGEON_DEPTH : 1);
+  // Aldric: Welle 30 erreicht, ihn aber noch nicht gesehen.
+  var wache = _bgAktiv('mara_assault');
+  if (wache && Array.isArray(wache.objectives)) {
+    var welle = wache.objectives.filter(function (o) { return o.type === 'wave'; })[0];
+    var ihn = wache.objectives.filter(function (o) { return o.target === 'aldric_gefunden'; })[0];
+    if (welle && welle.current >= welle.required && ihn && ihn.current < ihn.required) return { art: 'aldric' };
+  }
+  // Harren: nur waehrend "Die Quelle", solange er lebt und der Kampf aussteht.
+  var quelle = _bgAktiv('schattenrat_finale');
+  if (!quelle || _bgFlag('harren_dead') || _bgFlag('elara_spared') || _bgFlag('elara_killed')) return null;
+  for (var i = 0; i < HARREN_ABSTIEG.length; i++) {
+    var s = HARREN_ABSTIEG[i];
+    if (_bgFlag(s.flag)) continue;
+    return (t >= s.abTiefe) ? { art: 'harren', schritt: s, nr: i + 1 } : null;
+  }
+  return null;
+}
+if (typeof window !== 'undefined') window.tiefenBegegnungFaellig = tiefenBegegnungFaellig;
+
+/** Seiten mit Wahlen spielen; eine Wahl darf Flaggen setzen. */
+function _begegnungSpielen(scene, seiten, amEnde) {
+  var qs = window.questSystem;
+  var weiterLabel = _elaraT('Weiter', 'Continue');
+  var i = 0;
+  var naechste = function () {
+    if (i >= seiten.length) { if (typeof amEnde === 'function') amEnde(); return; }
+    var s = seiten[i++];
+    var wahlen = (s.wahlen && s.wahlen.length)
+      ? s.wahlen.map(function (w) {
+          return { label: w.label, callback: function () {
+            (w.flags || []).forEach(function (f) { if (qs && typeof qs.setFlag === 'function') qs.setFlag(f); });
+            if (w.antwort) window.EventSystem.showEventChoiceDialog(scene, w.antwort, [{ label: weiterLabel, callback: naechste }]);
+            else naechste();
+          } };
+        })
+      : [{ label: weiterLabel, callback: naechste }];
+    window.EventSystem.showEventChoiceDialog(scene, s.text, wahlen);
+  };
+  naechste();
+}
+
+function _tiefenBegegnung(scene, roomId) {
+  if (!scene || !window.EventSystem || typeof window.EventSystem.spawnEventObject !== 'function') return;
+  if (typeof roomId !== 'number' || roomId < _tiefenBegegnungAb) return;
+  if (window.EspionageSystem && typeof window.EspionageSystem.isActive === 'function'
+      && window.EspionageSystem.isActive()) return;
+  var f = tiefenBegegnungFaellig();
+  if (!f) return;
+  _tiefenBegegnungAb = roomId + 2;
+  var qs = window.questSystem;
+  if (f.art === 'harren') {
+    var schritt = f.schritt;
+    window.EventSystem.spawnEventObject(scene, 'harren_right0', 0xffffff, 0xd9b867, 'Harren', function () {
+      if (qs && typeof qs.setFlag === 'function') qs.setFlag(schritt.flag);
+      if (typeof window.EventSystem.showEventChoiceDialog !== 'function') return;
+      _begegnungSpielen(scene, schritt.seiten());
+    }, { figurHoehe: HARREN_FIGUR_HOEHE });
+    return;
+  }
+  window.EventSystem.spawnEventObject(scene, 'aldric_right0', 0xffffff, 0x8a8298, 'Aldric', function () {
+    var fertig = function () {
+      if (qs && typeof qs.updateQuestProgress === 'function') qs.updateQuestProgress('observe', 'aldric_gefunden', 1);
+    };
+    if (typeof window.EventSystem.showEventChoiceDialog !== 'function') { fertig(); return; }
+    _begegnungSpielen(scene, ALDRIC_ENDE.seiten(), fertig);
+  }, { figurHoehe: ALDRIC_FIGUR_HOEHE });
+}
+if (typeof window !== 'undefined') window._tiefenBegegnung = _tiefenBegegnung;
+
+// ---------------------------------------------------------------------------
 // Die erste Begegnung mit Elara: der HINTERHALT.
 //
 // Wann: im ersten Lauf nach Harrens erstem Auftrag. Dort liest der Spieler
@@ -4533,13 +4706,15 @@ function _showElaraDialog(scene, stage) {
       _versteckAnkuendigen(scene);
     };
   } else {
+    // v6.1: Nach der Rettung gibt sie zuerst das versiegelte Buendel
+    // (resistance_fetch_01), das Ratsdokument erst danach.
     text = isEn
-      ? '"You. The Archivesmith. So the mayor did send someone."\n\nA young woman leans against the chamber wall, hood pulled low. "They call me Elara. I am one of those the council calls troublemakers."\n\n"Down here lies a document, sealed by all three Council factions. They would never sign such a thing in the open — and yet. Bring it to me when you find it."'
-      : '"Du. Der Archivschmied. Der Bürgermeister hat also doch jemanden geschickt."\n\nEine junge Frau lehnt an der Kammerwand, die Kapuze tief im Gesicht. "Man nennt mich Elara. Ich gehöre zu denen, die der Rat Störer nennt."\n\n"Unten liegt ein Dokument, versiegelt von allen drei Ratsfraktionen. Öffentlich würden sie so etwas nie unterzeichnen — und doch. Bring es mir, sobald du es findest."';
+      ? '"You. The Archivesmith. So the mayor did send someone."\n\nA young woman leans against the chamber wall, hood pulled low. "They call me Elara. I am one of those the council calls troublemakers."\n\n"You are still standing. Good. Somewhere down here lies a bundle, sealed. Bring it to me without anyone seeing it, and do not open it. After that we talk about the council."'
+      : '"Du. Der Archivschmied. Der Bürgermeister hat also doch jemanden geschickt."\n\nEine junge Frau lehnt an der Kammerwand, die Kapuze tief im Gesicht. "Man nennt mich Elara. Ich gehöre zu denen, die der Rat Störer nennt."\n\n"Du stehst noch. Gut. Irgendwo hier unten liegt ein Bündel, versiegelt. Bring es mir, ohne dass jemand es sieht, und öffne es nicht. Danach reden wir über den Rat."';
     onContinue = function () {
       if (!qs) return;
       if (typeof qs.setFlag === 'function') qs.setFlag('elaraMet', true);
-      if (typeof qs.acceptQuest === 'function') qs.acceptQuest('widerstand_proof');
+      if (typeof qs.acceptQuest === 'function') qs.acceptQuest('resistance_fetch_01');
       _elaraTreppeFreigeben(scene);
     };
   }
