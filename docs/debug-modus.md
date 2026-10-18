@@ -360,7 +360,7 @@ Was die Flagge aendert:
   Ausnahme: Einstellung 5 (Kampf mit HUD) und Taste `H`.
 - **Trailer-HUD**: wo das HUD im Bild ist, klebt es vergroessert an den
   Bildraendern — hochkant Leiste (Leben, Erfahrung, Gold) oben links und
-  Knoepfe oben rechts 1,4-fach, die Minikarte unter den Knoepfen, die
+  Knoepfe oben rechts 1,4-fach (die Minikarte bleibt weg), die
   Faehigkeitsleiste 1,5-fach unten mittig, Meldungen ("Stufe 2 erreicht!")
   darueber, der Gebietsname unter der Leiste; quer alles 1,25-fach. Je
   Gruppe zeichnet eine eigene Kamera mit Zoom; das Spiel selbst merkt

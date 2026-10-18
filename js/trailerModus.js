@@ -374,6 +374,9 @@
         if (o.__trailerVersteckt) continue;
         var band = (!o.__trailerBild && S.hudAn) ? hudBand(sc, o) : null;
         o.__trailerBand = band;
+        // Die Minikarte bleibt im Trailer weg: vergroessert deckte sie hochkant
+        // ein gutes Stueck Spielfeld zu, und im Video sagt sie nichts.
+        if (band === 'karte') continue;
         o.cameraFilter &= ~((band && hk[band]) || ui).id;
       } else {
         if (o.__trailerUi) { o.cameraFilter &= ~haupt.id; o.__trailerUi = false; }

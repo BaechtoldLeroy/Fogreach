@@ -99,10 +99,10 @@ function hudAmRand(lage) {
     const r = g[x.band];
     g[x.band] = r ? { l: Math.min(r.l, x.b.l), t: Math.min(r.t, x.b.t), r: Math.max(r.r, x.b.r), u: Math.max(r.u, x.b.u) } : Object.assign({}, x.b);
   });
-  for (const band of ['links', 'knoepfe', 'karte', 'unten']) assert.ok(g[band], 'Gruppe fehlt: ' + band);
+  for (const band of ['links', 'knoepfe', 'unten']) assert.ok(g[band], 'Gruppe fehlt: ' + band);
+  assert.ok(!g.karte, 'Minikarte im Trailer sichtbar: ' + JSON.stringify(g.karte));
   assert.ok(g.links.t <= 16 && g.links.l <= 16, 'Leiste: ' + JSON.stringify(g.links));
   assert.ok(g.knoepfe.t <= 16 && g.knoepfe.r >= 944, 'Knoepfe: ' + JSON.stringify(g.knoepfe));
-  assert.ok(g.karte.t <= 16, 'Karte: ' + JSON.stringify(g.karte));
   assert.ok(g.unten.u >= 464, 'Faehigkeitsleiste: ' + JSON.stringify(g.unten));
   assert.ok(lage.every((x) => !x.band || ['titel', 'meldung'].indexOf(x.band) !== -1 || x.zoom === 1.25), 'nicht 1.25-fach');
   const namen = Object.keys(g);

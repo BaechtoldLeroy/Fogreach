@@ -68,15 +68,16 @@ function ueberdeckt(g) {
 /** Hochkant: das HUD an den Raendern, gross, ganz im Bild, nichts ueberdeckt sich. */
 function amRand(lage) {
   const g = gruppen(lage);
-  for (const band of ['links', 'knoepfe', 'karte', 'unten']) assert.ok(g[band], 'Gruppe fehlt: ' + band + ' in ' + Object.keys(g));
+  for (const band of ['links', 'knoepfe', 'unten']) assert.ok(g[band], 'Gruppe fehlt: ' + band + ' in ' + Object.keys(g));
+  // Die Minikarte bleibt im Trailer weg (b456).
+  assert.ok(!g.karte, 'Minikarte im Trailer sichtbar: ' + JSON.stringify(g.karte));
   const draussen = lage.filter((x) => x.b && (x.b.l < -1 || x.b.t < -1 || x.b.r > W + 1 || x.b.u > HOEHE + 1));
   assert.strictEqual(JSON.stringify(draussen), '[]', 'HUD-Teile ausserhalb des Bildes');
   assert.ok(g.links.t <= RAND && g.links.l <= RAND, 'Leiste nicht oben links am Rand: ' + JSON.stringify(g.links));
   assert.ok(g.knoepfe.t <= RAND && g.knoepfe.r >= W - RAND, 'Knoepfe nicht oben rechts am Rand: ' + JSON.stringify(g.knoepfe));
-  assert.ok(g.karte.r >= W - RAND, 'Karte nicht am rechten Rand: ' + JSON.stringify(g.karte));
   assert.ok(g.unten.u >= HOEHE - RAND, 'Faehigkeitsleiste nicht am unteren Rand: ' + JSON.stringify(g.unten));
   assert.ok(Math.abs((g.unten.l + g.unten.r) / 2 - W / 2) <= 2, 'Faehigkeitsleiste nicht mittig: ' + JSON.stringify(g.unten));
-  const klein = lage.filter((x) => ['links', 'knoepfe', 'karte', 'unten'].indexOf(x.band) !== -1 && x.zoom < 1.4);
+  const klein = lage.filter((x) => ['links', 'knoepfe', 'unten'].indexOf(x.band) !== -1 && x.zoom < 1.4);
   assert.strictEqual(JSON.stringify(klein), '[]', 'HUD nicht vergroessert');
   assert.deepStrictEqual(ueberdeckt(g), [], 'Gruppen ueberdecken sich: ' + JSON.stringify(g));
   return g;
