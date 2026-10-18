@@ -212,6 +212,23 @@ test("'P' zaehlt als Boden, nicht als Wand", () => {
   assert.ok(!r.kammer.some((t) => t.y <= 1), 'nicht in die P-Zeile stanzen');
 });
 
+test("Der Zierboden '+' der TerracedHall ist Boden, keine Wandmasse", () => {
+  // Galt alles ausser '.' als Wand, war die ganze obere Terrasse eine Masse
+  // am Raumrand, und die Kammer landete mitten im Boden. Dort fand die
+  // Begehbarkeit dann ihren einzigen Startplatz (Gesamtlauf-Flattern von
+  // "Kammerschutt landet nie im Freiraum der Treppe").
+  const vorlage = require('../js/roomTemplates/TerracedHall.json').layout.walls;
+  assert.ok(vorlage.some((z) => z.indexOf('+') >= 0), 'die Vorlage hat keinen Zierboden mehr');
+  for (let i = 0; i < 64; i++) {
+    const g = vorlage.map((z) => z.slice());
+    const r = H.stanzeKammer(g, () => i / 64);
+    if (!r) continue;
+    r.kammer.forEach((t) => {
+      assert.strictEqual(vorlage[t.y][t.x], '#', 'Kammer bei ' + t.x + '/' + t.y + ' auf "' + vorlage[t.y][t.x] + '" gestanzt');
+    });
+  }
+});
+
 test('Kaputte Raster liefern null, statt zu werfen', () => {
   [null, [], [[]], ['']].forEach((g) => {
     assert.strictEqual(H.stanzeKammer(g, () => 0), null, JSON.stringify(g));

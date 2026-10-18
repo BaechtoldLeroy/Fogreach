@@ -240,7 +240,10 @@
     var c = _zeichen(raster, x, y);
     if (c === null) return true;          // ausserhalb zaehlt als Wand
     if (typeof c === 'number') return c !== 0;
-    return c !== BODEN && c !== 'P';
+    // Wand ist nur '#' (so fuehrt sie jede Vorlage in der Legende). Mit
+    // "alles ausser '.'" galt der Zierboden '+' der TerracedHall als Wand-
+    // masse, und die Kammer wurde mitten in die Terrasse gestanzt.
+    return c === '#';
   }
 
   /**

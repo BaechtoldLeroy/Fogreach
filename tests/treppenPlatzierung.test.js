@@ -260,3 +260,33 @@ test('Raeume: eine unerreichbare Treppe bleibt nicht stehen', async (t) => {
     await h.settle(() => false, { maxRounds: 2 });
   }
 });
+
+test('TerracedHall: die Zierboden-Terrasse ist begehbar', async (t) => {
+  // Die obere Terrasse ist mit '+' ausgelegt. isSpawnPositionBlocked kannte
+  // nur '.' als Boden, die Begehbarkeit sah also nur die untere Halle — und
+  // stand der Spieler oben, begann sie in der naechstbesten freien Zelle.
+  // War das eine in die Terrasse gestanzte Kammer, umfasste der ganze Raum
+  // eine einzige Zelle, und dort landeten Treppe und Gegner.
+  const h = await launchDungeon({ depth: 1, zusatz: '&debug=1&room=TerracedHall' });
+  t.after(async () => { await h.shutdown(); });
+  const r = h.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var zellen = (sc._accessibleArea && sc._accessibleArea.reachableCells) || [];
+    var T = sc._minimapTileSize || 32;
+    return { name: sc.currentRoom && sc.currentRoom.name,
+      // Kachel 10/9 und 28/4: freier Zierboden der Terrasse, fern der Saeulen.
+      terrasse: [[10, 9], [28, 4]].map(function (k) {
+        var x = (k[0] + 0.5) * T, y = (k[1] + 0.5) * T;
+        return { zeichen: sc._minimapWallsGrid[k[1]][k[0]], gesperrt: isSpawnPositionBlocked(x, y),
+          begehbar: !!sc.isPointAccessible(x, y) };
+      }),
+      oben: zellen.filter(function (z) { return z.y < 14 * T; }).length,
+      unten: zellen.filter(function (z) { return z.y > 15 * T; }).length };
+  })()`);
+  assert.strictEqual(r.name, 'TerracedHall');
+  r.terrasse.forEach((p) => {
+    assert.strictEqual(p.zeichen, '+', 'Probe liegt nicht auf dem Zierboden: ' + JSON.stringify(p));
+    assert.ok(!p.gesperrt && p.begehbar, 'Terrasse gilt als Wand: ' + JSON.stringify(r));
+  });
+  assert.ok(r.oben > 50 && r.unten > 50, 'begehbar nur ein Teil des Raums: ' + JSON.stringify(r));
+});

@@ -383,6 +383,7 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
 
   // Store walls grid on the scene for minimap access
   scene._minimapWallsGrid = wallsGrid;
+  scene._minimapIstBoden = null;   // gesetzt, sobald isFloorChar unten steht
   scene._minimapTileSize = T;
   scene._minimapGridW = W;
   scene._minimapGridH = H;
@@ -451,6 +452,11 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     _walkableCharCache.set(ch, walkable);
     return walkable;
   };
+  // Dieselbe Bodenregel fuer isSpawnPositionBlocked (roomManager.js): dort
+  // galt nur '.' als Boden, die Zierboden-Terrasse der TerracedHall also als
+  // Wand — die Begehbarkeit startete dann in einer zufaellig gestanzten
+  // Kammer und kannte eine einzige Zelle.
+  scene._minimapIstBoden = isFloorChar;
   const isWalkableTile = (tx, ty) =>
     tx >= 0 &&
     tx < W &&

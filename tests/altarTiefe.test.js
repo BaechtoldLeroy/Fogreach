@@ -39,10 +39,27 @@ after(async () => {
 // Spieler seitlich neben das Podest (sein Koerper beruehrt den Altar-Koerper
 // nicht, die Bilder decken sich aber), Fuesse dy Pixel unter (+) bzw. ueber
 // (-) der Unterkante des Altars. Ein Bild takten, dann die Liste lesen.
+//
+// Die Seite wird gesucht, nicht fest rechts genommen: der Raum ist zufaellig,
+// und in jedem neunten Lauf (gemessen mit festen Startwerten) stand dort eine
+// Saeule, Wand oder Feuerschale. Der Spieler wurde aus ihr geschoben, meist
+// genau auf die Fusslinie des Altars — "Aufbau: Spieler steht nicht
+// unterhalb", ein Gesamtlauf-Flattern ohne Bezug zur Sortierung. Gilt der
+// Aufbau nach dem Takten nicht, kommt die naechste Seite dran. Der Altar
+// sortiert nur nach der Fusslinie, der Abstand zur Seite aendert daran nichts.
+const SEITEN = [45, -45, 60, -60];
 function spielerAmAltar(dy) {
+  let r = null;
+  for (const seite of SEITEN) {
+    r = spielerNeben(seite, dy);
+    if (dy > 0 ? r.fussSpieler > r.fussAltar : r.fussSpieler < r.fussAltar) return r;
+  }
+  return r;
+}
+function spielerNeben(seite, dy) {
   H.run(`(function () {
     var a = window.__altarSprite;
-    player.x = a.x + 45; player.y = a.y + a.displayHeight * (1 - a.originY) + (${dy});
+    player.x = a.x + (${seite}); player.y = a.y + a.displayHeight * (1 - a.originY) + (${dy});
     if (player.body) { player.body.reset(player.x, player.y); }
   })()`);
   H.step(16);
@@ -60,7 +77,7 @@ function spielerAmAltar(dy) {
     return { spieler: platz(player), altar: platz(a),
              fussSpieler: player.y, fussAltar: a.y + a.displayHeight * (1 - a.originY),
              spielerTiefe: player.depth, altarTiefe: a.depth,
-             gegner: sc.enemyLayer ? platz(sc.enemyLayer) : -1 };
+             gegner: sc.enemyLayer ? platz(sc.enemyLayer) : -1, seite: ${seite} };
   })()`);
 }
 

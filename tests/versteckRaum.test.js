@@ -138,6 +138,38 @@ test('Hinter der Werkbank steht der Spieler hinter ihr, davor vor ihr', () => {
   H.run('player.body.enable = true');
 });
 
+test('In der Kammer wuerfelt der Raum keine Zufallstruhe', () => {
+  // Die Truhe wurde vor der Einrichtung gesetzt und sah sie nicht: in jedem
+  // dritten Fall stand sie unter Werkbank, Tisch oder Kerzen — einmal genau
+  // hinter der Werkbank, wo der Fall oben den Spieler hinstellt (dessen
+  // Flattern im Gesamtlauf). Gezaehlt wird der Wurf selbst, nicht ob er
+  // zufaellig eine Truhe ergab; die Gegenprobe in einem gewoehnlichen Raum
+  // zeigt, dass der Zaehler greift.
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var echt = window._spawnRandomRoomChests, wuerfe = 0;
+    var flagge = window.DebugGate.flagge;
+    window._spawnRandomRoomChests = function () { wuerfe++; };
+    try {
+      enterRoom(sc, 0);
+      var kammer = { name: sc.currentRoom && sc.currentRoom.name, wuerfe: wuerfe };
+      wuerfe = 0;
+      window.DebugGate.flagge = function (n) { return n === 'versteck' ? null : flagge.apply(this, arguments); };
+      enterRoom(sc, 1);
+      var anderer = { name: sc.currentRoom && sc.currentRoom.name, wuerfe: wuerfe };
+      return { kammer: kammer, anderer: anderer };
+    } finally {
+      window._spawnRandomRoomChests = echt;
+      window.DebugGate.flagge = flagge;
+      enterRoom(sc, 0);
+    }
+  })()`);
+  assert.strictEqual(r.kammer.name, 'ElarasVersteck');
+  assert.strictEqual(r.kammer.wuerfe, 0, 'in der Kammer wird eine Truhe gewuerfelt');
+  assert.notStrictEqual(r.anderer.name, 'ElarasVersteck', 'Gegenprobe landet wieder in der Kammer');
+  assert.strictEqual(r.anderer.wuerfe, 1, 'Gegenprobe: der Zaehler greift im gewoehnlichen Raum nicht');
+});
+
 test('Der Raumwechsel raeumt die Einrichtung samt Koerpern ab', () => {
   kammer();
   const r = H.run(`(function () {

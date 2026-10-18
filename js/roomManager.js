@@ -1456,7 +1456,11 @@ function enterRoom(scene, roomId) {
   // entfernt), sondern hier ZUFAELLIG platziert — nach den Treppen, damit die
   // Validierung sie meiden kann (früher standen Template-Truhen fix vor einer
   // Treppe). Ziel: ~1 Truhe pro 2 durchschnittlich grosse Räume.
-  _spawnRandomRoomChests(scene, builtWidth, builtHeight, playerSpawnX, playerSpawnY);
+  // Nicht in Elaras Versteck: der ruhige Raum (s. _versteckRaum) bekommt seine
+  // Einrichtung erst weiter unten, die Truhe sah sie also nie. Gemessen stand
+  // sie in jedem dritten Fall unter Werkbank, Tisch oder Kerzen, mal mitten
+  // im Koerper des Tischs.
+  if (!_versteckRaum) _spawnRandomRoomChests(scene, builtWidth, builtHeight, playerSpawnX, playerSpawnY);
 
   // Overlap Spieler ↔ Stairs
   // Tear down any previous overlap registration so we don't accumulate
@@ -2879,6 +2883,9 @@ function isSpawnPositionBlocked(px, py, halfSize = ROOM_SPAWN_HALF_SIZE) {
   if (wallsGrid && wallsGrid.length > 0) {
     const tileSize = scene._minimapTileSize || 32;
     const cols = wallsGrid[0]?.length || 0;
+    // Boden laut Legende (roomTemplates.js), nicht nur '.': die TerracedHall
+    // legt ihre obere Terrasse mit '+' aus.
+    const istBoden = scene._minimapIstBoden || ((c) => c === '.');
     const sx = [px - CHAR_CLEAR_HALF_W, px, px + CHAR_CLEAR_HALF_W];
     const sy = [py - CHAR_CLEAR_HALF_H, py, py + CHAR_CLEAR_HALF_H];
     for (let i = 0; i < sx.length; i++) {
@@ -2888,7 +2895,7 @@ function isSpawnPositionBlocked(px, py, halfSize = ROOM_SPAWN_HALF_SIZE) {
         if (ty < 0 || ty >= wallsGrid.length || tx < 0 || tx >= cols) {
           return true; // Footprint ragt aus dem Grid -> blockiert
         }
-        if (wallsGrid[ty]?.[tx] !== '.') {
+        if (!istBoden(wallsGrid[ty]?.[tx])) {
           return true; // Footprint berührt eine Wand -> blockiert
         }
       }
