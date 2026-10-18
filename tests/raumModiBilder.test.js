@@ -20,11 +20,11 @@ const { launchDungeon } = require('../tools/headless/index.js');
 const { kontraste, alleLesbar } = require('./kontrastMessung.js');
 
 const SC = "window.game.scene.getScene('GameScene')";
-// Der Koerper des Altars, wie er HEUTE steht: roomModeDefend setzt 48x22 ab
-// (8,34), updateFromGameObject() zieht den statischen Koerper danach aber
-// wieder auf die Bildgroesse. Das Bild ist deshalb genau 64x60 geblieben —
-// gemessen wird, dass sich daran nichts aendert.
-const KOERPER = '64x60@0,0';
+// Der Koerper des Altars: 48x22 ab (8,34), nur das Steinpodest des 64x60-
+// Bildes. Bis b448 zog updateFromGameObject() den statischen Koerper wieder
+// auf die volle Bildgroesse (damals hier als '64x60@0,0' festgehalten);
+// s. altarFest.test.js. Gemessen wird, dass Bilder daran nichts aendern.
+const KOERPER = '48x22@8,34';
 // Ergebnisse kommen aus dem vm-Realm: als JSON vergleichen, nicht deepStrictEqual.
 const gleich = (a, b, m) => assert.strictEqual(JSON.stringify(a), JSON.stringify(b), m);
 

@@ -172,10 +172,13 @@
         if (sprite && scene.physics) {
           try {
             scene.physics.add.existing(sprite, true);
+            // KEIN updateFromGameObject() danach: das setzt einen statischen
+            // Koerper wieder auf das volle Sprite-Rechteck (64x60 ab der
+            // linken oberen Ecke) und verwirft Groesse UND Versatz. Genau so
+            // war es gemessen, bis b448 blockierte der Kristall mit.
+            // setSize/setOffset verschieben den statischen Koerper selbst.
             sprite.body.setSize(48, 22);
-            sprite.body.setOffset(8, 34);
-            if (typeof sprite.body.updateFromGameObject === 'function') sprite.body.updateFromGameObject();
-            if (window.player) {
+            sprite.body.setOffset(8, 34);            if (window.player) {
               playerCollider = scene.physics.add.collider(window.player, sprite);
             }
             // Dasselbe Verhalten wie an jedem Hindernis (main.js / roomManager.js):

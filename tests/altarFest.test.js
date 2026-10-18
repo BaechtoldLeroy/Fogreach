@@ -100,6 +100,52 @@ test('Der Altar steht mit Koerper da', () => {
   assert.strictEqual(r.koerper, true, 'der Altar hat keinen Koerper');
 });
 
+// Der Koerper soll nur das sichtbare Steinpodest abdecken (im Bild Zeilen
+// ~34-56), nicht den schwebenden Kristall darueber. Bis b448 setzte ein
+// updateFromGameObject() nach setSize/setOffset den statischen Koerper auf
+// das volle 64x60-Rechteck zurueck; gemessen: Koerper 64x60 ab der linken
+// oberen Sprite-Ecke, der Kristall blockierte mit.
+test('Der Altar-Koerper deckt nur das Steinpodest ab', () => {
+  const r = H.run(`(function () {
+    var s = window.__altarSprite, b = s.body;
+    var links = s.x - s.displayWidth * s.originX, oben = s.y - s.displayHeight * s.originY;
+    var fy = s.displayHeight / s.frame.height, fx = s.displayWidth / s.frame.width;
+    return { x: b.x - links, y: b.y - oben, w: b.width, h: b.height, fx: fx, fy: fy };
+  })()`);
+  const m = JSON.stringify(r);
+  assert.ok(Math.abs(r.w - 48 * r.fx) <= 2 && Math.abs(r.h - 22 * r.fy) <= 2, 'Koerper ist nicht ~48x22: ' + m);
+  // Relativ zur linken oberen Sprite-Ecke: auf Hoehe des Podests, nicht des Kristalls.
+  assert.ok(r.y >= 30 * r.fy && r.y + r.h <= 60 * r.fy, 'Koerper liegt nicht auf dem Podest: ' + m);
+  assert.ok(r.x >= 4 * r.fx && r.x + r.w <= 60 * r.fx, 'Koerper ragt seitlich ueber das Sprite: ' + m);
+});
+
+test('Der Spieler steht beim Kristall frei, im Podest nicht', () => {
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var s = window.__altarSprite, w = sc.physics.world, p = window.player, pb = p.body;
+    var oben = s.y - s.displayHeight * s.originY;
+    // Legt den Spieler so, dass die Mitte seines Koerpers auf (x, y) liegt,
+    // und laesst die Physik-Welt Spieler und Altar einmal trennen.
+    var probe = function (x, y) {
+      var dx = p.x - pb.center.x, dy = p.y - pb.center.y;
+      p.setPosition(x + dx, y + dy);
+      pb.reset(p.x, p.y);
+      var vorher = { x: p.x, y: p.y };
+      var hit = w.collide(p, s);
+      return { hit: hit, bewegt: Math.hypot(p.x - vorher.x, p.y - vorher.y) };
+    };
+    // Kristall: Unterkante des Spieler-Koerpers knapp ueber dem Podest, also
+    // mitten im gezeichneten Kristall/Aufsatz (alter 64x60-Koerper).
+    var kristall = probe(s.x, oben + 34 * (s.displayHeight / s.frame.height) - pb.height / 2 - 2);
+    var podest = probe(s.body.center.x, s.body.center.y);
+    return { kristall: kristall, podest: podest };
+  })()`);
+  const m = JSON.stringify(r);
+  assert.strictEqual(r.kristall.hit, false, 'der Kristall ueber dem Podest blockiert den Spieler: ' + m);
+  assert.strictEqual(r.kristall.bewegt, 0, 'der Spieler wurde vom Kristall weggeschoben: ' + m);
+  assert.strictEqual(r.podest.hit, true, 'das Podest blockiert den Spieler nicht: ' + m);
+});
+
 test('Ein Gegnergeschoss wird am Altar aufgehalten', () => {
   const r = treffer('gegner');
   assert.strictEqual(r.collider, 1, r.collider + ' Collider zwischen Gegnergeschossen und Altar');
