@@ -357,8 +357,17 @@ Was die Flagge aendert:
 - **Kein HUD**: Lebensleiste, Faehigkeitenleiste, Minikarte, Questanzeige,
   Hub-Knoepfe, [E]-Hinweise, Tutorial-Hinweise, Toasts — alles, was am
   Bildschirm klebt (Tiefe 1001 bis 2400), wird per Kamera ausgeblendet.
+  Ausnahme: Einstellung 5 (Kampf mit HUD) und Taste `H`.
+- **Hochkant-HUD**: wo das HUD im Bild ist, steht es hochkant versetzt
+  zwischen den Zonen der Plattformen — die obere Leiste (Leben, Erfahrung,
+  Minikarte, Knoepfe) ab 12 % der Hoehe, die Faehigkeitsleiste mit den
+  Messingfeldern endet bei 80 %, Meldungen ("Stufe 2 erreicht!") darunter.
+  Kameras ohne Zoom zeichnen es versetzt; das Spiel selbst merkt nichts.
+- **Tempo**: jede Einstellung kommt in ~0,3 s zur Sache, ihr Hoehepunkt
+  steht nach 0,2–3 s (Kamerafahrten mit easeOut, kurze Abblenden).
 - **Unsterblich**: kein Schaden, kein Game Over, keine Erfahrung (ein
-  Stufenaufstieg blitzt sonst mitten durchs Bild).
+  Stufenaufstieg blitzt sonst mitten durchs Bild). Nur Einstellung 5 laesst
+  Treffer bis auf ein Viertel des Lebens zu und gibt gezielt Erfahrung.
 - **Kein Spielstand wird geschrieben.** Der Trailer beginnt immer mit einem
   frischen Spiel im Speicher; `saveSlots.js` leitet jedes Schreiben in einen
   Sandkasten um. Gelesen werden nur die globalen Einstellungen (Lautstaerke,
@@ -371,7 +380,7 @@ Was die Flagge aendert:
 | `R` | Aufnahme starten / stoppen — das Spiel nimmt sich selbst auf (siehe „Trailer aufnehmen“) |
 | `Z` | Zeitlupe an/aus — Spieluhr, Physik, Tweens, Animationen auf 0.3x; bleibt ueber Einstellungen hinweg an |
 | `L` | Letterbox-Balken an/aus — hochkant die Schutzzonen der Plattformen (oben 12 %, unten 20 %), quer je 12 % |
-| `H` | HUD einblenden / wieder ausblenden (fuer Schnittbilder mit Oberflaeche); hochkant nur die Teile, die ganz ins schmale Bild passen |
+| `H` | HUD einblenden / wieder ausblenden (fuer Schnittbilder mit Oberflaeche); hochkant in der versetzten Anordnung (s. o.) — was dann noch nicht ganz ins Bild passt, bleibt weg |
 | `M` | Ton an/aus |
 
 Im Trailer-Modus gehoeren diese Tasten dem Trailer: `1`–`4` und `R` loesen
@@ -383,16 +392,16 @@ ausgeblendet.
 
 | Taste | Einstellung | Was passiert |
 |---|---|---|
-| `0` | Inventar | Dungeon, Raster und Papierpuppe voller Beute aller Seltenheiten (legendaere Glutaxt, Amulette, Bannlaterne); nach 0,5 s geht das Inventar auf, nach 1,7 s der Tooltip eines legendaeren Stuecks. |
-| `1` | Nebelstadt | Hub aus Schwarz, Nebelschleier lichtet sich, Fahrt ueber den Platz zum Rathaus. Spieler ausgeblendet. |
-| `2` | Der Rat | Spieler vor Aldric, der Messing-Dialog geht auf: „Der Rat hat Arbeit für Dich, Archivschmied.“ |
-| `3` | Abstieg | Spieler an der Rathauskeller-Tuer, geht los, Abblende — erster Kellerraum, aus Schwarz, ohne Gegner. |
-| `4` | Kampf-Montage | Je ~1,3 s: Wirbelwind in fuenf Wichte, Ansturm durch drei Schlaeger, Hammer der Ahnen, eine Kettenwache faellt (Schild blitzt zuerst). |
-| `5` | Verkleidung | Lagerhaus-Spionageraum, Spieler in Wachen-Montur geht am blauen Kegel vorbei, nach 2 s faerbt sich der Kegel orange. |
-| `6` | Geheime Sitzung | Die Ratskammer-Buehne (Magistrat, Klerus, Garde, Kerzen), langsamer Zoom. |
-| `7` | Boss | Die Boss-Zwischenszene des Kettenmeisters (Balken, Schwenk, Plakette, zwei Redeseiten) laeuft ohne Taste durch — jede Seite ~2 s, Weiter/Ueberspringen-Knoepfe nicht im Bild —, dann der Hammer in Zeitlupe, Bildschirm bebt; danach wieder Normaltempo. Spieler und Boss stehen auf einem freien Platz ohne Treppe oder Tuer dazwischen; Treppen und Tueren sind in dieser Einstellung ausgeblendet. Dauer ~10 s. |
-| `8` | Die Presse | Kamera auf der Druckerei, drei Stoesse mit fliegenden Flugblaettern, dann geht die Druckerei-Ansicht auf. |
-| `9` | Titel | Schwarz, die Laterne vom Startbildschirm leuchtet auf, der Nebel reisst auf, FOGREACH in Messing. |
+| `0` | Inventar | Dungeon, Raster und Papierpuppe voller Beute aller Seltenheiten (legendaere Glutaxt, Amulette, Bannlaterne); nach 0,15 s geht das Inventar auf, nach 0,75 s der Tooltip eines legendaeren Stuecks. |
+| `1` | Nebelstadt | Hub aus Schwarz, Nebelschleier lichtet sich, Fahrt ueber den Platz zum Rathaus (2,2 s, setzt sofort ein). Spieler ausgeblendet. |
+| `2` | Der Rat | Spieler vor Aldric, nach 0,25 s geht der Messing-Dialog auf: „Der Rat hat Arbeit für Dich, Archivschmied.“ |
+| `3` | Abstieg | Spieler an der Rathauskeller-Tuer, geht sofort los, Abblende ab 0,65 s — nach ~1,3 s der erste Kellerraum, aus Schwarz, ohne Gegner. |
+| `4` | Kampf-Montage | Je ~0,9 s (Wirbelwind ab 0,2 s, die Wache faellt bei 3,55 s): Wirbelwind in fuenf Wichte, Ansturm durch drei Schlaeger, Hammer der Ahnen, eine Kettenwache faellt (Schild blitzt zuerst). |
+| `5` | Kampf mit HUD | Dungeon mit HUD: sechs Gegner rundum, Treffer ab 0,1 s lassen die Lebensleiste unter ein Drittel sinken, Wirbelwind (0,3 s), Trank (1,1 s; die Leiste steigt in 0,5 s um gut die Haelfte), Ansturm (1,4 s), Hammer (1,9–2,3 s), die Erfahrungsleiste fuellt sich bis zum Stufenaufstieg (2,45 s: goldener Blitz, Leben voll, Meldung). Hochkant mit versetztem HUD. |
+| `6` | Geheime Sitzung | Die Ratskammer-Buehne (Magistrat, Klerus, Garde, Kerzen) sofort im Bild, kurze Fahrt heran (2,2 s). |
+| `7` | Boss | Die Boss-Zwischenszene des Kettenmeisters (Balken, Schwenk, Plakette) laeuft im Trailer in 60 % der Zeit und ohne Taste durch — Plakette bei ~0,8 s, Rede ab ~1,1 s, nach der ersten Seite (2,2 s) der Ausklang, Weiter/Ueberspringen-Knoepfe nicht im Bild —, dann der Hammer (2,6 s, Einschlag 2,95 s) in Zeitlupe, Bildschirm bebt; ab 4,3 s wieder Normaltempo. Spieler und Boss stehen auf einem freien Platz ohne Treppe oder Tuer dazwischen; Treppen und Tueren sind in dieser Einstellung ausgeblendet. Dauer ~4,5 s. |
+| `8` | Die Presse | Die stampfende Presse gross im Bild, drei Stoesse in gut 1,3 s (der erste nach ~0,15 s) mit fliegenden Flugblaettern. Ohne ihr Bild: Kamera auf der Druckerei, drei Stoesse, dann die Druckerei-Ansicht. |
+| `9` | Titel | Schwarz, die Laterne vom Startbildschirm leuchtet auf, der Nebel reisst ab 0,4 s auf, FOGREACH in Messing steht nach ~1,3 s. |
 
 Jede Einstellung saet den Zufall fest (Raumfolge, Gegner, Funken) und baut ihre
 Szene neu auf — dieselbe Taste ergibt dasselbe Bild, egal was vorher lief.
@@ -418,7 +427,7 @@ Download-Ordner. Kein OBS noetig.
 4. Die Taste der Einstellung druecken, z. B. `4`.
 5. Sofort `R` druecken — oben rechts im Fenster erscheint ein roter Punkt
    (nicht im Video).
-6. Die Einstellung laufen lassen (5–8 s), bei Bedarf `Z` fuer Zeitlupe.
+6. Die Einstellung laufen lassen (3–5 s), bei Bedarf `Z` fuer Zeitlupe.
 7. `R` druecken — die Aufnahme stoppt, die Datei landet im Download-Ordner:
    `fogreach_4_kampf_01.webm`, beim naechsten Mal `_02` usw. Ohne gewaehlte
    Einstellung heisst sie `fogreach_frei_01.webm`.

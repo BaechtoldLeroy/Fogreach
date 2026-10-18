@@ -64,7 +64,7 @@
 
   /**
    * Laesst die Presse an (x, y) stampfen.
-   * @param {object} [wie] { skala (3), stoesse (2), tiefe (2010), fest (scrollFactor 0), blaetter (8), beiStoss(), fertig(sprite) }
+   * @param {object} [wie] { skala (3), stoesse (2), tiefe (2010), fest (scrollFactor 0), blaetter (8), tempo (1; der Trailer stampft schneller), beiStoss(), fertig(sprite) }
    * @returns {Phaser.GameObjects.Sprite|null} null ohne Bild
    */
   function stampfen(scene, x, y, wie) {
@@ -75,6 +75,10 @@
     var s = scene.add.sprite(x, y, KEY, 0).setScale(skala).setDepth(tiefe).setName('druckerpresse');
     if (wie.fest) s.setScrollFactor(0);
     var rest = wie.stoesse || 2;
+    var abspielen = function () {
+      if (wie.tempo && wie.tempo !== 1) s.play({ key: ANIM, frameRate: 12 * wie.tempo });
+      else s.play(ANIM);
+    };
     s.on('animationupdate', function (anim, frame) {
       if (anim.key !== ANIM || !frame || frame.index !== TREFFER + 1) return;   // index ist 1-basiert
       var bx = s.x + (PAPIER.x - 0.5) * KANTE * skala, by = s.y + (PAPIER.y - 0.5) * KANTE * skala;
@@ -84,11 +88,11 @@
     });
     s.on('animationcomplete', function () {
       rest--;
-      if (rest > 0) { s.play(ANIM); return; }
+      if (rest > 0) { abspielen(); return; }
       s.setFrame(0);
       if (typeof wie.fertig === 'function') { try { wie.fertig(s); } catch (e) {} }
     });
-    s.play(ANIM);
+    abspielen();
     return s;
   }
 

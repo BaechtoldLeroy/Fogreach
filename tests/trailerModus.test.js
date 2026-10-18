@@ -130,7 +130,7 @@ const HOCH = {
         return hub.cameras.main.zoom === 2 && (${AUF_UI})(c) && (${INNEN})(c.getBounds(), 768); })()`,
   3: `${GS}.cameras.main.zoom === 1.8`,
   4: `${GS}.cameras.main.zoom === 1.8`,
-  5: `${GS}.cameras.main.zoom === 1.5`,
+  5: `${GS}.cameras.main.zoom === 1.6`,
   6: `(function () { var b = ${HUB}.__trailerBuehne;
         return !!b.box && (${AUF_UI})(b.box) && b.figuren.length === 3
           && b.figuren.every(function (f) { return (${INNEN})(f.getBounds(), 768) && f.getBounds().top > 115; }); })()`,
@@ -141,21 +141,26 @@ const HOCH = {
 };
 
 // Wo jede Einstellung landen muss, und woran man sieht, dass sie aufgebaut ist.
+// Tempo (Wunsch "der trailer ist etwas zu langsam vom pacing"): `bis` ist
+// zugleich die Frist — was eine Einstellung zeigen soll, steht spaetestens
+// dann; `moment` ist ihr Hoehepunkt mit Frist (ms ab Aufbau). Vorher lagen
+// die Hoehepunkte bei 1,7-7,5 s.
 const ERWARTET = {
-  1: { szene: 'HubSceneV2', bis: 2500 },
-  2: { szene: 'HubSceneV2', bis: 1500, pruef: `!!window.game.scene.getScene('HubSceneV2')._dialogContainer` },
-  3: { szene: 'GameScene', bis: 4500 },
-  4: { szene: 'GameScene', bis: 6500 },
-  5: { szene: 'GameScene', bis: 2600, pruef: `window.EspionageSystem.isActive() && window.EspionageSystem.isDisguised() && window.EspionageSystem.getDetection() > 0.5` },
-  6: { szene: 'HubSceneV2', bis: 1500, pruef: `!!window.game.scene.getScene('HubSceneV2').__trailerBuehne` },
-  7: { szene: 'GameScene', bis: 7300, pruef: `!window.game.scene.getScene('GameScene').__bossZwischenszene && enemies.getChildren().some(function (e) { return e.active && e.isBoss && e.bossType === 'chainMaster'; })` },
+  1: { szene: 'HubSceneV2', bis: 2300, moment: ['rathaus', 2300] },
+  2: { szene: 'HubSceneV2', bis: 600, pruef: `!!window.game.scene.getScene('HubSceneV2')._dialogContainer`, moment: ['dialog', 400] },
+  3: { szene: 'GameScene', bis: 2600, moment: ['keller', 2600] },
+  4: { szene: 'GameScene', bis: 3700, moment: ['wache', 3700] },
+  // Kampf mit HUD (ersetzt die Verkleidung): HUD im Bild, Stufenaufstieg.
+  5: { szene: 'GameScene', bis: 2800, pruef: `window.TrailerModus.zustand().hudAn && playerLevel >= 2`, moment: ['stufe', 2600] },
+  6: { szene: 'HubSceneV2', bis: 800, pruef: `!!window.game.scene.getScene('HubSceneV2').__trailerBuehne`, moment: ['sitzung', 600], ende: 2600 },
+  7: { szene: 'GameScene', bis: 3200, pruef: `!window.game.scene.getScene('GameScene').__bossZwischenszene && enemies.getChildren().some(function (e) { return e.active && e.isBoss && e.bossType === 'chainMaster'; })`, moment: ['treffer', 3000] },
   // #198: die stampfende Presse gross im Bild (frueher Fassade + Druckerei-Ansicht).
-  8: { szene: 'HubSceneV2', bis: 3000, pruef: `window.game.scene.getScene('HubSceneV2').children.list.some(function (o) { return o.name === 'druckerpresse' && o.visible; })` },
-  9: { szene: 'TrailerTitel', bis: 3500, pruef: `window.game.scene.getScene('TrailerTitel').titel.alpha > 0.9` },
+  8: { szene: 'HubSceneV2', bis: 1500, pruef: `window.game.scene.getScene('HubSceneV2').children.list.some(function (o) { return o.name === 'druckerpresse' && o.visible; })`, moment: ['presse', 900] },
+  9: { szene: 'TrailerTitel', bis: 2600, pruef: `window.game.scene.getScene('TrailerTitel').titel.alpha > 0.9`, moment: ['titel', 2600] },
 };
 
 for (const n of Object.keys(ERWARTET)) {
-  test('Einstellung ' + n + ' baut fehlerfrei auf und landet in ' + ERWARTET[n].szene, async () => {
+  test('Einstellung ' + n + ' baut fehlerfrei auf, landet in ' + ERWARTET[n].szene + ' und kommt schnell zur Sache', async () => {
     const e = ERWARTET[n];
     const fehlerVorher = H.hardErrors().length;
     H.run(`window.TrailerModus.taste('${n}')`);
@@ -167,8 +172,25 @@ for (const n of Object.keys(ERWARTET)) {
     if (e.pruef) assert.strictEqual(H.run(e.pruef), true, 'Einstellung ' + n + ': ' + e.pruef);
     assert.strictEqual(H.run(HOCH[n]), true, 'Einstellung ' + n + ' hochkant: ' + HOCH[n]);
     assert.ok(aktiv('TrailerOverlay'), 'das Overlay ist verschwunden');
+    const z = zustand();
+    const [name, frist] = e.moment;
+    assert.ok(z.momente[name] !== undefined && z.momente[name] <= frist,
+      'Einstellung ' + n + ': Hoehepunkt "' + name + '" bei ' + z.momente[name] + ' ms, Frist ' + frist);
+    // Kein Schritt der Choreografie liegt spaeter als 4,5 s (Boss mit Zeitlupe).
+    assert.ok(z.planEnde <= 4500, 'Einstellung ' + n + ': letzter Schritt bei ' + z.planEnde + ' ms');
+    // Mit Kamerafahrt: auch am Ende der Fahrt passt alles ins Bild.
+    if (e.ende) {
+      assert.ok(await bisSeit(e.ende));
+      assert.strictEqual(H.run(HOCH[n]), true, 'Einstellung ' + n + ' hochkant am Ende: ' + HOCH[n]);
+    }
   });
 }
+
+test('Taste 5 ist der Kampf mit HUD, die Verkleidung ist weg', () => {
+  assert.strictEqual(H.run(`window.TrailerModus.EINSTELLUNGEN[5].kurz`), 'kampfhud');
+  assert.strictEqual(H.run(`Object.keys(window.TrailerModus.EINSTELLUNGEN).join(',')`), '0,1,2,3,4,5,6,7,8,9');
+  assert.strictEqual(H.run(`JSON.stringify(window.TrailerModus.EINSTELLUNGEN).indexOf('erkleidung')`), -1);
+});
 
 // Einstellung 7 im Einzelnen. Beim Aufnehmen stand eine Treppe (der
 // Durchgang des Raums, "eine Tuer") genau zwischen Spieler und Kettenmeister.
@@ -208,7 +230,8 @@ function bossBild() {
 test('Einstellung 7: Zwischenszene laeuft ohne Taste durch, keine Treppe/Tuer im Bild', async () => {
   const fehlerVorher = H.hardErrors().length;
   H.run(`window.TrailerModus.taste('7')`);
-  assert.ok(await bisSeit(2600));
+  // Zuegiger als im Spiel: die Rede steht schon nach ~1,1 s.
+  assert.ok(await bisSeit(1500));
   let b = bossBild();
   assert.match(String(b.phase), /^rede:0/, 'die Rede des Kettenmeisters laeuft nicht: ' + b.phase);
   assert.strictEqual(b.redeDa, true, 'die Rede ist ausgeblendet');
@@ -230,15 +253,16 @@ test('Einstellung 7: Zwischenszene laeuft ohne Taste durch, keine Treppe/Tuer im
     };
   })()`);
   assert.strictEqual(JSON.stringify(hoch), JSON.stringify({ name: true, rede: true, ueber: true }));
-  assert.ok(await bisSeit(4600));
-  assert.match(String(bossBild().phase), /^rede:1/, 'zweite Seite kommt nicht von selbst');
-  assert.ok(await bisSeit(7600));
+  assert.ok(zustand().momente.plakette <= 1200, 'Plakette erst bei ' + zustand().momente.plakette);
+  // Das Tempo gilt nur fuer diesen Auftritt — das Spiel behaelt seines.
+  assert.strictEqual(H.run('window.BossZwischenszene._TEMPO'), 1);
+  assert.ok(await bisSeit(2700));
   b = bossBild();
   assert.strictEqual(b.phase, null, 'die Zwischenszene endet nicht von selbst');
   assert.strictEqual(b.boss, true);
   assert.strictEqual(b.sichtbar, 0, 'Treppe/Tuer im Bild (Kampf)');
   assert.ok(b.zwischen >= 100, 'Treppe/Tuer zwischen Spieler und Boss: ' + b.zwischen);
-  assert.ok(await bisSeit(8200));
+  assert.ok(await bisSeit(3100));
   assert.strictEqual(zustand().zeitlupe, true, 'der Treffer laeuft nicht in Zeitlupe');
   assert.strictEqual(H.run(`window.__GAME_PAUSE.since`), null, 'die Spieluhr steht noch');
   assert.deepStrictEqual(H.hardErrors().slice(fehlerVorher).map((f) => f.msg), []);

@@ -5,8 +5,11 @@
  * Drehort: kein HUD, der Spieler stirbt nicht, und die Tasten 0-9 bauen je
  * eine Einstellung aus docs/trailer-drehbuch.md auf — mit festem Zufall,
  * damit jeder Durchlauf gleich aussieht und man den besten nehmen kann.
+ * Jede Einstellung kommt schnell zur Sache: Handlung ab ~0,3 s nach dem
+ * Tastendruck, der Hoehepunkt nach 1,5-3 s (Schnitte im Takt der Musik).
  *
- *   0-9  Einstellung (Szene, Figuren, Kamerafahrt; 0 = Inventar)
+ *   0-9  Einstellung (Szene, Figuren, Kamerafahrt; 0 = Inventar,
+ *        5 = Kampf mit HUD)
  *   R    Aufnahme starten/stoppen (Canvas + Spielton -> .webm-Download)
  *   Z    Zeitlupe an/aus (Spieluhr x0.3)
  *   L    Letterbox-Balken an/aus
@@ -46,6 +49,7 @@
   // Kamera-Zoom im Hochformat: im Dungeon steht der Spieler damit etwa so
   // gross im Bild wie quer (72 px auf 480 Bildhoehe).
   var NAH = 1.8;
+  var echtesXP = null; // das addXP des Spiels (die Drehregeln schalten es stumm)
 
   var S = {
     einstellung: null, // zuletzt gestartete Einstellung (0 ist das Inventar)
@@ -57,7 +61,11 @@
     zeitlupeTaste: false, // vom Aufnehmenden per Z gewaehlt; gilt ueber Einstellungen hinweg
     letterbox: false,
     ruhe: null,       // null | 'alle' | 'fremde' | 'boss' — welche Gegner weichen
-    verdacht: 0,      // erzwungener Verdacht in der Spionage-Einstellung
+    hudZwang: false,  // die Einstellung zeigt das HUD selbst (Kampf mit HUD)
+    boden: 1,         // Anteil des Lebens, unter den es nie faellt (1 = immer voll)
+    verwundbar: false, // Treffer kommen an (nur bis zum Boden)
+    momente: {},      // Hoehepunkte der Einstellung: Name -> ms ab Aufbau
+    planEnde: 0,      // letzter geplanter Schritt (ms ab Aufbau)
     wartend: null,    // Einstellung, die auf den ersten Hub wartet
     hubGesehen: false,
     gesperrt: false   // ein Szenenwechsel laeuft gerade
@@ -106,6 +114,12 @@
   // ---------------------------------------------------------------------
   function plan(ms, fn) {
     S.plan.push({ ab: S.uhr + ms, fn: fn, lauf: S.lauf });
+    if (S.aufbauAb != null) S.planEnde = Math.max(S.planEnde, S.uhr + ms - S.aufbauAb);
+  }
+
+  /** Haelt fest, wann der Hoehepunkt einer Einstellung kommt (fuer Tests und Schnitt). */
+  function moment(name) {
+    if (S.aufbauAb != null && S.momente[name] === undefined) S.momente[name] = Math.round(S.uhr - S.aufbauAb);
   }
 
   function planAbarbeiten() {
@@ -175,46 +189,140 @@
   // abgeschnitten. Sie gehen darum auf eine eigene Kamera ohne Zoom; die
   // Hauptkamera zeigt nur die Welt. Unter Tiefe 1001 bleibt alles auf der
   // Hauptkamera: Sichtfeld-Abdunklung und Nebelschleier rechnen mit ihrem Zoom.
+  //
+  // Hochkant-HUD: das HUD ist fuer 960x480 gebaut — oben klebt es am Rand,
+  // die Faehigkeitsleiste unten. Im 9:16-Bild laege beides in den Zonen, die
+  // Reels/Shorts mit ihrer Oberflaeche belegen (oben 12 %, unten 20 %). Zwei
+  // weitere Kameras ohne Zoom zeigen es darum versetzt: die obere Leiste
+  // (Leben, Erfahrung, Minikarte, Knoepfe) um die obere Zone nach unten, die
+  // Faehigkeitsleiste um die untere Zone nach oben, Meldungen unter die obere
+  // Leiste. Die Spielobjekte selbst bleiben, wo das Spiel sie hinstellt.
+  // Senkrechter Versatz je Band (px im Bild).
+  function hudVersatz(sc) {
+    var h = sc.scale.height, oben = Math.round(h * 0.12);
+    return { oben: oben, unten: -(h - Math.round(h * 0.8)), meldung: oben + 145 };
+  }
+
   function uiKamera(sc) {
     var k = sc.__trailerUiKam;
     if (!k || kameras(sc).indexOf(k) === -1) {
-      k = sc.cameras.add(0, 0, sc.scale.width, sc.scale.height, false, 'trailerUi');
+      var w = sc.scale.width, h = sc.scale.height, v = hudVersatz(sc);
+      // Zuerst die HUD-Kameras: sie zeichnen vor der UI-Kamera, Dialog,
+      // Plakette und Inventar liegen also ueber dem HUD.
+      sc.__trailerHudKams = {};
+      ['oben', 'unten', 'meldung'].forEach(function (band) {
+        sc.__trailerHudKams[band] = sc.cameras.add(0, v[band], w, h, false, 'trailerHud_' + band);
+      });
+      k = sc.cameras.add(0, 0, w, h, false, 'trailerUi');
       sc.__trailerUiKam = k;
     }
     return k;
   }
 
+  /** Grenzen dessen, was man sieht: ein Container nur mit sichtbaren Kindern. */
+  function sichtbareGrenzen(o) {
+    if (o.type === 'Container' && o.list) {
+      var r = null;
+      o.list.forEach(function (k) {
+        if (!k || k.visible === false) return;
+        var b = sichtbareGrenzen(k);
+        if (!b) return;
+        r = r ? { left: Math.min(r.left, b.left), top: Math.min(r.top, b.top), right: Math.max(r.right, b.right), bottom: Math.max(r.bottom, b.bottom) }
+          : { left: b.left, top: b.top, right: b.right, bottom: b.bottom };
+      });
+      return r;
+    }
+    if (!o.getBounds) return null;
+    try {
+      var g = o.getBounds();
+      return isFinite(g.left) && isFinite(g.top) ? { left: g.left, top: g.top, right: g.right, bottom: g.bottom } : null;
+    } catch (e) { return null; }
+  }
+
+  /**
+   * Wohin ein HUD-Teil hochkant gehoert: 'oben' (im oberen Viertel an den
+   * Rand geklebt), 'unten' (in den unteren 20 %), 'meldung' (die Meldung
+   * oben in der Mitte) oder null (bleibt, wo es ist). Eine breite
+   * Ueberschrift in der Mitte (der Gebietsname) bleibt: sie vergeht von
+   * selbst und wuerde versetzt die Leisten ueberdecken.
+   * Zeichnungen ohne Grenzen (der Raumbalken unter der Minikarte) gehen mit
+   * der oberen Leiste.
+   */
+  function hudBand(sc, o) {
+    if (o.scrollFactorX !== 0) return null;
+    // Die Meldung (etwa "Stufe 2 erreicht!") steht oben in der Mitte — dort,
+    // wo jetzt die Leisten stehen. Sie rutscht ganz darunter.
+    var toast = sc._activeEventToast;
+    if (toast && toast.teile && toast.teile.indexOf(o) !== -1) return 'meldung';
+    // Ab 1900 liegen Meldungen und Menues; die Leisten liegen darunter.
+    if (!(o.depth >= 1001 && o.depth < 1900)) return null;
+    var w = sc.scale.width, h = sc.scale.height, b = sichtbareGrenzen(o);
+    if (!b) return o.type === 'Graphics' ? 'oben' : null;
+    if (b.bottom > h * 0.8 + 1) return 'unten';
+    var mitte = (b.left + b.right) / 2, breite = b.right - b.left;
+    if (breite > w * 0.4 && Math.abs(mitte - w / 2) < w * 0.1) return null;
+    return b.top < h * 0.25 ? 'oben' : null;
+  }
+
   function kamerasVerteilen(sc) {
     var ui = uiKamera(sc), haupt = sc.cameras.main;
     if (!ui || !haupt || ui === haupt) return;
+    var hk = sc.__trailerHudKams || {};
+    var hud = 0;
+    Object.keys(hk).forEach(function (b) { hud |= hk[b].id; });
     var liste = (sc.children && sc.children.list) || [];
     for (var i = 0; i < liste.length; i++) {
       var o = liste[i];
       if (!o || o.cameraFilter === undefined) continue;
       if (o.scrollFactorX === 0 && o.depth >= 1001) {
-        o.cameraFilter |= haupt.id;
-        // Versteckte HUD-Teile bleiben auch fuer die zweite Kamera weg.
-        if (!o.__trailerVersteckt) o.cameraFilter &= ~ui.id;
+        o.cameraFilter |= haupt.id | hud | ui.id;
         o.__trailerUi = true;
+        // Versteckte HUD-Teile bleiben fuer alle Kameras weg.
+        if (o.__trailerVersteckt) continue;
+        var band = (!o.__trailerBild && S.hudAn) ? hudBand(sc, o) : null;
+        o.__trailerBand = band;
+        o.cameraFilter &= ~((band && hk[band]) || ui).id;
       } else {
         if (o.__trailerUi) { o.cameraFilter &= ~haupt.id; o.__trailerUi = false; }
-        o.cameraFilter |= ui.id;
+        o.cameraFilter |= ui.id | hud;
       }
     }
   }
 
-  // Das HUD ist fuer 960x480 gebaut. Hochkant zeigt H nur, was ganz ins
-  // Bild passt (Lebens- und Faehigkeitsleiste links oben) — halb
+  /** Wo ein HUD-Teil hochkant im Bild steht (mit dem Versatz seiner Kamera). */
+  function imBild(sc, o) {
+    var b = sichtbareGrenzen(o);
+    if (!b) return null;
+    var dy = o.__trailerBand ? hudVersatz(sc)[o.__trailerBand] : 0;
+    return { left: b.left, top: b.top + dy, right: b.right, bottom: b.bottom + dy };
+  }
+
+  // Was auch versetzt nicht ganz ins Bild passt, bleibt weg — halb
   // abgeschnittene Teile sahen kaputt aus.
   function hudBeschneiden(sc) {
-    var ui = sc.__trailerUiKam;
-    if (!ui) return;
+    if (!sc.__trailerUiKam) return;
     var w = sc.scale.width, h = sc.scale.height;
+    var alle = sc.__trailerUiKam.id, hk = sc.__trailerHudKams || {};
+    Object.keys(hk).forEach(function (b) { alle |= hk[b].id; });
     hudObjekte(sc).forEach(function (o) {
-      if (!o.getBounds) return;
-      var b;
-      try { b = o.getBounds(); } catch (e) { return; }
-      if (b.left < -1 || b.top < -1 || b.right > w + 1 || b.bottom > h + 1) o.cameraFilter |= ui.id;
+      if (o.scrollFactorX !== 0) return;
+      var b = imBild(sc, o);
+      if (b && (b.left < -1 || b.top < -1 || b.right > w + 1 || b.bottom > h + 1)) o.cameraFilter |= alle;
+    });
+  }
+
+  /**
+   * Fuer Tests: jedes HUD-Teil, das gerade eine Kamera zeigt, mit seiner
+   * Lage im Bild und seinem Band.
+   */
+  function hudLage(sc) {
+    return hudObjekte(sc).filter(function (o) {
+      return o.scrollFactorX === 0 && o.visible !== false && o.alpha !== 0
+        && kameras(sc).some(function (k) { return (o.cameraFilter & k.id) === 0; });
+    }).map(function (o) {
+      var b = HOCHKANT ? imBild(sc, o) : sichtbareGrenzen(o);
+      return { typ: o.type, tiefe: o.depth, band: o.__trailerBand || null, text: o.text ? String(o.text).slice(0, 24) : '',
+        b: b ? { l: Math.round(b.left), t: Math.round(b.top), r: Math.round(b.right), u: Math.round(b.bottom) } : null };
     });
   }
 
@@ -254,25 +362,28 @@
   // Drehregeln: unverwundbar, keine Erfahrung, fester Lauf
   // ---------------------------------------------------------------------
   function drehregeln() {
-    // Jeder Treffer prallt ab: applyPlayerDamage fragt zuerst hier.
+    // Jeder Treffer prallt ab: applyPlayerDamage fragt zuerst hier. Nur der
+    // Kampf mit HUD laesst Treffer durch — die Lebensleiste soll sinken.
     try {
       Object.defineProperty(window, '_playerInvincible', {
-        configurable: true, get: function () { return true; }, set: function () {}
+        configurable: true, get: function () { return !S.verwundbar; }, set: function () {}
       });
     } catch (e) {}
     // Was daran vorbeigeht (Brand, Gift, Blutpakt), zieht ueber
-    // setPlayerHealth ab — dort bleibt das Leben voll.
+    // setPlayerHealth ab — dort bleibt das Leben voll (bzw. ueber dem Boden).
     var orig = window.setPlayerHealth;
     if (typeof orig === 'function' && !orig.__trailer) {
       var voll = function (wert, ui) {
         var max = (typeof playerMaxHealth !== 'undefined' && playerMaxHealth) || wert;
-        return orig(Math.max(Number(wert) || 0, max), ui);
+        return orig(Math.max(Number(wert) || 0, Math.ceil(max * S.boden)), ui);
       };
       voll.__trailer = true;
       window.setPlayerHealth = voll;
     }
     // Keine Erfahrung: ein Stufenaufstieg legt sonst mitten in der Montage
-    // seinen goldenen Blitz uebers Bild.
+    // seinen goldenen Blitz uebers Bild. Der Kampf mit HUD gibt sie gezielt
+    // ueber das echte addXP (Leiste fuellt sich, Stufenaufstieg).
+    echtesXP = window.addXP;
     window.addXP = function () {};
     // Den Lauf (Raumfolge) immer aus demselben Samen wuerfeln.
     var init = window.initDungeonRun;
@@ -287,8 +398,8 @@
   function lebenHalten() {
     try {
       if (typeof playerHealth !== 'undefined' && typeof playerMaxHealth !== 'undefined'
-          && playerHealth < playerMaxHealth) {
-        playerHealth = playerMaxHealth;
+          && playerHealth < Math.ceil(playerMaxHealth * S.boden)) {
+        playerHealth = Math.ceil(playerMaxHealth * S.boden);
         window.playerHealth = playerHealth;
       }
     } catch (e) {}
@@ -474,23 +585,26 @@
     }
 
     /** Der Ablauf; vom Trailer-Plan gerufen, damit er mit der Einstellung startet. */
+    // Knapp: die Laterne gleich, der Nebel reisst ab 0,4 s, der Schriftzug
+    // steht nach ~1,3 s — danach traegt das Standbild die Tafel/den Ausklang.
     abspielen() {
       var tw = this.tweens;
       var self = this;
-      if (this.laterne) tw.add({ targets: this.laterne, alpha: 1, duration: 700, delay: 300, ease: 'Quad.easeOut' });
+      if (this.laterne) tw.add({ targets: this.laterne, alpha: 1, duration: 400, ease: 'Quad.easeOut' });
       if (this.schein) {
-        tw.add({ targets: this.schein, alpha: 0.75, scale: 2.6, duration: 1100, delay: 300, ease: 'Quad.easeOut',
+        tw.add({ targets: this.schein, alpha: 0.75, scale: 2.6, duration: 600, ease: 'Quad.easeOut',
           onComplete: function () {
             tw.add({ targets: self.schein, alpha: 0.55, scale: 2.3, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
           } });
       }
       this.nebel.forEach(function (n) {
-        tw.add({ targets: n, x: n.x + n.__seite * (self.scale.width * 0.7), alpha: 0, duration: 1600, delay: 1200, ease: 'Cubic.easeIn' });
+        tw.add({ targets: n, x: n.x + n.__seite * (self.scale.width * 0.7), alpha: 0, duration: 900, delay: 400, ease: 'Cubic.easeIn' });
       });
-      if (this.titelSchein) tw.add({ targets: this.titelSchein, alpha: 0.3, duration: 1200, delay: 1700 });
+      if (this.titelSchein) tw.add({ targets: this.titelSchein, alpha: 0.3, duration: 600, delay: 700 });
       if (this.titel) {
-        tw.add({ targets: this.titel, alpha: 1, duration: 1200, delay: 1700, ease: 'Quad.easeOut',
-          onStart: function () { if (self.titel.anims) self.titel.play('start_titel_glanz'); } });
+        tw.add({ targets: this.titel, alpha: 1, duration: 600, delay: 700, ease: 'Quad.easeOut',
+          onStart: function () { if (self.titel.anims) self.titel.play('start_titel_glanz'); },
+          onComplete: function () { moment('titel'); } });
       }
     }
   }
@@ -513,9 +627,9 @@
 
   function aufraeumen() {
     S.ruhe = null;
-    S.verdacht = 0;
-    window.__FORCE_ESPIONAGE__ = false;
-    try { if (window.EspionageSystem && window.EspionageSystem.isActive()) window.EspionageSystem.endMission(); } catch (e) {}
+    S.hudZwang = false;
+    S.boden = 1;
+    S.verwundbar = false;
     window.lastRunSummary = null;
     // Eine laufende Boss-Zwischenszene beenden, statt sie auf der naechsten
     // Szene weiterlaufen zu lassen.
@@ -552,9 +666,7 @@
   }
 
   /** Vom Hub aus in Tiefe 1 — wie der Debug-Abstieg (?dungeon=1), ohne Speichern. */
-  function abstieg(hub, samen, opts, fertig) {
-    opts = opts || {};
-    window.__FORCE_ESPIONAGE__ = !!opts.spion;
+  function abstieg(hub, samen, fertig) {
     window.SELECTED_WAVE_OVERRIDE = 1;
     window.DUNGEON_DEPTH = 1;
     window.NEXT_DUNGEON_DEPTH = 2;
@@ -568,8 +680,9 @@
     // alten Linien.
     lernen(['whirlwind', 'charge', 'hammer']);
     nachCreate('GameScene', function (gs) {
-      // Der erste Raum baut sich noch ein paar Bilder lang fertig.
-      plan(400, function () { fertig(gs); });
+      // Der erste Raum baut sich noch ein paar Bilder lang fertig (der
+      // Vorhang deckt es).
+      plan(250, function () { fertig(gs); });
     });
     // Jeder Lauf legt seine Zufallsraeume in den Vorlagen ab; der naechste
     // wuerfelt dann aus einem groesseren Topf. Fuer gleiche Bilder weg damit.
@@ -583,8 +696,8 @@
     hub.scene.start('GameScene');
   }
 
-  function zumDungeon(samen, opts, fertig) {
-    zumHub(samen, function (hub) { abstieg(hub, samen, opts, fertig); });
+  function zumDungeon(samen, fertig) {
+    zumHub(samen, function (hub) { abstieg(hub, samen, fertig); });
   }
 
   function zumTitel(samen, fertig) {
@@ -709,6 +822,64 @@
 
   function trailerGegnerWeg() {
     gegnerListe().forEach(function (e) { if (e && e.__trailer && e.active) { try { e.destroy(); } catch (err) {} } });
+  }
+
+  // --- Kampf mit HUD (Einstellung 5) --------------------------------------
+  /** Ein Treffer am Spieler ueber den echten Weg (Blut, Aufblitzen, Ton), `anteil` vom Leben. */
+  function treffer(gs, anteil) {
+    if (typeof applyPlayerDamage !== 'function' || typeof playerMaxHealth === 'undefined') return;
+    var p = spielerPos(), naechster = null, best = Infinity;
+    gegnerListe().forEach(function (e) {
+      if (!e || !e.active || !e.__trailer || !p) return;
+      var d = Math.hypot(e.x - p.x, e.y - p.y);
+      if (d < best) { best = d; naechster = e; }
+    });
+    // Die Ruestung (etwa aus dem Inventar-Bild) zieht ab — vorher ausgleichen.
+    var r = (typeof playerArmor !== 'undefined' && playerArmor) ? Math.min(playerArmor, window.RUESTUNG_DECKEL || 0.8) : 0;
+    try { applyPlayerDamage(Math.round(playerMaxHealth * anteil / Math.max(0.2, 1 - r)), gs, naechster); } catch (e) {}
+  }
+
+  /** Ein Heiltrank im Inventar, damit F etwas zu trinken hat. */
+  function trankBereit() {
+    var inv = window.inventory, G = window.InventoryGrid;
+    if (!Array.isArray(inv) || inv.some(function (i) { return i && i.type === 'potion'; })) return;
+    try { if (G && typeof window.makePotionDrop === 'function') G.einfuegen(inv, window.makePotionDrop(1)); } catch (e) {}
+    try { if (typeof window._refreshInventoryHUD === 'function') window._refreshInventoryHUD(); } catch (e) {}
+  }
+
+  /** Trank wie Taste F; steht er noch in der Abklingzeit, heilt es ohne ihn. */
+  // Der Trank heilt im Spiel ueber 3 s — fuer den Schnitt zu langsam. Die
+  // Leiste steigt darum in 0,5 s um gut die Haelfte; der Trank selbst (Zahl,
+  // Abklingzeit in der Leiste) laeuft ueber Taste F wie im Spiel.
+  function trinken() {
+    var L = window.LootSystem;
+    try { if (L && L.onPotionKey) L.onPotionKey(); } catch (e) {}
+    for (var i = 1; i <= 5; i++) {
+      plan(i * 100, function () {
+        if (typeof addPlayerHealth === 'function' && typeof playerMaxHealth !== 'undefined') {
+          addPlayerHealth(Math.round(playerMaxHealth * 0.11));
+        }
+      });
+    }
+  }
+
+  /** Erfahrung ueber das echte addXP: `anteil` der Leiste dieser Stufe. */
+  function xpAnteil(anteil) {
+    if (typeof echtesXP !== 'function' || typeof neededXP === 'undefined' || typeof playerXP === 'undefined') return;
+    var n = Math.max(1, Math.round(neededXP * anteil));
+    // Nie bis zum Aufstieg — der gehoert dem Hoehepunkt.
+    n = Math.min(n, neededXP - playerXP - 1);
+    if (n > 0) { try { echtesXP(n); } catch (e) {} }
+  }
+
+  function stufenAufstieg() {
+    if (typeof echtesXP !== 'function' || typeof neededXP === 'undefined' || typeof playerXP === 'undefined') return;
+    // Ohne Talentpunkt: der Talentbaum gleicht beim Punkt die gelernten
+    // Faehigkeiten ab — die Leiste stuende mitten im Bild leer.
+    var ST = window.SkillTree, punkt = ST && ST.grantSkillPoint;
+    if (punkt) ST.grantSkillPoint = function () { return 0; };
+    try { echtesXP(Math.max(1, neededXP - playerXP)); } catch (e) {}
+    finally { if (punkt) ST.grantSkillPoint = punkt; }
   }
 
   function spielerPos() {
@@ -930,19 +1101,20 @@
     var thom = npc(hub, 'thom');
     if (hub.player) hub.player.setVisible(false);
     var cam = kameraAuf(hub, e.x, e.y - 60, 1.3);
-    cam.fadeIn(400, 0, 0, 0);
-    if (thom) cam.pan((e.x + thom.sprite.x) / 2, e.y - 60, 2400, 'Sine.easeInOut');
-    [450, 1050, 1650].forEach(function (ab, i) {
+    cam.fadeIn(150, 0, 0, 0);
+    if (thom) cam.pan((e.x + thom.sprite.x) / 2, e.y - 60, 1500, 'Quad.easeOut');
+    [200, 550, 900].forEach(function (ab, i) {
       plan(ab, function () {
+        if (!i) moment('presse');
         cam.shake(140, 0.008);
         var s = bildschirmPunkt(hub, e.x, e.y - 10);
         flugblaetter(s.x, s.y, 10 + i * 4);
       });
     });
-    plan(2300, function () {
+    plan(1300, function () {
       if (typeof window.openPrintingHouseScene === 'function') window.openPrintingHouseScene(hub);
     });
-    plan(2700, function () {
+    plan(1600, function () {
       var o = overlay();
       if (o) flugblaetter(o.scale.width / 2, o.scale.height * 0.62, 26);
     });
@@ -956,11 +1128,13 @@
       hub.add.rectangle(b / 2, h / 2, b, h, 0x07060a, 1).setScrollFactor(0).setDepth(2499).setName('trailerPresseGrund');
       // Ganze Pixel, und hochkant nicht breiter als das Bild (128 px je Stufe).
       var skala = HOCHKANT ? Math.floor(b / 128) : Math.max(3, Math.floor(h / 170));
+      // Schneller als in der Druckerei: drei Stoesse in gut 2 s.
       window.Druckerpresse.stampfen(hub, b / 2, h / 2 + 10, {
-        skala: skala, stoesse: 3, tiefe: 2500, fest: true, blaetter: HOCHKANT ? 20 : 14
+        skala: skala, stoesse: 3, tiefe: 2500, fest: true, blaetter: HOCHKANT ? 20 : 14, tempo: 1.7,
+        beiStoss: function () { moment('presse'); }
       });
     });
-    cam.fadeIn(400, 0, 0, 0);
+    cam.fadeIn(150, 0, 0, 0);
   }
 
   // ---------------------------------------------------------------------
@@ -974,9 +1148,12 @@
       beuteFuellen();
       nah(gs);
       zurRaummitte(gs, 0);
-      gs.cameras.main.fadeIn(250, 0, 0, 0);
-      plan(500, function () { if (typeof openInventory === 'function') openInventory(); });
-      plan(1700, function () { if (tooltipZeigen(S.prunkstueck) && HOCHKANT) tooltipUnterRaster(); });
+      gs.cameras.main.fadeIn(150, 0, 0, 0);
+      plan(150, function () { if (typeof openInventory === 'function') openInventory(); });
+      plan(750, function () {
+        if (tooltipZeigen(S.prunkstueck) && HOCHKANT) tooltipUnterRaster();
+        moment('tooltip');
+      });
     } },
 
     // 1 — Nebelstadt: Schwarz, Nebel lichtet sich, Fahrt ueber den Platz zum Rathaus.
@@ -984,10 +1161,12 @@
       if (hub.player) hub.player.setVisible(false);
       var t = rathausTuer(hub);
       // Hochkant: ein Schwenk von unten (Brunnen) hinauf zum Rathaus.
+      // Die Fahrt setzt sofort ein (easeOut) und steht nach 2,2 s am Rathaus.
       var cam = HOCHKANT ? kameraAuf(hub, t.x, t.y + 420, 1.3) : kameraAuf(hub, t.x, 560, 1.12);
-      cam.fadeIn(1800, 0, 0, 0);
-      nebelSchleier(hub, 3600);
-      cam.pan(t.x, HOCHKANT ? t.y - 40 : t.y - 70, 4600, 'Sine.easeInOut');
+      cam.fadeIn(500, 0, 0, 0);
+      nebelSchleier(hub, 1600);
+      cam.pan(t.x, HOCHKANT ? t.y - 40 : t.y - 70, 2200, 'Quad.easeOut');
+      plan(2200, function () { moment('rathaus'); });
     } },
 
     // 2 — Der Rat: Aldric vor dem Rathaus, der Messing-Dialog geht auf.
@@ -998,10 +1177,11 @@
       // Aldric im oberen Drittel — darunter geht der Dialog auf. Hochkant
       // nah: Aldric und der Spieler gross, der Dialog darunter.
       var cam = HOCHKANT ? kameraAuf(hub, ax - 34, ay + 84, 2) : kameraAuf(hub, ax - 60, ay + 120, 1);
-      cam.fadeIn(500, 0, 0, 0);
-      if (HOCHKANT) cam.pan(ax - 20, ay + 74, 3500, 'Sine.easeInOut');
-      else cam.pan(ax - 30, ay + 104, 3500, 'Sine.easeInOut');
-      plan(700, function () {
+      cam.fadeIn(200, 0, 0, 0);
+      if (HOCHKANT) cam.pan(ax - 20, ay + 74, 1800, 'Quad.easeOut');
+      else cam.pan(ax - 30, ay + 104, 1800, 'Quad.easeOut');
+      plan(250, function () {
+        moment('dialog');
         var name = (window.i18n ? window.i18n.t('hub.npc.aldric.name') : 'Ratsherr Aldric');
         behalten(hub, function () {
           hub._dialogOpen = true;
@@ -1030,20 +1210,22 @@
       var t = rathausTuer(hub);
       hubSpielerStellen(hub, t.x, t.y + 40);
       var cam = HOCHKANT ? kameraAuf(hub, t.x, t.y + 10, NAH) : kameraAuf(hub, t.x, t.y - 10, 1.25);
-      cam.fadeIn(400, 0, 0, 0);
-      plan(900, function () { gehen('up', true); });
-      plan(1500, function () { cam.fadeOut(700, 0, 0, 0); });
-      plan(2300, function () {
+      // Er geht sofort los; nach gut 1 s ist er im Keller.
+      cam.fadeIn(150, 0, 0, 0);
+      plan(150, function () { gehen('up', true); });
+      plan(650, function () { cam.fadeOut(350, 0, 0, 0); });
+      plan(1000, function () {
         allesLoslassen();
         vorhang(true);
-        abstieg(hub, 3003, {}, function (gs) {
+        abstieg(hub, 3003, function (gs) {
           S.ruhe = 'alle';
           vorhang(false);
           nah(gs);
           // Hochkant steht der Spieler im oberen Drittel: er kommt an der
           // Oberkante des Raums herein, darunter liegt der Keller.
           if (HOCHKANT) gs.cameras.main.setFollowOffset(0, -100);
-          gs.cameras.main.fadeIn(1400, 0, 0, 0);
+          gs.cameras.main.fadeIn(500, 0, 0, 0);
+          moment('keller');
         });
       });
     } },
@@ -1063,19 +1245,20 @@
         }
       };
       nah(gs);
-      gs.cameras.main.fadeIn(250, 0, 0, 0);
+      gs.cameras.main.fadeIn(150, 0, 0, 0);
+      // Vier Schlaege, je ~0,9 s — Schnitte im Takt.
       // Schlag 1: Wirbelwind in eine Gruppe.
-      plan(150, function () { ring(62, 5, 1); });
-      plan(500, function () { faehigkeit(gs, 'slot1', RX, RY); });
+      ring(62, 5, 1);
+      plan(200, function () { faehigkeit(gs, 'slot1', RX, RY); moment('wirbel'); });
       // Schlag 2: Ansturm durch eine Reihe.
-      plan(1900, function () {
+      plan(1050, function () {
         trailerGegnerWeg();
         var p = spielerPos();
         [70, 120, 170].forEach(function (d, i) { var q = vor(p, d, i % 2 ? 10 : -10); gegner(gs, q.x, q.y, 3); });
       });
-      plan(2200, function () { faehigkeit(gs, 'slot2', RX, RY); });
-      // Schlag 3: Hammer der Ahnen, aufgeladen.
-      plan(3300, function () {
+      plan(1200, function () { faehigkeit(gs, 'slot2', RX, RY); });
+      // Schlag 3: Hammer der Ahnen, kurz aufgeladen (Mindestladung 300 ms).
+      plan(1950, function () {
         trailerGegnerWeg();
         var p = spielerPos();
         var a = vor(p, 52, -20), b = vor(p, 58, 22);
@@ -1083,7 +1266,7 @@
         gegner(gs, b.x, b.y, 1);
         faehigkeit(gs, 'slot3', RX, RY);
       });
-      plan(4000, function () { loslassen(gs, 'slot3', RX, RY); });
+      plan(2350, function () { loslassen(gs, 'slot3', RX, RY); });
       // Schlag 4: eine Kettenwache faellt. Ihr Schild nimmt den ersten Hieb
       // (weisser Blitz), der zweite faellt sie.
       var wache = null;
@@ -1092,16 +1275,17 @@
           if (typeof attack === 'function') { try { attack.call(gs); } catch (e) {} }
         });
       };
-      plan(4900, function () {
+      plan(2900, function () {
         trailerGegnerWeg();
         var p = spielerPos();
         var q = vor(p, 40, 0);
         wache = gegner(gs, q.x, q.y, 6);
         if (wache) wache.hp = 1;
       });
-      plan(5050, hieb);
-      plan(5500, hieb);
-      plan(5850, function () {
+      plan(2980, hieb);
+      plan(3280, hieb);
+      plan(3550, function () {
+        moment('wache');
         if (wache && wache.active && wache.hp > 0 && typeof dealDamageToEnemy === 'function') {
           wache.shieldActive = false;
           try { dealDamageToEnemy(gs, wache, 50); } catch (e) {}
@@ -1110,28 +1294,58 @@
       });
     } },
 
-    // 5 — Verkleidung: in Wachen-Montur an blauen Kegeln vorbei, einer wird orange.
-    5: { name: 'Verkleidung', kurz: 'verkleidung', ziel: 'dungeon', opts: { spion: true }, aufbau: function (gs) {
-      S.ruhe = 'alle';
-      var E = window.EspionageSystem;
-      if (E && !E.isActive()) {
-        // Raum ohne Spionage-Daten: die Mission traegt dann nur die Montur.
-        E.startMission(gs, { missionId: 'trailer' });
+    // 5 — Kampf mit HUD: Gegner rundum, das HUD im Bild. Treffer lassen die
+    // Lebensleiste sinken, ein Trank fuellt sie, Faehigkeiten (Abklingzeiten
+    // in der Leiste) raeumen auf, die Erfahrung fuellt sich bis zum
+    // Stufenaufstieg. Hochkant steht das HUD versetzt zwischen den Zonen.
+    5: { name: 'Kampf mit HUD', kurz: 'kampfhud', ziel: 'dungeon', samen: 1505, aufbau: function (gs) {
+      S.ruhe = 'fremde';
+      S.hudZwang = true;
+      lernen(['whirlwind', 'charge', 'hammer']);
+      if (!spielerPos()) return;
+      trankBereit();
+      // Erst mit etwas Erfahrung: die Leiste steht sichtbar, nicht leer.
+      xpAnteil(0.25);
+      zurRaummitte(gs, 0);
+      // Hochkant etwas weiter als die Montage: oben und unten nimmt das HUD Platz.
+      nah(gs, 1.6);
+      gs.cameras.main.fadeIn(150, 0, 0, 0);
+      // Treffer kommen an, das Leben faellt aber nie unter ein Viertel.
+      S.boden = 0.25;
+      S.verwundbar = true;
+      // Der Kampf laeuft in beiden Formaten waagerecht: hochkant liefe er
+      // sonst in die Faehigkeitsleiste hinein (und an den Raumrand, an dem
+      // die Kamera stehen bleibt).
+      var vorn = function (p, d, seit) { return { x: p.x + d, y: p.y + seit }; };
+      var p0 = spielerPos();
+      for (var i = 0; i < 6; i++) {
+        var a = (Math.PI * 2 * i) / 6 + 0.3;
+        gegner(gs, p0.x + Math.cos(a) * 66, p0.y + Math.sin(a) * 66, i % 3 ? 1 : 3);
       }
-      if (E) E.setDisguise(true);
-      // Von unten durch die Mauerluecke in den Gang der linken blauen Wache
-      // (Lagerhaus-Vorlage), ihr Kegel streicht vor ihm vorbei.
-      var g0 = E && E.getState().guards.filter(function (q) { return !q.alert; })[0];
-      if (g0 && typeof player !== 'undefined' && player) {
-        player.setPosition(g0.x + 80, g0.y + 230);
-        if (player.body && player.body.reset) player.body.reset(player.x, player.y);
-      }
-      // Etwas weiter als im Kampf: Wache, Kegel und Spieler muessen ins Bild.
-      nah(gs, 1.5);
-      gs.cameras.main.fadeIn(600, 0, 0, 0);
-      plan(300, function () { gehen('up', true); });
-      plan(2000, function () { S.verdacht = 0.62; });
-      plan(1350, function () { gehen('up', false); });
+      plan(100, function () { treffer(gs, 0.22); moment('treffer'); });
+      plan(300, function () { faehigkeit(gs, 'slot1', 1, 0); });
+      plan(650, function () { treffer(gs, 0.22); });
+      plan(850, function () { xpAnteil(0.3); treffer(gs, 0.2); });
+      plan(1100, function () { trinken(); moment('trank'); });
+      // Eine Reihe fuer den Ansturm.
+      plan(1250, function () {
+        var p = spielerPos();
+        [70, 115, 160].forEach(function (d, i) { var q = vorn(p, d, i % 2 ? 12 : -12); gegner(gs, q.x, q.y, i === 1 ? 3 : 1); });
+      });
+      plan(1400, function () { faehigkeit(gs, 'slot2', 1, 0); });
+      plan(1900, function () {
+        xpAnteil(0.3);
+        trailerGegnerWeg();
+        var p = spielerPos();
+        var a = vorn(p, 50, -24), b = vorn(p, 56, 24);
+        gegner(gs, a.x, a.y, 3);
+        gegner(gs, b.x, b.y, 1);
+        faehigkeit(gs, 'slot3', 1, 0);
+      });
+      plan(2300, function () { loslassen(gs, 'slot3', 1, 0); });
+      // Der Rest bis zur naechsten Stufe: goldener Blitz, Leben voll.
+      plan(2450, function () { stufenAufstieg(); moment('stufe'); });
+      plan(3200, function () { S.verwundbar = false; S.boden = 1; });
     } },
 
     // 6 — Geheime Sitzung: Magistrat, Klerus, Garde am Tisch, Kerzenlicht.
@@ -1139,22 +1353,25 @@
       var SB = window.SitzungsBuehne;
       if (!SB) return;
       var cam = hub.cameras.main;
-      cam.fadeIn(900, 0, 0, 0);
+      cam.fadeIn(300, 0, 0, 0);
       SB.laden(hub, function () {
         behalten(hub, function () { hub.__trailerBuehne = SB.geheim(hub); });
+        moment('sitzung');
         var box = hub.__trailerBuehne && hub.__trailerBuehne.box;
+        // Die Fahrt heran setzt sofort ein und ist nach 2,2 s am Ziel.
         if (box) {
-          // Hochkant liegt die Buehne auf der Kamera ohne Zoom: die langsame
-          // Fahrt heran macht ihr Rahmen selbst, um die Tischmitte.
-          var m = box.scale, z = 1.07, fx = box.__mitte.x, fy = box.__mitte.y;
+          // Hochkant liegt die Buehne auf der Kamera ohne Zoom: die Fahrt
+          // heran macht ihr Rahmen selbst, um die Tischmitte — nur so weit,
+          // dass die beiden aeusseren Figuren ganz im schmalen Bild bleiben.
+          var m = box.scale, z = 1.035, fx = box.__mitte.x, fy = box.__mitte.y;
           hub.tweens.add({
             targets: box, scale: m * z, x: fx - (fx - box.x) * z, y: fy - (fy - box.y) * z,
-            duration: 4200, ease: 'Sine.easeInOut'
+            duration: 2200, ease: 'Quad.easeOut'
           });
           return;
         }
         cam.setZoom(1);
-        cam.zoomTo(1.07, 4200, 'Sine.easeInOut');
+        cam.zoomTo(1.07, 2200, 'Quad.easeOut');
       });
     } },
 
@@ -1181,8 +1398,9 @@
       var versatz = 2;
       Phaser.Math.Between = function (a, b) { return versatz-- > 0 ? 0 : alt.between(a, b); };
       window.debugForcedBoss = function () { return erzwungen; };
-      // Die Zwischenszene laeuft beim ersten Kampf; im Trailer jedes Mal.
-      if (BZ) BZ.soll = function (def) { return !!(def && def.id === 'chainMaster'); };
+      // Die Zwischenszene laeuft beim ersten Kampf; im Trailer jedes Mal —
+      // und zuegiger (Balken, Schwenk, Plakette in 60 % der Zeit).
+      if (BZ) { BZ.soll = function (def) { return !!(def && def.id === 'chainMaster'); }; alt.tempo = BZ._TEMPO; BZ._TEMPO = 0.6; }
       gs.__bossIntroLaeuft = false;
       try {
         behalten(gs, function () { boss = spawnBoss.call(gs); });
@@ -1191,7 +1409,7 @@
       } finally {
         Phaser.Math.Between = alt.between;
         window.debugForcedBoss = alt.forced;
-        if (BZ) BZ.soll = alt.soll;
+        if (BZ) { BZ.soll = alt.soll; BZ._TEMPO = alt.tempo; }
       }
       stellen(platz.spieler.x, platz.spieler.y);
       // Treppen und Tueren kommen in dieser Einstellung gar nicht ins Bild —
@@ -1204,14 +1422,18 @@
       });
       if (!boss) return;
       boss.__trailer = true;
-      // Weiterblaettern ohne Taste: Rede ab ~1,8 s, jede Seite ~2 s lesbar.
-      var blaettern = function () {
+      // Ohne Taste: Plakette nach ~0,8 s, die Rede ab ~1,1 s; nach der ersten
+      // Seite geht die Szene aus, der Hammer faellt ab 2,6 s.
+      var plakette = function () {
         var z = gs.__bossZwischenszene;
-        if (z && typeof z.weiter === 'function') z.weiter();
+        if (z && (z.teile || []).some(function (o) { return o && o.name === 'bossintroName'; })) moment('plakette');
       };
-      plan(3900, blaettern);
-      plan(5900, blaettern);
-      plan(7000, function () {
+      [600, 800, 1000, 1200].forEach(function (ms) { plan(ms, plakette); });
+      plan(2200, function () {
+        var z = gs.__bossZwischenszene;
+        if (z && typeof z.ueberspringen === 'function') z.ueberspringen();
+      });
+      plan(2600, function () {
         if (!boss.active) return;
         if (HOCHKANT) {
           // Von unten an den Boss heran, der Hammer schlaegt nach oben.
@@ -1225,13 +1447,14 @@
         boss.__trailerDx = dx;
         faehigkeit(gs, 'slot3', dx, 0);
       });
-      plan(7500, function () {
+      plan(2950, function () {
         zeitlupeSetzen(true);
         if (HOCHKANT) loslassen(gs, 'slot3', 0, -1);
         else loslassen(gs, 'slot3', boss.__trailerDx || 1, 0);
-        gs.cameras.main.shake(900, 0.018);
+        gs.cameras.main.shake(700, 0.018);
+        moment('treffer');
       });
-      plan(9700, function () { zeitlupeSetzen(S.zeitlupeTaste); });
+      plan(4300, function () { zeitlupeSetzen(S.zeitlupeTaste); });
     } },
 
     // 8 — Die Presse: die Presse stampft, Flugblaetter fliegen, dann die Druckerei.
@@ -1267,6 +1490,8 @@
     S.plan = [];
     S.uhr = 0;
     S.aufbauAb = null;
+    S.momente = {};
+    S.planEnde = 0;
     allesLoslassen();
     aufraeumen();
     hilfeWeg();
@@ -1281,7 +1506,7 @@
       try { def.aufbau(sc); } catch (e) { console.error('[Trailer] Einstellung ' + n, e); }
     };
     if (def.ziel === 'hub') zumHub(samen, los);
-    else if (def.ziel === 'dungeon') zumDungeon(samen, def.opts, los);
+    else if (def.ziel === 'dungeon') zumDungeon(samen, los);
     else if (def.ziel === 'titel') zumTitel(samen, los);
     return true;
   }
@@ -1489,14 +1714,15 @@
     planAbarbeiten();
 
     bossSzeneBehalten();
+    S.hudAn = S.hud || S.hudZwang;
     HAUPTSZENEN.forEach(function (key) {
       if (!laeuft(key)) return;
       var sc = szene(key);
       if (HOCHKANT) uiKamera(sc);
-      if (S.hud) hudZeigen(sc); else hudVerstecken(sc);
+      if (S.hudAn) hudZeigen(sc); else hudVerstecken(sc);
       if (HOCHKANT) {
         kamerasVerteilen(sc);
-        if (S.hud) hudBeschneiden(sc);
+        if (S.hudAn) hudBeschneiden(sc);
       }
     });
     g.scene.getScenes(true).forEach(zeitAnwenden);
@@ -1505,10 +1731,6 @@
     ruheHalten();
     // Ein neuer SoundManager (Szenenwechsel) spielt in die laufende Aufnahme.
     if (A.rec && A.ton && window.soundManager) tonKlemmen(window.soundManager._masterGain);
-    if (S.verdacht && window.EspionageSystem && window.EspionageSystem.isActive()) {
-      var st = window.EspionageSystem.getState();
-      if (st.detection < S.verdacht) st.detection = S.verdacht;
-    }
 
     // Das Overlay bleibt oben (die Druckerei holt sich sonst den Platz).
     try {
@@ -1574,8 +1796,10 @@
   TM.zustand = function () {
     return {
       hochkant: HOCHKANT, einstellung: S.einstellung, hud: S.hud, zeitlupe: S.zeitlupe, letterbox: S.letterbox,
-      aufnahme: !!A.rec, uhr: S.uhr, seit: (S.aufbauAb == null ? -1 : S.uhr - S.aufbauAb), offen: S.plan.length, hubGesehen: S.hubGesehen, wartend: S.wartend
+      aufnahme: !!A.rec, uhr: S.uhr, seit: (S.aufbauAb == null ? -1 : S.uhr - S.aufbauAb), offen: S.plan.length, hubGesehen: S.hubGesehen, wartend: S.wartend,
+      hudAn: !!S.hudAn, momente: S.momente, planEnde: S.planEnde
     };
   };
   TM._hudObjekte = hudObjekte;
+  TM._hudLage = hudLage;
 })();

@@ -36,17 +36,21 @@ test('quer=1: Canvas 960x480, Trailer-Modus an, nicht hochkant', () => {
 
 // [Einstellung, Szene, bis (ms), Probe]
 const EINSTELLUNGEN = [
-  [1, 'HubSceneV2', 2500, `window.game.scene.getScene('HubSceneV2').cameras.main.zoom === 1.12`],
-  [2, 'HubSceneV2', 1500, `(function () { var hub = window.game.scene.getScene('HubSceneV2');
+  [1, 'HubSceneV2', 2300, `window.game.scene.getScene('HubSceneV2').cameras.main.zoom === 1.12`],
+  [2, 'HubSceneV2', 600, `(function () { var hub = window.game.scene.getScene('HubSceneV2');
      return hub.cameras.main.zoom === 1 && hub._dialogContainer.scaleX === 1; })()`],
-  [3, 'GameScene', 4500, `window.game.scene.getScene('GameScene').cameras.main.zoom === 1`],
-  [4, 'GameScene', 6500, `window.game.scene.getScene('GameScene').cameras.main.zoom === 1`],
-  [5, 'GameScene', 2600, `window.EspionageSystem.isDisguised()`],
-  [6, 'HubSceneV2', 1500, `!window.game.scene.getScene('HubSceneV2').__trailerBuehne.box`],
-  [7, 'GameScene', 7300, `(function () { var b = enemies.getChildren().filter(function (e) { return e.active && e.isBoss; })[0];
+  [3, 'GameScene', 2600, `window.game.scene.getScene('GameScene').cameras.main.zoom === 1`],
+  [4, 'GameScene', 3700, `window.game.scene.getScene('GameScene').cameras.main.zoom === 1`],
+  // Kampf mit HUD: quer steht das HUD, wie das Spiel es baut — ganz im Bild.
+  [5, 'GameScene', 2800, `(function () { var l = window.TrailerModus._hudLage(window.game.scene.getScene('GameScene'));
+     return window.TrailerModus.zustand().hudAn && playerLevel >= 2 && l.length > 10
+       && l.every(function (x) { return !x.b || (x.b.l >= -1 && x.b.t >= -1 && x.b.r <= 961 && x.b.u <= 481); })
+       && window.game.scene.getScene('GameScene').cameras.main.zoom === 1; })()`],
+  [6, 'HubSceneV2', 800, `!window.game.scene.getScene('HubSceneV2').__trailerBuehne.box`],
+  [7, 'GameScene', 3200, `(function () { var b = enemies.getChildren().filter(function (e) { return e.active && e.isBoss; })[0];
      return !!b && Math.abs(b.y - player.y) < 60; })()`],
-  [8, 'HubSceneV2', 3000, `window.game.scene.getScene('HubSceneV2').children.list.some(function (o) { return o.name === 'druckerpresse' && o.scaleX === 3; })`],
-  [9, 'TrailerTitel', 3500, `window.game.scene.getScene('TrailerTitel').titel.scaleX === 3`],
+  [8, 'HubSceneV2', 1500, `window.game.scene.getScene('HubSceneV2').children.list.some(function (o) { return o.name === 'druckerpresse' && o.scaleX === 3; })`],
+  [9, 'TrailerTitel', 2600, `window.game.scene.getScene('TrailerTitel').titel.scaleX === 3`],
 ];
 
 for (const [n, szene, bis, probe] of EINSTELLUNGEN) {
