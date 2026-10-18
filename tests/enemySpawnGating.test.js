@@ -138,5 +138,6 @@ test('#12: Alarmwicht nur im Keller ab Akt 1, Kettenhund ab Tiefe 10 und Akt 3',
   assert.ok(!M.getAvailableEnemyTypes(12, 2).includes(15), 'kein Hund vor dem Bruch');
   assert.ok(M.getAvailableEnemyTypes(12, 3).includes(15), 'Hunde ab Akt 3');
   assert.strictEqual(M.enemyName(15, 'de'), 'Kettenhund');
-  assert.strictEqual(M.enemyName(16, 'en'), 'Alarm Imp');
+  assert.strictEqual(M.enemyName(16, 'en'), 'Informer');
+  assert.strictEqual(M.enemyName(16, 'de'), 'Spitzel');
 });

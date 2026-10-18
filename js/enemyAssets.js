@@ -41,7 +41,7 @@
   var LAUFBILDER = {
     imp: 4, rat: 4, brute: 8, chainguard: 8, mage: 8, archer: 8, wolf: 8, bat: 8,
     shadow: 8, flameweaver: 8, priester: 8, beschwoerer: 8, springer: 8,
-    geschwuer: 8, hund: 8, alarm: 8
+    geschwuer: 8, hund: 8, alarm: 4
   };
   window.GEGNER_LAUFBILDER = LAUFBILDER;
   function _laufAn() {

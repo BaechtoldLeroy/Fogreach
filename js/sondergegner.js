@@ -342,19 +342,18 @@
     }
     if (!scene.textures.exists('proc_alarm')) {
       var a = scene.make.graphics({ add: false });
-      // Kleiner, magerer Wicht mit Horn um den Hals.
-      a.fillStyle(0x6b4a3a, 1);
-      a.fillCircle(14, 10, 7);              // Kopf
-      a.fillTriangle(8, 6, 6, 0, 11, 5);    // Hoerner
-      a.fillTriangle(20, 6, 22, 0, 17, 5);
-      a.fillEllipse(14, 24, 14, 16);        // Leib
-      a.fillRect(9, 30, 3, 7);
-      a.fillRect(16, 30, 3, 7);
+      // Spitzel des Rats: hagere Gestalt in grauer Kapuze, Messingglocke erhoben.
+      a.fillStyle(0x4a4c52, 1);
+      a.fillTriangle(14, 0, 6, 14, 22, 14); // Kapuze
+      a.fillEllipse(14, 24, 14, 20);        // Umhang
+      a.fillRect(9, 31, 3, 6);
+      a.fillRect(16, 31, 3, 6);
+      a.fillStyle(0x1c1c20, 1);
+      a.fillEllipse(14, 10, 7, 6);          // Gesicht im Schatten
       a.fillStyle(0xd9b25a, 1);
-      a.fillTriangle(20, 18, 28, 14, 28, 24); // Horn
-      a.fillStyle(0xffe08a, 1);
-      a.fillCircle(11, 9, 1.5);
-      a.fillCircle(17, 9, 1.5);
+      a.fillTriangle(25, 2, 22, 9, 28, 9);  // Glocke
+      a.fillStyle(0x6b6a66, 1);
+      a.fillRect(20, 9, 2, 8);              // Arm
       a.generateTexture('proc_alarm', 30, 38);
       a.destroy();
     }

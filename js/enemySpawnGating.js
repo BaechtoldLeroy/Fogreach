@@ -40,7 +40,7 @@
     13: { de: 'Beschwörer',    en: 'Summoner' },     // #12: Kultist, der Nebelwesen ruft
     14: { de: 'Nebelspringer', en: 'Fog Leaper' },   // #12: Vergessene, die durch den Nebel springen
     15: { de: 'Kettenhund',    en: 'Chain Hound' },  // #12: die Hunde der Kettenwache
-    16: { de: 'Alarmwicht',    en: 'Alarm Imp' }     // #12: flieht und ruft Verstaerkung
+    16: { de: 'Spitzel',       en: 'Informer' }      // #12: Zutraeger des Rats, flieht und laeutet nach Verstaerkung
   };
 
   // #79: Manche Auftraege haben ihr eigenes Gegnerbild. Solange die Quest

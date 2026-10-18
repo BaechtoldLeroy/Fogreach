@@ -632,7 +632,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
       speed = 125;
       hp = 1;
       tint = null;
-      break; // Alarmwicht (#12)
+      break; // Spitzel (#12, intern 'alarm')
     default:
       key = scene.textures?.exists('mage_right0') ? 'mage_right0' : tex('sprite_mage', 'enemyMage');
       speed = 60;
@@ -944,7 +944,7 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
       enemy._spriteDir = 'right';
     }
   } else if (type === 16) {
-    // Alarmwicht — flieht und ruft Verstaerkung (Sondergegner).
+    // Spitzel (frueher Alarmwicht) — flieht und laeutet nach Verstaerkung (Sondergegner).
     enemy.sepWeight = 0.9;
     enemy.cohWeight = 0.1;
     enemy.avoidWeight = 1.2;
