@@ -190,33 +190,62 @@
   // Hauptkamera zeigt nur die Welt. Unter Tiefe 1001 bleibt alles auf der
   // Hauptkamera: Sichtfeld-Abdunklung und Nebelschleier rechnen mit ihrem Zoom.
   //
-  // Hochkant-HUD: das HUD ist fuer 960x480 gebaut — oben klebt es am Rand,
-  // die Faehigkeitsleiste unten. Im 9:16-Bild laege beides in den Zonen, die
-  // Reels/Shorts mit ihrer Oberflaeche belegen (oben 12 %, unten 20 %). Zwei
-  // weitere Kameras ohne Zoom zeigen es darum versetzt: die obere Leiste
-  // (Leben, Erfahrung, Minikarte, Knoepfe) um die obere Zone nach unten, die
-  // Faehigkeitsleiste um die untere Zone nach oben, Meldungen unter die obere
-  // Leiste. Die Spielobjekte selbst bleiben, wo das Spiel sie hinstellt.
-  // Senkrechter Versatz je Band (px im Bild).
-  function hudVersatz(sc) {
-    var h = sc.scale.height, oben = Math.round(h * 0.12);
-    return { oben: oben, unten: -(h - Math.round(h * 0.8)), meldung: oben + 145 };
-  }
+  // Trailer-HUD: gross und an den Raendern, damit es auf dem Handy lesbar
+  // ist. Je Gruppe (Band) eine Kamera ohne Scroll mit eigenem Zoom: die
+  // Spielobjekte bleiben, wo das Spiel sie hinstellt, die Kamera vergroessert
+  // und schiebt das Bild der Gruppe an ihren Rand.
+  //   links    Portraet, Leben, Erfahrung, Gold — oben links
+  //   knoepfe  Zahnrad und Truhe — oben rechts
+  //   karte    Minikarte mit Raumbalken — hochkant unter den Knoepfen,
+  //            quer links neben ihnen
+  //   unten    Faehigkeitsleiste — unten in der Mitte
+  //   titel    Gebietsname, Phasenruf — unter der Leiste links
+  //   meldung  Meldung ("Stufe 2 erreicht!") — ueber der Faehigkeitsleiste
+  // Die Zonen der Plattformen (oben 12 %, unten 20 %) achtet das HUD nicht
+  // mehr: was deren Oberflaeche verdeckt, entscheidet der Schnitt.
+  // Hochkant geht oben nur 1.4 (bei 1.5 stiessen Leiste und Knoepfe
+  // aneinander), die Faehigkeitsleiste darf 1.5.
+  var HUD_BAENDER = ['links', 'knoepfe', 'karte', 'unten', 'titel', 'meldung'];
+  var HUD_ZOOM = HOCHKANT ? { oben: 1.4, unten: 1.5 } : { oben: 1.25, unten: 1.25 };
+  var HUD_RAND = HOCHKANT ? 10 : 8, HUD_LUECKE = 8;
 
   function uiKamera(sc) {
     var k = sc.__trailerUiKam;
     if (!k || kameras(sc).indexOf(k) === -1) {
-      var w = sc.scale.width, h = sc.scale.height, v = hudVersatz(sc);
+      var w = sc.scale.width, h = sc.scale.height;
       // Zuerst die HUD-Kameras: sie zeichnen vor der UI-Kamera, Dialog,
       // Plakette und Inventar liegen also ueber dem HUD.
       sc.__trailerHudKams = {};
-      ['oben', 'unten', 'meldung'].forEach(function (band) {
-        sc.__trailerHudKams[band] = sc.cameras.add(0, v[band], w, h, false, 'trailerHud_' + band);
+      HUD_BAENDER.forEach(function (band) {
+        var hk = sc.cameras.add(0, 0, w, h, false, 'trailerHud_' + band);
+        hk.setOrigin(0, 0);
+        sc.__trailerHudKams[band] = hk;
       });
       k = sc.cameras.add(0, 0, w, h, false, 'trailerUi');
       sc.__trailerUiKam = k;
     }
     return k;
+  }
+
+  // Quer braucht ohne HUD keine Zusatzkameras: wieder nur die Hauptkamera,
+  // jedes Objekt so gefiltert wie vor dem HUD.
+  function kamerasAbbauen(sc) {
+    var ui = sc.__trailerUiKam;
+    if (!ui) return;
+    var weg = [ui], hk = sc.__trailerHudKams || {};
+    Object.keys(hk).forEach(function (b) { weg.push(hk[b]); });
+    var bits = 0, haupt = sc.cameras.main;
+    weg.forEach(function (k) { bits |= k.id; });
+    ((sc.children && sc.children.list) || []).forEach(function (o) {
+      if (!o || o.cameraFilter === undefined) return;
+      o.cameraFilter &= ~bits;
+      if (o.__trailerUi && !o.__trailerVersteckt) o.cameraFilter &= ~haupt.id;
+      o.__trailerUi = false;
+      o.__trailerBand = null;
+    });
+    weg.forEach(function (k) { if (kameras(sc).indexOf(k) !== -1) sc.cameras.remove(k); });
+    sc.__trailerUiKam = null;
+    sc.__trailerHudKams = null;
   }
 
   /** Grenzen dessen, was man sieht: ein Container nur mit sichtbaren Kindern. */
@@ -240,28 +269,92 @@
   }
 
   /**
-   * Wohin ein HUD-Teil hochkant gehoert: 'oben' (im oberen Viertel an den
-   * Rand geklebt), 'unten' (in den unteren 20 %), 'meldung' (die Meldung
-   * oben in der Mitte) oder null (bleibt, wo es ist). Eine breite
-   * Ueberschrift in der Mitte (der Gebietsname) bleibt: sie vergeht von
-   * selbst und wuerde versetzt die Leisten ueberdecken.
-   * Zeichnungen ohne Grenzen (der Raumbalken unter der Minikarte) gehen mit
-   * der oberen Leiste.
+   * Zu welcher HUD-Gruppe ein Teil gehoert (siehe HUD_BAENDER) oder null
+   * (bleibt, wo es ist). Zeichnungen ohne Grenzen (der Raumbalken unter der
+   * Minikarte) gehen mit der Karte.
    */
   function hudBand(sc, o) {
     if (o.scrollFactorX !== 0) return null;
-    // Die Meldung (etwa "Stufe 2 erreicht!") steht oben in der Mitte — dort,
-    // wo jetzt die Leisten stehen. Sie rutscht ganz darunter.
+    // Die Meldung steht oben in der Mitte — dort, wo jetzt die Leisten stehen.
     var toast = sc._activeEventToast;
     if (toast && toast.teile && toast.teile.indexOf(o) !== -1) return 'meldung';
     // Ab 1900 liegen Meldungen und Menues; die Leisten liegen darunter.
     if (!(o.depth >= 1001 && o.depth < 1900)) return null;
     var w = sc.scale.width, h = sc.scale.height, b = sichtbareGrenzen(o);
-    if (!b) return o.type === 'Graphics' ? 'oben' : null;
+    if (!b) return o.type === 'Graphics' ? 'karte' : null;
     if (b.bottom > h * 0.8 + 1) return 'unten';
-    var mitte = (b.left + b.right) / 2, breite = b.right - b.left;
-    if (breite > w * 0.4 && Math.abs(mitte - w / 2) < w * 0.1) return null;
-    return b.top < h * 0.25 ? 'oben' : null;
+    // Oben steht das HUD in den ersten ~170 px (quer reicht die Karte samt
+    // "Raum 1/7" bis 165) — darunter liegt, was mitten ins Bild gehoert.
+    if (b.top >= Math.max(h * 0.25, 170)) return null;
+    // Auf die Bildmitte gesetzte Schrift (Gebietsname) waere unter der
+    // vergroesserten Leiste begraben.
+    if (o.type === 'Text' && o.originX === 0.5 && Math.abs(o.x - w / 2) < 2) return 'titel';
+    // Die Leiste endet bei 301 px; ihr Gold ragt hochkant schon ueber die Mitte.
+    if (b.right <= w * 0.6) return 'links';
+    return b.left > w - 90 ? 'knoepfe' : 'karte';
+  }
+
+  /** Grenzen einer Gruppe (Spielkoordinaten), nur was man wirklich sieht. */
+  function bandGrenzen(sc, band, abTiefe) {
+    var r = null;
+    ((sc.children && sc.children.list) || []).forEach(function (o) {
+      if (!o || o.__trailerBand !== band || o.visible === false || o.alpha === 0 || o.__trailerVersteckt) return;
+      if (abTiefe && !(o.depth >= abTiefe)) return;
+      var b = sichtbareGrenzen(o);
+      if (!b) return;
+      r = r ? { left: Math.min(r.left, b.left), top: Math.min(r.top, b.top), right: Math.max(r.right, b.right), bottom: Math.max(r.bottom, b.bottom) }
+        : { left: b.left, top: b.top, right: b.right, bottom: b.bottom };
+    });
+    return r;
+  }
+
+  /**
+   * Stellt die HUD-Kameras: Bildpunkt = Kameraposition + Zoom * Spielpunkt
+   * (Ursprung oben links). Jede Gruppe klebt mit HUD_RAND an ihrem Rand.
+   */
+  function hudAnordnen(sc) {
+    var hk = sc.__trailerHudKams;
+    if (!hk) return;
+    var w = sc.scale.width, h = sc.scale.height, R = HUD_RAND, L = HUD_LUECKE;
+    var zo = HUD_ZOOM.oben, zu = HUD_ZOOM.unten;
+    var lage = {};
+    function stelle(band, x, y, z) { lage[band] = { x: x, y: y, z: z }; }
+    function bild(band, g) {
+      var t = lage[band];
+      return t && g ? { left: t.x + t.z * g.left, top: t.y + t.z * g.top, right: t.x + t.z * g.right, bottom: t.y + t.z * g.bottom } : null;
+    }
+    var g = {};
+    HUD_BAENDER.forEach(function (b) { g[b] = bandGrenzen(sc, b); });
+
+    if (g.links) stelle('links', R - zo * g.links.left, R - zo * g.links.top, zo);
+    if (g.knoepfe) stelle('knoepfe', w - R - zo * g.knoepfe.right, R - zo * g.knoepfe.top, zo);
+    if (g.karte) {
+      var kn = bild('knoepfe', g.knoepfe);
+      // Hochkant ist neben der Leiste kein Platz: die Karte rueckt unter die Knoepfe.
+      var rechts = HOCHKANT ? w - R : (kn ? kn.left - L : w - R);
+      var oben = HOCHKANT ? (kn ? kn.bottom + L : R) : R;
+      stelle('karte', rechts - zo * g.karte.right, oben - zo * g.karte.top, zo);
+    }
+    if (g.unten) stelle('unten', w / 2 - zu * (g.unten.left + g.unten.right) / 2, h - R - zu * g.unten.bottom, zu);
+    // Unter die Leiste selbst (ab Tiefe 1500), nicht unter die Zustaende
+    // darunter (Betaeubt usw.) — die kommen und gehen, der Titel wuerde springen.
+    var li = bild('links', bandGrenzen(sc, 'links', 1500));
+    if (g.titel) stelle('titel', 0, (li ? li.bottom : R) + L - g.titel.top, 1);
+    // Die Meldung gleitet beim Erscheinen 14 px herab — verankert an ihrer
+    // Mitte im Spiel (80, eventSystem), nicht an den Grenzen, damit sie es weiter tut.
+    if (g.meldung) {
+      var un = bild('unten', g.unten), halb = (g.meldung.bottom - g.meldung.top) / 2;
+      stelle('meldung', 0, (un ? un.top : h - R) - L - halb - 80, 1);
+    }
+
+    HUD_BAENDER.forEach(function (b) {
+      var t = lage[b] || { x: 0, y: 0, z: 1 }, k = hk[b];
+      k.setZoom(t.z);
+      k.setPosition(t.x, t.y);
+      // Das Sichtfenster reicht bis zum Bildrand, egal wie weit die Kamera verschoben ist.
+      k.setSize(Math.max(1, w - t.x), Math.max(1, h - t.y));
+    });
+    sc.__trailerHudLage = lage;
   }
 
   function kamerasVerteilen(sc) {
@@ -289,15 +382,16 @@
     }
   }
 
-  /** Wo ein HUD-Teil hochkant im Bild steht (mit dem Versatz seiner Kamera). */
+  /** Wo ein HUD-Teil im Bild steht (mit Zoom und Lage seiner Kamera). */
   function imBild(sc, o) {
     var b = sichtbareGrenzen(o);
     if (!b) return null;
-    var dy = o.__trailerBand ? hudVersatz(sc)[o.__trailerBand] : 0;
-    return { left: b.left, top: b.top + dy, right: b.right, bottom: b.bottom + dy };
+    var t = o.__trailerBand && sc.__trailerHudLage && sc.__trailerHudLage[o.__trailerBand];
+    if (!t) return b;
+    return { left: t.x + t.z * b.left, top: t.y + t.z * b.top, right: t.x + t.z * b.right, bottom: t.y + t.z * b.bottom };
   }
 
-  // Was auch versetzt nicht ganz ins Bild passt, bleibt weg — halb
+  // Was auch verschoben nicht ganz ins Bild passt, bleibt weg — halb
   // abgeschnittene Teile sahen kaputt aus.
   function hudBeschneiden(sc) {
     if (!sc.__trailerUiKam) return;
@@ -320,8 +414,8 @@
       return o.scrollFactorX === 0 && o.visible !== false && o.alpha !== 0
         && kameras(sc).some(function (k) { return (o.cameraFilter & k.id) === 0; });
     }).map(function (o) {
-      var b = HOCHKANT ? imBild(sc, o) : sichtbareGrenzen(o);
-      return { typ: o.type, tiefe: o.depth, band: o.__trailerBand || null, text: o.text ? String(o.text).slice(0, 24) : '',
+      var b = imBild(sc, o), t = o.__trailerBand && sc.__trailerHudLage && sc.__trailerHudLage[o.__trailerBand];
+      return { typ: o.type, tiefe: o.depth, band: o.__trailerBand || null, zoom: t ? t.z : 1, text: o.text ? String(o.text).slice(0, 24) : '',
         b: b ? { l: Math.round(b.left), t: Math.round(b.top), r: Math.round(b.right), u: Math.round(b.bottom) } : null };
     });
   }
@@ -1297,7 +1391,7 @@
     // 5 — Kampf mit HUD: Gegner rundum, das HUD im Bild. Treffer lassen die
     // Lebensleiste sinken, ein Trank fuellt sie, Faehigkeiten (Abklingzeiten
     // in der Leiste) raeumen auf, die Erfahrung fuellt sich bis zum
-    // Stufenaufstieg. Hochkant steht das HUD versetzt zwischen den Zonen.
+    // Stufenaufstieg. Das HUD steht vergroessert an den Bildraendern.
     5: { name: 'Kampf mit HUD', kurz: 'kampfhud', ziel: 'dungeon', samen: 1505, aufbau: function (gs) {
       S.ruhe = 'fremde';
       S.hudZwang = true;
@@ -1718,11 +1812,14 @@
     HAUPTSZENEN.forEach(function (key) {
       if (!laeuft(key)) return;
       var sc = szene(key);
-      if (HOCHKANT) uiKamera(sc);
+      // Quer reicht ohne HUD die Hauptkamera (Zoom 1); mit HUD braucht es
+      // die HUD-Kameras, und die gibt es nur zusammen mit der UI-Kamera.
+      var eigene = HOCHKANT || S.hudAn;
+      if (eigene) uiKamera(sc); else kamerasAbbauen(sc);
       if (S.hudAn) hudZeigen(sc); else hudVerstecken(sc);
-      if (HOCHKANT) {
+      if (eigene) {
         kamerasVerteilen(sc);
-        if (S.hudAn) hudBeschneiden(sc);
+        if (S.hudAn) { hudAnordnen(sc); hudBeschneiden(sc); }
       }
     });
     g.scene.getScenes(true).forEach(zeitAnwenden);

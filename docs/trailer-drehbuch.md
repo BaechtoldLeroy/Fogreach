@@ -22,7 +22,9 @@ harten Pixeln verdoppelt als 1080×1920. Die Querfassung (960×480, Aufnahme
 
 Die Plattformen legen ihre Oberflaeche ueber das Video: **oben 12 %** (Konto,
 Suche) und **unten 20 %** (Beschreibung, Musik, Knoepfe). Alles Wichtige —
-Gesichter, Dialog, Plakette, Tooltip, HUD, Texttafeln — steht dazwischen. Taste `L`
+Gesichter, Dialog, Plakette, Tooltip, Texttafeln — steht dazwischen. Ausnahme
+ist das HUD (Einstellung 5, Taste `H`): es klebt seit b454 gross an den
+Bildraendern und liegt damit in den Zonen (siehe Einstellung 5). Taste `L`
 zeigt die beiden Zonen im Spiel als schwarze Balken (zum Pruefen und als
 Platz fuer Tafeln). Die Hochkant-Tafeln liegen in `trailer/tafeln_hochkant/`
 (1080×1920), die Schnittanleitung in `trailer/schnittanleitung_hochkant.md`.
@@ -54,14 +56,17 @@ eigenen Kamera ohne Zoom und sind fuer 540 Breite eingepasst.
 | 2 Der Rat | Zoom 2: Aldric im oberen Drittel, Spieler davor; der Dialog (94 %) steht darunter und endet ueber der unteren Zone. |
 | 3 Abstieg | Zoom 1,8 an der Tuer; im Keller steht der Spieler im oberen Drittel (er kommt an der Oberkante herein), darunter der Raum. |
 | 4 Kampf-Montage | Zoom 1,8; der Spieler wird nahe der Raummitte auf freien Boden gestellt, Ansturm, Hammer und Kettenwache laufen nach unten — auf die Kamera zu, Gesichter sichtbar. |
-| 5 Kampf mit HUD | Zoom 1,6 (etwas weiter: oben und unten nimmt das HUD Platz); der Kampf laeuft waagerecht durch die Bildmitte, nicht in die Faehigkeitsleiste hinein. Das HUD steht versetzt zwischen den Zonen: Portraet, Lebens- und Erfahrungsleiste links oben und Minikarte mit Raumbalken rechts oben ab 12 % der Hoehe (115–280 px von 960), die Faehigkeitsleiste mit den Messingfeldern endet bei 80 % (708–760 px), die Meldung „Stufe 2 erreicht!“ darunter (ab 299 px). Die Gebietsbeschriftung des Raums bleibt oben mittig und vergeht nach 2 s. |
+| 5 Kampf mit HUD | Zoom 1,6 (etwas weiter: oben und unten nimmt das HUD Platz); der Kampf laeuft waagerecht durch die Bildmitte, nicht in die Faehigkeitsleiste hinein. Das HUD klebt vergroessert an den Bildraendern (10 px Abstand): Portraet, Lebens- und Erfahrungsleiste 1,4-fach oben links (bis 97 px von 960), Zahnrad und Truhe 1,4-fach oben rechts, die Minikarte mit Raumbalken 1,4-fach rechts darunter (166–385 px), die Faehigkeitsleiste mit den Messingfeldern 1,5-fach unten in der Mitte (872–950 px), die Meldung „Stufe 2 erreicht!“ direkt darueber. Die Gebietsbeschriftung des Raums rueckt unter die Lebensleiste (ab 105 px) und vergeht nach 2 s. **Fuer den Schnitt:** das HUD liegt damit in den Zonen (oben 12 %, unten 20 %) — Konto/Suche der Plattform verdecken die obere Leiste, Beschreibung und Knoepfe die Faehigkeitsleiste. Den Clip darum ohne Plattform-Oberflaeche zeigen (eigene Plattform, Website, Zuschnitt) oder dort keine Tafeln einblenden; wo die Oberflaeche liegt, bleibt ein Teil des HUD verdeckt. |
 | 6 Geheime Sitzung | Die quer gebaute Buehne fuellt die Breite (Tisch und die drei), Tischmitte bei 55 % der Hoehe; darueber und darunter Dunkel — Platz fuer die Tafel. Die Fahrt heran (3,5 %) macht der Rahmen der Buehne; die aeusseren Figuren bleiben ganz im Bild. |
 | 7 Boss | Zoom 1,8; Kettenmeister ueber dem Spieler (170 px), Plakette oben unter dem Balken, Rede im hoeheren unteren Balken (34 %) in 20 px — ueber der unteren Zone. Der Hammer schlaegt von unten nach oben. |
 | 8 Die Presse | Die Presse vierfach (512 px) ueber die Breite, mehr Flugblaetter. |
 | 9 Titel | Schriftzug FOGREACH doppelt (398 px) mittig, Laterne darunter. |
 
-Das HUD (Taste `H`) nutzt hochkant dieselbe versetzte Anordnung wie
-Einstellung 5; was dann noch nicht ganz ins schmale Bild passt, bleibt weg.
+Das HUD (Taste `H`) nutzt dieselbe Anordnung wie Einstellung 5 — gross an
+den Raendern; was dann noch nicht ganz ins schmale Bild passt, bleibt weg.
+Quer (`&quer=1`) steht das HUD ebenfalls an den Raendern, 1,25-fach: Leiste
+oben links, Minikarte und Knoepfe oben rechts, Faehigkeiten unten mittig,
+Meldung darueber, Gebietsname unter der Leiste.
 
 ## Aufnahme-Hinweise
 - Am einfachsten nimmt das Spiel selbst auf: im Trailer-Modus Taste `R`
