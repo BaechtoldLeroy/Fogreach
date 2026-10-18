@@ -17,11 +17,10 @@
 // "Verdacht steigt" bleibt bewusst ohne Szene: Kegel und Faerbung zeigen es,
 // ohne das Schleichen zu unterbrechen.
 //
-// Vorschau hinter ?spionszene=neu; ohne Flagge bleibt alles wie bisher.
+// Fest im Spiel seit b447 (vorher Vorschau ?spionszene=neu).
 (function () {
   'use strict';
 
-  var FLAGGE = 'spionszene';
   // Kein Kamera-Zoom: das Spiel hat keine eigene Kamera fuer die Oberflaeche,
   // Balken und Texte zoomten mit und liefen ueber den Rand (im Browser gesehen).
   var BALKEN_MS = 450;
@@ -165,8 +164,6 @@
     return DE[k] || k;
   }
 
-  function an() { return !!(window.DebugGate && typeof window.DebugGate.an === 'function' && window.DebugGate.an(FLAGGE)); }
-
   function _weg(o) { if (o && o.scene) { try { o.destroy(); } catch (e) {} } }
   function _mobil(scene) {
     try { return !!(scene && scene.sys && scene.sys.game && scene.sys.game.device && !scene.sys.game.device.os.desktop); } catch (e) { return false; }
@@ -236,6 +233,20 @@
       if (typeof window.pauseGameClock === 'function') window.pauseGameClock(scene);
     } catch (e) {}
 
+    // Endet die Szene mit dem Raum (Tod, Rueckkehr in den Hub), bleibt sonst
+    // ihr HUD-Feger am wiederverwendeten Szenen-Objekt haengen und blendet in
+    // der naechsten GameScene alles aus — Story und Warteschlange gehen mit.
+    var abbruch = false;
+    function beiShutdown() {
+      abbruch = true;
+      scene.__spionWarteschlange = null;
+      aufraeumen();
+    }
+    if (scene.events && typeof scene.events.once === 'function') {
+      scene.events.once('shutdown', beiShutdown);
+      abmelden.push(function () { scene.events.off('shutdown', beiShutdown); });
+    }
+
     function aufraeumen() {
       if (beendet) return;
       beendet = true;
@@ -255,6 +266,7 @@
       try { if (typeof window.resumeGameClock === 'function') window.resumeGameClock(scene); } catch (e) {}
       zustand.phase = 'fertig';
       if (scene.__spionSzene === zustand) scene.__spionSzene = null;
+      if (abbruch) return;
       try { if (typeof cfg.onEnde === 'function') cfg.onEnde(); } catch (e) {}
       // Die naechste wartende Szene (z. B. "Alles gehoert" nach dem Gespraech).
       var naechste = scene.__spionWarteschlange && scene.__spionWarteschlange.shift();
@@ -445,7 +457,6 @@
 
   /** Missionsstart: Auftrag und Regel, Kamera ueber Wachen und Lauschposten. */
   function start(scene, templateName) {
-    if (!an()) return null;
     // Die Tableaus der Gespraeche jetzt holen: sie werden erst beim Abhoeren gebraucht.
     vorladen(scene);
     var st = window.EspionageSystem && window.EspionageSystem.getState ? window.EspionageSystem.getState() : null;
@@ -467,7 +478,7 @@
    * Spionage-Szene uebernimmt den Text (kein Toast).
    */
   function zielToast(text) {
-    if (!an() || !text) return false;
+    if (!text) return false;
     if (!(window.EspionageSystem && window.EspionageSystem.isActive && window.EspionageSystem.isActive())) return false;
     var sc = window.gameScene || (window.game && window.game.scene && window.game.scene.getScene('GameScene'));
     var laufend = sc && sc.__spionSzene;
@@ -486,9 +497,12 @@
     return true;
   }
 
-  /** Ein Lauschposten ist abgehoert. */
+  /**
+   * Ein Lauschposten ist abgehoert. Liefert die Szene (oder null): spielt sie
+   * am Konvoi, ruft sie die Entscheidung selbst — der Aufrufer dann nicht.
+   */
   function belauscht(scene, zone, allesGehoert) {
-    if (!an() || !zone) return null;
+    if (!zone) return null;
     var story = STORY_ZIELE[zone.questTarget];
     var g = GESPRAECHE[zone.questTarget];
     var z = null;
@@ -520,7 +534,7 @@
    * Wachen greifen sofort an, und man muss sich wehren koennen.
    */
   function enttarnt(scene) {
-    if (!an() || !scene || !scene.add || !scene.tweens) return null;
+    if (!scene || !scene.add || !scene.tweens) return null;
     var st = window.EspionageSystem && window.EspionageSystem.getState ? window.EspionageSystem.getState() : null;
     var p = window.player, wache = null, best = Infinity;
     ((st && st.guards) || []).forEach(function (g) {
@@ -549,7 +563,7 @@
   }
 
   var Szenen = {
-    an: an, spiele: spiele, start: start, belauscht: belauscht, enttarnt: enttarnt, zielToast: zielToast,
+    spiele: spiele, start: start, belauscht: belauscht, enttarnt: enttarnt, zielToast: zielToast,
     vorladen: vorladen, bildKey: bildKey, BILDER: BILDER,
     GESPRAECHE: GESPRAECHE, STORY_ZIELE: STORY_ZIELE, _TEMPO: 1
   };

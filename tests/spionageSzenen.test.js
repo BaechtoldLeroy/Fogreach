@@ -1,8 +1,9 @@
 // tests/spionageSzenen.test.js — Zwischenszenen in der Spionage (#197).
 //
-// Vorschau hinter ?spionszene=neu: Missionsstart, mitgehoertes Gespraech,
-// Enttarnung und Abschluss als kurze Szenen (Balken, Kamera, Messing-Plakette,
-// Text Seite fuer Seite). Ratskammer und Konvoi behalten ihre Story-Szenen;
+// Fest im Spiel seit b447 (vorher Vorschau ?spionszene=neu): Missionsstart,
+// mitgehoertes Gespraech, Enttarnung und Abschluss als kurze Szenen (Balken,
+// Kamera, Messing-Plakette, Text Seite fuer Seite). Die Ratskammer behaelt
+// ihre Story-Szene, am Konvoi folgt die Entscheidung (tests/finaleQuelle);
 // "Verdacht steigt" bekommt bewusst keine Szene.
 
 const { test, before, after, describe } = require('node:test');
@@ -20,10 +21,10 @@ async function bis(H, js, runden) {
 
 const GS = "window.game.scene.getScene('GameScene')";
 
-describe('mit ?spionszene=neu', () => {
+describe('Spionage-Szenen', () => {
   let H = null;
   before(async () => {
-    H = await launchDungeon({ depth: 3, zusatz: '&debug=1&spy=1&spionszene=neu' });
+    H = await launchDungeon({ depth: 3, zusatz: '&debug=1&spy=1' });
     H.run('window.SpionageSzenen._TEMPO = 0.2; window._playerInvincible = true');
   });
   after(async () => { if (H) await H.shutdown(); });
@@ -206,27 +207,40 @@ describe('mit ?spionszene=neu', () => {
         st.exposed = false; st.disguised = true; st.detection = 0.99;
         st.guards = [{ x: p.x, y: p.y + 0.5, _facing: 0, _baseFacing: 0, range: 300, halfAngle: Math.PI, scanArc: 0, speed: 0, pause: 99, patrol: null, alert: true, hp: 3, maxHp: 3, damage: 0, hostile: false, knocked: false, _atkCd: 0, _calmT: 0, _wpIndex: 0, _pauseT: 0, _scanT: 0 }];
         for (var i = 0; i < 5; i++) E.update(gs, 0, 200);
-      } finally { S.belauscht = echtB; S.enttarnt = echtE; }
+      } finally {
+        S.belauscht = echtB; S.enttarnt = echtE;
+        // Ohne Szene (belauscht ist hier ersetzt) fragt der Konvoi sofort selbst.
+        if (gs.__konvoiDialog) { gerufen.push('konvoi'); gs.__konvoiDialog.zu(); }
+      }
       return gerufen;
     })()`);
     const liste = Array.from(r);
     assert.ok(liste.some((x) => /^belauscht:.*:true$/.test(x)), 'Abhoeren ruft keine Szene: ' + liste.join(','));
     assert.ok(liste.indexOf('enttarnt') >= 0, 'Entdecktwerden ruft keine Szene: ' + liste.join(','));
   });
-});
 
-describe('ohne Flagge', () => {
-  let H = null;
-  before(async () => { H = await launchDungeon({ depth: 3, zusatz: '&debug=1&spy=1' }); });
-  after(async () => { if (H) await H.shutdown(); });
-
-  test('keine Szenen, alles wie bisher', async () => {
-    assert.ok(H.run('window.EspionageSystem.isActive()'), 'keine Mission — Test misst nichts');
-    for (let i = 0; i < 120; i++) { H.step(2); await flush(); }
-    const r = H.run(`(function () { var gs = ${GS}, p = window.player;
-      var a = window.SpionageSzenen.belauscht(gs, { questTarget: 'archive_record', x: p.x, y: p.y }, true);
-      var b = window.SpionageSzenen.enttarnt(gs);
-      return [!!gs.__spionSzene, a, b]; })()`);
-    assert.deepStrictEqual(JSON.parse(JSON.stringify(r)), [false, null, null]);
+  // Zuletzt: die GameScene startet neu (gefunden im Trailer, b447).
+  test('Endet die Szene mit der GameScene, haengt danach nichts nach', async () => {
+    H.run(`(function () { var p = window.player; window.__konvoiZaehler = 0;
+      window.__echtK = window.Finale.konvoi; window.Finale.konvoi = function () { window.__konvoiZaehler++; return true; };
+      window.SpionageSzenen.belauscht(${GS}, { questTarget: 'convoy_intel', x: p.x, y: p.y }, true); })()`);
+    assert.ok(await bis(H, `${GS}.__spionSzene && ${GS}.__spionSzene.phase === 'rede'`), 'keine Szene');
+    H.run(`window.__alteSzene = ${GS}.__spionSzene; ${GS}.scene.restart()`);
+    assert.ok(await bis(H, `window.__alteSzene.phase === 'fertig' && ${GS}.sys.isActive() && !!window.player && window.player.scene === ${GS}`), 'die GameScene kommt nicht wieder');
+    // ?spy=1: der neue Raum startet wieder eine Mission mit Auftrags-Szene — die zaehlt nicht.
+    for (let i = 0; i < 60; i++) { H.step(2); await flush(); }
+    if (H.run(`!!${GS}.__spionSzene`)) H.run(`${GS}.__spionSzene.ueberspringen()`);
+    assert.ok(await bis(H, `!${GS}.__spionSzene`), 'die Szene im neuen Raum endet nicht');
+    const r = H.run(`(function () { var gs = ${GS};
+      var t = gs.add.text(10, 10, 'HUD', {}).setScrollFactor(0).setDepth(1500);
+      for (var i = 0; i < 3; i++) gs.events.emit('update', 0, 16);
+      var sichtbar = t.visible; t.destroy();
+      var n = window.__konvoiZaehler; window.Finale.konvoi = window.__echtK;
+      return { szene: window.__alteSzene.phase !== 'fertig', hud: sichtbar, konvoi: n, wahl: !!window.eventChoiceOpen }; })()`);
+    assert.strictEqual(r.szene, false, 'die alte Szene wird nicht beendet');
+    assert.strictEqual(r.hud, true, 'der HUD-Feger der alten Szene blendet weiter aus');
+    assert.strictEqual(r.konvoi, 0, 'die abgebrochene Szene stellt die Konvoi-Frage in der neuen GameScene');
+    assert.strictEqual(r.wahl, false, 'die Eingabe bleibt gesperrt');
   });
 });
+

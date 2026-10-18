@@ -126,26 +126,23 @@ sieht, nur im echten Browser (WebGL): `npx http-server -p 8080 -c-1 -s .`
 und `node tools/bossIntroBrowser.js [kettenmeister ...]` schreibt
 `vorschau/bossintro_browser_<boss>_<auftritt|plakette|rede|danach>.png`.
 
-### Spionage-Zwischenszenen (Vorschau, #197)
+### Spionage-Zwischenszenen (#197)
 
-| Flagge | Wirkung |
-|---|---|
-| `spionszene=neu` | Missionsstart (Auftrag + Regel der Verkleidung), mitgehoertes Gespraech an den Lauschposten (Route im Lagerhaus, Archiv-Schreibtisch, Treffen des Maulwurfs), Enttarnung (kurz, laeuft von selbst weiter) und "Alles gehoert" als kurze Szenen: Balken, Kamera aufs Geschehen, Messing-Plakette, Text Seite fuer Seite (Taste/Klick weiter, ESC beendet). Ratskammer und Konvoi behalten ihre Story-Szenen; "Verdacht steigt" bleibt ohne Szene. |
+Seit b447 fest im Spiel (die Vorschau-Flagge `spionszene` gibt es nicht mehr).
+Ansehen mit
 
 ```
-?debug=1&dungeon=3&spy=1&spionszene=neu
+?debug=1&dungeon=3&spy=1
 ```
 
 `spy=1` erzwingt einen Spionage-Raum als ersten Raum (ohne Auftrag).
 
-### Druckerpresse (Vorschau, #198)
+### Druckerpresse (#198)
 
-| Flagge | Wirkung |
-|---|---|
-| `presse=neu` | Beim Drucken eines Edikts in der Druckerei stampft die Presse zweimal mittig ueber der Ansicht (Flugblaetter bei jedem Stoss), dann schliesst die Druckerei. Ohne Flagge wie bisher. |
-
-Die Presse (assets/sprites/presse/druckerpresse.png, 9 Bilder, gebaut mit
-`node tools/presseBauen.js`) zeigt auch die Trailer-Einstellung 8 — dort ohne Flagge.
+Seit b447 fest im Spiel (die Vorschau-Flagge `presse` gibt es nicht mehr):
+beim Drucken eines Edikts stampft die Presse zweimal, dann schliesst die
+Druckerei. Die Presse (assets/sprites/presse/druckerpresse.png, 9 Bilder,
+gebaut mit `node tools/presseBauen.js`) zeigt auch die Trailer-Einstellung 8.
 
 ### Elaras Kammer (#161)
 

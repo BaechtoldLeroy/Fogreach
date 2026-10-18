@@ -1,10 +1,9 @@
 // tests/druckerpresse.test.js — Die stampfende Druckerpresse (#198).
 //
 // Pixelbild aus PixelLab (assets/sprites/presse/druckerpresse.png, 9 Bilder
-// 128x128). Vorschau ?presse=neu: beim Drucken eines Edikts stampft die
-// Presse in der Druckerei, Flugblaetter fliegen, dann schliesst sie. Ohne
-// Flagge wie bisher (Toast, nach 900 ms zu). Der Trailer (Einstellung 8)
-// zeigt die Presse gross im Bild.
+// 128x128). Fest seit b447 (vorher Vorschau ?presse=neu): beim Drucken eines
+// Edikts stampft die Presse in der Druckerei, Flugblaetter fliegen, dann
+// schliesst sie. Der Trailer (Einstellung 8) zeigt die Presse gross im Bild.
 
 const { test, before, after, describe } = require('node:test');
 const assert = require('node:assert');
@@ -31,12 +30,13 @@ test('Das Spritesheet: 9 Bilder 128x128 in einer Zeile', () => {
 });
 
 /** Druckerei oeffnen und ein Edikt "drucken" (Ausgang von publishEdict festgelegt). */
-async function drucken(H) {
+async function drucken(H, vorher) {
   H.run(`(function () {
     window.openPrintingHouseScene(${HUB});
   })()`);
   assert.ok(await bis(H, `!!(${PH} && ${PH}.sys.isActive())`), 'die Druckerei geht nicht auf');
   for (let i = 0; i < 20; i++) { H.step(2); await flush(); }
+  if (vorher) H.run(vorher);
   H.run(`(function () {
     var ph = window.PrintingHouse;
     window.__echtPublish = window.__echtPublish || ph.publishEdict;
@@ -47,10 +47,10 @@ async function drucken(H) {
   })()`);
 }
 
-describe('mit ?presse=neu', () => {
+describe('Druckerei', () => {
   let H = null;
   before(async () => {
-    H = await launch({ search: '?autostart=1&debug=1&presse=neu', renderer: 'canvas' });
+    H = await launch({ search: '?autostart=1&debug=1', renderer: 'canvas' });
     await H.waitForScene('HubSceneV2', { maxRounds: 600 });
     H.run(`(window.SlotStorage || localStorage).setItem('demonfall_seen_intro_splash', '1')`);
     for (let i = 0; i < 20; i++) { H.step(2); await flush(); }
@@ -72,24 +72,17 @@ describe('mit ?presse=neu', () => {
       'keine Flugblaetter beim Stoss');
     assert.ok(await bis(H, `!${PH}.sys.isActive()`, 1500), 'die Druckerei schliesst nach dem Stampfen nicht');
   });
-});
 
-describe('ohne Flagge', () => {
-  let H = null;
-  before(async () => {
-    H = await launch({ search: '?autostart=1&debug=1', renderer: 'canvas' });
-    await H.waitForScene('HubSceneV2', { maxRounds: 600 });
-    H.run(`(window.SlotStorage || localStorage).setItem('demonfall_seen_intro_splash', '1')`);
-    for (let i = 0; i < 20; i++) { H.step(2); await flush(); }
-  });
-  after(async () => { if (H) await H.shutdown(); });
-
-  test('Drucken wie bisher: keine Presse, die Druckerei schliesst', async () => {
-    await drucken(H);
-    for (let i = 0; i < 30; i++) { H.step(2); await flush(); }
-    assert.strictEqual(H.run(`${PH}.sys.isActive() && ${PH}.children.list.some(function (o) { return o.name === 'druckerpresse'; })`), false,
-      'Presse ohne Flagge');
-    assert.ok(await bis(H, `!${PH}.sys.isActive()`, 1500), 'die Druckerei schliesst nicht');
+  test('Fehlt das Bild der Presse, schliesst die Druckerei trotzdem', async () => {
+    // Laden gescheitert: druckSzene hat nichts zu zeigen und schliesst sofort.
+    await drucken(H, `(function () { var t = ${PH}.textures;
+      window.__presseBild = t.get('druckerpresse').getSourceImage(); t.remove('druckerpresse'); })()`);
+    try {
+      assert.strictEqual(H.run(`${PH}.children.list.some(function (o) { return o.name === 'druckerpresse'; })`), false);
+      assert.ok(await bis(H, `!${PH}.sys.isActive()`, 300), 'die Druckerei bleibt ohne Presse offen');
+    } finally {
+      H.run(`window.game.textures.addSpriteSheet('druckerpresse', window.__presseBild, { frameWidth: 128, frameHeight: 128 })`);
+    }
   });
 });
 

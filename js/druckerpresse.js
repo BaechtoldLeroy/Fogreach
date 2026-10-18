@@ -6,7 +6,7 @@
 //
 // Gebraucht in
 //   - der Druckerei (PrintingHouseScene): beim Drucken eines Edikts stampft die
-//     Presse kurz, bevor das Fenster schliesst — Vorschau ?presse=neu
+//     Presse kurz, bevor das Fenster schliesst (fest seit b447)
 //   - dem Trailer (Einstellung 8): die Presse gross im Bild
 (function () {
   'use strict';
@@ -18,7 +18,6 @@
   var TREFFER = 3;                       // Bild, in dem die Platte aufliegt
   var PAPIER = { x: 0.5, y: 0.6 };       // wo das Blatt liegt (Anteil des Bildes)
 
-  function an() { return !!(window.DebugGate && typeof window.DebugGate.an === 'function' && window.DebugGate.an('presse')); }
   function da(scene) { return !!(scene && scene.textures && scene.textures.exists(KEY)); }
 
   /** Laedt das Bild, falls es fehlt; fertig() sobald es da ist (oder sofort). */
@@ -116,6 +115,6 @@
 
   window.Druckerpresse = {
     KEY: KEY, ANIM: ANIM, BILDER: BILDER, TREFFER: TREFFER,
-    an: an, da: da, vorladen: vorladen, stampfen: stampfen, flugblaetter: flugblaetter, druckSzene: druckSzene
+    da: da, vorladen: vorladen, stampfen: stampfen, flugblaetter: flugblaetter, druckSzene: druckSzene
   };
 })();

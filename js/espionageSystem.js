@@ -245,7 +245,7 @@
   // Kompat: "wird der Punkt von irgendeiner Wache gesehen?" (Kegel-basiert).
   function _seenByGuard(px, py) { return _guardExposure(px, py) > 0.02; }
 
-  // #197 (Vorschau): von einer Wache entdeckt -> kurzer Moment an der Wache.
+  // #197: von einer Wache entdeckt -> kurzer Moment an der Wache.
   // Nicht beim eigenen Angriff (onPlayerAttack), der ist kein Entdecktwerden.
   function _entdeckt(scene) {
     if (typeof window === 'undefined' || !window.SpionageSzenen) return;
@@ -482,15 +482,16 @@
                     && window.storyScenes && typeof window.storyScenes.playGeheimeSitzung === 'function') {
                   try { window.storyScenes.playGeheimeSitzung(scene); } catch (_) {}
                 }
-                // #197 (Vorschau): das mitgehoerte Gespraech als Zwischenszene.
+                // #197: das mitgehoerte Gespraech als Zwischenszene.
+                var szene = null;
                 if (typeof window !== 'undefined' && window.SpionageSzenen) {
                   var alleGehoert = state.observeZones.every(function (oz) { return !oz || oz._done; });
-                  try { window.SpionageSzenen.belauscht(scene, z, alleGehoert); } catch (_) {}
+                  try { szene = window.SpionageSzenen.belauscht(scene, z, alleGehoert); } catch (_) {}
                 }
                 // #158: Am Konvoi faellt eine Entscheidung (Bibel v5, Abschnitt 9).
-                // Mit ?spionszene=neu ruft die Abhoer-Szene sie danach selbst.
-                if (z.questTarget === 'convoy_intel' && typeof window !== 'undefined'
-                    && !(window.SpionageSzenen && window.SpionageSzenen.an())
+                // Spielt die Abhoer-Szene, ruft sie sie an ihrem Ende selbst —
+                // hier nur, wenn keine Szene zustande kam (sonst zwei Dialoge).
+                if (z.questTarget === 'convoy_intel' && !szene && typeof window !== 'undefined'
                     && window.Finale && typeof window.Finale.konvoi === 'function') {
                   try { window.Finale.konvoi(scene); } catch (_) {}
                 }

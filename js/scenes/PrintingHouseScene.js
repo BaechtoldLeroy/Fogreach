@@ -102,9 +102,9 @@
     constructor() { super({ key: 'PrintingHouseScene' }); }
 
     preload() {
-      // #198 (Vorschau ?presse=neu): die Presse, die beim Drucken stampft.
+      // #198: die Presse, die beim Drucken stampft.
       const P = window.Druckerpresse;
-      if (P && P.an() && !P.da(this)) {
+      if (P && !P.da(this)) {
         this.load.spritesheet(P.KEY, 'assets/sprites/presse/druckerpresse.png', { frameWidth: 128, frameHeight: 128 });
       }
       if (!this.textures.exists(SYMBOL_KEY)) {
@@ -701,10 +701,11 @@
       if (result.success) {
         this._gesperrt = true;
         this._toast(T('printingHouse.toast.published', { name: T('printingHouse.edict.' + edictId + '.label') }));
-        // #198 (Vorschau): erst stampft die Presse, dann schliesst die Druckerei.
+        // #198: erst stampft die Presse, dann schliesst die Druckerei. Fehlt
+        // ihr Bild (Laden gescheitert), schliesst druckSzene sofort.
         const P = window.Druckerpresse;
-        if (P && P.an() && P.druckSzene(this, () => this._close())) return;
-        this.time.delayedCall(900, () => this._close());
+        if (P) P.druckSzene(this, () => this._close());
+        else this._close();
       } else if (result.reasonKey === 'locked') {
         // Lokalisiert und mit derselben Aktnummer wie der Splashscreen.
         this._toast(T('printingHouse.toast.locked').replace('{req}', result.req), '#ffd9a0');

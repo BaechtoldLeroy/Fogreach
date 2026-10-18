@@ -3403,9 +3403,8 @@ function _maybeStartEspionage(scene, templateName, builtMeta) {
       blockedAt: blockedAt
     });
     window.EspionageSystem.setDisguise(true); // Auto-Verkleidung bei Mission-Start
-    // #197 (Vorschau ?spionszene=neu): der Auftrag als kurze Zwischenszene,
-    // sobald der Raum steht.
-    if (window.SpionageSzenen && window.SpionageSzenen.an() && scene.time) {
+    // #197: der Auftrag als kurze Zwischenszene, sobald der Raum steht.
+    if (window.SpionageSzenen && scene.time) {
       scene.time.delayedCall(600, function () {
         if (window.EspionageSystem.isActive()) window.SpionageSzenen.start(scene, templateName);
       });
