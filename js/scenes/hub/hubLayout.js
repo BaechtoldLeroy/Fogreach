@@ -225,7 +225,11 @@ window.HUB_HITBOXES = {
       // never set; flip it (e.g. on Akt-2 advancement) if a future arc
       // wants to bring her into the hub. Until then this entry exists
       // mostly to document her presence in the layout.
-      visibleAfterFlag: 'elaraReturnedToHub',
+      // v6.1: Nach dem Maulwurf (Akt 4) ist sie zur Esse hinabgestiegen; davor
+      // versteckt sie sich vor dem Rat. Sie steht damit nie im Hub. Das alte
+      // Flag 'elaraReturnedToHub' (b457, ab Akt 4) steht noch in Spielstaenden,
+      // darum ein neuer Name, den nichts setzt.
+      visibleAfterFlag: 'elaraImHub',
       lines: [
         'Du erinnerst dich nicht an mich, oder? Ich... kannte dich. Vor dem Unfall.',
         'Frag nicht den Rat. Frag die Mauern. Sie erinnern sich besser als Menschen.'
@@ -241,8 +245,10 @@ window.HUB_HITBOXES = {
       // from game start. (Was gated to 'treuer_diener' / Akt 2 from the
       // pre-050 narrative when Harren was a late-game NPC.)
       visibleFromAct: 'auftrag',
-      // #158: Harren stirbt an der Quelle (Bibel v5, Abschnitt 8).
-      hiddenAfterFlag: 'harren_dead',
+      // #158: Harren stirbt an der Quelle (Bibel v5, Abschnitt 8). v6.1: Er
+      // steigt Dir nach, ohne Amulett; ab der ersten Begegnung unten
+      // (roomManager, HARREN_ABSTIEG) fehlt er oben.
+      hiddenAfterFlag: ['harren_dead', 'harren_abstieg_1'],
       lines: [
         'Meine Tochter Lene... sie ist verschwunden. Bitte, hilf mir sie zu finden.',
         'Ich war einst stolz auf diese Stadt. Jetzt erkenne ich sie kaum wieder.'

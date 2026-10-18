@@ -67,7 +67,8 @@ test('Hub und Keller verbinden Lene und Elara nicht', () => {
     'Elaras Kellerbegegnung verraet noch, dass sie die Tochter ist');
 
   const story = lies('js/storySystem.js');
-  const harren = /harren: \{[\s\S]*?\n    \},/.exec(story);
+  // v6.1: Harren steht als letzter Eintrag (Elaras Hub-Zeilen sind weg).
+  const harren = /harren: \{[\s\S]*?\n    \},?/.exec(story);
   assert.ok(harren, 'Harrens Dialogtabelle nicht gefunden');
   const frueh = /auftrag: \[[\s\S]*?\],\s*treuer_diener: \[[\s\S]*?\],\s*erste_risse: \[[\s\S]*?\]/.exec(harren[0]);
   assert.ok(frueh, 'Harrens Zeilen fuer Akt 0-2 nicht gefunden');
@@ -75,8 +76,8 @@ test('Hub und Keller verbinden Lene und Elara nicht', () => {
 
   // #89: Elara hat nur noch Zeilen fuer Akt 4 (erst dann steht sie im Hub).
   // Keine davon darf verraten, dass sie die Tochter ist.
+  // v6.1: Sie steht gar nicht mehr im Hub (nach dem Maulwurf ist sie zur Esse
+  // hinab), also hat sie auch keine Hub-Zeilen mehr.
   const elara = /\n    elara: \{([\s\S]*?)\n    \}/.exec(story);
-  assert.ok(elara, 'Elaras Dialogtabelle nicht gefunden');
-  assert.ok(!/erste_risse|treuer_diener|auftrag/.test(elara[1]), 'Elara spricht im Hub schon vor Akt 4');
-  assert.ok(!/geflohen|entführt|Tochter/.test(elara[1]), 'Elaras Zeilen verraten sie');
+  assert.strictEqual(elara, null, 'Elara hat wieder Hub-Zeilen');
 });

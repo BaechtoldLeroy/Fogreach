@@ -5,7 +5,10 @@
 // der geheimen (die Einigung der drei stand auf einer Seite) in einzelne
 // Seiten geteilt. Der Text selbst bleibt Wort fuer Wort derselbe: geprueft
 // gegen tests/sitzungTexteVorher.json, gewonnen aus dem Stand vor der Teilung
-// (b371) fuer DE und EN und jede Flaggen-Kombination.
+// (b371) fuer DE und EN und jede Flaggen-Kombination. v6.1 (b458) hat den
+// Wortlaut dreier Zeilen geaendert (die Patrouillen werden oeffentlich
+// verkuendet, das beschaedigte Siegel); die Datei traegt seither diesen Stand,
+// mit den alten Seitengrenzen.
 //
 // Ob die Szene an jeder Seite wirklich haelt, messen tests/sitzungsBuehne.test.js
 // (Hub und Dungeon, echte Uhr) und der Attrappen-Fall unten.

@@ -21,7 +21,6 @@ test('Keine Reste aus v3/v4 in den Questtexten', () => {
     [/Eindringling/, 'v3: Eindringlinge'],
     [/drei Blättern|Blätter-Mechanik/, 'v4: Blaetter'],
     [/Ich sage Harren noch nichts/, 'Harren ist der Auftraggeber'],
-    [/Patrouillen verdoppeln sich/, 'die Verdoppelung ist die Pointe der geheimen Sitzung'],
     [/Der Rat fällt heute/, 'v4: Sturm auf den Rat nach dem Finale'],
     [/Nebelschleuse/, 'v4: Finalort']
   ];

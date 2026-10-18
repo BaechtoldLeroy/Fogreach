@@ -81,7 +81,7 @@ describe('Messing: Bilder geladen', () => {
     assert.strictEqual(r.graphics, 0, 'keine gezeichneten Kaesten mehr');
     assert.strictEqual(r.zonen, 0);
     assert.deepStrictEqual(r.texte[0], ['ALDRIC', '#ffd166']);
-    assert.deepStrictEqual(r.texte[1], ['Setz das Siegel unter das Dokument. Eine Formalie.', '#efe6d2']);
+    assert.deepStrictEqual(r.texte[1], ['Das Siegel. Eine Formalie.', '#efe6d2']);
     assert.ok(r.texte.every((t) => !/[[\]]/.test(t[0])), 'eckige Klammern: ' + JSON.stringify(r.texte));
     zu(H);
   });
@@ -89,7 +89,7 @@ describe('Messing: Bilder geladen', () => {
   test('Wahlen und Abbrechen sind Messingknoepfe, mind. 44 px hoch, Bild im Panel', () => {
     oeffnen(H);
     const k = run(H, KNOEPFE);
-    assert.deepStrictEqual(k.map((b) => b.text), ['Siegel setzen', 'Verweigern', 'Abbrechen (ESC)']);
+    assert.deepStrictEqual(k.map((b) => b.text), ['Das Siegel abliefern', 'Es unbemerkt beschädigen', 'Abbrechen (ESC)']);
     for (const b of k) {
       assert.ok(b.bild && b.bild.indexOf('ui_knopf@') === 0, b.text + ': Bild ' + b.bild);
       assert.ok(b.bildImPanel, b.text + ': Knopfbild nicht im Panel-Container');
@@ -102,7 +102,7 @@ describe('Messing: Bilder geladen', () => {
 
   test('Hover und Druck wechseln das Knopfbild', () => {
     oeffnen(H);
-    const r = run(H, `(function () { var b = ${PANEL}.list.filter(function (o) { return o.text === 'Verweigern'; })[0];
+    const r = run(H, `(function () { var b = ${PANEL}.list.filter(function (o) { return o.text === 'Es unbemerkt beschädigen'; })[0];
       var bild = b._uiTextKnopf, z = [bild.texture.key];
       b.emit('pointerover'); z.push(bild.texture.key);
       b.emit('pointerdown'); z.push(bild.texture.key);
@@ -115,10 +115,10 @@ describe('Messing: Bilder geladen', () => {
     zu(H);
   });
 
-  test('Klick auf "Siegel setzen" setzt verification_sealed und loest auf', () => {
+  test('Klick auf "Das Siegel abliefern" setzt verification_sealed und loest auf', () => {
     run(H, FLAGS_ZURUECK);
     oeffnen(H);
-    run(H, `${PANEL}.list.filter(function (o) { return o.text === 'Siegel setzen'; })[0].emit('pointerup')`);
+    run(H, `${PANEL}.list.filter(function (o) { return o.text === 'Das Siegel abliefern'; })[0].emit('pointerup')`);
     H.step(1);
     assert.deepStrictEqual(run(H, FLAGS), { sealed: true, refused: false });
     const dc = run(H, 'window.__dc');
@@ -127,10 +127,10 @@ describe('Messing: Bilder geladen', () => {
     assert.strictEqual(run(H, `!!${PANEL}`), false, 'Panel bleibt offen');
   });
 
-  test('Klick auf "Verweigern" setzt verification_refused', () => {
+  test('Klick auf "Es unbemerkt beschädigen" setzt verification_refused', () => {
     run(H, FLAGS_ZURUECK);
     oeffnen(H);
-    run(H, `${PANEL}.list.filter(function (o) { return o.text === 'Verweigern'; })[0].emit('pointerup')`);
+    run(H, `${PANEL}.list.filter(function (o) { return o.text === 'Es unbemerkt beschädigen'; })[0].emit('pointerup')`);
     H.step(1);
     assert.deepStrictEqual(run(H, FLAGS), { sealed: false, refused: true });
     assert.deepStrictEqual(run(H, 'window.__dc.aufgeloest'), [{ index: 1, flags: ['verification_refused'] }]);
@@ -193,7 +193,7 @@ describe('Messing: Bilder geladen', () => {
       s._showDialoguePages({ id: 'aldric' }, 'Aldric', [s._storyChoicePage(e)], 'flavor', null, 0); })()`);
     H.step(2);
     assert.strictEqual(run(H, `${PANEL}.list.filter(function (o) { return o.type === 'Image' && o.texture.key === 'ui_rahmen'; }).length`), 9);
-    run(H, `${PANEL}.list.filter(function (o) { return o.text === 'Siegel setzen'; })[0].emit('pointerup')`);
+    run(H, `${PANEL}.list.filter(function (o) { return o.text === 'Das Siegel abliefern'; })[0].emit('pointerup')`);
     H.step(2);
     assert.deepStrictEqual(run(H, FLAGS), { sealed: true, refused: false });
     const seite = run(H, `(function () { var c = ${HUB}._dialogContainer; return c ? c.list.filter(function (o) { return o.type === 'Text'; })
@@ -235,7 +235,7 @@ describe('Rueckfall: Bilder fehlen', () => {
     assert.strictEqual(r.bilder, 0);
     assert.strictEqual(r.graphics, 4);
     assert.strictEqual(r.zonen, 3);
-    assert.strictEqual(r.texte[0], 'ALDRIC: Setz das Siegel unter das Dokument. Eine Formalie.');
+    assert.strictEqual(r.texte[0], 'ALDRIC: Das Siegel. Eine Formalie.');
     assert.strictEqual(r.texte[r.texte.length - 1], 'Abbrechen (ESC)');
     run(H, `${PANEL}.list.filter(function (o) { return o.type === 'Zone'; })[0].emit('pointerup')`);
     H.step(1);

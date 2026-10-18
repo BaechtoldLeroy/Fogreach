@@ -176,7 +176,9 @@ test('Dungeon: nach dem Ratssaal wird die Ratskammer zum Spionage-Raum, und die 
   assert.strictEqual(r.aktiv, true, 'in der Ratskammer startet keine Spionage');
   assert.strictEqual(r.gegner, 0, 'in der Ratskammer steht eine Welle Gegner');
   assert.ok(r.texte.some((t) => /Ratskammer bei Nacht/.test(t)), 'die geheime Sitzung spielt nicht: ' + JSON.stringify(r.texte));
-  assert.ok(r.texte.some((t) => /Patrouillen verdoppeln/.test(t)), 'die drei sind sich nicht einig');
+  // v6.1: verkuendet wurde die Verdoppelung oeffentlich; hier hoert man, dass
+  // sie vorher feststand.
+  assert.ok(r.texte.some((t) => /Patrouillen sind verdoppelt/.test(t) && /bevor die erste Stimme/.test(t)), 'die drei sind sich nicht einig');
   assert.strictEqual(r.bereit, true, 'nach dem Belauschen ist die Quest nicht abgabebereit');
 });
 
@@ -196,16 +198,17 @@ test('Dungeon: wer gesiegelt hat, erkennt sein Siegel (#145)', () => {
   assert.ok(r.texte.some((t) => /selbst unter ein Dokument gesetzt/.test(t)), JSON.stringify(r.texte));
 });
 
-test('Dungeon: wer verweigert hat, sieht Brankas Zeichen (#145)', async () => {
+// v6.1: verification_refused heisst jetzt "unbemerkt beschaedigt".
+test('Dungeon: wer das Siegel beschaedigt hat, sieht es gesprungen (#145, v6.1)', async () => {
   const r = ratskammerBelauschen({ verification_refused: true });
-  assert.ok(r.texte.some((t) => /Brankas Zeichen/.test(t)), JSON.stringify(r.texte));
+  assert.ok(r.texte.some((t) => /gesprungen/.test(t) && /Daumenabdruck/.test(t)), JSON.stringify(r.texte));
   assert.ok(!r.texte.some((t) => /selbst unter ein Dokument/.test(t)));
 });
 
-test('Dungeon: alte Staende mit beiden Siegel-Flaggen gelten als verweigert (#145)', async () => {
+test('Dungeon: alte Staende mit beiden Siegel-Flaggen gelten als beschaedigt (#145)', async () => {
   // magistrat_verification setzte frueher verification_sealed als Vorgabe —
   // auch bei Verweigerung. Solche Staende tragen beide Flaggen.
   const r = ratskammerBelauschen({ verification_refused: true, verification_sealed: true });
-  assert.ok(r.texte.some((t) => /Brankas Zeichen/.test(t)), JSON.stringify(r.texte));
+  assert.ok(r.texte.some((t) => /gesprungen/.test(t)), JSON.stringify(r.texte));
   await D.shutdown();
 });

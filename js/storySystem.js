@@ -19,15 +19,16 @@
   ];
 
   // ---- Narrative texts shown at act transitions ----
-  // #89: auf Story-Bibel v5 nachgezogen. Jeder Text passt zu dem Moment, in
-  // dem der Akt beginnt (Aufstieg quest-getrieben: harren_daughter_investigation,
-  // council_collusion_reveal, mara_warning, bruch_confrontation).
+  // #89: auf Story-Bibel v5 nachgezogen, v6.1: Akt 4 beginnt mit dem
+  // Maulwurf. Jeder Text passt zu dem Moment, in dem der Akt beginnt (Aufstieg
+  // quest-getrieben: harren_daughter_investigation, council_collusion_reveal,
+  // mara_warning, espionage_informant).
   const ACT_NARRATIVES = {
     auftrag: 'Du erwachst in der Archivschmiede. Woran Du Dich erinnerst: an Deinen Rang, an Dein Werkzeug, an nichts davor. Ratsherr Aldric wartet schon. \'Der Rat hat Arbeit für Dich, Archivschmied. Unten im Keller.\'',
     treuer_diener: 'Im Tagebuch der Bürgermeistertochter stehen alle drei Fraktionen, mit Namen. Harren liest lange. \'Sie ist nicht geflohen. Jemand hat sie verschwinden lassen.\' Am nächsten Morgen hat der Rat neue Aufträge für Dich. Er lobt Dich. Er beobachtet Dich.',
-    erste_risse: 'Ein Gesicht, drei Masken, ein Zeichen: drei Ketten, ineinander verschlungen. Harren bittet Dich zu bleiben. \'Räum weiter für sie, und heimlich für uns.\' Von nun an gehst Du im Rathaus aus und ein und trägst jeden Abend etwas hinaus.',
+    erste_risse: 'Ein Gesicht, drei Masken, ein Zeichen: drei Ketten, ineinander verschlungen. Harren bittet Dich zu bleiben. \'Räum weiter für sie, und heimlich für mich.\' Von nun an gehst Du im Rathaus aus und ein und trägst jeden Abend etwas hinaus.',
     wahrheit: 'Der Kettenmeister ist gefallen, das erste Siegel mit ihm. Doch der Widerstand verliert. Maras Leute werden verhaftet, noch bevor sie losgehen. Jemand verrät sie. Einer von euch.',
-    bruch: 'Aldric weiss es. Dein Doppelspiel ist aufgeflogen, die Kettenwache jagt Dich durch die Gänge. Oben ist das Rathaus zu. Unten, irgendwo unter der Stadt, liegt die Quelle des Nebels.'
+    bruch: 'Elara stand neben Aldric, an ihrem Ring das Zeichen der drei Ketten. Das Rathaus ist zu, die Kettenwache jagt Dich, oben bleibt Dir kein Ort. Elara ist hinabgestiegen, zur Esse unter der Stadt, auf Tiefe 30. Du folgst ihr, um die Esse zu zerstören.'
   };
 
   // ---- Dynamic NPC dialogue per act ----
@@ -136,8 +137,8 @@
         'Wenn Du etwas hörst, egal von wem, sag es mir zuerst.'
       ],
       bruch: [
-        'Aldric hat seine Maske fallen lassen. Gut. Jetzt wissen alle, woran sie sind.',
-        'Ich folge einem Zettel, der zu oft den Besitzer wechselt. Bald weiss ich, wer redet.',
+        'Elara. Ich hätte es sehen müssen. Wir alle hätten es sehen müssen.',
+        'Meine Leute sitzen im Rathauskeller. Mein Netz lebt trotzdem. Es reicht für das, was kommt.',
         'Wenn Du hinabsteigst, bin ich nicht weit.'
       ]
     },
@@ -153,7 +154,7 @@
         'Der Rat behandelt mich wie ein Möbelstück. Gut. Möbel hören viel.'
       ],
       erste_risse: [
-        'Räum weiter für sie, und heimlich für uns.',
+        'Räum weiter für sie, und heimlich für mich.',
         'Jeden Abend brennt das Licht. Sie muss es sehen.',
         'Ein Gesicht, drei Masken. Und ich habe ihnen jahrelang die Hand gegeben.'
       ],
@@ -163,18 +164,13 @@
         'Pass auf sie auf, da unten. Sie lässt sich nicht helfen.'
       ],
       bruch: [
-        'Aldric hat uns alle belogen. Auch über meine Tochter.',
+        'Lene stand neben Aldric? (Er setzt sich schwer.) Dann war auch ihre Flucht eine Lüge.',
         'Wenn Du hinabsteigst, sag ihr, dass das Licht noch brennt.',
         'Ich bin zu alt zum Kämpfen. Aber ich lasse sie da unten nicht allein.'
       ]
-    },
-    elara: {
-      bruch: [
-        'Der Rat hört mit. Immer. Auch hier.',
-        'Du hast mir vertraut, als es niemand tat. Das vergesse ich nicht.',
-        'Unten liegt die Quelle. Wenn Du hinabsteigst, bin ich schon da.'
-      ]
     }
+    // v6.1: Elara steht in Akt 4 nicht mehr im Hub. Sie ist nach dem Maulwurf
+    // zur Esse hinabgestiegen.
   };
 
   // ---- Wave Milestone Events (ENTFERNT) ----
@@ -224,9 +220,9 @@
 
       'story.act.auftrag.narrative': "You wake in the Archive Forge. What you remember: your rank, your tools, nothing before. Councillor Aldric is already waiting. 'The council has work for you, Archivesmith. Down in the cellar.'",
       'story.act.treuer_diener.narrative': "The mayor's daughter's diary names all three factions. Harren reads for a long time. 'She did not flee. Someone made her disappear.' The next morning the council has new work for you. It praises you. It watches you.",
-      'story.act.erste_risse.narrative': "One face, three masks, one sign: three chains, interlocked. Harren asks you to stay. 'Keep cleaning for them, and secretly for us.' From now on you come and go in the town hall and carry something out every evening.",
+      'story.act.erste_risse.narrative': "One face, three masks, one sign: three chains, interlocked. Harren asks you to stay. 'Keep cleaning for them, and secretly for me.' From now on you come and go in the town hall and carry something out every evening.",
       'story.act.wahrheit.narrative': "The Chain Master has fallen, and the first seal with him. But the resistance is losing. Mara's people are arrested before they even set out. Someone is betraying them. One of you.",
-      'story.act.bruch.narrative': "Aldric knows. Your double game is blown, the chain guard hunts you through the tunnels. Up above, the town hall is closed to you. Down below, somewhere beneath the city, lies the source of the fog.",
+      'story.act.bruch.narrative': "Elara stood beside Aldric, the sign of the three chains on her ring. The town hall is closed, the chain guard hunts you, there is no place left for you up above. Elara has gone down, to the forge beneath the city, at depth 30. You follow her to destroy the forge.",
 
       'story.all_quests_ending': "The fog breaks. Not because anyone drives it away, but because too many people remember too much at once.\n\nThe press is running, and the city remembers.",
 
@@ -296,8 +292,8 @@
       'story.npc.mara.wahrheit.0': "Three of my people are gone. They only knew the meeting place a day before.",
       'story.npc.mara.wahrheit.1': "There is a mole. Someone we all trust.",
       'story.npc.mara.wahrheit.2': "If you hear something, no matter from whom, tell me first.",
-      'story.npc.mara.bruch.0': "Aldric has dropped his mask. Good. Now everyone knows where they stand.",
-      'story.npc.mara.bruch.1': "I'm following a note that changes hands too often. Soon I'll know who talks.",
+      'story.npc.mara.bruch.0': "Elara. I should have seen it. We all should have seen it.",
+      'story.npc.mara.bruch.1': "My people sit in the town hall cellar. My network lives anyway. It is enough for what is coming.",
       'story.npc.mara.bruch.2': "When you go down, I won't be far.",
       'story.npc.harren.auftrag.0': "My daughter Lene has disappeared. Aldric says she fled. Lene doesn't flee.",
       'story.npc.harren.auftrag.1': "Every evening I put a light in the window. In case she's looking for the way.",
@@ -305,18 +301,15 @@
       'story.npc.harren.treuer_diener.0': "The diary... all three factions are in it. All three.",
       'story.npc.harren.treuer_diener.1': "Stay close to them, Archivesmith. You're the only one who comes and goes there.",
       'story.npc.harren.treuer_diener.2': "The council treats me like furniture. Good. Furniture hears a lot.",
-      'story.npc.harren.erste_risse.0': "Keep cleaning for them, and secretly for us.",
+      'story.npc.harren.erste_risse.0': "Keep cleaning for them, and secretly for me.",
       'story.npc.harren.erste_risse.1': "Every evening the light burns. She must see it.",
       'story.npc.harren.erste_risse.2': "One face, three masks. And I shook their hands for years.",
       'story.npc.harren.wahrheit.0': "She calls herself Elara now. To me she is still Lene.",
       'story.npc.harren.wahrheit.1': "She was here. One night. Then she left again.",
       'story.npc.harren.wahrheit.2': "Look after her down there. She won't let anyone help her.",
-      'story.npc.harren.bruch.0': "Aldric lied to us all. About my daughter too.",
+      'story.npc.harren.bruch.0': "Lene stood beside Aldric? (He sits down heavily.) Then her escape was a lie too.",
       'story.npc.harren.bruch.1': "When you go down, tell her the light is still burning.",
       'story.npc.harren.bruch.2': "I'm too old to fight. But I won't leave her alone down there.",
-      'story.npc.elara.bruch.0': "The council is listening. Always. Here too.",
-      'story.npc.elara.bruch.1': "You trusted me when nobody did. I won't forget that.",
-      'story.npc.elara.bruch.2': "The source lies below. When you go down, I'll already be there.",
     });
 
     // German registrations for unlock labels (DE source-of-truth, supplement)

@@ -63,8 +63,14 @@ test('hub: Quest-Fluss verfuegbar -> annehmen -> aktiv', () => {
 
 // #154: Das Ansehen ist entfernt. Am laufenden Hub pruefen, dass es wirklich
 // weg ist und dass Elaras erster Auftrag, der daran hing (#85), angeboten wird.
+// v6.1: nach der Rettung (elaraMet) in Akt 1, nicht mehr im Prolog.
 test('hub: kein Ansehen mehr, Elara bietet ihren ersten Auftrag an', () => {
   const res = H.run(`(function () {
+    var qs = window.questSystem, st = qs.getQuestSaveData();
+    window.storySystem.advanceToAct(1);
+    st.quests.harren_daughter_investigation = { status: 'completed', objectives: [] };
+    st.flags.elaraMet = true;
+    qs.loadQuestSaveData(st);
     var akt = window.storySystem.getCurrentActIndex();
     var avail = window.questSystem.getAvailableQuests('elara').map(function (q) { return q.id; });
     var aktiv = window.questSystem.getActiveQuests().map(function (q) { return q.id; });
@@ -360,7 +366,10 @@ test('hub: die Truhe laesst sich oeffnen, befuellen und raeumt sich ab (#127)', 
 });
 
 
-test('hub: Elara kehrt erst in Akt 5 in den Hub zurueck (#131)', () => {
+// v6.1: Elara kommt gar nicht mehr in den Hub. Bis b457 stand sie ab Akt 4
+// dort (#131); jetzt beginnt Akt 4 mit dem Maulwurf, und danach ist sie zur
+// Esse hinabgestiegen. Ihre Auftraege vergibt sie weiter im Dungeon.
+test('hub: Elara kommt in keinem Akt in den Hub (v6.1, vorher #131)', () => {
   // Ihr Layout-Eintrag traegt visibleAfterFlag: 'elaraReturnedToHub' — und
   // diese Flagge wurde im ganzen Projekt NIRGENDS gesetzt. Ein einziges
   // Vorkommen, im Layout selbst.
@@ -385,15 +394,16 @@ test('hub: Elara kehrt erst in Akt 5 in den Hub zurueck (#131)', () => {
   assert.strictEqual(erg.akt1, false, 'Elara steht schon in Akt 1 im Hub');
   assert.strictEqual(erg.akt3, false,
     'Elara steht schon waehrend des Doppelspiels offen im Hub — das untergraebt es');
-  assert.strictEqual(erg.akt5, true,
-    'Elara kommt auch nach dem Fall des Rates nicht in den Hub');
+  assert.strictEqual(erg.akt5, false, 'Elara kehrt nach dem Maulwurf wieder in den Hub zurueck');
 });
 
-test('hub: Elara ist ab Akt 5 im Hub wirklich sichtbar (#131)', () => {
+test('hub: Elara steht in Akt 4 nicht im Hub, auch mit der alten Flagge (v6.1)', () => {
   const erg = H.run(`(function () {
     var qs = window.questSystem;
     window.storySystem.advanceToAct(4);
-    qs.loadQuestSaveData(qs.getQuestSaveData());
+    var st = qs.getQuestSaveData();
+    st.flags.elaraReturnedToHub = true;               // Stand aus b457
+    qs.loadQuestSaveData(st);
     var sc = window.game.scene.getScene('HubSceneV2');
     sc.scene.restart();
     return 1;
@@ -407,8 +417,8 @@ test('hub: Elara ist ab Akt 5 im Hub wirklich sichtbar (#131)', () => {
     return { da: !!e, sichtbar: !!(e && e.visible),
              bietet: window.questSystem.getAvailableQuests('elara').map(function (q) { return q.id; }) };
   })()`);
-  assert.ok(sicht.da, 'Elara fehlt im Hub ganz');
-  assert.strictEqual(sicht.sichtbar, true, 'Elara steht im Hub, ist aber unsichtbar');
+  assert.ok(sicht.da, 'Elaras Layout-Eintrag fehlt im Hub ganz');
+  assert.strictEqual(sicht.sichtbar, false, 'Elara steht in Akt 4 im Hub');
   // Was sie im Hub anbietet, ist hier nicht der Punkt — ihre Auftraege vergibt
   // sie im Dungeon (siehe headlessCombat: 'Elara vergibt ihre spaeteren
   // Auftraege im Dungeon'). Hier zaehlt nur, dass sie ueberhaupt dasteht.

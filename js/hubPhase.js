@@ -16,7 +16,9 @@
     var a = (typeof actIndex === 'number') ? actIndex : 0;
     var f = flags || {};
     if (f.story_ending) return 'epilogue';
-    if (a >= 4) return 'broken';
+    // v6.1: Der Bruch (Aldric enttarnt Dich) liegt jetzt am Ende von Akt 3,
+    // Akt 4 beginnt erst mit dem Maulwurf. Das Rathaus ist ab dem Bruch zu.
+    if (a >= 4 || f.enttarnt) return 'broken';
     if (a >= 2) return 'doubleAgent';
     return 'council';
   }
@@ -124,9 +126,19 @@
         : [_t('THOM: Ich drucke weiter. Irgendwer muss.', 'THOM: I keep printing. Somebody has to.')];
     }
     if (npcId === 'mara') {
-      return st.allies.mara
+      var zeilen = st.allies.mara
         ? [_t('MARA: Mein Netz verteilt die Blätter. Jede Gasse, jede Tür.', 'MARA: My network hands out the sheets. Every alley, every door.')]
         : [_t('MARA: Ich habe die Liste noch. Einige kommen zurück. Nicht alle.', 'MARA: I still have the list. Some come back. Not all.')];
+      // v6.1: Aldrics Ende (Die letzte Wache).
+      var f = flags || {};
+      if (f.aldric_erzaehlt) {
+        zeilen.push(_t('MARA: Du hast ihm gesagt, wer er war. Ich weiss nicht, ob das Gnade war oder Strafe. Vielleicht beides.',
+          'MARA: You told him who he was. I do not know whether that was mercy or punishment. Maybe both.'));
+      } else if (f.aldric_verschwiegen) {
+        zeilen.push(_t('MARA: Du hast ihm nichts gesagt. Er läuft da unten herum und weiss nicht, wessen Namen die Stadt verflucht.',
+          'MARA: You told him nothing. He wanders around down there and does not know whose name the city curses.'));
+      }
+      return zeilen;
     }
     return null;
   }
@@ -134,6 +146,10 @@
   /** Wie viele Buerger im Epilog auf dem Platz vorlesen (wie viele zurueckkamen). */
   function epilogVorleser(flags) {
     var f = flags || {};
+    // v6.1: Maras Namensliste entscheidet; die Gesuche nur noch fuer Staende,
+    // die diese Wahl noch nicht kennen.
+    if (f.namen_gewarnt) return 3;
+    if (f.namen_abgeliefert) return 1;
     if (f.petitions_kept) return 3;
     if (f.petitions_surrendered) return 1;
     return 2;

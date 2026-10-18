@@ -167,18 +167,24 @@ test('feature 050: Q1 completion unlocks Q2/Q3/Q4/Q5 simultaneously', () => {
   qs.updateQuestProgress('fetch', 'journal_fragment', 1);
   assert.strictEqual(qs.isQuestReadyToComplete('harren_daughter_investigation'), true);
   qs.completeQuest('harren_daughter_investigation');
-  // All four parallel quests should now be available from their respective NPCs.
+  // The three faction quests are available right away.
   const map = {
     aldric: 'magistrat_verification',
     klerus_priester: 'klerus_purification',
-    stadtwache: 'garde_patrol_expansion',
-    elara: 'widerstand_proof'
+    stadtwache: 'garde_patrol_expansion'
   };
   Object.keys(map).forEach(function (npc) {
     var avail = qs.getAvailableQuests(npc) || [];
     assert.ok(avail.find(function (q) { return q.id === map[npc]; }),
       npc + ' must offer ' + map[npc] + ' after Q1 done');
   });
+  // v6.1: Elara erst nach der Rettung (elaraMet), und zuerst das Buendel.
+  const elaraIds = () => (qs.getAvailableQuests('elara') || []).map((q) => q.id);
+  assert.deepStrictEqual(elaraIds().filter((id) => id === 'resistance_fetch_01' || id === 'widerstand_proof'), [],
+    'Elara bietet vor der Rettung schon etwas an');
+  qs.setFlag('elaraMet', true);
+  assert.ok(elaraIds().indexOf('resistance_fetch_01') >= 0, 'nach der Rettung fehlt das Buendel');
+  assert.ok(elaraIds().indexOf('widerstand_proof') < 0, 'das Ratsdokument kommt schon vor dem Buendel');
 });
 
 test('feature 050: Q6 unlocks only after all 4 parallel quests complete', () => {
@@ -226,13 +232,23 @@ test('feature 050: Q6 unlocks only after all 4 parallel quests complete', () => 
 
 // #154: Das Ansehen ist entfernt. Elaras erster Auftrag hing daran (Widerstand
 // >= 25) und war bei +1 je Quest praktisch nie erreichbar (#85).
-test('#154: Elaras erster Auftrag steht in Akt 0 offen, ohne Ansehen', () => {
+// v6.1: Das Buendel liegt nicht mehr im Prolog (vor ihrer Einfuehrung), sondern
+// in Akt 1 direkt nach der Rettung (elaraMet). Ansehen spielt weiter keine Rolle.
+test('#154/v6.1: Elaras erster Auftrag kommt in Akt 1 nach der Rettung, ohne Ansehen', () => {
   const qs = freshSystem();
-  globalThis.window.storySystem = { getCurrentActIndex: () => 0 };
   delete globalThis.window.FactionSystem;
-  const avail = qs.getAvailableQuests('elara');
-  assert.ok(avail.find(q => q.id === 'resistance_fetch_01'),
-    'resistance_fetch_01 wird Elara in Akt 0 nicht angeboten: ' + avail.map(q => q.id).join(', '));
+  const ids = () => qs.getAvailableQuests('elara').map(q => q.id);
+  globalThis.window.storySystem = { getCurrentActIndex: () => 0 };
+  qs.setFlag('elaraMet', true);
+  assert.ok(ids().indexOf('resistance_fetch_01') < 0, 'das Buendel steht noch im Prolog');
+  globalThis.window.storySystem = { getCurrentActIndex: () => 1 };
+  qs.loadQuestSaveData({ storyVersion: qs.STORY_VERSION,
+    quests: { harren_daughter_investigation: { status: 'completed', objectives: [] } }, flags: {} });
+  assert.ok(ids().indexOf('resistance_fetch_01') < 0, 'das Buendel kommt vor der Rettung');
+  qs.setFlag('elaraMet', true);
+  assert.ok(ids().indexOf('resistance_fetch_01') >= 0,
+    'resistance_fetch_01 wird nach der Rettung nicht angeboten: ' + ids().join(', '));
+  globalThis.window.storySystem = { getCurrentActIndex: () => 99 };
 });
 
 test('#154: keine Quest vergibt noch Ansehen', () => {
@@ -336,13 +352,14 @@ test('055: Akt-2-Quests existieren mit requiredAct 2 und ohne gate', () => {
   });
 });
 
-test('055: advanceAct treibt Milestones (wahrheit=3, bruch=4)', () => {
+test('055/v6.1: advanceAct treibt Milestones (wahrheit=3, bruch=4)', () => {
   const qs = freshSystem();
   const defs = qs.QUEST_DEFINITIONS;
-  // v4: mara_warning traegt den Akt-3-Trigger (Kettenmeister-Warnung),
-  // bruch_confrontation den Akt-4-Trigger.
+  // mara_warning (Der Kettenmeister) traegt den Akt-3-Trigger. v6.1: Den
+  // Akt-4-Trigger traegt der Maulwurf; der Bruch gehoert noch zu Akt 3.
   assert.strictEqual(defs.mara_warning.advanceAct, 3);
-  assert.strictEqual(defs.bruch_confrontation.advanceAct, 4);
+  assert.strictEqual(defs.espionage_informant.advanceAct, 4);
+  assert.strictEqual(defs.bruch_confrontation.advanceAct, undefined);
 });
 
 test('055: alle prerequisites verweisen auf existierende Quests (kein Dangling)', () => {
@@ -384,26 +401,29 @@ test('055: Espionage-Quests existieren mit observe-Objective, ohne gate', () => 
   // (Archiv, Informant). Der Informant liegt jetzt bei Mara statt "widerstand".
   const EXPECTED = {
     espionage_convoy: { target: 'convoy_intel', npcId: 'mara', prereq: 'mara_contact', act: 2 },
-    espionage_archive: { target: 'archive_record', npcId: 'harren', prereq: 'espionage_convoy', act: 3 },
-    // #155: der Maulwurf liegt jetzt NACH dem Bruch (Akt 4) — erst die Nacht
-    // in Elaras Versteck, dann die Spur zu ihr.
-    espionage_informant: { target: 'informant_id', npcId: 'mara', prereq: 'espionage_archive', act: 4 }
+    // v6.1: Vorgaenger ist das Wiedersehen (Flag elara_ist_lene, als gate).
+    espionage_archive: { target: 'archive_record', npcId: 'harren', prereq: null, act: 3, gate: true },
+    // #155: der Maulwurf liegt NACH dem Bruch — erst die Nacht in Elaras
+    // Versteck, dann die Spur zu ihr. v6.1: er beendet Akt 3 und oeffnet Akt 4.
+    espionage_informant: { target: 'informant_id', npcId: 'mara', prereq: 'espionage_archive', act: 3, advanceAct: 4 }
   };
   Object.keys(EXPECTED).forEach((id) => {
     const q = defs[id];
     const spec = EXPECTED[id];
     assert.ok(q, `${id} definiert`);
     assert.strictEqual(q.requiredAct, spec.act, `${id} requiredAct ${spec.act}`);
-    assert.strictEqual(typeof q.gate, 'undefined', `${id} ohne gate (keine Gates)`);
-    assert.strictEqual(typeof q.advanceAct, 'undefined', `${id} ohne advanceAct`);
+    assert.strictEqual(typeof q.gate, spec.gate ? 'function' : 'undefined', `${id} gate`);
+    assert.strictEqual(q.advanceAct, spec.advanceAct, `${id} advanceAct`);
     assert.strictEqual(q.npcId, spec.npcId, `${id} npcId ${spec.npcId}`);
     const obs = (q.objectives || []).find((o) => o.type === 'observe');
     assert.ok(obs, `${id} hat observe-Objective`);
     assert.strictEqual(obs.target, spec.target, `${id} observe-Target ${spec.target}`);
     assert.strictEqual(obs.required, 1, `${id} observe required 1`);
-    assert.ok((q.prerequisites || []).includes(spec.prereq),
-      `${id} prerequisite ${spec.prereq}`);
-    assert.ok(defs[spec.prereq], `${id} prerequisite ${spec.prereq} existiert (kein Dangling)`);
+    if (spec.prereq) {
+      assert.ok((q.prerequisites || []).includes(spec.prereq),
+        `${id} prerequisite ${spec.prereq}`);
+      assert.ok(defs[spec.prereq], `${id} prerequisite ${spec.prereq} existiert (kein Dangling)`);
+    }
   });
 });
 
@@ -489,8 +509,8 @@ test('Akt 1 (Der treue Diener) ist bewohnt und wird von der Untersuchung geoeffn
   const act1 = Object.values(D).filter((q) => q.requiredAct === 1).map((q) => q.id);
   assert.deepStrictEqual(act1.sort(), [
     'council_collusion_reveal', 'faction_campaign', 'garde_patrol_expansion',
-    'klerus_purification', 'magistrat_verification', 'widerstand_proof'
-  ], 'die vier Fraktionsauftraege + die Edikt-Kampagne + der Reveal bilden Akt 1');
+    'klerus_purification', 'magistrat_verification', 'resistance_fetch_01', 'widerstand_proof'
+  ], 'die vier Fraktionsauftraege + Elaras Buendel (v6.1) + die Edikt-Kampagne + der Reveal bilden Akt 1');
 });
 
 // --- Feature 058 (#41) follow-up: per-act minimum-depth quest gates ---
@@ -650,7 +670,8 @@ test('062 T011: die vier Akt-Trigger feuern advanceToAct(1..4) beim Abschluss', 
     { id: 'harren_daughter_investigation', fulfil: (qs) => qs.updateQuestProgress('fetch', 'journal_fragment', 1), act: 1 },
     { id: 'council_collusion_reveal', fulfil: (qs) => { qs.updateQuestProgress('observe', 'oeffentliche_sitzung', 1); qs.updateQuestProgress('observe', 'collusion_reveal_seen', 1); }, act: 2 },
     { id: 'mara_warning', fulfil: (qs) => qs.onBossKilled('kettenmeister'), act: 3 },
-    { id: 'bruch_confrontation', fulfil: (qs) => qs.updateQuestProgress('kill', 'elite_enemy', 99), act: 4 }
+    // v6.1: der Maulwurf oeffnet Akt 4 (vorher der Bruch).
+    { id: 'espionage_informant', fulfil: (qs) => qs.updateQuestProgress('observe', 'informant_id', 1), act: 4 }
   ];
   cases.forEach((c) => {
     const { qs, advanced } = systemWithAdvanceSpy();
@@ -806,7 +827,8 @@ test('062 T019: jedes Objective-Ziel ist ausloesbar (Trigger-Audit)', () => {
       'escort_route',                                           // WP05 (062)
       'collusion_reveal_seen', 'erster_riss_gesehen',
       'oeffentliche_sitzung',                                   // #159: Ratssaal (Hub-Szene)
-      'edikte_gedruckt', 'edikte_plakatiert'])  // #160: HubSceneV2 (_ediktDrucken/_ediktAushaengen/_ediktAuszaehlen)          // 063 WP04 / #156: Szenen-Trigger
+      'edikte_gedruckt', 'edikte_plakatiert',   // #160: HubSceneV2 (_ediktDrucken/_ediktAushaengen/_ediktAuszaehlen)          // 063 WP04 / #156: Szenen-Trigger
+      'aldric_gefunden'])                       // v6.1: roomManager _tiefenBegegnung (Die letzte Wache)
   };
   Object.keys(D).forEach((id) => {
     (D[id].objectives || []).forEach((o) => {

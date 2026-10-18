@@ -17,7 +17,7 @@ if (window.i18n) {
     // Feature 062: neue fetch-Ziele.
     'loot.quest_item.VERIFICATION_SEAL': 'Ratssiegel',
     'loot.quest_item.PROCLAMATION': 'Edikt-Plakat',
-    'loot.quest_item.MEMORY_SHARD': 'Erinnerungssplitter',
+    'loot.quest_item.MEMORY_SHARD': 'Splitter Deiner Phiole',
     'loot.quest_item.HUNDEHALSBAND': 'Brunos Halsband',
     'loot.quest_item.EICHGEWICHT': 'Eichgewicht der Zunft'
   });
@@ -39,7 +39,7 @@ if (window.i18n) {
     // Feature 062: neue fetch-Ziele.
     'loot.quest_item.VERIFICATION_SEAL': 'Council Seal',
     'loot.quest_item.PROCLAMATION': 'Edict Poster',
-    'loot.quest_item.MEMORY_SHARD': 'Memory Shard',
+    'loot.quest_item.MEMORY_SHARD': 'Shard of Your Vial',
     'loot.quest_item.HUNDEHALSBAND': "Bruno's Collar",
     'loot.quest_item.EICHGEWICHT': 'Guild Standard Weight'
   });

@@ -40,9 +40,9 @@
    * Auftrag laeuft. Die erste Begegnung ist damit immer die inszenierte.
    */
   var BOSS_TORE = [
-    { tiefe: 9,  questId: 'mara_warning',       titel: 'Maras Warnung' },
+    { tiefe: 9,  questId: 'mara_warning',       titel: 'Der Kettenmeister' },
     { tiefe: 19, questId: 'elara_ritual',       titel: 'Die Ritualkammer' },
-    { tiefe: 29, questId: 'schattenrat_finale', titel: 'Der Schattenrat' }
+    { tiefe: 29, questId: 'schattenrat_finale', titel: 'Die Quelle' }
   ];
 
   /** Laeuft (oder lief) diese Quest schon? */

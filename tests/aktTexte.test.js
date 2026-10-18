@@ -56,10 +56,14 @@ test('Akt 4 heisst wie in der Bibel: Die Quelle', () => {
   assert.strictEqual(dicts.en['story.act.bruch.name'], 'The Source');
 });
 
-test('Die Titelkarte von Akt 4 verraet den Maulwurf noch nicht', () => {
-  // Beim Beginn von Akt 4 (nach dem Bruch) hat der Spieler Elara noch nicht
-  // mit Aldric gesehen — die Karte darf ihm das nicht vorwegnehmen.
-  assert.ok(!/Elara|Maulwurf|Ring/.test(S.ACT_NARRATIVES.bruch), S.ACT_NARRATIVES.bruch);
+test('Die Titelkarte von Akt 4 folgt auf den Maulwurf und verraet das Finale nicht (v6.1)', () => {
+  // Bis b457 begann Akt 4 mit dem Bruch, und die Karte durfte Elara mit Aldric
+  // nicht vorwegnehmen. Seit v6.1 oeffnet der Maulwurf den Akt: die Karte
+  // knuepft an den Ring an. Was an der Esse geschieht (der erhobene Hammer,
+  // Harrens Tod), darf sie nicht verraten.
+  const t = S.ACT_NARRATIVES.bruch;
+  assert.ok(/Elara/.test(t) && /Aldric/.test(t) && /Esse/.test(t), t);
+  assert.ok(!/Harren|Hammer|erneuer/i.test(t), t);
 });
 
 test('Jede Zeile gibt es auch auf Englisch', () => {

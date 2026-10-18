@@ -232,7 +232,9 @@
     }
     zeilen.push(
       _t('KLERUS: Ein Edikt ist beschlossen, und trotzdem verliert die Stadt ihre Seele, während der Magistrat Münzen zählt!', 'CLERGY: An edict is passed, and still the city loses its soul while the Magistrate counts coins!'),
-      _t('GARDE: Streitet Ihr nur. Wir halten die Straßen. Mehr Patrouillen, dann ist Ruhe.', 'GUARD: You go on arguing. We hold the streets. More patrols, then there is peace.'),
+      // v6.1: Das Ergebnis wird oeffentlich verkuendet, und gleich was gewann,
+      // die Patrouillen verdoppeln sich.
+      _t('GARDE: Streitet Ihr nur. Ab morgen verdoppeln sich die Patrouillen, gleich welches Edikt gilt. Dann ist Ruhe.', 'GUARD: You go on arguing. From tomorrow the patrols are doubled, whichever edict holds. Then there will be peace.'),
       _t('(Die Bürger rufen durcheinander. Jeder hat eine Seite gewählt. Es sieht aus wie eine Wahl.)', '(The citizens shout over each other. Everyone has picked a side. It looks like a choice.)')
     );
     return zeilen;
@@ -241,6 +243,10 @@
   function playOeffentlicheSitzung(scene, onDone) {
     var seiten = _seitenOeffentlich();
     var ende = function () {
+      // v6.1: verkuendet ist verkuendet. Die Patrouillen stehen ab jetzt doppelt
+      // auf dem Platz (HubSceneV2), nicht erst nach der geheimen Sitzung.
+      var qs = window.questSystem;
+      if (qs && typeof qs.setFlag === 'function') { try { qs.setFlag('patrouillen_verdoppelt'); } catch (e) {} }
       _fireObserve('oeffentliche_sitzung');
       if (typeof onDone === 'function') onDone();
     };
@@ -267,18 +273,19 @@
   function _seitenGeheim() {
     var qs = window.questSystem;
     var flag = function (n) { return !!(qs && typeof qs.hasFlag === 'function' && qs.hasFlag(n)); };
-    // #145: Die Siegel-Entscheidung aus Akt 1 kommt hier zurueck.
+    // #145: Die Siegel-Entscheidung aus Akt 1 kommt hier zurueck. v6.1:
+    // verification_refused heisst jetzt "unbemerkt beschaedigt".
     // Verweigern hat Vorrang: alte Spielstaende tragen beide Flaggen, weil
     // magistrat_verification frueher 'verification_sealed' als Vorgabe setzte.
     var siegel = flag('verification_refused')
-      ? _t('Unter dem Siegel des Magistrats steht Brankas Zeichen. Das Dokument, das Du nicht siegeln wolltest. Geändert hat es nichts.', 'Under the Magistrate\'s seal stands Branka\'s mark. The document you would not seal. It changed nothing.')
+      ? _t('Eines der drei Siegel ist gesprungen. Im Wachs Dein Daumenabdruck. Keiner am Tisch hat es bemerkt. Geändert hat es nichts. Noch nicht.', 'One of the three seals is cracked. In the wax, your thumbprint. Nobody at the table has noticed. It changed nothing. Not yet.')
       : flag('verification_sealed')
         ? _t('Eines der drei Siegel kennst Du. Du hast es selbst unter ein Dokument gesetzt, damals, als es eine Formalie war.', 'You know one of the three seals. You put it under a document yourself, back when it was a formality.')
         : null;
     var seiten = [
       _t('(Die Ratskammer bei Nacht. Magistrat, Klerus und Garde legen die Farben ab. Vor ihnen ein einziges Blatt, drei Siegel, und auf jedem dasselbe Zeichen: drei Ketten, ineinander verschlungen.)', '(The council chamber at night. Magistrate, Clergy and Guard take off their colours. Before them a single sheet, three seals, and on each the same sign: three chains, intertwined.)'),
       _t('ALDRIC: Solange die Stadt glaubt, wir stritten, glaubt sie, sie habe eine Wahl.', 'ALDRIC: As long as the city believes we quarrel, it believes it has a choice.'),
-      _t('KLERUS: Die Patrouillen verdoppeln wir trotzdem.', 'CLERGY: We double the patrols anyway.'),
+      _t('KLERUS: Die Patrouillen sind verdoppelt. Das stand fest, bevor die erste Stimme gezählt war.', 'CLERGY: The patrols are doubled. That was settled before the first vote was counted.'),
       _t('GARDE: Wie jede Woche.', 'GUARD: Like every week.')
     ];
     // #160: Die Abstimmung. Gewonnen hat, was oben hing — und das wussten sie.
@@ -497,7 +504,8 @@
       _t('(Eine Gestalt in der Gasse. Die Kapuze fällt. Es ist Elara.)', '(A figure in the alley. The hood falls. It is Elara.)'),
       'HARREN: Lene.',
       _t('(Sie zögert einen Atemzug zu lang. Dann liegt sie in seinen Armen.)', '(She hesitates one breath too long. Then she is in his arms.)'),
-      _t('ELARA: Ich kann nicht bleiben, Vater. Noch nicht.', 'ELARA: I cannot stay, Father. Not yet.')
+      // v6.1: Ihm erzaehlt sie, sie sei aus eigenem Willen geflohen.
+      _t('ELARA: Ich bin fortgegangen, Vater. Aus eigenem Willen. Und ich kann nicht bleiben, noch nicht.', 'ELARA: I left, Father. Of my own will. And I cannot stay, not yet.')
     ], 'wiedersehen', onDone);
   }
 
@@ -505,7 +513,8 @@
   // Das tiefste Vertrauen, direkt vor dem Verrat.
   function playNachtNachDemBruch(scene, onDone) {
     _szeneSpielen(scene, [
-      _t('(Die Nacht nach dem Bruch. Aldrics Wachen durchkämmen die Gassen. Elara zieht Dich in ihr Versteck unter der Stadt.)', '(The night after the break. Aldric\'s guards comb the alleys. Elara pulls you into her hideout beneath the city.)'),
+      // v6.1: Branka hat Dich hergebracht (bruch_confrontation).
+      _t('(Die Nacht nach dem Bruch. Aldrics Wachen durchkämmen die Gassen. Branka hat Dich bis an den Spalt in der Kellerwand gebracht. Dahinter, in ihrem Versteck, wartet Elara.)', '(The night after the break. Aldric\'s guards comb the alleys. Branka has brought you as far as the crack in the cellar wall. Behind it, in her hideout, Elara is waiting.)'),
       _t('ELARA: Hier findet Dich keiner. Schlaf. Ich halte Wache.', 'ELARA: Nobody will find you here. Sleep. I will keep watch.'),
       _t('(Du wachst einmal auf. Sie sitzt an der Tür, die Klinge über den Knien, und sieht Dich an. Lange.)', '(You wake once. She sits by the door, the blade across her knees, and looks at you. For a long time.)')
     ], 'bruch_nacht', onDone);

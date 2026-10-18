@@ -8,6 +8,8 @@
 // Flag-Abgleich (finale-contract): die vom Finale gelesenen Flags haben genau
 // einen Setzer im Content:
 //   verification_sealed/verification_refused  -> magistrat_verification
+//                                                (v6.1: abgeliefert/beschaedigt)
+//   namen_abgeliefert/namen_gewarnt           -> klerus_district_purge (v6.1)
 //   petitions_surrendered/petitions_kept      -> council_seizure
 //   branka_ally                               -> who_you_were (Branka-Vertrauen)
 //   thom_ally                                 -> thom_truth   (Thom-Vertrauen)
@@ -43,11 +45,14 @@
     },
 
     // ------------------------------------------------------------------ AKT 1
+    // v6.1: Siegel abliefern oder unbemerkt beschaedigen. Die Flaggen heissen
+    // weiter wie in v5 (Spielstaende, questFinale): verification_refused steht
+    // jetzt fuer das beschaedigte Siegel. Branka merkt es, Aldric nicht.
     magistrat_verification: {
-      prompt: 'ALDRIC: Setz das Siegel unter das Dokument. Eine Formalie.',
+      prompt: 'ALDRIC: Das Siegel. Eine Formalie.',
       choices: [
-        { label: 'Siegel setzen', setFlags: ['verification_sealed'], response: 'ALDRIC: Das Dokument ist im Archiv. Was das in der Praxis bedeutet, geht Dich nichts an. Der Magistrat dankt Dir.' },
-        { label: 'Verweigern', setFlags: ['verification_refused'], response: 'ALDRIC: Ein Handwerker mit Gewissen. Ich merke mir das. Branka siegelt es dann eben selbst. Geändert hat sich nichts, ausser dass ich jetzt weiss, wo Du stehst.' }
+        { label: 'Das Siegel abliefern', setFlags: ['verification_sealed'], response: 'ALDRIC: Das Dokument ist im Archiv. Die Tochter ist nun offiziell eine Person von Interesse. Was das in der Praxis bedeutet, geht Dich nichts an. Der Magistrat dankt Dir.' },
+        { label: 'Es unbemerkt beschädigen', setFlags: ['verification_refused'], response: '(Du drückst den Daumen ins weiche Wachs, bevor Du es übergibst. Aldric siegelt, ohne hinzusehen.)\n\nALDRIC: Gut. Der Magistrat dankt Dir.\n\n(Das Siegel wird nicht halten. Wer genau hinsieht, merkt es. Branka sieht immer genau hin.)' }
       ]
     },
     // #160: Die Wahl, welches Edikt oben haengt, faellt jetzt an der
@@ -75,10 +80,13 @@
         { label: 'Alles abgegeben.', showIf: function (f) { return !f.petitions_kept; }, response: 'ALDRIC: Gut.' }
       ]
     },
+    // v6.1: Maras Namensliste. Die Leute warnen oder die Liste abliefern; das
+    // entscheidet, wie viele Verschwundene im Epilog zurueckkehren.
     klerus_district_purge: {
-      prompt: 'PRIESTER: Reinige den Bezirk. Bring mir die Namen.',
+      prompt: 'PRIESTER: Die Liste. Das Licht wartet nicht gern.',
       choices: [
-        { label: 'Und wenn sie unschuldig sind?', response: 'PRIESTER: Unschuld ist eine Frage des Lichts, nicht Deine. Bring die Namen.' }
+        { label: 'Die Liste abliefern', setFlags: ['namen_abgeliefert'], response: 'PRIESTER: Das Licht dankt Dir. (Er faltet die Liste, ohne sie zu lesen. Morgen früh steht die Kettenwache vor jeder Tür, deren Name darauf steht.)' },
+        { label: 'Erst die Leute warnen', setFlags: ['namen_gewarnt'], response: '(Du gibst Mara ein Zeichen und lässt Dir Zeit auf dem Weg zum Rathaus. In der Nacht leeren sich die Häuser auf der Liste.)\n\nPRIESTER: Leer? Alle? (Er sieht Dich lange an.) Der Befall wandert. Das Licht wird ihn finden.' }
       ]
     },
     mara_contact: {
@@ -103,7 +111,7 @@
     },
     // who_you_were: Branka hilft Dir, Dich zu erinnern -> Branka-Vertrauen.
     who_you_were: {
-      prompt: 'BRANKA: Das lag in Deiner alten Werkstatt. Ich habe es aufgehoben. Willst Du wissen, wer Du warst?',
+      prompt: 'BRANKA: Willst Du wissen, wer Du warst? Ganz? Auch das, was Dir nicht gefällt?',
       choices: [
         { label: 'Ja. Sag es mir.', setFlags: ['branka_ally'], response: 'BRANKA: Jemand, der nicht aufhören konnte zu fragen. Wie jetzt. Wir stehen zusammen, wenn es soweit ist.' },
         { label: 'Später. Erst der Rat.', setFlags: ['branka_ally'], response: 'BRANKA: Auch recht. Aber ich vergesse nicht, dass Du gefragt hast.' }
@@ -119,10 +127,12 @@
     },
 
     // ------------------------------------------------------------------ AKT 4
+    // v6.1: Branka schickt Dich zur Esse (Harren steigt selbst hinab).
     schattenrat_finale: {
-      prompt: 'HARREN: Geh zur Quelle. Bring mir, was Du findest.',
+      prompt: 'BRANKA: Geh zur Esse. Und komm zurück.',
       choices: [
-        { label: 'Und Deine Tochter?', response: 'HARREN: (lange Pause) Bring mir Wahrheit. Auch die. Ein Vater will wissen, nicht träumen.' }
+        { label: 'Und Elara?', response: 'BRANKA: Elara hat ihre Wahl getroffen. Triff Du Deine. Mit dem Hammer, nicht mit dem Herzen.' },
+        { label: 'Und wenn ich es nicht schaffe?', response: 'BRANKA: Dann löst keiner mehr diese Bindung, in keine Richtung. (Sie sieht Dich an.) Du schaffst es.' }
       ]
     }
   };
@@ -204,11 +214,11 @@
     'storydialog.harren_daughter_investigation.1.label': 'What if it looks bad for you?',
     'storydialog.harren_daughter_investigation.1.response': 'HARREN: Then I still want to know. A father wants the truth, not comfort.',
 
-    'storydialog.magistrat_verification.prompt': 'ALDRIC: Put the seal on the document. A formality.',
-    'storydialog.magistrat_verification.0.label': 'Set the seal',
-    'storydialog.magistrat_verification.0.response': 'ALDRIC: The document is in the archive. What that means in practice is none of your concern. The Magistrate thanks you.',
-    'storydialog.magistrat_verification.1.label': 'Refuse',
-    'storydialog.magistrat_verification.1.response': 'ALDRIC: A craftsman with a conscience. I will remember that. Branka will seal it herself, then. Nothing has changed, except that now I know where you stand.',
+    'storydialog.magistrat_verification.prompt': 'ALDRIC: The seal. A formality.',
+    'storydialog.magistrat_verification.0.label': 'Hand over the seal',
+    'storydialog.magistrat_verification.0.response': 'ALDRIC: The document is in the archive. The daughter is now officially a person of interest. What that means in practice is none of your concern. The Magistrate thanks you.',
+    'storydialog.magistrat_verification.1.label': 'Damage it unnoticed',
+    'storydialog.magistrat_verification.1.response': '(You press your thumb into the soft wax before you hand it over. Aldric seals without looking.)\n\nALDRIC: Good. The Magistrate thanks you.\n\n(The seal will not hold. Whoever looks closely will notice. Branka always looks closely.)',
 
     'storydialog.hub_buerger_a2.prompt': 'CITIZEN: Whom should I believe, the council or the rumours? Whose are you?',
     'storydialog.hub_buerger_a2.0.label': 'Neither.',
@@ -228,9 +238,11 @@
     'storydialog.council_seizure_followup.1.label': 'All handed over.',
     'storydialog.council_seizure_followup.1.response': 'ALDRIC: Good.',
 
-    'storydialog.klerus_district_purge.prompt': 'PRIEST: Purge the district. Bring me the names.',
-    'storydialog.klerus_district_purge.0.label': 'And if they are innocent?',
-    'storydialog.klerus_district_purge.0.response': 'PRIEST: Innocence is a question for the Light, not for you. Bring the names.',
+    'storydialog.klerus_district_purge.prompt': 'PRIEST: The list. The Light does not like to wait.',
+    'storydialog.klerus_district_purge.0.label': 'Hand over the list',
+    'storydialog.klerus_district_purge.0.response': 'PRIEST: The Light thanks you. (He folds the list without reading it. Tomorrow morning the chain guard will stand at every door whose name is on it.)',
+    'storydialog.klerus_district_purge.1.label': 'Warn the people first',
+    'storydialog.klerus_district_purge.1.response': '(You give Mara a sign and take your time on the way to the town hall. In the night the houses on the list empty.)\n\nPRIEST: Empty? All of them? (He looks at you for a long time.) The infestation moves on. The Light will find it.',
 
     'storydialog.mara_contact.prompt': 'MARA: You used to ask questions, Archivesmith.',
     'storydialog.mara_contact.0.label': 'I asked questions? Before?',
@@ -244,7 +256,7 @@
     'storydialog.elara_blade.0.label': 'In case of what?',
     'storydialog.elara_blade.0.response': 'ELARA: (hesitates) Of anything. You never know who will stand before you in the end.',
 
-    'storydialog.who_you_were.prompt': 'BRANKA: This was in your old workshop. I kept it. Do you want to know who you were?',
+    'storydialog.who_you_were.prompt': 'BRANKA: Do you want to know who you were? All of it? Even what you will not like?',
     'storydialog.who_you_were.0.label': 'Yes. Tell me.',
     'storydialog.who_you_were.0.response': 'BRANKA: Someone who could not stop asking. Like now. We stand together when the time comes.',
     'storydialog.who_you_were.1.label': 'Later. The council first.',
@@ -256,9 +268,11 @@
     'storydialog.thom_truth.1.label': 'Truth has a price.',
     'storydialog.thom_truth.1.response': 'THOM: I will pay it. Good that you know it. We stick together.',
 
-    'storydialog.schattenrat_finale.prompt': 'HARREN: Go to the source. Bring me what you find.',
-    'storydialog.schattenrat_finale.0.label': 'And your daughter?',
-    'storydialog.schattenrat_finale.0.response': 'HARREN: (long pause) Bring me the truth. That one too. A father wants to know, not to dream.',
+    'storydialog.schattenrat_finale.prompt': 'BRANKA: Go to the forge. And come back.',
+    'storydialog.schattenrat_finale.0.label': 'And Elara?',
+    'storydialog.schattenrat_finale.0.response': 'BRANKA: Elara has made her choice. Make yours. With the hammer, not with your heart.',
+    'storydialog.schattenrat_finale.1.label': 'And if I do not make it?',
+    'storydialog.schattenrat_finale.1.response': 'BRANKA: Then nobody loosens this binding any more, in either direction. (She looks at you.) You will make it.',
 
     'storydialog.edikt_anschlag.prompt': 'Three edicts, one board. Only one hangs at the very top, where it is read first. Whose colour do you hang on top?',
     'storydialog.edikt_anschlag.0.label': 'Magistrate on top — law and order',
