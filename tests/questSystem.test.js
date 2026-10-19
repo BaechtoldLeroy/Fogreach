@@ -813,7 +813,7 @@ test('062 T019: jedes Objective-Ziel ist ausloesbar (Trigger-Audit)', () => {
     system: new Set(SYS.SYSTEM_ZIELE || []),
     kill: '*',           // updateQuestProgress('kill', target)
     boss_kill: '*',      // onBossKilled(name)
-    explore: new Set(['room']),
+    explore: new Set(['room', 'room_lauf']),   // room_lauf: Aushang Standhalten, markRoomCleared (b477)
     craft: '*',          // onItemCrafted
     dungeon_run: '*',    // onDungeonCompleted
     wave: '*',           // onWaveCompleted / reach_wave

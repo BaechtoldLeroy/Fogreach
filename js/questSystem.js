@@ -1052,30 +1052,30 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     brett_welle: {
       id: 'brett_welle',
       title: 'Aushang: Standhalten',
-      description: 'Ein Rats-Aushang: überstehe Welle 14, auf Tiefe 14 oder tiefer.',
+      description: 'Ein Rats-Aushang: räume 6 Räume auf Tiefe 14 oder tiefer in einem Lauf, ohne zu sterben.',
       npcId: 'anschlagtafel',
-      type: 'wave',
+      type: 'explore',
       chain: 3,
       minDepth: 14,
       angebotAb: 14,
       repeatable: true,
-      // Die Welle IST die Lauftiefe: enterRoom setzt currentWave = Tiefe - 1,
-      // startNextWave zaehlt einmal hoch, jeder Raum meldet also Welle = Tiefe
-      // (gemessen: Tiefe 6/10/15 melden in allen Raeumen 6/10/15). Nur nach
-      // einem Voll-Boss folgt noch Welle Tiefe + 1. Vorher stand hier Welle 12
-      // ab Tiefe 6 — erst auf Tiefe 12 erreichbar. Gefordert wird deshalb nie
-      // mehr als minDepth (tests/wellenZiele.test.js).
+      // Ausdauer statt Welle: die Welle ist nur die Lauftiefe, "Welle 14 auf
+      // Tiefe 14" war ein einziger Raum. 'room_lauf' zaehlt geraeumte Raeume
+      // (ab minDepth) und faellt auf 0, sobald ein Lauf endet, ohne dass das
+      // Ziel voll ist — durch Tod, Portal oder einen zu kurzen Lauf
+      // (onLaufEnde). Alte Staende mit dem Wellenziel stellt
+      // _standhaltenUmstellen beim Laden um.
       objectives: [
-        { type: 'wave', target: 'reach_wave', current: 0, required: 14 }
+        { type: 'explore', target: 'room_lauf', current: 0, required: 6 }
       ],
       rewards: { xp: 100, gold: 180 },
       rewardTier: 'neben',
       prerequisites: [],
       requiredAct: 0,
       gate: function () { return window.Anschlagtafel && window.Anschlagtafel.haengt('brett_welle'); },
-      dialogueOffer: 'KLERUS: Hinab bis Tiefe 14, und dort eine Ansturmwelle überstehen, ohne zu weichen. Standhaftigkeit ist eine Tugend, und der Rat belohnt Tugend.\n\n(Das Siegel darunter ist frisch. Die Tinte noch feucht.)',
-      dialogueProgress: 'Eine Welle auf Tiefe 14. Weichen zählt nicht.',
-      dialogueComplete: 'Der Priester am Kasten segnet Dich, während er abzählt. Beides dauert gleich lang.'
+      dialogueOffer: 'KLERUS: Sechs Kammern in einem Gang, ab Tiefe 14, und kein Sturz. Wer fällt oder umkehrt, beginnt von vorn. Standhaftigkeit ist eine Tugend, und der Rat belohnt Tugend.\n\n(Das Siegel darunter ist frisch. Die Tinte noch feucht.)',
+      dialogueProgress: 'Sechs Räume in einem Lauf, ab Tiefe 14. Wer stirbt oder umkehrt, beginnt von vorn.',
+      dialogueComplete: 'Sechs Kammern, kein Sturz. Der Priester am Kasten segnet Dich, während er abzählt. Beides dauert gleich lang.'
     },
     brett_zeugen: {
       id: 'brett_zeugen',
@@ -1413,10 +1413,10 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.brett_laeufe.dialogueComplete': 'The Guard pays without questions. Nobody wants to hear what you saw down there.',
 
       'quest.brett_welle.title': 'Notice: Hold the Line',
-      'quest.brett_welle.description': 'A council notice: survive wave 14, at depth 14 or deeper.',
-      'quest.brett_welle.dialogueOffer': "CLERGY: Down to depth 14, and there withstand a wave of assault without giving ground. Steadfastness is a virtue, and the council rewards virtue.\n\n(The seal below it is fresh. The ink still wet.)",
-      'quest.brett_welle.dialogueProgress': 'One wave at depth 14. Giving ground does not count.',
-      'quest.brett_welle.dialogueComplete': 'The priest at the box blesses you while he counts it out. Both take the same amount of time.',
+      'quest.brett_welle.description': 'A council notice: clear 6 rooms at depth 14 or deeper in a single run without dying.',
+      'quest.brett_welle.dialogueOffer': "CLERGY: Six chambers in one descent, from depth 14, and no fall. Whoever falls or turns back starts over. Steadfastness is a virtue, and the council rewards virtue.\n\n(The seal below it is fresh. The ink still wet.)",
+      'quest.brett_welle.dialogueProgress': 'Six rooms in a single run, from depth 14. Whoever dies or turns back starts over.',
+      'quest.brett_welle.dialogueComplete': 'Six chambers, no fall. The priest at the box blesses you while he counts it out. Both take the same amount of time.',
 
       'quest.brett_zeugen.title': 'Call: Take Their Leaders',
       'quest.brett_zeugen.description': 'A resistance call: defeat 4 elite enemies from depth 22.',
@@ -2193,6 +2193,26 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
   }
 
   /**
+   * Ein Lauf endet (Tod, Portal, Abschluss). Laufgebundene Ziele
+   * ('room_lauf', Aushang Standhalten), die noch nicht voll sind, fallen auf
+   * 0: sie zaehlen nur innerhalb EINES Laufs, und wer stirbt, faengt neu an.
+   * Volle bleiben stehen (der Auftrag ist dann abzugeben).
+   * @returns {boolean} ob sich etwas geaendert hat
+   */
+  function onLaufEnde() {
+    var changed = false;
+    Object.keys(questState).forEach(function (id) {
+      var st = questState[id];
+      if (!st || st.status !== 'active' || !Array.isArray(st.objectives)) return;
+      st.objectives.forEach(function (o) {
+        if (o.target === 'room_lauf' && o.current > 0 && o.current < o.required) { o.current = 0; changed = true; }
+      });
+    });
+    if (changed) { _notifyUpdate(); _persistIfPossible(); }
+    return changed;
+  }
+
+  /**
    * Called when a wave is completed. Updates wave-type objectives
    * and dungeon_run objectives.
    */
@@ -2868,6 +2888,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     Object.keys(srcQuests).forEach(function (id) {
       if (questState[id] && srcQuests[id] && typeof srcQuests[id] === 'object') {
         questState[id] = srcQuests[id];
+        _standhaltenUmstellen(id);
         _zieleNachziehen(id);
       }
       // Old quest IDs from previous saves are silently ignored,
@@ -2933,6 +2954,19 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
   // still weg. Nur bei einer reinen Erweiterung: liegt im Stand ein Ziel, das
   // die Definition nicht mehr kennt (umbenannt), bleibt alles, wie es ist —
   // ein angehaengtes zweites Ziel neben einem toten machte es nicht besser.
+  // Standhalten war bis b476 ein Wellenziel. Ein laufender Altstand bekommt
+  // das Raumziel; war die Welle schon erreicht, bleibt er abgabebereit.
+  function _standhaltenUmstellen(id) {
+    var st = questState[id];
+    if (id !== 'brett_welle' || !st || st.status !== 'active' || !Array.isArray(st.objectives)) return;
+    var welle = st.objectives.filter(function (o) { return o && o.type === 'wave'; })[0];
+    if (!welle) return;
+    var fertig = welle.current >= welle.required;
+    st.objectives = QUEST_DEFINITIONS.brett_welle.objectives.map(function (o) {
+      return { type: o.type, target: o.target, current: fertig ? o.required : 0, required: o.required };
+    });
+  }
+
   function _zieleNachziehen(id) {
     var def = QUEST_DEFINITIONS[id];
     var st = questState[id];
@@ -3031,6 +3065,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     tiefeErreicht: tiefeErreicht,
     angebotsTiefe: angebotsTiefe,
     onWaveCompleted: onWaveCompleted,
+    onLaufEnde: onLaufEnde,
     onDungeonCompleted: onDungeonCompleted,
     onBossKilled: onBossKilled,
     // #131: Tiefensperre vor einem Story-Boss, dessen Quest noch nicht laeuft.

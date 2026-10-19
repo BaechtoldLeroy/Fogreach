@@ -2322,6 +2322,8 @@ function markRoomCleared(opts) {
   // Quest progress: room cleared
   if (window.questSystem && typeof window.questSystem.updateQuestProgress === 'function') {
     window.questSystem.updateQuestProgress('explore', 'room', 1);
+    // Dieselben Raeume, aber nur innerhalb eines Laufs (onLaufEnde setzt zurueck).
+    window.questSystem.updateQuestProgress('explore', 'room_lauf', 1);
   }
   // Story stats: room cleared
   if (window.storySystem && typeof window.storySystem.onRoomCleared === 'function') {

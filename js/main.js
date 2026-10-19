@@ -2108,6 +2108,11 @@ function leaveDungeonForHub(scene, options = {}) {
       && typeof window.questSystem.onDungeonCompleted === 'function') {
     try { window.questSystem.onDungeonCompleted(); } catch (e) { /* never block hub return */ }
   }
+  // Laufgebundene Ziele (Aushang Standhalten) beginnen nach jedem Lauf neu,
+  // auch nach Tod und Portal.
+  if (window.questSystem && typeof window.questSystem.onLaufEnde === 'function') {
+    try { window.questSystem.onLaufEnde(); } catch (e) { /* never block hub return */ }
+  }
 
   // Run-summary snapshot: compute deltas against window.runStats and stash on
   // window.lastRunSummary. HubSceneV2.create() reads + clears it on next tick.

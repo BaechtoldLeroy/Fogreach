@@ -23,7 +23,8 @@ const WELLEN = Object.keys(D).filter((id) => (D[id].objectives || []).some((o) =
 const ziel = (id) => D[id].objectives.filter((o) => o.type === 'wave')[0].required;
 
 test('es gibt Wellenziele (sonst prueft der Test nichts)', () => {
-  assert.ok(WELLEN.includes('brett_welle') && WELLEN.includes('mara_assault'), WELLEN.join(','));
+  // Standhalten zaehlt seit b477 Raeume statt einer Welle (tests/standhalten.test.js).
+  assert.ok(WELLEN.includes('mara_assault'), WELLEN.join(','));
 });
 
 test('kein Wellenziel liegt ueber der Tiefe, ab der sein Auftrag zaehlt', () => {

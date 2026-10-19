@@ -80,6 +80,7 @@ Ein NPC bietet eine Quest an, wenn **alle** Bedingungen gelten:
 |---|---|
 | `kill` (`enemy` / `elite_enemy`) | Gegner-Tod (`js/player.js`) |
 | `explore` (`room`) | Raum gecleart (`js/roomManager.js` → `markRoomCleared`) |
+| `explore` (`room_lauf`) | Raum gecleart, aber nur in EINEM Lauf: endet der Lauf ohne volles Ziel (Tod, Portal, Abschluss), zurück auf 0 (`onLaufEnde`) |
 | `fetch` | Quest-Item aufgesammelt (`js/loot.js`) |
 | `observe` | Spionage-Zone abgehört (`js/espionageSystem.js`) |
 | `boss_kill` | Boss-Tod → `onBossKilled` (`js/player.js` Mapping) |
@@ -530,25 +531,25 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 `brett_welle` · **NPC:** anschlagtafel · **Kette:** 3 · **Angebot ab Tiefe 14** · **Fortschritt erst ab Tiefe 14**
 
-> Ein Rats-Aushang: überstehe Welle 14, auf Tiefe 14 oder tiefer.
+> Ein Rats-Aushang: räume 6 Räume auf Tiefe 14 oder tiefer in einem Lauf, ohne zu sterben.
 
-- **Ziel:** `wave` → `reach_wave` ×14
+- **Ziel:** `explore` → `room_lauf` ×6
 - **Vorbedingung:** keine (dazu eine Bedingung im Code, `gate`)
 - **Belohnung:** mind. 100 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 180 Gold (wächst mit der Tiefe ab 14)
 
 **Angebot**
 
-> KLERUS: Hinab bis Tiefe 14, und dort eine Ansturmwelle überstehen, ohne zu weichen. Standhaftigkeit ist eine Tugend, und der Rat belohnt Tugend.
+> KLERUS: Sechs Kammern in einem Gang, ab Tiefe 14, und kein Sturz. Wer fällt oder umkehrt, beginnt von vorn. Standhaftigkeit ist eine Tugend, und der Rat belohnt Tugend.
 > 
 > (Das Siegel darunter ist frisch. Die Tinte noch feucht.)
 
 **Unterwegs**
 
-> Eine Welle auf Tiefe 14. Weichen zählt nicht.
+> Sechs Räume in einem Lauf, ab Tiefe 14. Wer stirbt oder umkehrt, beginnt von vorn.
 
 **Abschluss**
 
-> Der Priester am Kasten segnet Dich, während er abzählt. Beides dauert gleich lang.
+> Sechs Kammern, kein Sturz. Der Priester am Kasten segnet Dich, während er abzählt. Beides dauert gleich lang.
 
 
 ## Aufruf der Druckerei

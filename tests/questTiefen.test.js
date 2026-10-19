@@ -68,7 +68,7 @@ test('die neuen Tiefen stehen in den Definitionen', () => {
   Object.keys(NEU).forEach((id) => { ist[id] = QS.angebotsTiefe(id) > 1 ? QS.angebotsTiefe(id) : D[id].minDepth; });
   assert.deepStrictEqual(ist, NEU);
   assert.strictEqual(D.thom_pamphlets.minDepth, 27, 'die Pamphlet-Laeufe zaehlen ab 27');
-  assert.strictEqual(D.brett_welle.objectives[0].required, 14, 'Welle 14 auf Tiefe 14');
+  assert.strictEqual(D.brett_welle.objectives[0].required, 6, 'Standhalten: 6 Raeume ab Tiefe 14');
 });
 
 test('kein verschobener Auftrag wird unter seiner Tiefe angeboten, ab ihr (und tiefer) schon', () => {

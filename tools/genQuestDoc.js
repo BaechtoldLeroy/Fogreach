@@ -131,6 +131,7 @@ out += '## Ziel-Typen und ihre Trigger\n\n';
 out += '| Typ | Trigger im Code |\n|---|---|\n';
 out += '| `kill` (`enemy` / `elite_enemy`) | Gegner-Tod (`js/player.js`) |\n';
 out += '| `explore` (`room`) | Raum gecleart (`js/roomManager.js` → `markRoomCleared`) |\n';
+out += '| `explore` (`room_lauf`) | Raum gecleart, aber nur in EINEM Lauf: endet der Lauf ohne volles Ziel (Tod, Portal, Abschluss), zurück auf 0 (`onLaufEnde`) |\n';
 out += '| `fetch` | Quest-Item aufgesammelt (`js/loot.js`) |\n';
 out += '| `observe` | Spionage-Zone abgehört (`js/espionageSystem.js`) |\n';
 out += '| `boss_kill` | Boss-Tod → `onBossKilled` (`js/player.js` Mapping) |\n';
