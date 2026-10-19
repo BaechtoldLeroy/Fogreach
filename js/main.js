@@ -961,6 +961,10 @@ function preload() {
   if (!this.textures.exists('aldric_right0')) {
     this.load.image('aldric_right0', 'assets/npc/aldric/right0.png');
   }
+  // Stufe 3: Mara steht im Endkampf am Rand der Arena (elaraKampf.js).
+  if (!this.textures.exists('spaeherin')) {
+    this.load.image('spaeherin', 'assets/sprites/spaeherin.png');
+  }
   // #192: Elaras eingerichtete Kammer — die Requisiten.
   if (typeof window.versteckBilderVorladen === 'function') {
     try { window.versteckBilderVorladen(this); } catch (e) { /* nicht fatal */ }

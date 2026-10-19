@@ -733,6 +733,10 @@
     const def = ABILITY_DEFS[abilityId];
     if (!def) return false;
     if (!isLearned(abilityId)) return false;
+    // Stufe 3: Was die besessene Elara Dir genommen hat, geht nicht, bis Du
+    // es Dir zurueckholst (elaraKampf.js; nur im Speicher, nie im Spielstand).
+    if (window.ElaraKampf && typeof window.ElaraKampf.gesperrt === 'function'
+        && window.ElaraKampf.gesperrt(abilityId)) return false;
 
     // Per-ability cooldowns (only enforced for "self"/tap type abilities).
     // Cooldown wird defensiv mit dem SkillTree-CooldownMult skaliert

@@ -134,6 +134,9 @@
         if (!z.dauer && A.ABILITY_DEFS && A.ABILITY_DEFS[abilityId]) z.dauer = A.ABILITY_DEFS[abilityId].cooldownMs || 0;
         if (typeof A.isLearned === 'function') z.gesperrt = !A.isLearned(abilityId);
       }
+      // Stufe 3: von Elara genommen -> entsaettigt, bis Du es zurueckholst.
+      var EK = window.ElaraKampf;
+      if (EK && typeof EK.gesperrt === 'function' && EK.gesperrt(abilityId)) { z.gesperrt = true; z.genommen = true; }
     }
     if (!(z.rest > 0)) z.rest = 0;
     return z;

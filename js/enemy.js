@@ -1558,6 +1558,13 @@ function handleEnemies(time, delta = 16) {
       ).scale(repelFade * 0.8),
     );
 
+    // Am Hindernis festgefahren (gemessen: Ratte mit 100 px/s gegen eine
+    // Kiste, Position unveraendert, kein Laufbild): an der Wand entlang
+    // gleiten, um die Kante herum, und wer trotzdem nicht vom Fleck kommt,
+    // geht einen Umweg. Siehe "Um Hindernisse herum" weiter unten.
+    _anWandGleiten(enemy, desired, player, time);
+    _umwegWennFest(enemy, desired, player, maxSpeed, time);
+
     // Begrenzen & anwenden
     Steering.limit(desired, maxSpeed);
     enemy.body.setVelocity(desired.x, desired.y);
@@ -3731,6 +3738,11 @@ function spawnBoss() {
     } catch (e) { _beatLaeuft = false; }
   }
   if (!_beatLaeuft) _auftritt();
+  // Stufe 3: Ohne Buehne (Szene schon gesehen, Debug) beginnt Elaras Kampf
+  // sofort; sonst startet ihn das Finale, wenn die Esse sie genommen hat.
+  if (def.id === 'elaraBesessen' && !_beatLaeuft && typeof window !== 'undefined' && window.ElaraKampf) {
+    try { window.ElaraKampf.starten(this, boss); } catch (e) { /* defensiv */ }
+  }
 
   // #109: Der Aufrufer braucht den Boss, um ihn als Klimax-Gegner zu fuehren
   // (wave.js -> window.__climaxEnemy) und damit die Treppe zu sperren.
@@ -4060,83 +4072,12 @@ function makeBoss(boss, def, cycle) {
 // ---------------------------------------------------------------------------
 // #157: Elara, besessen — was sie von den anderen Bossen unterscheidet.
 // ---------------------------------------------------------------------------
-var ELARA_ZEICHEN_START = 0.85;        // Zeichen erkannt: sie beginnt angeschlagen
-var ELARA_MARA_TAKT_MS = 7000;         // so oft trifft Maras Pfeil
-var ELARA_MARA_ANTEIL = 0.03;          // Anteil der Max-LP je Pfeil
-var ELARA_GRIFF_SPERRE_MS = 3000;      // so lange sind die Faehigkeiten gesperrt
-
-function _elaraToast(scene, de, en) {
-  try {
-    var istEn = !!(window.i18n && typeof window.i18n.getLanguage === 'function' && window.i18n.getLanguage() === 'en');
-    if (window.EventSystem && typeof window.EventSystem.showEventToast === 'function') {
-      window.EventSystem.showEventToast(scene, istEn ? en : de, 'elara_besessen');
-    }
-  } catch (e) {}
-}
-
+// Stufe 3: Der Kampf selbst (Griff nach der Erinnerung, verloeschende Arena,
+// Echos der Besiegten, Zeichen, Mara) liegt in js/elaraKampf.js und beginnt
+// erst, wenn die Esse sie genommen hat (Finale.vorKampf -> ElaraKampf.starten;
+// ohne Buehne startet spawnBoss ihn sofort).
 function _elaraBesessenAufbauen(boss) {
-  const scene = this;
-  // Besessen: violett durchscheinend, der Nebel quillt um sie.
   if (typeof boss.setTint === 'function') boss.setTint(0xc4a8ff);
-  const aura = scene.add.graphics().setDepth((boss.depth || 50) - 1);
-  aura.fillStyle(0x8866cc, 0.28);
-  aura.fillCircle(0, 0, 70);
-  aura.fillStyle(0xaa88ee, 0.18);
-  aura.fillCircle(0, 0, 110);
-  const auraTakt = scene.time.addEvent({ delay: 16, loop: true, callback: () => {
-    if (!boss.active) return;
-    aura.setPosition(boss.x, boss.y);
-  } });
-  scene.tweens.add({ targets: aura, alpha: { from: 0.6, to: 1 }, duration: 900, yoyo: true, repeat: -1 });
-
-  const qs = window.questSystem;
-  const flags = (qs && typeof qs.getFlags === 'function') ? qs.getFlags() : {};
-
-  // Das Zeichen auf der Klinge erkannt (#156): vorbereitet statt kalt erwischt.
-  if (flags.zeichen_bemerkt) {
-    boss.hp = Math.max(1, Math.ceil(boss.hp * ELARA_ZEICHEN_START));
-    _elaraToast(scene, 'Du kennst das Zeichen an ihrem Ring. Du warst vorbereitet.',
-      'You know the sign on her ring. You came prepared.');
-  }
-
-  // Mara kommt zu Hilfe, wenn das Finale sie an Deiner Seite sieht
-  // (questFinale: Gesuche behalten oder Maulwurf enthuellt, nicht aufgeflogen).
-  let maraTakt = null;
-  let maraHilft = false;
-  try {
-    maraHilft = !!(window.QuestFinale && window.QuestFinale.computeFinaleState(flags).allies.mara);
-  } catch (e) { maraHilft = false; }
-  if (maraHilft) {
-    let ersterPfeil = true;
-    maraTakt = scene.time.addEvent({ delay: ELARA_MARA_TAKT_MS, loop: true, callback: () => {
-      if (!boss.active || boss.hp <= 0) return;
-      if (ersterPfeil) {
-        ersterPfeil = false;
-        _elaraToast(scene, 'Mara ist da. Ihre Pfeile kommen aus dem Dunkel.', 'Mara is here. Her arrows come out of the dark.');
-      }
-      // Pfeil vom Rand des Blickfelds auf Elara.
-      const cam = scene.cameras && scene.cameras.main;
-      const sx = cam ? cam.scrollX : boss.x - 400;
-      const sy = cam ? cam.scrollY + cam.height * 0.2 : boss.y - 300;
-      const pfeil = scene.add.graphics().setDepth(1003);
-      pfeil.lineStyle(3, 0xe8d8a0, 1);
-      pfeil.lineBetween(-10, 0, 10, 0);
-      pfeil.setPosition(sx, sy);
-      pfeil.setRotation(Math.atan2(boss.y - sy, boss.x - sx));
-      scene.tweens.add({ targets: pfeil, x: boss.x, y: boss.y, duration: 350, onComplete: () => {
-        pfeil.destroy();
-        if (!boss.active || boss.hp <= 0) return;
-        boss.hp = Math.max(1, boss.hp - Math.ceil(boss.maxHp * ELARA_MARA_ANTEIL));
-      } });
-    } });
-  }
-  boss._maraHilft = maraHilft;
-
-  boss.on('destroy', () => {
-    try { auraTakt.remove(); } catch (e) {}
-    try { if (maraTakt) maraTakt.remove(); } catch (e) {}
-    try { aura.destroy(); } catch (e) {}
-  });
 }
 
 // Auslöschung: der Nebel loescht Teile der Arena. Drei Zonen um den Spieler,
@@ -4168,39 +4109,14 @@ function bossVergesseneRufen(boss) {
         g.hp = Math.max(4, Math.ceil(boss.maxHp * 0.02));
         g._vergessen = true;
         g.setTint(0xb8a8d8);
+        if (window.ElaraKampf) window.ElaraKampf.addMerken(boss, g);
       }
     }
   });
 }
 
-// Signatur: der Griff nach der Erinnerung. Langer, deutlicher Vorlauf; dann
-// sind alle Faehigkeiten fuer kurze Zeit weg — man kaempft nur noch mit der
-// Waffe. Mit ihrer eigenen Klinge.
-function bossErinnerungsGriff(boss) {
-  const scene = this;
-  const overlay = scene.add.graphics().setDepth(1050).setScrollFactor(0);
-  overlay.fillStyle(0x3a2a55, 1);
-  overlay.fillRect(0, 0, scene.scale.width, scene.scale.height);
-  overlay.setAlpha(0);
-  _elaraToast(scene, 'Elara greift nach Deiner Erinnerung.', 'Elara reaches for your memory.');
-  scene.tweens.add({
-    targets: overlay, alpha: 0.5, duration: 900,
-    onComplete: () => {
-      if (boss.active && boss.hp > 0) {
-        const AS = window.AbilitySystem;
-        const jetzt = (typeof window.gameNow === 'function') ? window.gameNow(scene) : scene.time.now;
-        if (AS && typeof AS.getActiveLoadout === 'function' && typeof AS.setCooldown === 'function') {
-          const belegung = AS.getActiveLoadout();
-          Object.keys(belegung).forEach((slot) => {
-            if (belegung[slot]) AS.setCooldown(belegung[slot], ELARA_GRIFF_SPERRE_MS, jetzt);
-          });
-        }
-        boss._letzterGriff = jetzt;
-      }
-      scene.tweens.add({ targets: overlay, alpha: 0, duration: 600, onComplete: () => overlay.destroy() });
-    },
-  });
-}
+// Signatur und Griff nach der Erinnerung: js/elaraKampf.js (besiegteRufen,
+// erinnerungsGriff). Sie haengen sich dort in BOSS_ATTACK_MAP.
 
 function handleBossAI(time, boss, scene) {
   if (!boss.active) return;
@@ -4720,6 +4636,10 @@ function updateBossPhase(boss, scene, time) {
   if (boss._nachhall && typeof window !== 'undefined' && window.Nachhall) {
     try { window.Nachhall.gestaltWechsel(scene, boss, phase); } catch (e) { /* Gestalt ist Zierde */ }
   }
+  // Stufe 3: Bei Elara verlischt mit jeder Phase ein Teil der Arena.
+  if (boss._elaraKampf && typeof window !== 'undefined' && window.ElaraKampf) {
+    try { window.ElaraKampf.phasenWechsel(scene, boss, phase); } catch (e) { /* nie den Kampf brechen */ }
+  }
   bossPhaseTransitionFx(boss, scene, phase);
 }
 
@@ -4759,7 +4679,7 @@ const BOSS_SIGNATURE = {
   chainMaster: 'fesselung',       // der Rat greift und haelt fest
   ceremonyMaster: 'ausloeschung', // das Vergessen selbst, Vorspiel auf Elara
   nachhallEsse: 'fluesterSturm',  // v6.1 Stufe 2: ersetzt den Schattenrat (cloneSlam)
-  elaraBesessen: 'erinnerungsGriff', // #157: Faehigkeiten kurz weg
+  elaraBesessen: 'besiegteRufen',  // Stufe 3: die Besiegten kehren zurueck (elaraKampf.js)
   nachhall: 'fluesterSturm',      // v6.1 Stufe 2: alle Stimmen zugleich
 };
 
@@ -5084,7 +5004,6 @@ const BOSS_ATTACK_MAP = {
   // #157
   nebelAusloeschung: bossNebelAusloeschung,
   vergesseneRufen: bossVergesseneRufen,
-  erinnerungsGriff: bossErinnerungsGriff,
 };
 
 // ---------------------------------------------------------------------------

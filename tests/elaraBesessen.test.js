@@ -5,7 +5,9 @@
 // unterwegs erfahren und gesammelt hat, veraendert den Kampf:
 //   * ihre eigene Klinge trifft sie haerter,
 //   * wer das Zeichen erkannt hat, trifft sie angeschlagen an,
-//   * Mara kommt zu Hilfe, wenn das Finale sie an Deiner Seite sieht.
+//   * Mara kommt zu Hilfe, wenn ihr Netz den Konvoi ueberstanden hat.
+// Die Mechaniken aus Stufe 3 (Griff nach der Erinnerung, verloeschende
+// Arena, Echos) stehen in tests/elaraKampf.test.js.
 // Ist die Geschichte zu Ende (story_ending), steht dort der Nachhall der Esse
 // (v6.1 Stufe 2, er ersetzt den Schattenrat).
 
@@ -136,59 +138,39 @@ test('Die Klinge wirkt nur gegen sie', () => {
   assert.strictEqual(r.eigen, r.fremd, 'die Klinge ist gegen jeden Boss staerker');
 });
 
-test('Der Griff nach der Erinnerung sperrt die Faehigkeiten kurz', () => {
+test('Ihre Angriffe bleiben, der Griff nach der Erinnerung hat seinen eigenen Takt (Stufe 3)', () => {
+  // Bis b460 sperrte der Griff als Signatur alle Faehigkeiten fuer 3 s. Seit
+  // Stufe 3 nimmt er eine bestimmte, bis man sie sich zurueckholt
+  // (js/elaraKampf.js, tests/elaraKampf.test.js); ihre Signatur ab Phase 2
+  // sind die Echos der Besiegten.
   L.spawnBoss();
-  const vorher = H.run(`(function () {
-    var sc = window.game.scene.getScene('GameScene');
+  const r = H.run(`(function () {
     var b = enemies.getChildren().filter(function (x) { return x && x.isBoss; })[0];
-    var AS = window.AbilitySystem;
-    // Der Testlauf startet ohne Belegung: zwei Faehigkeiten lernen und ablegen.
-    var ids = AS.getAllAbilityDefs().map(function (d) { return d.id; }).slice(0, 2);
-    ids.forEach(function (id, i) { AS.learnAbility(id, { silent: true }); AS.setSlot('slot' + (i + 1), id); });
-    var bel = AS.getActiveLoadout();
-    Object.keys(bel).forEach(function (s) { if (bel[s]) AS.resetCooldown(bel[s]); });
-    BOSS_ATTACK_MAP.erinnerungsGriff.call(sc, b);
-    return Object.keys(bel).filter(function (s) { return bel[s]; }).length;
+    return { angriffe: b.bossAttacks.join(','), signatur: BOSS_SIGNATURE.elaraBesessen,
+      griff: BOSS_ATTACK_MAP.erinnerungsGriff === window.ElaraKampf.erinnerungsGriff,
+      takt: !!(b._elaraKampf && b._elaraKampf.naechsterGriff > 0) };
   })()`);
-  assert.ok(vorher > 0, 'keine Faehigkeit belegt — nichts zu pruefen');
-  // Die Sperre haengt am onComplete eines Tweens (900 ms Laufzeit). Takten,
-  // bis sie steht, statt eine feste Zahl Frames zu raten: der Tween braucht
-  // getaktet rund 2000 ms fuer seine 900 — Phasers Tween-Delta passt nicht
-  // zum gepumpten dt. Mit den frueheren 90 Frames (1500 ms) mass der Test
-  // regelmaessig, BEVOR die Sperre gesetzt war, und las [0,0].
-  const rest = () => H.run(`(function () {
-    var sc = window.game.scene.getScene('GameScene');
-    var AS = window.AbilitySystem, bel = AS.getActiveLoadout();
-    var jetzt = window.gameNow(sc);
-    return Object.keys(bel).filter(function (s) { return bel[s]; })
-      .map(function (s) { return AS.getCooldownRemaining(bel[s], jetzt); });
-  })()`);
-  let r = rest();
-  for (let i = 0; i < 300 && !Array.from(r).some((ms) => ms > 0); i++) { H.step(1); r = rest(); }
-  assert.ok(r.every((ms) => ms > 1500), 'nicht alle Faehigkeiten gesperrt: ' + JSON.stringify(r));
+  assert.strictEqual(r.angriffe, 'shadowDash,vergesseneRufen,nebelAusloeschung');
+  assert.strictEqual(r.signatur, 'besiegteRufen');
+  assert.strictEqual(r.griff, true);
+  assert.strictEqual(r.takt, true, 'der Griff hat keinen Takt');
 });
 
-test('Mara hilft, wenn das Finale sie an Deiner Seite sieht', () => {
-  const maraFlags = H.run(`(function () {
-    // Die Bedingung selbst gehoert questFinale; hier nur ein Stand, der sie erfuellt.
-    var kandidaten = [{ mole_evidence: true }, { mole_evidence: true, wanted_kept: true }, { wanted_kept: true }];
-    for (var i = 0; i < kandidaten.length; i++) {
-      if (window.QuestFinale.computeFinaleState(kandidaten[i]).allies.mara) return kandidaten[i];
-    }
-    return null;
-  })()`);
-  assert.ok(maraFlags, 'kein Flag-Stand gefunden, bei dem Mara hilft');
-
-  const ohne = L.spawnBoss();
+test('Mara hilft, wenn ihr Netz den Konvoi ueberstanden hat (wie im Urteil und im Epilog)', () => {
+  // Stufe 1b: Finale.nachKampf und der Epilog lassen Mara fort, wenn ihr Netz
+  // am Konvoi verbrannt ist (convoy_blown). Der Kampf folgt derselben Regel.
+  flaggen({ convoy_blown: true, convoy_blade_drawn: true });
+  L.spawnBoss();
   const ohneMara = H.run(`enemies.getChildren().filter(function (x) { return x && x.isBoss; })[0]._maraHilft`);
-  assert.strictEqual(ohneMara, false);
+  assert.strictEqual(ohneMara, false, 'Mara hilft trotz verbranntem Netz');
   L.clearEnemies();
 
-  flaggen(maraFlags);
+  flaggen({ convoy_silent: true });
   L.spawnBoss();
   const vor = H.run(`(function () {
     var b = enemies.getChildren().filter(function (x) { return x && x.isBoss; })[0];
     b.damage = 0; b.speed = 0; b.nextPatternAt = 1e12;
+    b._elaraKampf.naechsterGriff = 1e15;
     return { hilft: b._maraHilft, hp: b.hp };
   })()`);
   assert.strictEqual(vor.hilft, true);
@@ -212,7 +194,6 @@ test('Mara hilft, wenn das Finale sie an Deiner Seite sieht', () => {
   }
   assert.ok(nach >= 0, 'der Boss ist waehrend des Wartens verschwunden');
   assert.ok(nach < vor.hp, 'Maras Pfeil hat nicht getroffen (' + vor.hp + ' -> ' + nach + ')');
-  assert.ok(ohne.hp > 0);
 });
 
 // --------------------------------------------------------------- Ihr Bild
