@@ -143,11 +143,24 @@ describe('Dungeon (Ritual Chamber, Thronsaal)', () => {
     H.run('enemies.clear(true, true)');
     H.step(2);
     const hp = H.run('playerHealth');
+    // Seit b468 schiebt der Anti-Wand-Schub (main.js) aus einem einzelnen
+    // Block sofort hinaus, wenn der Weg frei ist. Damit hier das Netz selbst
+    // geprueft wird: an jede Seite einen Riegel, in dem jeder Schub enden
+    // wuerde — dann bleibt der Spieler liegen, bis das Netz greift.
     H.run(`(function () { var w = ${DICKSTE_WAND}; var x = w.x + w.w / 2 - 4, y = w.y + w.h / 2 + 26;
-      player.setPosition(x, y); player.body.reset(x, y); })()`);
+      player.setPosition(x, y); player.body.reset(x, y);
+      var b = player.body, d = 80;
+      window.__riegel = [
+        [w.x - d, b.y - d, d, b.height + 2 * d], [w.x + w.w, b.y - d, d, b.height + 2 * d],
+        [b.x - d, w.y - d, b.width + 2 * d, d], [b.x - d, w.y + w.h, b.width + 2 * d, d]
+      ].map(function (r) {
+        var o = obstacles.create(r[0] + r[2] / 2, r[1] + r[3] / 2, '__WHITE');
+        o.setDisplaySize(r[2], r[3]); o.refreshBody(); o.setVisible(false); return o;
+      }); })()`);
     assert.ok(H.run(TIEFE) > 10, 'der Spieler steckt gar nicht');
     let k = 0;
     for (; k < 150 && H.run(TIEFE) > 0.5; k++) H.step(1);
+    H.run('window.__riegel.forEach(function (o) { o.destroy(); })');
     assert.ok(H.run(TIEFE) <= 0.5, 'nach ' + k + ' Bildern steckt er noch');
     assert.ok(k >= 20, 'zu frueh befreit (' + k + ' Bilder) — die Frist ist 0,5 s');
     assert.strictEqual(H.run('playerHealth'), hp, 'das Freistellen hat Schaden gemacht');

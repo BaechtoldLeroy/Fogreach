@@ -2008,28 +2008,63 @@ function update(time, delta) {
 
   updateEnemyDirectionHint(this, this.time?.now ?? time);
 
-  // Anti-wall-push: if player ended up inside an obstacle after physics,
-  // push them out toward the room center.
-  if (player && player.active && player.body && obstacles && obstacles.children) {
+  // Anti-Wand-Schub: steckt der Spieler nach der Physik in einem Hindernis,
+  // auf kuerzestem Weg hinaus. Frueher hielt er dabei fest, statt zu
+  // befreien: eine schraege Rolle drueckt den 34 px breiten Koerper in einen
+  // 32 px breiten Spalt zwischen Wand und Kiste; der Schub schob ihn 2 px aus
+  // der Kiste in die Wand, im naechsten Bild zurueck, und nahm ihm jedes Bild
+  // die ganze Geschwindigkeit — auch die von der Wand weg. Darum jetzt:
+  //  - bis 2 px Ueberlappung bleibt liegen; das loest Arcade selbst, und der
+  //    Spieler gleitet daran entlang;
+  //  - genullt wird nur der Anteil der Geschwindigkeit, der INS Hindernis
+  //    zeigt, nie der davon weg;
+  //  - alle Hindernisse gegen EIN mitgefuehrtes Rechteck (der Koerper selbst
+  //    folgt der Figur erst im naechsten Physikschritt);
+  //  - nie in ein anderes festes Rechteck hinein; ist keine Richtung frei,
+  //    bleibt er liegen, bis das Sicherheitsnetz (steckWaechter, unten) ihn
+  //    freistellt, statt hin und her zu schieben;
+  //  - bei angehaltener Physik oder Spieluhr nichts (sonst wandert der
+  //    Spieler Bild fuer Bild durch die Wand);
+  //  - abgeschaltete Koerper und Durchgaenge zaehlen nicht.
+  const physikSteht = this.physics.world.isPaused
+    || (window.__GAME_PAUSE && window.__GAME_PAUSE.since != null);
+  if (!physikSteht && window.SpawnRegeln && player && player.active && player.body && obstacles) {
+    const SPIEL = 2;
     const pb = player.body;
-    obstacles.children.iterate(obs => {
-      if (!obs || !obs.body) return;
-      const ob = obs.body;
-      // Check AABB overlap
-      if (pb.right > ob.x && pb.x < ob.right && pb.bottom > ob.y && pb.y < ob.bottom) {
-        // Find smallest push-out direction
-        const pushLeft = pb.right - ob.x;
-        const pushRight = ob.right - pb.x;
-        const pushUp = pb.bottom - ob.y;
-        const pushDown = ob.bottom - pb.y;
-        const min = Math.min(pushLeft, pushRight, pushUp, pushDown);
-        if (min === pushLeft) player.x -= pushLeft;
-        else if (min === pushRight) player.x += pushRight;
-        else if (min === pushUp) player.y -= pushUp;
-        else player.y += pushDown;
-        player.body.setVelocity(0, 0);
-      }
-    });
+    const r = { x: pb.x, y: pb.y, w: pb.width, h: pb.height };
+    const hindernisse = window.SpawnRegeln.festeRechtecke([obstacles]);
+    const feste = window.SpawnRegeln.festeRechtecke([obstacles, this._doorGroup]);
+    // Tiefe je festem Rechteck (kleinere Achse); 0 = frei.
+    const tiefe = (q, f) => {
+      const ix = Math.min(q.x + q.w, f.x + f.w) - Math.max(q.x, f.x);
+      const iy = Math.min(q.y + q.h, f.y + f.h) - Math.max(q.y, f.y);
+      return (ix > 0 && iy > 0) ? Math.min(ix, iy) : 0;
+    };
+    // Ein Weg ist gesperrt, wenn er in ein festes Rechteck tiefer als das
+    // Spiel hineinfuehrt, als der Koerper schon steckt.
+    const gesperrt = (dx, dy) => {
+      const q = { x: r.x + dx, y: r.y + dy, w: r.w, h: r.h };
+      return feste.some(f => { const t = tiefe(q, f); return t > SPIEL && t > tiefe(r, f) + 0.01; });
+    };
+    for (const ob of hindernisse) {
+      if (tiefe(r, ob) <= SPIEL) continue;
+      const wege = [
+        [-(r.x + r.w - ob.x), 0], [ob.x + ob.w - r.x, 0],
+        [0, -(r.y + r.h - ob.y)], [0, ob.y + ob.h - r.y],
+      ].sort((a, b) => Math.abs(a[0] + a[1]) - Math.abs(b[0] + b[1]));
+      const weg = wege.find(([dx, dy]) => !gesperrt(dx, dy));
+      // Kein freier Weg: liegen lassen. Das Sicherheitsnetz darunter
+      // (steckWaechter) stellt ihn nach seiner Frist von 0,5 s frei.
+      if (!weg) break;
+      const [dx, dy] = weg;
+      player.x += dx; player.y += dy;
+      r.x += dx; r.y += dy;
+      // Schub nach links heisst: das Hindernis liegt rechts — nur die
+      // Bewegung nach rechts endet.
+      const v = pb.velocity;
+      if ((dx < 0 && v.x > 0) || (dx > 0 && v.x < 0)) v.x = 0;
+      if ((dy < 0 && v.y > 0) || (dy > 0 && v.y < 0)) v.y = 0;
+    }
   }
 
   // Spawn-Bug A, Sicherheitsnetz: steckt der Spieler laenger als 0,5 s in
