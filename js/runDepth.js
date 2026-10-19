@@ -42,6 +42,10 @@
   var BOSS_TORE = [
     { tiefe: 9,  questId: 'mara_warning',       titel: 'Der Kettenmeister' },
     { tiefe: 19, questId: 'elara_ritual',       titel: 'Die Ritualkammer' },
+    // v6.1 Stufe 2: der Nachhall auf Tiefe 25. Alte Staende, in denen die
+    // Quelle schon laeuft oder fertig ist, haelt das Tor nicht auf.
+    { tiefe: 24, questId: 'was_der_rauch_behaelt', titel: 'Was der Rauch behält',
+      oder: ['schattenrat_finale'] },
     { tiefe: 29, questId: 'schattenrat_finale', titel: 'Die Quelle' }
   ];
 
@@ -70,7 +74,9 @@
   function _torBei(tiefe) {
     for (var i = 0; i < BOSS_TORE.length; i++) {
       if (BOSS_TORE[i].tiefe !== tiefe) continue;
-      return _questBekannt(BOSS_TORE[i].questId) ? null : BOSS_TORE[i];
+      var bekannt = _questBekannt(BOSS_TORE[i].questId)
+        || (BOSS_TORE[i].oder || []).some(_questBekannt);
+      return bekannt ? null : BOSS_TORE[i];
     }
     return null;
   }

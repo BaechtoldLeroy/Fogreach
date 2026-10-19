@@ -32,7 +32,11 @@
   };
   // boss_elara: die besessene Elara (#157) — sie nimmt auf Tiefe 30 den Platz
   // des Schattenrats ein, solange die Geschichte laeuft.
-  var BOSSES = ['boss_chain', 'boss_ceremony', 'boss_shadow', 'boss_elara'];
+  // v6.1 Stufe 2: der Nachhall in drei Gestalten (js/nachhall.js).
+  // boss_shadow (der Schattenrat) wird nicht mehr geladen: ersetzt durch den
+  // Nachhall der Esse (Stufe 2).
+  var BOSSES = ['boss_chain', 'boss_ceremony', 'boss_elara',
+    'boss_nachhall', 'boss_nachhall_schwarm', 'boss_nachhall_chor'];
 
   // #170: Laufbilder je Typ (walk_right<N>/walk_left<N>), Zahl = Bilder je
   // Richtung. Nur hinter ?gegnerlauf=1 geladen und gespielt; ohne Flagge

@@ -26,8 +26,12 @@ test('Interne Id, deutscher Name und Nummer fuehren zum selben Boss', () => {
     assert.strictEqual(d.id, 'chainMaster', n);
   });
   assert.strictEqual(mitFlagge('zeremonienmeister').id, 'ceremonyMaster');
-  assert.strictEqual(mitFlagge('schattenrat').id, 'shadowCouncillor');
-  assert.strictEqual(mitFlagge('3').id, 'shadowCouncillor');
+  // Stufe 2: alte Adressen des Schattenrats fuehren zum Nachhall der Esse.
+  assert.strictEqual(mitFlagge('schattenrat').id, 'nachhallEsse');
+  assert.strictEqual(mitFlagge('3').id, 'nachhallEsse');
+  assert.strictEqual(mitFlagge('esse').id, 'nachhallEsse');
+  assert.strictEqual(mitFlagge('nachhall').id, 'nachhall');
+  assert.strictEqual(mitFlagge('25').id, 'nachhall');
 });
 
 test('Ein unbekannter Name loest NICHT auf — sonst stuerzt der Boss-Zweig ab', () => {

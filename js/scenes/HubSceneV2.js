@@ -3296,6 +3296,18 @@ class HubSceneV2 extends Phaser.Scene {
       for (const bo of bossOptions) options.push(bo);
       options.sort((a, b) => b.depth - a.depth); // absteigend (tief -> flach)
     }
+    // v6.1 Stufe 2: Der Nachhall wartet auf Tiefe 25, solange sein Auftrag
+    // laeuft. Wer schon tiefer steht, kaeme mit den Fuenferschritten sonst
+    // nie wieder genau dorthin.
+    if (lastKnown >= 25 && window.Nachhall && window.Nachhall.wartet()) {
+      const nm = _bossNameAt(25);
+      const da = options.find((o) => o.depth === 25);
+      if (da) { if (nm) da.bossMark = nm; }
+      else if (nm) {
+        options.push({ depth: 25, label: nm, boss: true });
+        options.sort((a, b) => b.depth - a.depth);
+      }
+    }
 
     // #72: Laufende Auftraege, die erst ab einer groesseren Tiefe weitergehen,
     // stehen im Kopf des Dialogs — sonst sucht man sie in zu flachen Laeufen.

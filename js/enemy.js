@@ -3316,32 +3316,25 @@ const BOSS_DEFINITIONS = {
     attacks: ['ritualCircle', 'summonMinions', 'darkBlast'],
     attackCooldown: 4000,
   },
-  shadowCouncillor: {
-    id: 'shadowCouncillor',
-    name: 'Schattenrat',
-    texture: 'boss_shadow_right0',
-    fallbackTexture: 'sprite_boss_shadow',
-    // Finaler Boss der Leiter (Tiefe 30) — bewusst härter als die beiden davor
-    // und als die 3x-Regel: 123 * 3.9 = 480 HP auf Tiefe 30 = 3.95x Mini-Boss.
-    // Damit bleibt seine absolute HP gegenüber vorher exakt gleich (480), er
-    // skaliert jetzt aber in späteren Zyklen korrekt mit. 2x Schaden (8->16).
-    // (Das "scale 1.8->3.6 = doppelte Darstellungsgrösse" von damals stimmte
-    // nie: 3.6 traf den Rahmen, nicht die Figur — siehe unten.)
+  // v6.1 Stufe 2: Der Nachhall der Esse ersetzt den Schattenrat auf dem
+  // Platz von Tiefe 30 (60, 90, ...), wann immer dort nicht die besessene
+  // Elara wartet: nach der Geschichte, in "Die letzte Wache", in spaeteren
+  // Zyklen. Der Schattenrat verriet in seiner Rede die ganze Wendung und
+  // passte nach dem Bruch der Esse nicht mehr. Dieselbe Gestalt und
+  // Mechanik wie der Nachhall (js/nachhall.js), groesser und haerter.
+  // Werte vom alten Schattenrat uebernommen: 123 * 3.9 = 480 LP auf Tiefe
+  // 30, Schaden 16, 173 px Figur (#176: ueber den Vorgaengern, unter Elara).
+  nachhallEsse: {
+    id: 'nachhallEsse',
+    name: 'Der Nachhall der Esse',
+    texture: 'boss_nachhall_right0',
+    fallbackTexture: 'sprite_boss_nachhall',
     baseHP: 123,
-    baseSpeed: 70,
+    baseSpeed: 60,
     baseDamage: 16,
-    // #176: 173 px Figur — ueber seinen Vorgaengern (127), klar unter Elara
-    // (283). Vorher 0.91 = 87 px: der finale Boss der Leiter war kaum
-    // groesser als ein Brute. (Die alte 3.6 traf einen 1024 px hohen Rahmen,
-    // nicht die Figur.)
-    // Die LP blieben: gemessen mit einem Nahkampf-Bot (Tiefe 30, alle Muster,
-    // 2x10 Kaempfe a 60 s je Groesse) kam bei 173 px einmal 35 % weniger und
-    // einmal 13 % mehr Schaden an — zusammen 1308 gegen 1518. Groesser heisst
-    // hier nicht messbar leichter zu treffen.
     scale: 1.8,
-    loreIntro: 'Ein Mitglied des Kettenrats selbst tritt aus dem Schatten — und mit ihm die Quelle des Nebels, die er hütet.',
-    // #144: Die Quelle vereint Fesselung und Ausloeschung seiner Vorgaenger.
-    attacks: ['shadowDash', 'darknessWave', 'shadowClones', 'fesselung', 'ausloeschung'],
+    loreIntro: 'Tief unten, wo die Esse brannte, hallt es am lautesten. Was sie verbrannt hat, findet keine Ruhe und sucht sich eine Gestalt.',
+    attacks: ['echoRing', 'bruchstuecke', 'darkBlast'],
     attackCooldown: 3000,
   },
   // #157 (Story-Bibel v5, Abschnitt 8): Der Schattenrat geht in der besessenen
@@ -3364,6 +3357,26 @@ const BOSS_DEFINITIONS = {
     attacks: ['shadowDash', 'vergesseneRufen', 'nebelAusloeschung'],
     attackCooldown: 3000,
   },
+  // v6.1 Stufe 2 (js/nachhall.js): Der Nachhall auf Tiefe 25, solange
+  // 'Was der Rauch behaelt' laeuft. Zwischen Zeremonienmeister und Elara:
+  // 120 * 3.4 = 408 LP auf Tiefe 25 (Zeremonienmeister 348 auf 20, Elara
+  // 480 auf 30), Schaden 12 (9 / 16). Seine Bruchstuecke heilen ihn, wenn
+  // man sie laufen laesst. Die Angriffe wechseln mit der Gestalt
+  // (Nachhall.GESTALTEN); hier steht die erste, der Hall.
+  nachhall: {
+    id: 'nachhall',
+    name: 'Der Nachhall',
+    texture: 'boss_nachhall_right0',
+    fallbackTexture: 'sprite_boss_nachhall',
+    baseHP: 120,
+    baseSpeed: 52,
+    baseDamage: 12,
+    // 150 px Figur: ueber dem Zeremonienmeister (127), unter dem Schattenrat (173).
+    scale: 1.56,
+    loreIntro: 'Niemand. Alle verbrannten Erinnerungen, so dicht, dass sie zu einem Wesen verschmolzen sind. Die Kreaturen sind seine Bruchstücke, er ist das Ganze.',
+    attacks: ['echoRing', 'bruchstuecke', 'darkBlast'],
+    attackCooldown: 3400,
+  },
 };
 
 // #87: Name und Lore oben sind die deutsche Quelle (Key boss.<id>.name/.lore).
@@ -3377,10 +3390,12 @@ if (window.i18n && typeof window.i18n.binden === 'function') {
     'boss.chainMaster.lore': "The Guard's torturer. The Chainmaster binds whatever the council makes disappear. Behind him lie the first seals — the first hard evidence.",
     'boss.ceremonyMaster.name': 'Master of Ceremonies',
     'boss.ceremonyMaster.lore': "The Clergy's highest ritualist. The Master of Ceremonies feeds the source with what the city forgets — every seal he draws chains it tighter.",
-    'boss.shadowCouncillor.name': 'Shadow Councillor',
-    'boss.shadowCouncillor.lore': 'A member of the Chain Council himself steps out of the shadows — and with him the source of the fog he guards.',
+    'boss.nachhallEsse.name': 'The Echo of the Forge',
+    'boss.nachhallEsse.lore': 'Deep down, where the forge burned, the echo is loudest. What it burned finds no rest and looks for a shape.',
     'boss.elaraBesessen.name': 'Elara, possessed',
-    'boss.elaraBesessen.lore': 'The forge has taken her. What was once Elara reaches for everything you remember.'
+    'boss.elaraBesessen.lore': 'The forge has taken her. What was once Elara reaches for everything you remember.',
+    'boss.nachhall.name': 'The Echo',
+    'boss.nachhall.lore': 'No one. All the burned memories, so dense they have fused into a single being. The creatures are its fragments; it is the whole.'
   });
 }
 
@@ -3408,9 +3423,14 @@ function _elaraWartet() {
 const BOSS_ALIASE = {
   chainmaster: 'chainMaster', kettenmeister: 'chainMaster', ketten: 'chainMaster', '1': 'chainMaster',
   ceremonymaster: 'ceremonyMaster', zeremonienmeister: 'ceremonyMaster', zeremonie: 'ceremonyMaster', '2': 'ceremonyMaster',
-  shadowcouncillor: 'shadowCouncillor', schattenrat: 'shadowCouncillor', schatten: 'shadowCouncillor', '3': 'shadowCouncillor',
+  // v6.1 Stufe 2: Der Schattenrat ist ersetzt; alte Adressen fuehren zum
+  // Boss, der jetzt auf seinem Platz steht.
+  nachhallesse: 'nachhallEsse', esse: 'nachhallEsse', '3': 'nachhallEsse',
+  shadowcouncillor: 'nachhallEsse', schattenrat: 'nachhallEsse', schatten: 'nachhallEsse',
   // #157
-  elara: 'elaraBesessen', elarabesessen: 'elaraBesessen', besessen: 'elaraBesessen', quelle: 'elaraBesessen'
+  elara: 'elaraBesessen', elarabesessen: 'elaraBesessen', besessen: 'elaraBesessen', quelle: 'elaraBesessen',
+  // v6.1 Stufe 2
+  nachhall: 'nachhall', echo: 'nachhall', hall: 'nachhall', '25': 'nachhall'
 };
 
 /**
@@ -3445,16 +3465,21 @@ if (typeof window !== 'undefined') window.debugForcedBoss = debugForcedBoss;
 function getBossDefinition(wave) {
   var _erzwungen = debugForcedBoss();
   if (_erzwungen) return { def: _erzwungen, cycle: 0 };
-  const bossOrder = ['chainMaster', 'ceremonyMaster', 'shadowCouncillor'];
+  // v6.1 Stufe 2: Auf Tiefe 25 steht der Nachhall, solange sein Auftrag
+  // laeuft (wave.js setzt ihn dort ausserhalb des Zehnerrhythmus).
+  if (wave === 25 && typeof window !== 'undefined' && window.Nachhall && window.Nachhall.wartet()) {
+    return { def: BOSS_DEFINITIONS.nachhall, cycle: 0 };
+  }
+  const bossOrder = ['chainMaster', 'ceremonyMaster', 'nachhallEsse'];
   const bossIndex = (Math.floor(wave / 10) - 1) % 3;
   const cycle = Math.max(0, Math.floor((Math.floor(wave / 10) - 1) / 3));
   // Unter Welle 10 ist bossIndex negativ und der Zugriff undefined — bisher
   // unerreichbar (Tier-Gate), aber ein Absturz, sobald ein Aufrufer frueher
   // fragt. Erster Boss als Rueckfall.
   let id = bossOrder[bossIndex] || bossOrder[0];
-  // #157: Waehrend der letzten Quest steht auf dem Platz des Schattenrats
-  // die besessene Elara.
-  if (id === 'shadowCouncillor' && _elaraWartet()) id = 'elaraBesessen';
+  // #157: Waehrend der letzten Quest steht auf diesem Platz die besessene
+  // Elara, sonst der Nachhall der Esse.
+  if (id === 'nachhallEsse' && _elaraWartet()) id = 'elaraBesessen';
   return { def: BOSS_DEFINITIONS[id], cycle: cycle };
 }
 
@@ -3874,6 +3899,9 @@ function makeBoss(boss, def, cycle) {
   boss._lastAttack = null;
 
   if (def.id === 'elaraBesessen') _elaraBesessenAufbauen.call(this, boss);
+  if ((def.id === 'nachhall' || def.id === 'nachhallEsse') && typeof window !== 'undefined' && window.Nachhall) {
+    window.Nachhall.aufbauen.call(this, boss, def);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -4116,8 +4144,8 @@ function drawBossBar(boss) {
   let barColor = 0xff2d2d;
   if (boss.bossType === 'chainMaster') barColor = 0xaaaaaa;
   else if (boss.bossType === 'ceremonyMaster') barColor = 0xaa00aa;
-  else if (boss.bossType === 'shadowCouncillor') barColor = 0xff0000;
   else if (boss.bossType === 'elaraBesessen') barColor = 0xaa66ff;
+  else if (boss.bossType === 'nachhall' || boss.bossType === 'nachhallEsse') barColor = 0xc8b8e8;
   g.fillStyle(barColor, 1);
   g.fillRect(x, y, barW * pct, barH);
 }
@@ -4535,6 +4563,10 @@ function updateBossPhase(boss, scene, time) {
   boss.attackCooldown = Math.round((boss.baseCooldown || 3500) * (BOSS_PHASE_CADENCE[phase] || 1));
   boss.speed = Math.round((boss._baseMoveSpeed || boss.speed || 60) * (BOSS_PHASE_SPEED[phase] || 1));
   boss.nextPatternAt = (time || 0) + 500; // nächste Attacke fast sofort
+  // v6.1 Stufe 2: Der Nachhall wechselt mit jeder Phase die Gestalt.
+  if (boss._nachhall && typeof window !== 'undefined' && window.Nachhall) {
+    try { window.Nachhall.gestaltWechsel(scene, boss, phase); } catch (e) { /* Gestalt ist Zierde */ }
+  }
   bossPhaseTransitionFx(boss, scene, phase);
 }
 
@@ -4550,7 +4582,9 @@ function bossPhaseTransitionFx(boss, scene, phase) {
       boss.setTint(0xff3333);
       scene.time.delayedCall(400, () => { if (boss?.active && typeof boss.clearTint === 'function') boss.clearTint(); });
     }
-    const label = phase >= 3 ? 'RASEREI!' : 'Phase ' + phase;
+    let label = phase >= 3 ? 'RASEREI!' : 'Phase ' + phase;
+    // Der Nachhall nennt die neue Gestalt statt der Zahl.
+    if (boss._nachhall && window.Nachhall) label = window.Nachhall.gestaltName(boss);
     const cx = scene.scale.width / 2;
     const cy = scene.scale.height * 0.2;
     const t = scene.add.text(cx, cy, label, {
@@ -4571,8 +4605,9 @@ const BOSS_SIGNATURE = {
   // #144 (Story-Bibel): Jede Signatur traegt das Thema ihres Aktes.
   chainMaster: 'fesselung',       // der Rat greift und haelt fest
   ceremonyMaster: 'ausloeschung', // das Vergessen selbst, Vorspiel auf Elara
-  shadowCouncillor: 'cloneSlam',  // Fake-out-Slams (nur einer echt)
+  nachhallEsse: 'fluesterSturm',  // v6.1 Stufe 2: ersetzt den Schattenrat (cloneSlam)
   elaraBesessen: 'erinnerungsGriff', // #157: Faehigkeiten kurz weg
+  nachhall: 'fluesterSturm',      // v6.1 Stufe 2: alle Stimmen zugleich
 };
 
 // Gewichtet-zufällige Attackenwahl ohne Sofort-Wiederholung. Ab Phase 2 wandert

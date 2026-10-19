@@ -19,7 +19,8 @@ const { launchDungeon } = require('../tools/headless/index.js');
 const { kontraste, alleLesbar } = require('./kontrastMessung.js');
 
 const SC = "window.game.scene.getScene('GameScene')";
-const BOSSE = ['chainMaster', 'ceremonyMaster', 'shadowCouncillor', 'elaraBesessen'];
+// Stufe 2: der Nachhall kommt dazu, der Nachhall der Esse ersetzt den Schattenrat.
+const BOSSE = ['chainMaster', 'ceremonyMaster', 'nachhall', 'nachhallEsse', 'elaraBesessen'];
 const schritte = (ms) => Math.ceil(ms / 16.666);
 const ZS = `${SC}.__bossZwischenszene`;
 
@@ -120,7 +121,7 @@ describe('Haeufigkeit: erster Kampf Szene, danach Banner', () => {
   });
 
   test('ein anderer Boss bekommt trotzdem seine erste Szene', () => {
-    boss(H, 'shadowCouncillor', true);
+    boss(H, 'nachhallEsse', true);
     assert.strictEqual(lage(H).phase, 'auftritt', 'Szene fuer neuen Boss fehlt');
     taste(H, 'Escape');
     bisEnde(H);
@@ -218,7 +219,7 @@ describe('Zwischenszene je Boss', () => {
   });
 
   test('der Knopf Ueberspringen beendet, ohne dass der Klick zusaetzlich blaettert', () => {
-    boss(H, 'shadowCouncillor');
+    boss(H, 'nachhallEsse');
     bisRede(H);
     H.run('window.__gestoppt = false');
     knopfDruck(H, 'bossintroUeberspringen');
@@ -427,7 +428,7 @@ describe('Debug-Weg: Boss per ?boss= beim Betreten des Raums', () => {
 
   test('ein zu langer Name wird in die Plakette eingepasst', () => {
     H.run(`(function () { var b = enemies.getChildren().filter(function (x) { return x && x.isBoss; })[0];
-      window.BossZwischenszene.spiele(${SC}, b, { id: 'shadowCouncillor',
+      window.BossZwischenszene.spiele(${SC}, b, { id: 'nachhallEsse',
         name: 'Ein ausserordentlich langer Name fuer einen Boss aus dem Kettenrat' }); })()`);
     bisRede(H);
     const r = JSON.parse(H.run(`(function () { var sc = ${SC};

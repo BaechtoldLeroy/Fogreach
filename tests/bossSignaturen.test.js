@@ -50,12 +50,14 @@ const sig = (name) => H.run(`(function () {
 test('Die Signaturen sind zugeordnet', () => {
   const r = H.run(`({ k: BOSS_SIGNATURE.chainMaster, z: BOSS_SIGNATURE.ceremonyMaster,
     f: typeof BOSS_ATTACK_MAP.fesselung, a: typeof BOSS_ATTACK_MAP.ausloeschung,
-    rat: BOSS_DEFINITIONS.shadowCouncillor.attacks.slice() })`);
+    esse: BOSS_SIGNATURE.nachhallEsse, rat: typeof BOSS_DEFINITIONS.shadowCouncillor })`);
   assert.strictEqual(r.k, 'fesselung');
   assert.strictEqual(r.z, 'ausloeschung');
   assert.strictEqual(r.f, 'function');
   assert.strictEqual(r.a, 'function');
-  assert.ok(r.rat.includes('fesselung') && r.rat.includes('ausloeschung'), 'der Schattenrat vereint nicht beide');
+  // Stufe 2: der Schattenrat ist ersetzt, auf seinem Platz fluestert der Nachhall der Esse.
+  assert.strictEqual(r.esse, 'fluesterSturm');
+  assert.strictEqual(r.rat, 'undefined', 'den Schattenrat gibt es noch');
 });
 
 // --- Fesselung ---------------------------------------------------------------

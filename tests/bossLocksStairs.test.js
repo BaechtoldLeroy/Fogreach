@@ -42,7 +42,8 @@ function block(quelle, start) {
 const WAVE = lies('wave.js');
 // Der Anker traegt seit dem Debug-Einstieg ?boss=<name> zusaetzlich _debugBoss.
 // Am ZWEIG selbst aendert das nichts — er sperrt weiter, egal wer ihn betritt.
-const VOLLBOSS = block(WAVE, 'if (_debugBoss || (_climaxArmed && bossesUnlocked && _isTierGate)) {');
+// Stufe 2: der Nachhall auf Tiefe 25 betritt denselben Zweig (_nachhallTor).
+const VOLLBOSS = block(WAVE, 'if (_debugBoss || (_climaxArmed && bossesUnlocked && (_isTierGate || _nachhallTor))) {');
 
 test('#109: der Voll-Boss-Zweig fuehrt den Boss als Klimax-Gegner', () => {
   assert.match(VOLLBOSS, /window\.__climaxEnemy\s*=/,

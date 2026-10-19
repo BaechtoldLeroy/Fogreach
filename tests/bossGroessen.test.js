@@ -1,4 +1,5 @@
-// tests/bossGroessen.test.js — der Schattenrat ist der groesste Boss der Leiter (#176).
+// tests/bossGroessen.test.js — der Boss auf Tiefe 30 ist der groesste der Leiter (#176).
+// Seit Stufe 2 steht dort (ausser waehrend der Quelle) der Nachhall der Esse.
 //
 // Vorher war der finale Boss (Tiefe 30) mit 87 px kleiner als seine beiden
 // Vorgaenger (127 px) und kaum groesser als ein Brute: seine Skala war auf
@@ -25,11 +26,11 @@ function figurHoehe(tiefe) {
   })()`);
 }
 
-test('der Schattenrat ueberragt seine Vorgaenger, bleibt aber unter Elara', () => {
+test('der Nachhall der Esse ueberragt seine Vorgaenger, bleibt aber unter Elara', () => {
   const kette = figurHoehe(10), zeremonie = figurHoehe(20), rat = figurHoehe(30);
   const elara = H.run('Math.round(96 * BOSS_DEFINITIONS.elaraBesessen.scale)');
   assert.ok(rat.h > kette.h && rat.h > zeremonie.h,
-    'Schattenrat ' + rat.h + ' px, Vorgaenger ' + kette.h + ' / ' + zeremonie.h + ' px');
+    'Tiefe 30: ' + rat.h + ' px, Vorgaenger ' + kette.h + ' / ' + zeremonie.h + ' px');
   assert.ok(rat.h >= 160 && rat.h < elara,
-    'Schattenrat ' + rat.h + ' px — gewollt rund 173, unter Elara (' + elara + ')');
+    'Tiefe 30: ' + rat.h + ' px — gewollt rund 173, unter Elara (' + elara + ')');
 });

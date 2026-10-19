@@ -2119,7 +2119,7 @@ function handleEnemyHit(scene, enemy, options = {}) {
         // Boss-Einfärbung wie die HP-Leiste (drawBossBar).
         const bossColor = enemy.bossType === 'chainMaster' ? 0xcccccc
           : enemy.bossType === 'ceremonyMaster' ? 0xaa33ff
-          : enemy.bossType === 'shadowCouncillor' ? 0xff3322
+          : (enemy.bossType === 'nachhall' || enemy.bossType === 'nachhallEsse') ? 0xc8b8e8
           : enemy.bossType === 'elaraBesessen' ? 0xaa66ff
           : 0xff8844;
         window.particleFactory.bossDeath(enemy.x, enemy.y, bossColor);
@@ -2198,9 +2198,11 @@ function handleEnemyHit(scene, enemy, options = {}) {
         var bossMapping = {
           'chainMaster': 'kettenmeister',
           'ceremonyMaster': 'zeremonienmeister',
-          'shadowCouncillor': 'schattenrat',
           // #157: Die besessene Elara erfuellt denselben Auftrag — die Quelle.
-          'elaraBesessen': 'schattenrat'
+          'elaraBesessen': 'schattenrat',
+          // v6.1 Stufe 2: Was der Rauch behaelt.
+          'nachhall': 'nachhall',
+          'nachhallEsse': 'nachhall'
         };
         var questBossId = bossMapping[enemy.bossType] || enemy.bossType;
         if (typeof window.questSystem.onBossKilled === 'function') {
@@ -2209,6 +2211,11 @@ function handleEnemyHit(scene, enemy, options = {}) {
         // Ability unlock: notify AbilitySystem with raw bossType id
         if (window.AbilitySystem && typeof window.AbilitySystem.onBossKilled === 'function') {
           window.AbilitySystem.onBossKilled(enemy.bossType);
+        }
+        // v6.1 Stufe 2: Die Stimmen loesen sich, ein paar Namen bleiben.
+        if ((enemy.bossType === 'nachhall' || enemy.bossType === 'nachhallEsse') && window.Nachhall
+            && typeof window.Nachhall.verklingen === 'function') {
+          try { window.Nachhall.verklingen(scene, enemy); } catch (e) { /* defensiv */ }
         }
         // #158: Die Quelle zerbricht — Elara liegt am Boden, die letzte Wahl.
         if (enemy.bossType === 'elaraBesessen' && window.Finale

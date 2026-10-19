@@ -80,11 +80,15 @@ function startNextWave(noIncrement) {
   // 10-band — the player fought the Kettenmeister ~10 runs in a row (depth 10–19).
   // Tier-gating makes each named boss a once-per-tier milestone:
   //   depth 10 -> chainMaster (Kettenmeister), 20 -> ceremonyMaster,
-  //   30 -> shadowCouncillor; the in-between depths (11–19, 21–29, …) get a
+  //   30 -> nachhallEsse (Elara, solange die Quelle laeuft); the in-between depths (11–19, 21–29, …) get a
   // mini-boss climax instead. getBossDefinition(depth) still bands the type.
   const _isFinalRoom = !!window.__isFinalDungeonRoom;
   const _climaxArmed = _isFinalRoom && !window.__runClimaxSpawned;
   const _isTierGate = (currentWave >= 10) && (currentWave % 10 === 0);
+  // v6.1 Stufe 2: Der Nachhall steht auf Tiefe 25, ausserhalb des
+  // Zehnerrhythmus, aber nur solange 'Was der Rauch behaelt' laeuft. Sonst
+  // bleibt Tiefe 25 ein Lauf mit Mini-Boss wie jede Zwischentiefe.
+  const _nachhallTor = currentWave === 25 && !!(window.Nachhall && window.Nachhall.wartet());
 
   // Debug (?boss=<name>): den Boss SOFORT setzen, statt Tiefe, Finalraum und
   // Akt-Freischaltung zusammenkommen zu lassen. Nur einmal je Lauf — sonst
@@ -96,7 +100,7 @@ function startNextWave(noIncrement) {
   } catch (e) { _debugBoss = false; }
 
   // Full boss: final room, on a tier gate, bosses narratively unlocked (Akt 2+).
-  if (_debugBoss || (_climaxArmed && bossesUnlocked && _isTierGate)) {
+  if (_debugBoss || (_climaxArmed && bossesUnlocked && (_isTierGate || _nachhallTor))) {
     window.__runClimaxSpawned = true;
     bossActive = true;
     spawnedEnemiesInWave = 0;    // no regular spawns this wave

@@ -40,8 +40,11 @@
   var BOSSE = {
     chainMaster: { siegel: 'ketten', vfx: 'ketten', stoss: true, seiten: 2 },
     ceremonyMaster: { siegel: 'kerze', vfx: 'kerzen', seiten: 2 },
-    shadowCouncillor: { siegel: 'maske', vfx: 'schatten', seiten: 2 },
-    elaraBesessen: { siegel: 'ring', vfx: 'nebel', seiten: 2 }
+    elaraBesessen: { siegel: 'ring', vfx: 'nebel', seiten: 2 },
+    // v6.1 Stufe 2
+    nachhall: { siegel: 'stimmen', vfx: 'nebel', seiten: 2 },
+    // ersetzt den Schattenrat auf Tiefe 30, wenn Elara dort nicht wartet
+    nachhallEsse: { siegel: 'stimmen', vfx: 'schatten', seiten: 2 }
   };
 
   var DE = {
@@ -54,12 +57,15 @@
     'bossintro.ceremonyMaster.beiname': 'Oberster Ritualist des Klerus',
     'bossintro.ceremonyMaster.1': 'Jede Kerze hier brennt mit einem Namen, den die Stadt vergessen hat.',
     'bossintro.ceremonyMaster.2': 'Deiner wird ein schönes Licht geben.',
-    'bossintro.shadowCouncillor.beiname': 'Der innere Kreis des Kettenrats',
-    'bossintro.shadowCouncillor.1': 'Du hast für uns gearbeitet, Archivschmied. Auf beiden Seiten.',
-    'bossintro.shadowCouncillor.2': 'Wer bestimmt, woran sich die Stadt erinnert, beherrscht sie. Heute vergisst sie Dich.',
     'bossintro.elaraBesessen.beiname': 'Geschmiedet von der Esse',
     'bossintro.elaraBesessen.1': 'Die Esse flüstert Deinen Namen. Gleich hat sie ihn vergessen.',
-    'bossintro.elaraBesessen.2': 'Bleib. Lass sie nehmen, woran Du Dich erinnerst. Es tut nicht weh.'
+    'bossintro.elaraBesessen.2': 'Bleib. Lass sie nehmen, woran Du Dich erinnerst. Es tut nicht weh.',
+    'bossintro.nachhall.beiname': 'Tausend Stimmen, die niemandem gehören',
+    'bossintro.nachhall.1': 'Wir waren Namen. Wir waren Tage, Gesichter, ein Lied am Brunnen. Jetzt sind wir Rauch.',
+    'bossintro.nachhall.2': 'Bleib bei uns. Hör zu. Eine von uns klingt wie Du.',
+    'bossintro.nachhallEsse.beiname': 'Was die Esse verbrannt hat',
+    'bossintro.nachhallEsse.1': 'Hier unten war es warm. Hier wurden wir zu Rauch.',
+    'bossintro.nachhallEsse.2': 'Oben liest man unsere Namen. Hier unten ruft sie niemand. Bleib.'
   };
   var EN = {
     'bossintro.weiter': 'Continue',
@@ -71,12 +77,15 @@
     'bossintro.ceremonyMaster.beiname': 'High Ritualist of the Clergy',
     'bossintro.ceremonyMaster.1': 'Every candle here burns with a name the city has forgotten.',
     'bossintro.ceremonyMaster.2': 'Yours will make a lovely light.',
-    'bossintro.shadowCouncillor.beiname': 'Inner circle of the Chain Council',
-    'bossintro.shadowCouncillor.1': 'You worked for us, Archivesmith. On both sides.',
-    'bossintro.shadowCouncillor.2': 'Whoever decides what the city remembers rules it. Today it forgets you.',
     'bossintro.elaraBesessen.beiname': 'Shaped by the Forge',
     'bossintro.elaraBesessen.1': 'The forge whispers your name. Soon it will have forgotten it.',
-    'bossintro.elaraBesessen.2': 'Stay. Let it take what you remember. It does not hurt.'
+    'bossintro.elaraBesessen.2': 'Stay. Let it take what you remember. It does not hurt.',
+    'bossintro.nachhall.beiname': 'A thousand voices that belong to no one',
+    'bossintro.nachhall.1': 'We were names. We were days, faces, a song at the well. Now we are smoke.',
+    'bossintro.nachhall.2': 'Stay with us. Listen. One of us sounds like you.',
+    'bossintro.nachhallEsse.beiname': 'What the forge burned',
+    'bossintro.nachhallEsse.1': 'It was warm down here. This is where we turned to smoke.',
+    'bossintro.nachhallEsse.2': 'Up there they read our names. Down here nobody calls them. Stay.'
   };
   if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.register === 'function') {
     window.i18n.register('de', DE);
@@ -133,7 +142,7 @@
   /** Im preload(): nur die fehlenden. */
   function vorladen(scene) {
     if (!scene || !scene.load || !scene.textures) return;
-    ['ketten', 'kerze', 'maske', 'ring'].forEach(function (n) {
+    ['ketten', 'kerze', 'maske', 'ring', 'stimmen'].forEach(function (n) {
       var k = siegelKey(n);
       if (!scene.textures.exists(k)) scene.load.image(k, ORDNER + k + '.png?v=' + V);
     });

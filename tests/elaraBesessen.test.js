@@ -6,7 +6,8 @@
 //   * ihre eigene Klinge trifft sie haerter,
 //   * wer das Zeichen erkannt hat, trifft sie angeschlagen an,
 //   * Mara kommt zu Hilfe, wenn das Finale sie an Deiner Seite sieht.
-// Ist die Geschichte zu Ende (story_ending), kehrt der Schattenrat zurueck.
+// Ist die Geschichte zu Ende (story_ending), steht dort der Nachhall der Esse
+// (v6.1 Stufe 2, er ersetzt den Schattenrat).
 
 const { test, before, after, beforeEach } = require('node:test');
 const assert = require('node:assert');
@@ -51,25 +52,25 @@ function flaggen(flags, mitQuest) {
   })()`);
 }
 
-test('Auf Tiefe 30 wartet Elara, nicht der Schattenrat', () => {
+test('Auf Tiefe 30 wartet Elara, solange die Quelle laeuft', () => {
   const b = L.spawnBoss();
   assert.ok(!b.error, b.error);
   assert.strictEqual(b.type, 'elaraBesessen');
 });
 
-test('Nach dem Ende der Geschichte kehrt der Schattenrat zurueck', () => {
+test('Nach dem Ende der Geschichte steht dort der Nachhall der Esse', () => {
   flaggen({ story_ending: 'reckoning' });
   const b = L.spawnBoss();
   assert.ok(!b.error, b.error);
-  assert.strictEqual(b.type, 'shadowCouncillor');
+  assert.strictEqual(b.type, 'nachhallEsse');
 });
 
-test('Vor der letzten Quest steht dort der Schattenrat', () => {
+test('Vor der letzten Quest steht dort der Nachhall der Esse', () => {
   // Sonst verriete schon der Bossname in der Tiefenwahl des Hubs, was kommt.
   flaggen({}, false);
   const b = L.spawnBoss();
   assert.ok(!b.error, b.error);
-  assert.strictEqual(b.type, 'shadowCouncillor', 'Elara wartet schon, bevor die Geschichte dort ist');
+  assert.strictEqual(b.type, 'nachhallEsse', 'Elara wartet schon, bevor die Geschichte dort ist');
 });
 
 test('Die anderen Bosse bleiben, wer sie sind', () => {

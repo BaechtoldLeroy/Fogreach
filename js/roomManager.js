@@ -364,11 +364,15 @@ function initDungeonRun() {
   var BOSS_ARENAS = {
     chainMaster: 'PrisonDepths',
     ceremonyMaster: 'RitualVault',
-    shadowCouncillor: 'CouncilChamber',
+    // v6.1 Stufe 2: der Nachhall der Esse auf dem frueheren Platz des Schattenrats.
+    nachhallEsse: 'CouncilChamber',
     // #157/#161: Die Quelle, eine eigene Finalarena.
-    elaraBesessen: 'DieQuelle'
+    elaraBesessen: 'DieQuelle',
+    // v6.1 Stufe 2: der Nachhall in der vergessenen Gruft.
+    nachhall: 'ForgottenCrypt'
   };
-  if (depth >= 10 && depth % 10 === 0 && typeof getBossDefinition === 'function') {
+  var _nachhallTiefe = depth === 25 && !!(window.Nachhall && window.Nachhall.wartet());
+  if (((depth >= 10 && depth % 10 === 0) || _nachhallTiefe) && typeof getBossDefinition === 'function') {
     try {
       var _bd = getBossDefinition(depth);
       var _arena = _bd && _bd.def && BOSS_ARENAS[_bd.def.id];
