@@ -455,32 +455,88 @@
   }
 
   var HARREN_WEG_MS = 1500, STOSS_MS = 1000, HAMMER_MS = 800;
-  // Er kommt von ihrer Seite der Esse, nicht durch Dich hindurch: Der Spieler
-  // steht links an der Esse (dort hat er angesetzt), Elara rechts davon.
+  // Wo Harren geht und liegt: begehbarer Boden (Mitte und Ecken des
+  // Koerpers), weg von Waenden und Hindernissen, mit Abstand zu jeder Treppe.
+  // Vorher lag er je nach Raum auf der Treppe (gemeldet nach b461).
+  var TREPPE_ABSTAND = 40;   // px Luft um das Treppenbild
+  var HARREN_RAND = 22;      // halbe Koerperbreite fuer die Bodenpruefung
+  function _treppenFrei(scene, x, y, rand) {
+    var grp = scene && scene.stairsGroup;
+    if (!grp || typeof grp.getChildren !== 'function') return true;
+    var r = (rand || 0) + TREPPE_ABSTAND;
+    return grp.getChildren().every(function (st) {
+      if (!st || !st.active) return true;
+      var hb = st.getBounds ? st.getBounds() : { left: st.x - 32, right: st.x + 32, top: st.y - 32, bottom: st.y + 32 };
+      return x < hb.left - r || x > hb.right + r || y < hb.top - r || y > hb.bottom + r;
+    });
+  }
+  function _harrenFleckOk(scene, x, y) {
+    var frei = function (px, py) { return !scene.isPointAccessible || scene.isPointAccessible(px, py); };
+    var r = HARREN_RAND;
+    if (!frei(x, y) || !frei(x - r, y - r) || !frei(x + r, y - r) || !frei(x - r, y + r) || !frei(x + r, y + r)) return false;
+    return _treppenFrei(scene, x, y, r);
+  }
+  /** Der erste gute Fleck aus den Kandidaten, sonst einer nahe der Esse. */
+  function _harrenFleck(scene, kandidaten, esse) {
+    for (var i = 0; i < kandidaten.length; i++) {
+      if (_harrenFleckOk(scene, kandidaten[i][0], kandidaten[i][1])) return { x: kandidaten[i][0], y: kandidaten[i][1] };
+    }
+    for (var r = 60; r <= 300; r += 20) {
+      for (var w = 0; w < 16; w++) {
+        var a = w * Math.PI / 8;
+        var x = esse.x + Math.cos(a) * r, y = esse.y + Math.sin(a) * r;
+        if (_harrenFleckOk(scene, x, y)) return { x: x, y: y };
+      }
+    }
+    return { x: esse.x, y: esse.y + 60 };
+  }
+  /** Wohin Harren laeuft, woher er kommt und wo er nach dem Stoss liegt (auch fuer Tests). */
+  function harrenWeg(scene, ex, ey, esse) {
+    // Von der Seite der Elara, die vom Spieler abgewandt ist: nicht durch Dich hindurch.
+    var p = _spieler();
+    var s = (p && p.x > ex) ? -1 : 1;
+    var ziel = _harrenFleck(scene, [[ex + s * 48, ey + 4], [ex + s * 48, ey + 40], [ex, ey + 50], [ex, ey - 50], [ex - s * 48, ey + 30]], esse);
+    var start = _harrenFleck(scene, [[ziel.x + s * 260, ziel.y + 50], [ziel.x + s * 200, ziel.y], [ziel.x, ziel.y + 220],
+      [ziel.x, ziel.y - 220], [ziel.x + s * 140, ziel.y + 120]], esse);
+    var richtung = ziel.x >= ex ? 1 : -1;
+    var liegt = _harrenFleck(scene, [[ziel.x + richtung * 70, ziel.y + 26], [ziel.x + richtung * 50, ziel.y + 40],
+      [ziel.x, ziel.y + 50], [ziel.x + richtung * 40, ziel.y], [ziel.x, ziel.y + 20]], esse);
+    return { ziel: ziel, start: start, liegt: liegt, richtung: richtung };
+  }
   function _harrenKommt(scene, b, fertig) {
     var e = b.esse;
     var ex = b.elara ? b.elara.x : e.x + 74, ey = b.elara ? b.elara.y : e.y + 18;
-    var zielX = ex + 48, zielY = ey + 4;
-    var startX = ex + 280, startY = ey + 60;
-    b.harren = _figur(scene, 'harren_right0', startX, startY, b.mh * 0.95);
+    var weg = b.harrenWeg = harrenWeg(scene, ex, ey, e);
+    b.harren = _figur(scene, 'harren_right0', weg.start.x, weg.start.y, b.mh * 0.95);
     if (b.harren) {
-      b.harren.setTint(0xa8a8b0).setAlpha(0.92).setFlipX(true).setName('finaleHarren');
-      scene.tweens.add({ targets: b.harren, x: zielX, y: zielY, duration: HARREN_WEG_MS, ease: 'Sine.easeInOut' });
-      _zeile(scene, zielX, zielY - b.mh * 0.8, 'Lene.', '#d8d8e0');
+      b.harren.setTint(0xa8a8b0).setAlpha(0.92).setFlipX(weg.start.x > weg.ziel.x).setName('finaleHarren');
+      scene.tweens.add({ targets: b.harren, x: weg.ziel.x, y: weg.ziel.y, duration: HARREN_WEG_MS, ease: 'Sine.easeInOut' });
+      _zeile(scene, weg.ziel.x, weg.ziel.y - b.mh * 0.8, 'Lene.', '#d8d8e0');
     }
     // Sie dreht sich zu ihm.
-    if (b.elara) scene.time.delayedCall(HARREN_WEG_MS * 0.6, function () { if (b.elara && b.elara.scene) b.elara.setFlipX(false); });
-    scene.time.delayedCall(HARREN_WEG_MS + 150, fertig);
+    if (b.elara) scene.time.delayedCall(HARREN_WEG_MS * 0.6, function () { if (b.elara && b.elara.scene) b.elara.setFlipX(weg.ziel.x < b.elara.x); });
+    scene.time.delayedCall(HARREN_WEG_MS + 150, function () {
+      // Tweens laufen headless langsamer als die Uhr: zum Stoss steht er sicher am Ziel.
+      if (b.harren && b.harren.scene) { scene.tweens.killTweensOf(b.harren); b.harren.setPosition(weg.ziel.x, weg.ziel.y); }
+      fertig();
+    });
   }
   function _derStoss(scene, b, fertig) {
-    if (b.elara && b.harren) {
+    var weg = b.harrenWeg;
+    if (b.elara && b.harren && weg) {
       var ex = b.elara.x;
-      scene.tweens.add({ targets: b.elara, x: ex + 22, duration: 160, yoyo: true, ease: 'Quad.easeOut' });
-      scene.tweens.add({ targets: b.harren, x: b.harren.x + 70, y: b.harren.y + 26, angle: 90, alpha: 0.75,
+      scene.tweens.add({ targets: b.elara, x: ex + 22 * weg.richtung, duration: 160, yoyo: true, ease: 'Quad.easeOut' });
+      scene.tweens.add({ targets: b.harren, x: weg.liegt.x, y: weg.liegt.y, angle: 90 * weg.richtung, alpha: 0.75,
         delay: 140, duration: 520, ease: 'Quad.easeOut' });
       if (scene.cameras && scene.cameras.main) { try { scene.cameras.main.shake(180, 0.006); } catch (e) {} }
     }
-    scene.time.delayedCall(STOSS_MS, fertig);
+    scene.time.delayedCall(STOSS_MS, function () {
+      if (b.harren && b.harren.scene && weg) {
+        scene.tweens.killTweensOf(b.harren);
+        b.harren.setPosition(weg.liegt.x, weg.liegt.y).setAngle(90 * weg.richtung).setAlpha(0.75);
+      }
+      fertig();
+    });
   }
   function _hammerGenommen(scene, b, fertig) {
     var p = _spieler();
@@ -852,5 +908,6 @@
   }
 
   window.Finale = { konvoi: konvoi, vorKampf: vorKampf, nachKampf: nachKampf, laeuftNachKampf: laeuftNachKampf,
-    vorKampfSeiten: vorKampfSeiten, nachKampfSeiten: nachKampfSeiten, DEBUG_SCHRITTE: DEBUG_SCHRITTE };
+    vorKampfSeiten: vorKampfSeiten, nachKampfSeiten: nachKampfSeiten, DEBUG_SCHRITTE: DEBUG_SCHRITTE,
+    harrenWeg: harrenWeg, treppenFrei: _treppenFrei };
 })();
