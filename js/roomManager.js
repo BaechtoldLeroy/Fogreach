@@ -867,6 +867,35 @@ function treppeHaeltTuerFrei(cx, cy, tueren, freiraum) {
 }
 if (typeof window !== 'undefined') window.treppeHaeltTuerFrei = treppeHaeltTuerFrei;   // rein/testbar
 
+/**
+ * Steht eine Truhe ausserhalb des Durchgangs aller Tore?
+ *
+ * Der Durchgang ist der Streifen quer durch die Wand, so breit wie das Tor
+ * und zu beiden Seiten TRUHE_DURCHGANG tief. Ohne diese Regel stand eine
+ * Truhe gelegentlich direkt hinter einem Tor, einmal sogar im Rahmen: wer
+ * es oeffnete, lief gegen die Truhe (tests/tuerenNeu flackerte daran).
+ * Rein und damit pruefbar wie treppeHaeltTuerFrei.
+ *
+ * @param {number} x Mitte der Truhe
+ * @param {number} y
+ * @param {Array<{x:number,y:number,waag:boolean,laenge:number}>} tore
+ * @returns {boolean} true, wenn der Platz keinen Durchgang zustellt
+ */
+const TRUHE_DURCHGANG = 112;
+function truheHaeltTuerFrei(x, y, tore) {
+  if (!tore || !tore.length) return true;
+  for (let i = 0; i < tore.length; i++) {
+    const t = tore[i];
+    if (!t) continue;
+    const laengs = t.waag ? Math.abs(x - t.x) : Math.abs(y - t.y);
+    const quer = t.waag ? Math.abs(y - t.y) : Math.abs(x - t.x);
+    // 32 px Rand an den Pfosten: die Truhe ist rund 36 breit.
+    if (laengs < t.laenge / 2 + 32 && quer < TRUHE_DURCHGANG) return false;
+  }
+  return true;
+}
+if (typeof window !== 'undefined') window.truheHaeltTuerFrei = truheHaeltTuerFrei;   // rein/testbar
+
 // Zufällige Truhen-Platzierung pro Raum (ersetzt die fixen Template-Truhen).
 // Ziel: ~1 Truhe pro 2 durchschnittlich grosse Räume (Audit-Mittel ~861 Tiles).
 // Platziert NACH den Treppen, validiert gegen Treppen/Spieler-Spawn/Kamera/
@@ -899,6 +928,15 @@ function _spawnRandomRoomChests(scene, roomW, roomH, spawnX, spawnY) {
   const MIN_CAM = 200;    // nicht direkt vor der Startkamera
   const MIN_CHEST = 96;   // Truhen nicht stapeln
   const placed = [];
+  // Die Tore, die wirklich stehen. An der Szene, damit pruefbar ist, dass
+  // die Regel sie auch bekommt (wie __treppenTuerListe).
+  const TORE = (Array.isArray(scene._doors) ? scene._doors : [])
+    .filter((t) => t && t.active && typeof t.getData === 'function')
+    .map((t) => {
+      const waag = t.getData('orientation') !== 'vertical';
+      return { x: t.x, y: t.y, waag, laenge: waag ? t.displayWidth : t.displayHeight };
+    });
+  scene.__truhenTorListe = TORE;
 
   for (let n = 0; n < count; n++) {
     let pos = null;
@@ -914,6 +952,7 @@ function _spawnRandomRoomChests(scene, roomW, roomH, spawnX, spawnY) {
       if (D(x, y, camX, camY) < MIN_CAM) continue;
       if (stairs.some((s) => D(x, y, s.x, s.y) < MIN_STAIR)) continue;
       if (placed.some((p) => D(x, y, p.x, p.y) < MIN_CHEST)) continue;
+      if (!truheHaeltTuerFrei(x, y, TORE)) continue;
       pos = { x, y };
       break;
     }

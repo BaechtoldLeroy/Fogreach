@@ -21,17 +21,54 @@ async function bis(H, js, runden) {
   return !!H.run(js);
 }
 
-/** Einen Raum mit Toren beider Richtungen betreten; Gegner weg, Spieler unverwundbar. */
+/**
+ * Einen Raum mit Toren beider Richtungen betreten; Gegner weg, Spieler
+ * unverwundbar. Je Richtung wird ein Tor samt ANLAUFSPUR gewaehlt
+ * (window.__torTest_<richtung>): eine 44 px breite Spur quer durch das Tor,
+ * 110 px zu jeder Seite frei von festen Koerpern ausser dem Tor selbst.
+ *
+ * Der Raum ist zufaellig. Bis b459 lief der Test stur von der Tormitte los:
+ * stand dort ein Kohlebecken, begann der Spieler IN ihm, die Trennung schob
+ * ihn um 16 px in den Torriegel, und Arcade liess den eingebetteten Koerper
+ * durch das geschlossene Tor (Saat 25). Stand eine Truhe hinter dem Tor,
+ * kam er durch das offene nicht hindurch (Saat 5, 22). Das Zweite war ein
+ * echter Fehler des Spiels (roomManager truheHaeltTuerFrei), das Erste eine
+ * Annahme des Tests.
+ */
 function raumMitToren(H) {
   return H.run(`(function () {
     window._playerInvincible = true;
     var sc = ${GS};
+    function spur(o) {
+      var waag = o === 'horizontal';
+      var t = sc._doors.filter(function (d) { return d && d.active && d.getData('orientation') === o; });
+      if (!t.length) return null;
+      var mx = 0, my = 0; t.forEach(function (d) { mx += d.x; my += d.y; }); mx /= t.length; my /= t.length;
+      t.sort(function (a, b) { return Math.hypot(a.x - mx, a.y - my) - Math.hypot(b.x - mx, b.y - my); });
+      var fest = [];
+      (sc.physics.world.staticBodies.entries || []).forEach(function (b) { if (b && b.enable) fest.push(b); });
+      for (var i = 0; i < t.length; i++) {
+        var d = t[i], L = waag ? d.displayWidth : d.displayHeight;
+        // [E] reicht 100 px weit: vom Startpunkt (70 vor dem Tor) hoechstens 48 seitlich.
+        for (var off = 0; off <= Math.min(L / 2 - 26, 48); off += 8) {
+          for (var s = 1; s >= -1; s -= 2) {
+            var lx = waag ? d.x + s * off : d.x, ly = waag ? d.y : d.y + s * off;
+            var rx = waag ? lx - 22 : lx - 110, ry = waag ? ly - 110 : ly - 22;
+            var rw = waag ? 44 : 220, rh = waag ? 220 : 44;
+            var frei = fest.every(function (b) {
+              if (b === d.body) return true;
+              return b.right <= rx || b.x >= rx + rw || b.bottom <= ry || b.y >= ry + rh;
+            });
+            if (frei) return { tor: d, x: lx, y: ly };
+          }
+        }
+      }
+      return null;
+    }
     for (var r = 1; r <= 200; r++) {
       enterRoom(sc, r);
-      var t = (sc._doors || []).filter(function (d) { return d && d.active; });
-      var o = {};
-      t.forEach(function (d) { o[d.getData('orientation')] = 1; });
-      if (o.horizontal && o.vertical) return r;
+      var h = spur('horizontal'), v = h && spur('vertical');
+      if (h && v) { window.__torTest_horizontal = h; window.__torTest_vertical = v; return r; }
     }
     return -1;
   })()`);
@@ -42,16 +79,6 @@ function gegnerWeg(H) {
     (window.enemies && window.enemies.getChildren ? window.enemies.getChildren().slice() : [])
       .forEach(function (e) { try { e.destroy(); } catch (x) {} });
   })()`);
-}
-
-/** Erste Tuer einer Richtung, die nahe der Raummitte steht (am Rand fehlt Platz zum Anlaufen). */
-function tuerWahl(o) {
-  return `(function () {
-    var t = ${GS}._doors.filter(function (d) { return d.active && d.getData('orientation') === '${o}'; });
-    var mx = 0, my = 0; t.forEach(function (d) { mx += d.x; my += d.y; }); mx /= t.length; my /= t.length;
-    t.sort(function (a, b) { return Math.hypot(a.x - mx, a.y - my) - Math.hypot(b.x - mx, b.y - my); });
-    return t[0];
-  })()`;
 }
 
 describe('Kellertore', () => {
@@ -128,16 +155,16 @@ describe('Kellertore', () => {
 
   for (const o of ['horizontal', 'vertical']) {
     test(o + ': zu sperrt Weg und Sicht, offen nicht; Oeffnen endet im offenen Bild', async () => {
-      const d = H.run(`(function () { var t = ${tuerWahl(o)}; return { x: t.x, y: t.y }; })()`);
+      const d = H.run(`(function () { var w = window.__torTest_${o}; return { x: w.tor.x, y: w.tor.y, sx: w.x, sy: w.y }; })()`);
       const waag = o === 'horizontal';
-      // Anlauf von der Raumseite unterhalb/rechts, Richtung Tor.
-      const start = waag ? { x: d.x, y: d.y + 70 } : { x: d.x + 70, y: d.y };
+      // Anlauf von der Raumseite unterhalb/rechts, Richtung Tor, auf der freien Spur.
+      const start = waag ? { x: d.sx, y: d.y + 70 } : { x: d.x + 70, y: d.sy };
       const taste = waag ? { up: true } : { left: true };
       const setzen = () => H.run(`(function () {
         var p = window.player; p.setPosition(${start.x}, ${start.y}); if (p.body) p.body.reset(p.x, p.y);
         if (window.InputScheme && window.InputScheme.init) window.InputScheme.init(${GS});
       })()`);
-      const tor = `${tuerWahl(o)}`;
+      const tor = `window.__torTest_${o}.tor`;
       const laufen = async () => {
         setzen(); gegnerWeg(H);
         H.input.hold(taste);
