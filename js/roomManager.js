@@ -1752,8 +1752,10 @@ function enterRoom(scene, roomId) {
     var k = scene && scene._kammer;
     if (k && window.HiddenFinds && typeof window.HiddenFinds.verschuetteKammer === 'function') {
       var T = scene._minimapTileSize || 32;
-      window.HiddenFinds.verschuetteKammer(scene, k, 0, 0, T);
+      // Vor dem Aufruf leeren: wirft er, darf die Kammer nicht im naechsten
+      // Raum an fremder Stelle verschuettet werden.
       scene._kammer = null;   // nur einmal je Raum
+      window.HiddenFinds.verschuetteKammer(scene, k, 0, 0, T);
     }
   } catch (e) { /* nie den Raumaufbau brechen */ }
 

@@ -1740,6 +1740,11 @@ function breakDestructibleObstacle(scene, obs) {
     try { spawnEnemy.call(scene, x, y, Math.random() < 0.5 ? 9 : 1); } catch (e) {}
   }
 
+  // Wer auf 'destroy' hoert, muss das Zerschlagen vom Abraeumen beim
+  // Raumwechsel unterscheiden koennen (Kammerschutt, hiddenFinds.js).
+  // Eine Eigenschaft, kein setData: der DataManager haengt selbst an
+  // 'destroy' und ist geleert, bevor spaetere Hoerer drankommen.
+  obs.__zerschlagen = true;
   obs.destroy();
 }
 window.breakDestructibleObstacle = breakDestructibleObstacle;

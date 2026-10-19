@@ -573,8 +573,19 @@
         }
       } catch (e) {}
     }
+    // NUR das Zerschlagen oeffnet. 'destroy' feuert auch, wenn enterRoom beim
+    // naechsten Raumwechsel die Hindernisse abraeumt — und zwar NACHDEM die
+    // Beute geleert wurde. Gemeldet als "zu oft 'hinter dem Schutt liegt
+    // etwas', und dann liegt das Item irgendwo rum": Meldung und Gegenstand
+    // landeten im neuen Raum, in dem es gar keine Kammer gibt.
     schuttStuecke.forEach(function (s) {
-      try { if (s && typeof s.once === 'function') s.once('destroy', oeffnen); } catch (e) {}
+      try {
+        if (s && typeof s.once === 'function') {
+          s.once('destroy', function () {
+            if (s.__zerschlagen) oeffnen();
+          });
+        }
+      } catch (e) {}
     });
 
     return true;
