@@ -20,7 +20,7 @@ const path = require('path');
 const ROH = path.join(__dirname, 'rohbilder', 'bossintro');
 const ZIEL = path.join(__dirname, '..', 'assets', 'sprites', 'bossintro');
 
-const SIEGEL = ['ketten', 'kerze', 'maske', 'ring'];
+const SIEGEL = ['ketten', 'kerze', 'maske', 'ring', 'stimmen'];
 // Muss zu VFX in js/bossZwischenszene.js passen.
 const VFX = { ketten: [91, 56, 8], kerzen: [144, 74, 12], schatten: [72, 116, 16], nebel: [174, 56, 24] };
 
