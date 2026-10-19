@@ -239,7 +239,7 @@ test('Default-Gate liest questSystem: ohne Quest bleibt es ZU', () => {
   const { P, RD } = fresh();
   setMaxDepth(9);
   globalThis.window.questSystem = {
-    getActiveQuests: () => [{ id: 'branka_weapons' }],
+    getActiveQuests: () => [{ id: 'thom_pamphlets' }],
     getCompletedQuests: () => []
   };
   RD.markRunStarted();

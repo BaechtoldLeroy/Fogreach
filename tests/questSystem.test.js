@@ -555,25 +555,8 @@ test('#41 minDepth: ungated quest still advances at any depth', () => {
 // silently fails — the reveal plays, the player picks a choice, and nothing
 // happens (no XP, no act2_open, no Act-2 transition). This mirrors the exact
 // call sequence in finalize().
-// Regression: branka_weapons ("Waffen fuer den Widerstand") is a craft quest.
-// Each forge action must advance it via onItemCrafted -> updateQuestProgress
-// ('craft','craft_item'). The bug ("bleibt auf 1") was the CraftingScene
-// _craftRecipe path never calling onItemCrafted; this guards the questSystem
-// side actually counts repeatedly to the required 3 (not capped at 1).
-test('craft quest branka_weapons advances per onItemCrafted to 3 (not stuck at 1)', () => {
-  const qs = freshSystem();
-  assert.strictEqual(qs.acceptQuest('branka_weapons'), true);
-  const cur = () => qs.getActiveQuests('branka').find((q) => q.id === 'branka_weapons').objectives[0].current;
-  qs.onItemCrafted();
-  assert.strictEqual(cur(), 1, '1 after first craft');
-  qs.onItemCrafted();
-  qs.onItemCrafted();
-  assert.strictEqual(cur(), 3, '3 after three crafts');
-  assert.strictEqual(qs.isQuestReadyToComplete('branka_weapons'), true);
-  // Clamped at the requirement — further crafts don't overshoot.
-  qs.onItemCrafted();
-  assert.strictEqual(cur(), 3, 'clamped at required');
-});
+// (Der Craft-Test hing an branka_weapons, seit b479 entfernt — es gibt
+// keinen Auftrag mit Schmiedeziel mehr.)
 
 // Regression: mara_contact (Akt 2, "Die Spaeherin") was a hollow type:'dialogue'
 // stub — accept auto-completed it, so the player re-talked to Mara with nothing
@@ -775,10 +758,10 @@ test('062 T014: entfernte/umbenannte IDs weg, v4-Nachfolger da', () => {
 
 // --- T015 — Struktur-Invarianten -------------------------------------------
 
-test('062 T015: 52 Quests (34 + zwei Nebenquests #148 + sieben Aushaenge #68 + acht Einfuehrungen #143 + der Nachhall, v6.1 Stufe 2), keine doppelten ids/titles', () => {
+test('062 T015: 51 Quests (33 + zwei Nebenquests #148 + sieben Aushaenge #68 + acht Einfuehrungen #143 + der Nachhall, v6.1 Stufe 2), keine doppelten ids/titles', () => {
   const D = freshSystem().QUEST_DEFINITIONS;
   const ids = Object.keys(D);
-  assert.strictEqual(ids.length, 52, 'die v4-Struktur hat 34 Quests, dazu zwei Nebenquests (#148), sieben Aushaenge am Brett (#68), acht Einfuehrungsquests (#143: dazu Akte und Truhe) und "Was der Rauch behält" (Stufe 2)');
+  assert.strictEqual(ids.length, 51, 'die v4-Struktur hat 34 Quests (ohne "Waffen für den Widerstand", b479: 33), dazu zwei Nebenquests (#148), sieben Aushaenge am Brett (#68), acht Einfuehrungsquests (#143: dazu Akte und Truhe) und "Was der Rauch behält" (Stufe 2)');
   const titles = ids.map((id) => D[id].title);
   assert.strictEqual(new Set(titles).size, titles.length, 'keine doppelten Titel');
   const idField = ids.map((id) => D[id].id).filter(Boolean);

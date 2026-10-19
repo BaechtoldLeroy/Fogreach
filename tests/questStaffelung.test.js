@@ -74,13 +74,16 @@ function groessteLuecke(akt, von, bis) {
   return { max, beats: s };
 }
 
-test('Akt 3 (Tiefe 10-20): höchstens drei Läufe ohne neuen Beat', () => {
-  const r = groessteLuecke(3, 10, 20);
+// Seit b475/b479 endet Akt 3 erst mit dem Maulwurf auf Tiefe 23 (Bruch ab
+// 20); Akt 4 beginnt dort. "Waffen für den Widerstand" (Angebot ab 24) ist
+// entfernt, die Pamphlete zaehlen ab 27.
+test('Akt 3 (Tiefe 10-23): höchstens drei Läufe ohne neuen Beat', () => {
+  const r = groessteLuecke(3, 10, 23);
   assert.ok(r.max <= 3, 'Luecke ' + r.max + ' bei Beats ' + r.beats.join(','));
 });
 
-test('Akt 4 (Tiefe 20-30): höchstens vier Läufe ohne neuen Beat', () => {
-  const r = groessteLuecke(4, 20, 30);
+test('Akt 4 (Tiefe 23-30): höchstens vier Läufe ohne neuen Beat', () => {
+  const r = groessteLuecke(4, 23, 30);
   assert.ok(r.max <= 4, 'Luecke ' + r.max + ' bei Beats ' + r.beats.join(','));
 });
 

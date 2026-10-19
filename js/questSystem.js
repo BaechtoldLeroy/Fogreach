@@ -816,27 +816,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     // =======================================================
     // === Act 5: Der Bruch ===
     // =======================================================
-    branka_weapons: {
-      id: 'branka_weapons',
-      title: 'Waffen für den Widerstand',
-      description: 'Stelle 3 Gegenstände in der Archivschmiede her.',
-      npcId: 'branka',
-      type: 'craft',
-      chain: 3,
-      // Angeboten erst ab Tiefe 24. Kein minDepth: der wuerde das Schmieden
-      // im Hub an die Tiefe des letzten Laufs binden.
-      angebotAb: 24,
-      objectives: [
-        { type: 'craft', target: 'craft_item', current: 0, required: 3 }
-      ],
-      rewards: { xp: 150 },
-      rewardTier: 'story',
-      prerequisites: ['branka_doubt'],
-      requiredAct: 4,
-      dialogueOffer: 'Wir brauchen Waffen. Nicht für den Rat — für UNS.\n\nStelle drei Gegenstände in der Schmiede her.',
-      dialogueProgress: 'Die Schmiede wartet. Stelle weitere Gegenstände her.',
-      dialogueComplete: 'Gut geschmiedet. Diese Waffen werden den Unterschied machen.'
-    },
+    // b479: "Waffen für den Widerstand" (branka_weapons, drei Gegenstaende
+    // schmieden) entfernt, er passte nicht mehr in die Geschichte. Alte
+    // Staende laden ohne ihn: unbekannte Ids ueberspringt loadQuestSaveData.
     thom_pamphlets: {
       id: 'thom_pamphlets',
       title: 'Die Pamphlete',
@@ -1502,8 +1484,6 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.thom_truth.description': "Find 5 print plates with the forbidden truths about the council (from depth 14).",
       'quest.mara_warning.title': "The Chainmaster",
       'quest.mara_warning.description': 'Defeat the Chainmaster at depth 10, who guards the way to the council\'s seal chambers.',
-      'quest.branka_weapons.title': 'Weapons for the Resistance',
-      'quest.branka_weapons.description': 'Craft 3 items at the Archive Forge.',
       'quest.thom_pamphlets.title': 'The Pamphlets',
       'quest.thom_pamphlets.description': 'Complete 3 deep runs into the cellars (from depth 27) to spread the leaflets into the lowest passages.',
       'quest.elara_blade.title': "Elara's Gift",
@@ -1630,9 +1610,6 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.mara_warning.dialogueOffer': "At depth 10 the Chainmaster holds the way. He used to be a captain of the guard; now only his order is left. He binds whoever he wants to catch. Bring him down, and we will see what he guards.",
       'quest.mara_warning.dialogueProgress': "The Chainmaster still lives, at depth 10. If he chains you, strike the chain, or he holds you fast.",
       'quest.mara_warning.dialogueComplete': "The Chainmaster has fallen. Behind him lay chambers full of seals. The council seals more than files down there, and now we have the first proof of it.",
-      'quest.branka_weapons.dialogueOffer': 'We need weapons. Not for the council — for US.\n\nCraft three items at the forge.',
-      'quest.branka_weapons.dialogueProgress': 'The forge waits. Craft more items.',
-      'quest.branka_weapons.dialogueComplete': 'Well forged. These weapons will make the difference.',
 
       'quest.thom_pamphlets.dialogueOffer': "The upper passages already read our truth. Now we need the depths, where the council keeps its secrets.\n\nComplete three runs from depth 27 and take the sheets down with you. Whoever reads down there reads where the council does not expect it.",
       'quest.thom_pamphlets.dialogueProgress': "Only deep runs count, from depth 27. Complete three of them. Each one carries our sheets further down.",

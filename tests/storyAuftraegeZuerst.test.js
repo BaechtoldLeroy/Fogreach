@@ -71,7 +71,7 @@ function gespraech(npc) {
 // Was nach dem Bruch kommt, steht noch aus.
 const NACH_BRUCH = {
   espionage_informant: 'available', was_der_rauch_behaelt: 'available', schattenrat_finale: 'available',
-  mara_assault: 'available', the_reckoning: 'available', branka_weapons: 'available',
+  mara_assault: 'available', the_reckoning: 'available',
   thom_pamphlets: 'available', branka_eichgewicht: 'available'
 };
 

@@ -49,7 +49,7 @@ function stand(akt, offen, flags) {
 const VOR_BRUCH = {
   bruch_confrontation: 'ready', espionage_informant: 'available', was_der_rauch_behaelt: 'available',
   schattenrat_finale: 'available', mara_assault: 'available', the_reckoning: 'available',
-  branka_weapons: 'available', thom_pamphlets: 'available', branka_eichgewicht: 'available',
+  thom_pamphlets: 'available', branka_eichgewicht: 'available',
   einfuehrung_akte: 'active', einfuehrung_talente: 'available'
 };
 
@@ -155,7 +155,7 @@ function zeilen(npc) {
 
 // Stand zwischen Bruch und Maulwurf, ohne offene Auftraege bei den Figuren.
 const ZWISCHEN = { espionage_informant: 'available', was_der_rauch_behaelt: 'available', schattenrat_finale: 'available',
-  mara_assault: 'available', the_reckoning: 'available', branka_weapons: 'available',
+  mara_assault: 'available', the_reckoning: 'available',
   thom_pamphlets: 'available', branka_eichgewicht: 'available' };
 
 test('Zwischen Bruch und Maulwurf: Branka spricht von der Jagd, Mara und Harren verraten den Maulwurf nicht', () => {

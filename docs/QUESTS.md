@@ -1,6 +1,6 @@
 # Quest-Übersicht — Fogreach
 
-_Quest-Daten automatisch generiert aus_ `js/questSystem.js` _(QUEST_DEFINITIONS) — 52 Quests._  
+_Quest-Daten automatisch generiert aus_ `js/questSystem.js` _(QUEST_DEFINITIONS) — 51 Quests._  
 _Neu erzeugen:_ `node tools/genQuestDoc.js`
 
 ---
@@ -1403,31 +1403,6 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 > (Thom wischt sich die Hände am Kittel ab, als Du hereinkommst. Er fragt nicht, wie es unten war. Er sieht es Dir an.)
 > 
 > Die Esse ist zerbrochen. Draussen bleiben die Leute auf der Strasse stehen und sagen Namen, die sie seit Jahren nicht mehr gesagt haben. (Er klopft auf die Presse.) Jetzt glauben sie, was sie lesen, weil sie es selbst wieder wissen. Die Platten liegen bereit.
-
-
-## Waffen für den Widerstand
-
-`branka_weapons` · **NPC:** Schmiedemeisterin Branka · **Kette:** 3 · **Angebot ab Tiefe 24**
-
-> Stelle 3 Gegenstände in der Archivschmiede her.
-
-- **Ziel:** `craft` → `craft_item` ×3
-- **Vorbedingung:** Zweifel der Schmiedin
-- **Belohnung:** mind. 150 XP (bzw. 70 % des Stufenbedarfs, Story)
-
-**Angebot**
-
-> Wir brauchen Waffen. Nicht für den Rat — für UNS.
-> 
-> Stelle drei Gegenstände in der Schmiede her.
-
-**Unterwegs**
-
-> Die Schmiede wartet. Stelle weitere Gegenstände her.
-
-**Abschluss**
-
-> Gut geschmiedet. Diese Waffen werden den Unterschied machen.
 
 
 ## Die letzte Wache

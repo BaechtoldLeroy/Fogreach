@@ -35,7 +35,7 @@ const D = QS.QUEST_DEFINITIONS;
 const NEU = {
   brett_stoerer: 3, brett_kammern: 4, brett_anfuehrer: 10, brett_welle: 14, brett_aufruf: 16,
   brett_laeufe: 18, brett_zeugen: 22, bruch_confrontation: 20, verseuchte_kammer: 15,
-  elara_blade: 20, elara_second_truth: 20, klerus_district_purge: 7, branka_weapons: 24, thom_pamphlets: 27
+  elara_blade: 20, elara_second_truth: 20, klerus_district_purge: 7, thom_pamphlets: 27
 };
 
 /** Stand setzen: alle Auftraege mit requiredAct < von abgeschlossen. */
@@ -118,7 +118,7 @@ test('Akt 3 bis zum Finale: der Spieler kommt durch, Auftrag fuer Auftrag, Lauf 
   const npcs = [...new Set(Object.values(D).map((d) => d.npcId))];
   const story = ['verseuchte_kammer', 'elara_ritual', 'elara_second_truth', 'bruch_confrontation',
     'espionage_archive', 'espionage_informant', 'was_der_rauch_behaelt', 'schattenrat_finale',
-    'mara_assault', 'the_reckoning', 'elara_blade', 'branka_weapons', 'thom_pamphlets', 'thom_truth'];
+    'mara_assault', 'the_reckoning', 'elara_blade', 'thom_pamphlets', 'thom_truth'];
   const fertigBei = {};
   for (let lauf = 0; lauf < 80 && !(fertigBei.the_reckoning && fertigBei.mara_assault); lauf++) {
     // Im Hub: alles annehmen, was angeboten wird; erledigen, was diese Tiefe hergibt.
@@ -145,7 +145,6 @@ test('Akt 3 bis zum Finale: der Spieler kommt durch, Auftrag fuer Auftrag, Lauf 
   // Und in der Reihenfolge der Tiefen, nicht vorher.
   assert.ok(fertigBei.bruch_confrontation >= 20, 'Bruch vor Tiefe 20: ' + fertigBei.bruch_confrontation);
   assert.ok(fertigBei.thom_pamphlets >= 27, 'Pamphlete vor Tiefe 27');
-  assert.ok(fertigBei.branka_weapons >= 24, 'Waffen vor Tiefe 24');
 });
 
 test('Altstand: laufender Auftrag unter der neuen Tiefe zaehlt weiter mit der alten', () => {

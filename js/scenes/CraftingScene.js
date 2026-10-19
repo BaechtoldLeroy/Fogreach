@@ -765,8 +765,8 @@ this.massSalvageHint = this.add.text(rightX + rightW - 120, _massY - 24, '', {
     if (typeof saveGame === 'function') {
       try { saveGame(this); } catch (e) {}
     }
-    // Quest progress: tick any active craft objective (e.g. branka_weapons
-    // wants 3 crafted items). The questSystem.onItemCrafted hook exists but
+    // Quest progress: tick any active craft objective (currently none; the
+    // only craft quest, branka_weapons, was removed in b479). The questSystem.onItemCrafted hook exists but
     // was never called — fixing here so craft-type quests are actually
     // completable.
     if (window.questSystem && typeof window.questSystem.onItemCrafted === 'function') {
@@ -937,8 +937,8 @@ this.massSalvageHint = this.add.text(rightX + rightW - 120, _massY - 24, '', {
     if (typeof LS.recomputeBonuses === 'function') { try { LS.recomputeBonuses(); } catch (e) {} }
     if (typeof recalcDerived === 'function') { try { recalcDerived(0, 0); } catch (e) {} }
 
-    // Ausbauen IST das Herstellen fuer craft-Quests (branka_weapons, "Stelle
-    // 3 Gegenstaende her"). Vorher haing der Haken am Schmieden von Rezepten;
+    // Ausbauen IST das Herstellen fuer craft-Quests (der einzige,
+    // branka_weapons, ist seit b479 entfernt; der Haken bleibt). Vorher haing der Haken am Schmieden von Rezepten;
     // die gibt es nicht mehr, also muss er hier sitzen — sonst waere die
     // Quest nur noch ueber das Aufwerten erfuellbar.
     if (window.questSystem && typeof window.questSystem.onItemCrafted === 'function') {
