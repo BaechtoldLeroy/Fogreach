@@ -1041,22 +1041,28 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     brett_welle: {
       id: 'brett_welle',
       title: 'Aushang: Standhalten',
-      description: 'Ein Rats-Aushang: überstehe Welle 12 ab Tiefe 6.',
+      description: 'Ein Rats-Aushang: überstehe Welle 6, auf Tiefe 6 oder tiefer.',
       npcId: 'anschlagtafel',
       type: 'wave',
       chain: 3,
       minDepth: 6,
       repeatable: true,
+      // Die Welle IST die Lauftiefe: enterRoom setzt currentWave = Tiefe - 1,
+      // startNextWave zaehlt einmal hoch, jeder Raum meldet also Welle = Tiefe
+      // (gemessen: Tiefe 6/10/15 melden in allen Raeumen 6/10/15). Nur nach
+      // einem Voll-Boss folgt noch Welle Tiefe + 1. Vorher stand hier Welle 12
+      // ab Tiefe 6 — erst auf Tiefe 12 erreichbar. Gefordert wird deshalb nie
+      // mehr als minDepth (tests/wellenZiele.test.js).
       objectives: [
-        { type: 'wave', target: 'reach_wave', current: 0, required: 12 }
+        { type: 'wave', target: 'reach_wave', current: 0, required: 6 }
       ],
       rewards: { xp: 100, gold: 180 },
       rewardTier: 'neben',
       prerequisites: [],
       requiredAct: 0,
       gate: function () { return window.Anschlagtafel && window.Anschlagtafel.haengt('brett_welle'); },
-      dialogueOffer: 'KLERUS: Zwölf Ansturmwellen, ab Tiefe 6, ohne zu weichen. Standhaftigkeit ist eine Tugend, und der Rat belohnt Tugend.\n\n(Das Siegel darunter ist frisch. Die Tinte noch feucht.)',
-      dialogueProgress: 'Zwölf Wellen ab Tiefe 6. Weichen zählt nicht.',
+      dialogueOffer: 'KLERUS: Hinab bis Tiefe 6, und dort eine Ansturmwelle überstehen, ohne zu weichen. Standhaftigkeit ist eine Tugend, und der Rat belohnt Tugend.\n\n(Das Siegel darunter ist frisch. Die Tinte noch feucht.)',
+      dialogueProgress: 'Eine Welle auf Tiefe 6. Weichen zählt nicht.',
       dialogueComplete: 'Der Priester am Kasten segnet Dich, während er abzählt. Beides dauert gleich lang.'
     },
     brett_zeugen: {
@@ -1387,9 +1393,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.brett_laeufe.dialogueComplete': 'The Guard pays without questions. Nobody wants to hear what you saw down there.',
 
       'quest.brett_welle.title': 'Notice: Hold the Line',
-      'quest.brett_welle.description': 'A council notice: survive wave 12 from depth 6.',
-      'quest.brett_welle.dialogueOffer': "CLERGY: Twelve waves of assault, from depth 6, without giving ground. Steadfastness is a virtue, and the council rewards virtue.\n\n(The seal below it is fresh. The ink still wet.)",
-      'quest.brett_welle.dialogueProgress': 'Twelve waves from depth 6. Giving ground does not count.',
+      'quest.brett_welle.description': 'A council notice: survive wave 6, at depth 6 or deeper.',
+      'quest.brett_welle.dialogueOffer': "CLERGY: Down to depth 6, and there withstand a wave of assault without giving ground. Steadfastness is a virtue, and the council rewards virtue.\n\n(The seal below it is fresh. The ink still wet.)",
+      'quest.brett_welle.dialogueProgress': 'One wave at depth 6. Giving ground does not count.',
       'quest.brett_welle.dialogueComplete': 'The priest at the box blesses you while he counts it out. Both take the same amount of time.',
 
       'quest.brett_zeugen.title': 'Call: Take Their Leaders',

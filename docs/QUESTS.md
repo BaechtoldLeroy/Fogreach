@@ -528,21 +528,21 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 `brett_welle` · **NPC:** anschlagtafel · **Kette:** 3 · **Fortschritt erst ab Tiefe 6**
 
-> Ein Rats-Aushang: überstehe Welle 12 ab Tiefe 6.
+> Ein Rats-Aushang: überstehe Welle 6, auf Tiefe 6 oder tiefer.
 
-- **Ziel:** `wave` → `reach_wave` ×12
+- **Ziel:** `wave` → `reach_wave` ×6
 - **Vorbedingung:** keine (dazu eine Bedingung im Code, `gate`)
 - **Belohnung:** mind. 100 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 180 Gold (wächst mit der Tiefe ab 6)
 
 **Angebot**
 
-> KLERUS: Zwölf Ansturmwellen, ab Tiefe 6, ohne zu weichen. Standhaftigkeit ist eine Tugend, und der Rat belohnt Tugend.
+> KLERUS: Hinab bis Tiefe 6, und dort eine Ansturmwelle überstehen, ohne zu weichen. Standhaftigkeit ist eine Tugend, und der Rat belohnt Tugend.
 > 
 > (Das Siegel darunter ist frisch. Die Tinte noch feucht.)
 
 **Unterwegs**
 
-> Zwölf Wellen ab Tiefe 6. Weichen zählt nicht.
+> Eine Welle auf Tiefe 6. Weichen zählt nicht.
 
 **Abschluss**
 
