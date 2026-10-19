@@ -65,7 +65,9 @@ function kampf(flags, erledigt) {
   stand(flags, erledigt);
   const b = L.spawnBoss();
   assert.strictEqual(b.type, 'elaraBesessen');
-  H.run(`(function () { var b = ${BOSS}; b.speed = 0; b.damage = 1; b.nextPatternAt = 1e15; })()`);
+  // baseDamage mit: der Koerperkontakt (hitByMelee) setzt damage aus baseDamage
+  // zurueck, danach schlug sie wieder mit 16 zu (gemessen, Seed 2).
+  H.run(`(function () { var b = ${BOSS}; b.speed = 0; b.damage = 1; b.baseDamage = 1; b.nextPatternAt = 1e15; })()`);
   return b;
 }
 const k = (feld) => H.run(`(function () { var b = ${BOSS}; return b && b._elaraKampf ? b._elaraKampf.${feld} : null; })()`);
@@ -248,6 +250,8 @@ test('Die Arena verlischt: bei Phase 2 und 3 je zwei angekuendigte Zonen, die ze
   H.run(`${BOSS}.hp = Math.ceil(${BOSS}.maxHp * 0.6)`);
   H.step(3);
   assert.strictEqual(H.run(`${BOSS}.phase`), 2);
+  // Der Phasenwechsel setzt die naechste Attacke auf gleich (updateBossPhase): wieder aus.
+  H.run(`${BOSS}.nextPatternAt = 1e15`);
   const zonen = () => H.run(`${BOSS}._elaraKampf.zonen.map(function (z) { return { x: z.x, y: z.y, r: z.r, aktiv: z.aktiv }; })`);
   let z = zonen();
   assert.strictEqual(z.length, 2, 'Phase 2 loescht nicht zwei Stellen');
@@ -255,13 +259,16 @@ test('Die Arena verlischt: bei Phase 2 und 3 je zwei angekuendigte Zonen, die ze
   for (let i = 0; i < 90; i++) H.step(1);
   z = zonen();
   assert.ok(z.every((x) => x.aktiv), 'nach 1,1 s Vorlauf sind sie nicht scharf');
-  // In der Zone zehrt es (auch durch die Unverwundbarkeit des Tests gemessen).
-  H.run('window._playerInvincible = false; player.setPosition(' + z[0].x + ', ' + z[0].y + '); player.body.reset(player.x, player.y)');
-  L.healPlayer();
-  const lp = H.run('playerHealth');
-  for (let i = 0; i < 70; i++) H.step(1);
-  assert.ok(H.run('playerHealth') < lp, 'die geloeschte Zone zehrt nicht');
-  H.run('window._playerInvincible = true');
+  // In der Zone zehrt es. Gemessen an den Treffern selbst (applyPlayerDamage),
+  // nicht an den LP: ungeschuetzt kamen dort Fremdtreffer und Heilung dazu,
+  // und starb der Spieler, verliess das Spiel den Dungeon und riss alle
+  // folgenden Faelle mit (Seed 2: LP 30 -> 23 -> 30, dann 'entries').
+  H.run('player.setPosition(' + z[0].x + ', ' + z[0].y + '); player.body.reset(player.x, player.y)');
+  H.run('window.__zonenTreffer = 0; window.__apdEcht = window.__apdEcht || applyPlayerDamage; applyPlayerDamage = function () { if (/elaraKampf\.js/.test(new Error().stack || "")) window.__zonenTreffer++; return window.__apdEcht.apply(this, arguments); }');
+  try {
+    for (let i = 0; i < 100; i++) H.step(1);
+    assert.ok(H.run('window.__zonenTreffer') >= 2, 'die geloeschte Zone zehrt nicht: ' + H.run('window.__zonenTreffer') + ' Treffer');
+  } finally { H.run('applyPlayerDamage = window.__apdEcht'); }
   // Die Mitte (die Esse) bleibt frei.
   const mitte = H.run(`(function () { var g = ${GSC}._quelleGlow; return { x: g.x, y: g.y }; })()`);
   assert.ok(z.every((x) => Math.hypot(x.x - mitte.x, x.y - mitte.y) > x.r), 'eine Zone liegt auf der Esse');
