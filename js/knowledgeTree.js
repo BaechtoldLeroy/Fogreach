@@ -1,7 +1,7 @@
 // knowledgeTree.js — Knowledge Tree (#26) MVP.
 //
 // Lore-fragment events drop a fragment counter that the player can invest into
-// passive stat ranks via Mara's dialog. Unlike Brunnen/Druckerei (run-scoped
+// passive stat ranks via Branka's dialog (Archivschmiede, Stufe 1b). Unlike Brunnen/Druckerei (run-scoped
 // buffs), Knowledge Tree investments are permanent across runs and lives in
 // its own localStorage blob.
 //

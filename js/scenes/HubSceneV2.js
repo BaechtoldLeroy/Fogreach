@@ -64,7 +64,7 @@ if (window.i18n) {
     'hub.skills.requires': 'Benötigt:',
     'hub.skills.respec': 'Zurücksetzen ({cost} Eisenbrocken)',
     'hub.skills.close': 'Schließen',
-    'hub.knowledge.learn': 'Wissen lernen (K)',
+    'hub.knowledge.learn': 'In Metall binden (K)',
     'hub.skills.shop': 'Schwarzmarkt (M)',
     'hub.skills.talents': 'Talente (T)',
     'hub.dialog.hint.next': 'Leer / Enter: weiter',
@@ -131,7 +131,7 @@ if (window.i18n) {
     'hub.skills.requires': 'Requires:',
     'hub.skills.respec': 'Respec ({cost} Iron Chunks)',
     'hub.skills.close': 'Close',
-    'hub.knowledge.learn': 'Knowledge Tree (K)',
+    'hub.knowledge.learn': 'Bind in metal (K)',
     'hub.skills.shop': 'Black Market (M)',
     'hub.skills.talents': 'Talents (T)',
     'hub.dialog.hint.next': 'Space / Enter: next',
@@ -2136,7 +2136,8 @@ class HubSceneV2 extends Phaser.Scene {
     const hasChoices = page.choices && page.choices.length > 0;
     const choiceHeight = hasChoices ? (page.choices.length * 40 + 10) : 0;
     const hasNextPage = !hasChoices && pageIndex < pages.length - 1 && !pages[pageIndex + 1]._isInfoPage;
-    // Maras drei Dienste — Schwarzmarkt, Wissensbaum, Talente. Sie haengen
+    // Maras Dienste — Schwarzmarkt und Talente (der Wissensbaum liegt seit
+    // Stufe 1b bei Branka, s. isBrankaFlavor). Sie haengen
     // NICHT an ihrem Auftragsstand: bis hierher stand hier zusaetzlich
     // questMode === 'flavor', und sobald sie irgendeine Quest hatte, waren
     // alle drei weg. Ihr eigener Einfuehrungsauftrag ("kauf mir etwas ab")
@@ -2152,10 +2153,14 @@ class HubSceneV2 extends Phaser.Scene {
     // bleibt 'active', die Belohnung ist nicht abgeholt. Gemeldet als 'die
     // Quest wurde nicht abgeschlossen'.
     const isMaraFlavor = npcData.id === 'mara' && !hasChoices && questMode !== 'turnin';
-    // Drei Knoepfe auf +0 / +38 / +76, jeder rund 26 hoch: der Block misst
-    // gut 100. Mit den alten 90 schob sich "Talente" ueber den ESC-Hinweis,
-    // sobald eine Zeile mehr im Text stand (etwa der Fortschritt einer Quest).
-    const maraBtnHeight = isMaraFlavor ? 108 : 0;
+    // Stufe 1b (Story v6.1): Der Wissensbaum ist Dein Handwerk. Fragmente
+    // bindest Du in der Archivschmiede in Metall, darum liegt er bei Branka
+    // und nicht mehr bei Mara. Dieselben zwei Bedingungen wie oben.
+    const isBrankaFlavor = npcData.id === 'branka' && !hasChoices && questMode !== 'turnin';
+    // Knoepfe auf +0 / +38, jeder rund 26 hoch. Mara hat zwei (Schwarzmarkt,
+    // Talente), Branka einen (Wissensbaum). Zu knapp, und der letzte Knopf
+    // schiebt sich ueber den ESC-Hinweis, sobald eine Zeile mehr im Text steht.
+    const maraBtnHeight = isMaraFlavor ? 70 : (isBrankaFlavor ? 32 : 0);
     const extraBtnHeight = hasChoices ? choiceHeight : maraBtnHeight;
     const panelHeight = Math.min(440, Math.max(180, Math.ceil(pad + headerHeight + 12 + bodyHeight + extraBtnHeight + pad + hintHeight + 10)));
 
@@ -2244,16 +2249,16 @@ class HubSceneV2 extends Phaser.Scene {
       });
     }
 
-    // Mara knowledge tree button (replaces legacy skill tree per feature 047)
-    if (isMaraFlavor) {
-      const maraBtnY = bodyText.y + bodyHeight + 16;
-      const skillsBtn = this.add.text(0, maraBtnY, _HUB_T('hub.knowledge.learn'), {
+    // Brankas Knopf: der Wissensbaum (feature 047), "In Metall binden".
+    if (isBrankaFlavor) {
+      const skillsBtn = this.add.text(0, bodyText.y + bodyHeight + 16, _HUB_T('hub.knowledge.learn'), {
         fontFamily: 'monospace',
         fontSize: 14,
         color: '#ffffff',
         backgroundColor: '#2a5a8a',
         padding: { x: 12, y: 6 }
       }).setOrigin(0.5, 0).setInteractive({ useHandCursor: true });
+      skillsBtn.setName('brankaWissensbaum');
 
       skillsBtn.on('pointerdown', (pointer, x, y, event) => {
         event.stopPropagation();
@@ -2266,7 +2271,10 @@ class HubSceneV2 extends Phaser.Scene {
       });
       container.add(skillsBtn);
       alsKnopf(skillsBtn);
+    }
 
+    if (isMaraFlavor) {
+      const maraBtnY = bodyText.y + bodyHeight + 16;
       // WP06: Schwarzmarkt (shop) button — opens the Mara ShopScene overlay.
       // #51: Der Schwarzmarkt ist erst ab erreichter Tiefe 4 freigeschaltet —
       // bis dahin wird der Button GAR NICHT gezeigt (openShopScene backstoppt).
@@ -2274,7 +2282,7 @@ class HubSceneV2 extends Phaser.Scene {
         && typeof window.LootSystem.isBlackMarketUnlocked === 'function')
         || window.LootSystem.isBlackMarketUnlocked();
       if (_bmUnlocked) {
-        const shopBtn = this.add.text(0, maraBtnY + 38, _HUB_T('hub.skills.shop'), {
+        const shopBtn = this.add.text(0, maraBtnY, _HUB_T('hub.skills.shop'), {
           fontFamily: 'monospace',
           fontSize: 14,
           color: '#ffffff',
@@ -2297,7 +2305,7 @@ class HubSceneV2 extends Phaser.Scene {
 
       // Feature 060 WP04: Talente (Skill-Baum) button — opens the
       // SkillTreeScene overlay. Rückt hoch, wenn der Schwarzmarkt-Button fehlt.
-      const talentsBtn = this.add.text(0, maraBtnY + (_bmUnlocked ? 76 : 38), _HUB_T('hub.skills.talents'), {
+      const talentsBtn = this.add.text(0, maraBtnY + (_bmUnlocked ? 38 : 0), _HUB_T('hub.skills.talents'), {
         fontFamily: 'monospace',
         fontSize: 14,
         color: '#ffffff',
@@ -2403,7 +2411,7 @@ class HubSceneV2 extends Phaser.Scene {
       // "(M)" auf der Seite und M tut nichts, oder schlimmer: die Taste tut
       // etwas, wo der Knopf fehlt. Auf der Abgabe-Seite fuehrte das vom
       // Abschluss weg (Dialog zu, Quest bleibt 'active').
-      if (isMaraFlavor) {
+      if (isBrankaFlavor) {
         const knowledgeHandler = () => {
           this._closeDialog(keyClosers);
           this.time.delayedCall(100, () => {
@@ -2414,7 +2422,8 @@ class HubSceneV2 extends Phaser.Scene {
         };
         this.input.keyboard.on('keydown-K', knowledgeHandler);
         keyClosers.push({ eventName: 'keydown-K', handler: knowledgeHandler });
-
+      }
+      if (isMaraFlavor) {
         // WP06: M opens the Schwarzmarkt overlay.
         const shopHandler = () => {
           this._closeDialog(keyClosers);

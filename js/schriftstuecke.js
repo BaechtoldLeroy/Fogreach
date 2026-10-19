@@ -3,7 +3,7 @@
  * ---------------------------------------------------------------------
  * Schriftstuecke sind alles Geschriebene, das man im Keller aufhebt:
  *
- *   fragment  Wissensfragment (Ereignis lore_fragment) -> Wissensbaum bei Mara
+ *   fragment  Wissensfragment (Ereignis lore_fragment) -> Wissensbaum bei Branka
  *   rolle     Versiegeltes Ratsdokument (council_document)
  *   blatt     Protokoll-Abschrift (document)
  *   brief     Verhoerprotokoll (interrogation_record)
@@ -25,7 +25,7 @@
   if (window.i18n) {
     window.i18n.register('de', {
       'schrift.art.fragment': 'Wissensfragment',
-      'schrift.hinweis.wissensbaum': 'Wissensfragment · +1 für den Wissensbaum bei Mara',
+      'schrift.hinweis.wissensbaum': 'Wissensfragment · bei Branka in Metall binden (+1 Wissensbaum)',
       'schrift.hinweis.auftrag': 'Für den Auftrag „{title}“ · steht im Journal (J)',
       'schrift.hinweis.journal': 'Steht im Journal (J)',
       'schrift.titel.1': 'Flüsternde Namen',
@@ -40,7 +40,7 @@
     });
     window.i18n.register('en', {
       'schrift.art.fragment': 'Knowledge fragment',
-      'schrift.hinweis.wissensbaum': 'Knowledge fragment · +1 for Mara\'s knowledge tree',
+      'schrift.hinweis.wissensbaum': 'Knowledge fragment · bind it in metal with Branka (+1 knowledge tree)',
       'schrift.hinweis.auftrag': 'For the quest “{title}” · see your journal (J)',
       'schrift.hinweis.journal': 'Added to your journal (J)',
       'schrift.titel.1': 'Whispered Names',

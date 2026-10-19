@@ -1,8 +1,12 @@
 // tests/maraDienste.test.js — Maras Laden bleibt offen, auch mit Auftrag.
 //
-// Mara ist nicht nur eine Questgeberin: an ihrem Dialog haengen drei Systeme
-// des Spiels — Schwarzmarkt, Wissensbaum und Talentbaum. Sie erschienen nur,
-// solange sie GAR KEINE Quest hatte (questMode 'flavor').
+// Mara ist nicht nur eine Questgeberin: an ihrem Dialog haengen zwei Systeme
+// des Spiels, Schwarzmarkt und Talentbaum. Sie erschienen nur, solange sie
+// GAR KEINE Quest hatte (questMode 'flavor').
+//
+// Stufe 1b (Story v6.1): Der Wissensbaum liegt nicht mehr bei Mara, sondern
+// bei Branka in der Archivschmiede (Knopf "In Metall binden (K)"). Dieselben
+// Regeln gelten dort; die Faelle stehen unten.
 //
 // Damit sperrte jeder ihrer Auftraege drei Systeme aus, und ihr eigener
 // Einfuehrungsauftrag ("kauf mir etwas ab", #143) sperrte genau den Laden,
@@ -58,18 +62,19 @@ const hatDienste = (r) => {
   const alles = Array.from(r.texte).join(' | ');
   return {
     markt: /Schwarzmarkt/.test(alles),
-    wissen: /Wissen/.test(alles),
+    metall: /In Metall binden/.test(alles),
     talente: /Talent/.test(alles),
     alles: alles
   };
 };
 
-test('Ohne Auftrag stehen ihre drei Dienste im Dialog', () => {
+test('Ohne Auftrag stehen ihre zwei Dienste im Dialog, der Wissensbaum nicht', () => {
   const r = maraDialog();
   assert.ok(!r.fehler, r.fehler);
   const d = hatDienste(r);
-  assert.ok(d.markt && d.wissen && d.talente,
+  assert.ok(d.markt && d.talente,
     'ein Dienst fehlt schon ohne Auftrag: ' + JSON.stringify(d));
+  assert.ok(!d.metall, 'der Wissensbaum haengt noch bei Mara: ' + d.alles);
 });
 
 test('Mit angenommenem Auftrag bleiben sie stehen', () => {
@@ -81,8 +86,8 @@ test('Mit angenommenem Auftrag bleiben sie stehen', () => {
   const d = hatDienste(maraDialog());
   assert.ok(d.markt, 'der Schwarzmarkt ist zu, solange ihr Auftrag laeuft — '
     + 'genau der Auftrag, der einen Kauf verlangt: ' + d.alles);
-  assert.ok(d.wissen && d.talente,
-    'Wissensbaum oder Talente fehlen mit laufendem Auftrag: ' + JSON.stringify(d));
+  assert.ok(d.talente,
+    'die Talente fehlen mit laufendem Auftrag: ' + JSON.stringify(d));
 });
 
 test('Auch ein fremder Auftrag von ihr sperrt nichts aus', () => {
@@ -93,7 +98,7 @@ test('Auch ein fremder Auftrag von ihr sperrt nichts aus', () => {
     return 1;
   })()`);
   const d = hatDienste(maraDialog());
-  assert.ok(d.markt && d.wissen && d.talente,
+  assert.ok(d.markt && d.talente,
     'ein Dienst fehlt bei laufendem mara_contact: ' + JSON.stringify(d));
 });
 
@@ -162,7 +167,7 @@ test('Auf der Abgabeseite treten sie ebenfalls zurueck', () => {
     'der Schwarzmarkt fuehrt von der Abgabe weg: ' + alles.slice(0, 200));
   assert.ok(!/Talente/.test(alles),
     'die Talente fuehren von der Abgabe weg: ' + alles.slice(0, 200));
-  assert.ok(!/Wissen lernen/.test(alles),
+  assert.ok(!/In Metall binden/.test(alles),
     'das Wissen fuehrt von der Abgabe weg: ' + alles.slice(0, 200));
 });
 
@@ -219,5 +224,90 @@ test('Die Abgabe fuehrt bis zur abgeholten Belohnung', () => {
   assert.strictEqual(r.vor, 'active', 'die Quest war vor dem Abholen schon abgeschlossen');
   assert.strictEqual(r.nach, 'completed',
     'nach dem Abholen steht die Quest auf "' + r.nach + '" statt completed');
+});
+
+// ---- Stufe 1b: der Wissensbaum bei Branka (Archivschmiede) -----------------
+
+/** Oeffnet Brankas Dialog und sammelt allen sichtbaren Text ein. */
+function brankaDialog() {
+  return H.run(`(function () {
+    var sc = window.game.scene.getScene('HubSceneV2');
+    var b = sc.npcs.filter(function (n) { return n.data && n.data.id === 'branka'; })[0];
+    if (!b) return { fehler: 'Branka fehlt' };
+    if (typeof sc._closeDialog === 'function') { try { sc._closeDialog([]); } catch (e) {} }
+    sc._showNpcDialogue(b.data);
+    var texte = [];
+    (function sammeln(o) {
+      if (!o) return;
+      if (o.type === 'Text' && o.text && o.visible !== false) texte.push(String(o.text));
+      (o.list || []).forEach(sammeln);
+    })({ list: sc.children.list });
+    return { texte: texte };
+  })()`);
+}
+
+/** Stand, in dem Brankas Wissens-Einfuehrung laeuft (die Einfuehrung, die den Baum verlangt). */
+const WISSEN_LAEUFT = `(function () {
+  var qs = window.questSystem, st = qs.getQuestSaveData();
+  st.quests = {
+    aldric_cleanup: { status: 'completed', objectives: [] },
+    aldric_patrol: { status: 'completed', objectives: [] },
+    einfuehrung_schmiede: { status: 'completed', objectives: [] },
+    harren_daughter_investigation: { status: 'completed', objectives: [] }
+  };
+  st.flags = { hub_intro_a0_seen: true };
+  // Akt 1 schon gesehen: sonst legt sich seine Karte ueber den Dialog.
+  window.storySystem.loadStorySaveData({ currentActIndex: 1, eventsSeen: ['auftrag', 'treuer_diener'] });
+  qs.loadQuestSaveData(st);
+  qs.acceptQuest('einfuehrung_wissen');
+  return qs.getActiveQuests('branka').map(function (q) { return q.id; }).join(',');
+})()`;
+
+test('Branka: "In Metall binden (K)" steht in ihrem Dialog', () => {
+  H.run(`window.questSystem.setFlag('hub_intro_a0_seen')`);
+  const r = brankaDialog();
+  assert.ok(!r.fehler, r.fehler);
+  const alles = Array.from(r.texte).join(' | ');
+  assert.ok(/In Metall binden \(K\)/.test(alles), 'Brankas Wissensbaum-Knopf fehlt: ' + alles.slice(0, 300));
+  assert.ok(!/Schwarzmarkt|Talente \(T\)/.test(alles), 'Maras Dienste stehen bei Branka: ' + alles.slice(0, 300));
+});
+
+test('Branka: mit laufender Wissens-Einfuehrung steht der Knopf, und K oeffnet den Baum', () => {
+  assert.strictEqual(H.run(WISSEN_LAEUFT), 'einfuehrung_wissen', 'der Auftrag laeuft nicht');
+  const r = brankaDialog();
+  const alles = Array.from(r.texte).join(' | ');
+  // Kopfzeile des Fortschritts (der Text selbst baut sich wortweise auf).
+  assert.ok(/Was die Mauern wissen/.test(alles), 'das ist nicht der Fortschritt: ' + alles.slice(0, 300));
+  assert.ok(/In Metall binden \(K\)/.test(alles), 'der Knopf fehlt genau dort, wo der Auftrag ihn verlangt: ' + alles.slice(0, 300));
+  // Die Tasten haengen erst nach einem Takt (delayedCall 0): bis dahin takten.
+  for (let i = 0; i < 20; i++) {
+    if (H.run(`window.game.scene.getScene('HubSceneV2').input.keyboard.listenerCount('keydown-K')`) >= 2) break;
+    H.step(1);
+  }
+  H.run(`window.game.scene.getScene('HubSceneV2').input.keyboard.emit('keydown-K', {})`);
+  let offen = false;
+  for (let i = 0; i < 60 && !offen; i++) {
+    H.step(2);
+    offen = H.run(`(function () {
+      var sc = window.game.scene.getScene('HubSceneV2'), ja = false;
+      (function s(o) { if (!o || ja) return; if (o.type === 'Text' && o.visible !== false && /^Wissensbaum/.test(String(o.text || ''))) ja = true; (o.list || []).forEach(s); })({ list: sc.children.list });
+      return ja;
+    })()`);
+  }
+  assert.ok(offen, 'K oeffnet bei Branka den Wissensbaum nicht: ' + JSON.stringify(H.run(`(function () {
+    var sc = window.game.scene.getScene('HubSceneV2'), t = [];
+    (function s(o) { if (!o) return; if (o.type === 'Text' && o.visible !== false) t.push(String(o.text).slice(0, 30)); (o.list || []).forEach(s); })({ list: sc.children.list });
+    return { d: sc._dialogOpen, k: sc.input.keyboard.listenerCount('keydown-K'), t: t.slice(0, 30) };
+  })()`)));
+  H.run(`(function () { var sc = window.game.scene.getScene('HubSceneV2'); try { sc._closeDialog([]); } catch (e) {} })()`);
+});
+
+test('Branka: auf der Abgabeseite tritt der Knopf zurueck', () => {
+  H.run(WISSEN_LAEUFT);
+  H.run(`window.questSystem.onSystemUsed('wissen')`);
+  assert.strictEqual(H.run(`window.questSystem.isQuestReadyToComplete('einfuehrung_wissen')`), true);
+  const alles = Array.from(brankaDialog().texte).join(' | ');
+  assert.ok(/abgeschlossen|complete/i.test(alles), 'das ist keine Abgabeseite: ' + alles.slice(0, 200));
+  assert.ok(!/In Metall binden/.test(alles), 'der Wissensbaum fuehrt von der Abgabe weg: ' + alles.slice(0, 200));
 });
 

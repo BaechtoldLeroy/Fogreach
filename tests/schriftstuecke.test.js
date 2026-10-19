@@ -202,7 +202,7 @@ describe('im Dungeon', () => {
     assert.ok(t, 'kein Toast nach dem Lesen');
     assert.strictEqual(t.art, 'ui_symbol_schrift');
     assert.ok(t.text && !/MISSING/.test(t.text) && t.text.length > 3, 'Titel: ' + t.text);
-    assert.ok(/Mara/.test(t.unter) && /Wissensbaum/.test(t.unter), 'Hinweis: ' + t.unter);
+    assert.ok(/Branka/.test(t.unter) && /Wissensbaum/.test(t.unter), 'Hinweis: ' + t.unter);
   });
 
   for (const [ziel, bild] of Object.entries(ZIELE)) {
