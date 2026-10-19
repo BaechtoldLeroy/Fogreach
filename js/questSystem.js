@@ -1842,6 +1842,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     // Feature 063: setFlag(name) ohne value setzt true (DialogChoice ruft so).
     if (arguments.length < 2) value = true;
     questFlags[name] = !!value;
+    if (name === 'enttarnt' && value) _ratsAuftraegeBeenden();
     _notifyUpdate();
     _persistIfPossible();
   }
@@ -2619,6 +2620,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         if (fn && typeof fn === 'string') questFlags[fn] = true;
       });
     }
+    // Der Bruch: ab hier gibt der Rat keine Auftraege mehr.
+    _ratsAuftraegeBeenden();
 
     console.log('[QuestSystem] Completed quest:', questId);
     if (window.AbilitySystem && typeof window.AbilitySystem.onQuestCompleted === 'function') {
@@ -2759,7 +2762,47 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         .slice(0, NACHHALL_NAMEN_MAX);
     }
     _backfillAdvanceActs();
+    // Stufe 1b: Staende, die schon hinter dem Bruch liegen. Aeltere trugen
+    // das Flag noch nicht (completionFlags kam spaeter): der abgeschlossene
+    // Bruch genuegt.
+    if (questState.bruch_confrontation && questState.bruch_confrontation.status === 'completed') {
+      questFlags.enttarnt = true;
+    }
+    _ratsAuftraegeBeenden();
     _notifyUpdate();
+  }
+
+  /**
+   * Stufe 1b: Ab dem Bruch (Flag 'enttarnt') sitzt Aldric im verschlossenen
+   * Rathaus und steht nicht mehr im Hub. Was er noch vergeben hatte, laufend
+   * oder nie angenommen, endet hier: Status 'entfallen', ohne Lohn und ohne
+   * Ziele (also auch ohne Anzeige im Tracker). Laufende behalten den Vermerk
+   * warAngenommen, damit das Journal schreibt: "Der Rat gibt Dir keine
+   * Auftraege mehr." Idempotent; laeuft beim Setzen des Flags, beim
+   * Abschluss des Bruchs und beim Laden.
+   * @returns {string[]} die eben beendeten Auftraege
+   */
+  function _ratsAuftraegeBeenden() {
+    if (!questFlags.enttarnt) return [];
+    var beendet = [];
+    Object.keys(QUEST_DEFINITIONS).forEach(function (id) {
+      if (QUEST_DEFINITIONS[id].npcId !== 'aldric') return;
+      var st = questState[id];
+      if (!st || st.status === 'completed' || st.status === 'entfallen') return;
+      questState[id] = { status: 'entfallen', objectives: null, warAngenommen: st.status === 'active' };
+      delete _criteriaToasted[id];
+      beendet.push(id);
+    });
+    if (beendet.length) console.log('[QuestSystem] Der Rat gibt keine Auftraege mehr, entfallen: ' + beendet.join(', '));
+    return beendet;
+  }
+
+  /** Die Auftraege, die beim Bruch entfallen sind und die man angenommen hatte (Journal). */
+  function getEntfalleneQuests() {
+    return Object.keys(QUEST_DEFINITIONS).filter(function (id) {
+      var st = questState[id];
+      return st && st.status === 'entfallen' && st.warAngenommen;
+    }).map(function (id) { return QUEST_DEFINITIONS[id]; });
   }
 
   // Ein laufender Auftrag, dessen Definition seit dem Speichern ein Ziel
@@ -2855,6 +2898,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     getActiveQuests: getActiveQuests,
     getActiveQuestsAt: getActiveQuestsAt,
     istStoryAuftrag: istStoryAuftrag,
+    getEntfalleneQuests: getEntfalleneQuests,
     abgabeNpc: abgabeNpc,
     getCompletedQuests: getCompletedQuests,
     acceptQuest: acceptQuest,

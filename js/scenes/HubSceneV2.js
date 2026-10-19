@@ -893,6 +893,8 @@ class HubSceneV2 extends Phaser.Scene {
       }
       // #161: Mara fehlt im Epilog, wenn ihr Netz am Konvoi verbrannt ist.
       if (isVisible && this._epilogOhne(npc)) isVisible = false;
+      // Stufe 1b: in diesen Hub-Phasen fehlt die Figur (Aldric ab dem Bruch).
+      if (isVisible && this._phaseVersteckt(npc)) isVisible = false;
 
       // Generate placeholder texture for NPCs without sprites (larger, more visible)
       if (!this.textures.exists(npc.texture)) {
@@ -1359,7 +1361,7 @@ class HubSceneV2 extends Phaser.Scene {
       ? window.storySystem.getCurrentActIndex() : 0;
 
     this.npcs.forEach(({ sprite, zone, nameText, questIndicator, data }) => {
-      if (!data.visibleAfterQuest && !data.visibleAfterFlag
+      if (!data.visibleAfterQuest && !data.visibleAfterFlag && !data.hiddenInPhase
           && !data.hiddenAfterFlag && !data.visibleFromAct && data.id !== 'mara') return;
       let shouldBeVisible = true;
       if (data.visibleFromAct) {
@@ -1370,6 +1372,7 @@ class HubSceneV2 extends Phaser.Scene {
       if (data.visibleAfterFlag && !hasFlag(data.visibleAfterFlag)) shouldBeVisible = false;
       if (data.hiddenAfterFlag && [].concat(data.hiddenAfterFlag).some(hasFlag)) shouldBeVisible = false;
       if (this._epilogOhne(data)) shouldBeVisible = false;
+      if (this._phaseVersteckt(data)) shouldBeVisible = false;
       if (!sprite) return;
       if (shouldBeVisible && !sprite.active) {
         sprite.setActive(true).setVisible(true);
@@ -1572,6 +1575,14 @@ class HubSceneV2 extends Phaser.Scene {
   // auf dem Platz — bis zum Epilog.
   // #161: Im Epilog fehlt Mara, wenn ihr Netz am Konvoi verbrannt ist
   // (questFinale.epilog: "Mara bleibt verschwunden").
+  _phaseVersteckt(npc) {
+    if (!npc || !npc.hiddenInPhase) return false;
+    // Die Phase frisch ableiten: beim Aufbau der Figuren steht _hubPhase noch nicht.
+    const phase = (window.HubPhase && typeof window.HubPhase.current === 'function')
+      ? window.HubPhase.current() : this._hubPhase;
+    return [].concat(npc.hiddenInPhase).indexOf(phase) >= 0;
+  }
+
   _epilogOhne(npc) {
     if (!npc || npc.id !== 'mara' || this._hubPhase !== 'epilogue') return false;
     const qs = window.questSystem;
@@ -1960,7 +1971,9 @@ class HubSceneV2 extends Phaser.Scene {
       // Dialog (hub_buerger_a2, setzt truth_told). Wird gezeigt, solange die
       // Frage offen ist — "(schweigen)" setzt nichts, also darf sie wiederkehren,
       // bis der Spieler mit "Keinem von beiden." antwortet (truth_told).
-      if (npcId === 'buerger'
+      // Stufe 1b: Nach dem Bruch gehst Du nicht mehr im Rathaus aus und ein,
+      // die Frage passt dann nicht mehr; er hat eigene Zeilen (HubPhase).
+      if (npcId === 'buerger' && this._hubPhase !== 'broken' && this._hubPhase !== 'epilogue'
           && !(qs && typeof qs.hasFlag === 'function' && qs.hasFlag('truth_told'))) {
         const _sdBuerger = this._storyDialogEntry('hub_buerger_a2');
         if (_sdBuerger) pages.push(this._storyChoicePage(_sdBuerger));

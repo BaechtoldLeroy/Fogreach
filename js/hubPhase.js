@@ -68,16 +68,35 @@
         'Du räumst zuverlässig. Der Rat merkt sich, wer zuverlässig ist.'
       ]
     },
+    // Stufe 1b: Aldric steht ab dem Bruch nicht mehr im Hub (hubLayout
+    // hiddenAfterFlag/hiddenInPhase), seine Zeilen hier waren tot. Dafuer
+    // sprechen die Stimmen der Fraktionen und der Buerger von der Jagd.
     broken: {
-      aldric: [
-        'Du. Ich weiss, was Du bist. Ein Handwerker, der zu viel gesehen hat.',
-        'Das Rathaus ist nicht mehr Deine Tür. Verschwinde, bevor die Garde Deinen Namen lernt.'
+      klerus_priester: [
+        'Du trägst den Nebel nicht mehr in den Augen, Archivschmied. Bei uns heisst das Besessenheit.',
+        'Der Rat betet für Dich. Danach schickt er die Kettenwache.'
+      ],
+      stadtwache: [
+        'Ich habe Befehl, Dich festzunehmen. (Er sieht sich um.) Ich habe Dich nicht gesehen. Heute nicht.',
+        'Das Rathaus ist zu. Wer fragt, warum, steht morgen auf der Liste.'
+      ],
+      buerger: [
+        'Verzeih. Man sagt, Du gehst nicht mehr im Rathaus aus und ein. Man sagt, sie suchen Dich.',
+        'Ich habe nichts gesehen. Das sage ich jedem, der fragt.'
       ]
     },
     epilogue: {
       buerger: [
         '(Der Bürger steht auf dem Platz und liest laut aus einem frischen Blatt.)',
-        'BUERGER: "...und hier stehen die Namen. Alle. Lies mit, wenn Du kannst."'
+        'BÜRGER: "...und hier stehen die Namen. Alle. Lies mit, wenn Du kannst."'
+      ],
+      klerus_priester: [
+        '(Er hält ein frisches Blatt und liest es zum dritten Mal.) Hier steht mein Name. Neben dem Wort Reinigung.',
+        'Ich habe gepredigt, was man mir gab. Ich weiss nicht mehr, was ich davon geglaubt habe.'
+      ],
+      stadtwache: [
+        'Keine Befehle mehr aus dem Rathaus. Die Männer stehen trotzdem jeden Morgen hier. Aus Gewohnheit.',
+        'Ich habe Leute in den Keller gebracht. Jetzt erinnere ich mich wieder an ihre Gesichter.'
       ]
     }
   };
@@ -97,10 +116,18 @@
     I.register('en', {
       'hub.phase.doubleAgent.aldric.0': 'The campaign is going splendidly, Archivesmith. Three colours, one result. Do not ask which.',
       'hub.phase.doubleAgent.aldric.1': 'You clean up reliably. The council remembers who is reliable.',
-      'hub.phase.broken.aldric.0': 'You. I know what you are. A craftsman who has seen too much.',
-      'hub.phase.broken.aldric.1': 'The town hall is no longer your door. Disappear before the guard learns your name.',
+      'hub.phase.broken.klerus_priester.0': 'The fog is gone from your eyes, Archivesmith. We call that possession.',
+      'hub.phase.broken.klerus_priester.1': 'The council prays for you. Then it sends the chain guard.',
+      'hub.phase.broken.stadtwache.0': 'I have orders to arrest you. (He looks around.) I did not see you. Not today.',
+      'hub.phase.broken.stadtwache.1': 'The town hall is closed. Whoever asks why is on the list tomorrow.',
+      'hub.phase.broken.buerger.0': 'Forgive me. They say you no longer go in and out of the town hall. They say they are looking for you.',
+      'hub.phase.broken.buerger.1': 'I saw nothing. That is what I tell everyone who asks.',
       'hub.phase.epilogue.buerger.0': '(The citizen stands on the square and reads aloud from a fresh sheet.)',
-      'hub.phase.epilogue.buerger.1': 'CITIZEN: "...and here are the names. All of them. Read along if you can."'
+      'hub.phase.epilogue.buerger.1': 'CITIZEN: "...and here are the names. All of them. Read along if you can."',
+      'hub.phase.epilogue.klerus_priester.0': '(He holds a fresh sheet and reads it for the third time.) My name is on it. Next to the word purification.',
+      'hub.phase.epilogue.klerus_priester.1': 'I preached what I was given. I no longer know how much of it I believed.',
+      'hub.phase.epilogue.stadtwache.0': 'No more orders from the town hall. The men still stand here every morning. Out of habit.',
+      'hub.phase.epilogue.stadtwache.1': 'I took people down into the cellar. Now I remember their faces again.'
     });
   })();
 

@@ -44,7 +44,7 @@ test('i18n: gebundene Story-Texte folgen der Sprache', () => {
   const r = H.run(`(function () {
     function lesen() {
       var sd = window.storyDialog.byScene.maulwurf_reveal;
-      var hp = window.HubPhase.npcFlavorByPhase.broken.aldric;
+      var hp = window.HubPhase.npcFlavorByPhase.broken.klerus_priester;
       var boss = getBossDefinition(10);
       return {
         prompt: sd.prompt,
@@ -65,7 +65,7 @@ test('i18n: gebundene Story-Texte folgen der Sprache', () => {
   assert.strictEqual(r.de.prompt, 'MARA: (als Du zurückkommst) Und? Wer ist es?');
   assert.strictEqual(r.en.prompt, 'MARA: (as you return) Well? Who is it?');
   assert.strictEqual(r.en.label, "I don't know.");
-  assert.match(r.en.flavor, /^You\. I know what you are/);
+  assert.match(r.en.flavor, /^The fog is gone from your eyes/);
   assert.strictEqual(r.de.boss, 'Kettenmeister');
   assert.strictEqual(r.en.boss, 'Chainmaster');
   assert.match(r.en.raum, /^The Source/);

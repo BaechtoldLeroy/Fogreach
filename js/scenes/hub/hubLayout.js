@@ -11,7 +11,7 @@ if (window.i18n) {
     'hub.entrance.druckerei': 'Druckerei [E]',
     'hub.npc.branka.name': 'Schmiedemeisterin Branka',
     'hub.npc.thom.name': 'Setzer Thom',
-    'hub.npc.mara.name': 'Mara vom Untergrund',
+    'hub.npc.mara.name': 'Späherin Mara',
     'hub.npc.aldric.name': 'Ratsherr Aldric',
     'hub.npc.elara.name': 'Elara',
     'hub.npc.harren.name': 'Bürgermeister Harren',
@@ -20,10 +20,10 @@ if (window.i18n) {
     'hub.npc.buerger.name': 'Ratloser Bürger',
     // Default greeting lines (shown when no quest is active). Quest-aware
     // lines come from storySystem NPC_DIALOGUE.
-    'hub.npc.aldric.line.0': 'Willkommen zurück, Archivschmied. Der Rat schätzt deine Dienste.',
-    'hub.npc.aldric.line.1': 'Nebenhall ist sicher, solange der Rat wacht. Vergiss das nicht.',
-    'hub.npc.aldric.line.2': 'Du hast Talent. Der Rat könnte jemanden wie dich gut gebrauchen — langfristig.',
-    'hub.npc.elara.line.0': 'Du erinnerst dich nicht an mich, oder? Ich... kannte dich. Vor dem Unfall.',
+    'hub.npc.aldric.line.0': 'Willkommen zurück, Archivschmied. Der Rat schätzt Deine Dienste.',
+    'hub.npc.aldric.line.1': 'Fogreach ist sicher, solange der Rat wacht. Vergiss das nicht.',
+    'hub.npc.aldric.line.2': 'Du hast Talent. Der Rat könnte jemanden wie Dich gut gebrauchen, auf lange Sicht.',
+    'hub.npc.elara.line.0': 'Du erinnerst Dich nicht an mich, oder? Ich kannte Dich. Vorher.',
     'hub.npc.elara.line.1': 'Frag nicht den Rat. Frag die Mauern. Sie erinnern sich besser als Menschen.',
     'hub.npc.harren.line.0': 'Meine Tochter Lene... sie ist verschwunden. Bitte, hilf mir sie zu finden.',
     'hub.npc.harren.line.1': 'Ich war einst stolz auf diese Stadt. Jetzt erkenne ich sie kaum wieder.'
@@ -35,7 +35,7 @@ if (window.i18n) {
     'hub.entrance.druckerei': 'Print Shop [E]',
     'hub.npc.branka.name': 'Smith Master Branka',
     'hub.npc.thom.name': 'Setter Thom',
-    'hub.npc.mara.name': 'Mara of the Underground',
+    'hub.npc.mara.name': 'Mara the Scout',
     'hub.npc.aldric.name': 'Councillor Aldric',
     'hub.npc.elara.name': 'Elara',
     'hub.npc.harren.name': 'Mayor Harren',
@@ -43,28 +43,28 @@ if (window.i18n) {
     'hub.npc.stadtwache.name': 'City Watch Captain',
     'hub.npc.buerger.name': 'Bewildered Citizen',
     'hub.npc.aldric.line.0': 'Welcome back, Archivesmith. The council values your service.',
-    'hub.npc.aldric.line.1': 'The side hall is safe as long as the council watches. Do not forget that.',
-    'hub.npc.aldric.line.2': 'You have talent. The council could use someone like you — in the long run.',
-    'hub.npc.elara.line.0': "You don't remember me, do you? I... knew you. Before the accident.",
+    'hub.npc.aldric.line.1': 'Fogreach is safe as long as the council watches. Do not forget that.',
+    'hub.npc.aldric.line.2': 'You have talent. The council could use someone like you, in the long run.',
+    'hub.npc.elara.line.0': "You don't remember me, do you? I knew you. Before.",
     'hub.npc.elara.line.1': 'Do not ask the council. Ask the walls. They remember better than people do.',
     'hub.npc.harren.line.0': 'My daughter Lene... she has disappeared. Please, help me find her.',
     'hub.npc.harren.line.1': 'I was once proud of this city. Now I barely recognize it.',
     'hub.npc.branka.line.0': "Steel alone does not cut through the council's lies. Only when every blade carries knowledge does their mask fall.",
-    'hub.npc.branka.line.1': 'The cellar beneath the town hall holds records of demon interrogations. Bring me copies, and I will refine your artifacts.',
+    'hub.npc.branka.line.1': 'The cellar beneath the town hall holds interrogation records. The clergy calls it possession, I call it torment. Bring me copies.',
     'hub.npc.branka.line.2': "Speak quietly out there. The Chain Council's overseers wear the colours of the city guard now.",
     'hub.npc.thom.line.0': 'The Chain Council decrees prayers, meals, even dreams. We answer with pamphlets full of names and numbers.',
     'hub.npc.thom.line.1': 'Bring me evidence from the town hall cellar. Every column we print takes an inch from the fear.',
     'hub.npc.thom.line.2': 'Hand out nothing unchecked. One false line, and they lock up ten more families.',
     'hub.npc.mara.line.0': "The council's scribes mark houses with chalk chains. Whoever objects vanishes into ritual shafts.",
-    'hub.npc.mara.line.1': 'The Master of Ceremonies has new seals. They keep demons as a silent archive.',
+    'hub.npc.mara.line.1': 'The Master of Ceremonies has new seals. Whatever they seal goes down to the forge.',
     'hub.npc.mara.line.2': 'Keep sharp eyes in the town hall cellar. Every seal you break loosens their chains on the city.',
     'hub.npc.klerus_priester.line.0': 'The order of the Chain Council is sacred. Whoever questions it questions the Light itself.',
     'hub.npc.klerus_priester.line.1': 'Heresy begins with the wrong question. Keep your lips pure.',
     'hub.npc.klerus_priester.line.2': 'If the daughter fled, it was not of her own will. A dark hand guides her.',
-    'hub.npc.stadtwache.line.0': 'The patrols grow every month. That is how it must be — the city is restless.',
+    'hub.npc.stadtwache.line.0': 'The patrols grow every month. That is how it must be, the city is restless.',
     'hub.npc.stadtwache.line.1': 'Loyalty is the only coin that holds its value between the streets. Do not ask why.',
     'hub.npc.stadtwache.line.2': 'When the Magistrate calls, the Guard answers. When the Clergy blesses, the Guard marches. That is how it works.',
-    'hub.npc.buerger.line.0': 'Forgive me. You go in and out of the town hall — surely you must know.'
+    'hub.npc.buerger.line.0': 'Forgive me. You go in and out of the town hall, surely you must know.'
   });
 }
 
@@ -156,7 +156,7 @@ window.HUB_HITBOXES = {
       hoehe: 54,   // Branka — Schmiedin, kraeftig, aber kein Riese
       lines: [
         'Stahl allein schneidet die Lügen des Rates nicht. Erst wenn jede Klinge Wissen trägt, fällt ihre Maske.',
-        'Im Keller unter dem Rathaus lagern Protokolle aus Dämonenverhören. Bring mir Abschriften, und ich veredele deine Artefakte.',
+        'Im Keller unter dem Rathaus lagern Verhörprotokolle. Der Klerus nennt es Besessenheit, ich nenne es Folter. Bring mir Abschriften.',
         'Sprich draussen leise. Die Aufseher des Kettenrats tragen inzwischen die Farben der Stadtgarde.'
       ]
     },
@@ -174,7 +174,7 @@ window.HUB_HITBOXES = {
     },
     {
       id: 'mara',
-      name: 'Mara vom Untergrund',
+      name: 'Späherin Mara',
       // Rechts neben Branka (300/416) statt mittig am Brunnen — holt Mara
       // zugleich aus dem fountain-Collider (444-516 / 344-370) heraus.
       x: 372, y: 416,
@@ -182,8 +182,8 @@ window.HUB_HITBOXES = {
       hoehe: 54,   // Mara
       lines: [
         'Die Schreiber des Rates markieren Häuser mit Kreideketten. Wer widerspricht, verschwindet in Ritualschachten.',
-        'Der Zeremonienmeister besitzt neue Siegel. Sie holen Dämonen als stilles Archiv.',
-        'Sichere Augen im Rathauskeller. Jedes Siegel, das du brichst, lockert ihre Ketten an der Stadt.'
+        'Der Zeremonienmeister hat neue Siegel. Was sie siegeln, geht hinab zur Esse.',
+        'Sichere Augen im Rathauskeller. Jedes Siegel, das Du brichst, lockert ihre Ketten an der Stadt.'
       ]
     },
     {
@@ -192,19 +192,22 @@ window.HUB_HITBOXES = {
       x: 480, y: 560,
       texture: 'aldric_right0',
       hoehe: 56,   // Aldric — Ratsherr, soll etwas ueberragen
-      // Im Epilog ist der Rat enttarnt und die Wahrheit gedruckt — Aldric steht
-      // dann nicht mehr auf dem Platz. In 'broken' (Akt 4) bleibt er sichtbar:
-      // dort ist er Gegner und hat eigene feindliche Zeilen (HubPhase).
+      // Stufe 1b (Story v6.1): Ab dem Bruch schliesst Aldric das Rathaus und
+      // sitzt darin, er steht nicht mehr auf dem Platz. Die Phase 'broken'
+      // beginnt mit dem Flag 'enttarnt' (oder Akt 4); seine offenen Auftraege
+      // entfallen dort (questSystem._ratsAuftraegeBeenden). Im Epilog fehlt
+      // er ohnehin (story_ending).
       hiddenAfterFlag: 'story_ending',
+      hiddenInPhase: ['broken'],
       // Faction metadata (feature 045). The dialog code in
       // HubSceneV2._showNpcDialogue reads `factionId` to prepend a
       // tier-aware greeting page from `faction.<id>.greet.<tier>` before
       // the regular flavor lines below.
       factionId: 'council',
       lines: [
-        'Willkommen zurück, Archivschmied. Der Rat schätzt deine Dienste.',
-        'Nebenhall ist sicher, solange der Rat wacht. Vergiss das nicht.',
-        'Du hast Talent. Der Rat könnte jemanden wie dich gut gebrauchen — langfristig.'
+        'Willkommen zurück, Archivschmied. Der Rat schätzt Deine Dienste.',
+        'Fogreach ist sicher, solange der Rat wacht. Vergiss das nicht.',
+        'Du hast Talent. Der Rat könnte jemanden wie Dich gut gebrauchen, auf lange Sicht.'
       ]
     },
     {
@@ -231,7 +234,7 @@ window.HUB_HITBOXES = {
       // darum ein neuer Name, den nichts setzt.
       visibleAfterFlag: 'elaraImHub',
       lines: [
-        'Du erinnerst dich nicht an mich, oder? Ich... kannte dich. Vor dem Unfall.',
+        'Du erinnerst Dich nicht an mich, oder? Ich kannte Dich. Vorher.',
         'Frag nicht den Rat. Frag die Mauern. Sie erinnern sich besser als Menschen.'
       ]
     },
@@ -271,7 +274,7 @@ window.HUB_HITBOXES = {
       visibleFromAct: 'auftrag',
       lines: [
         'Die Ordnung des Kettenrats ist heilig. Wer sie befragt, befragt das Licht selbst.',
-        'Ketzerei beginnt mit der falschen Frage. Halte deine Lippen rein.',
+        'Ketzerei beginnt mit der falschen Frage. Halte Deine Lippen rein.',
         'Wenn die Tochter geflohen ist, war es nicht aus eigenem Willen. Eine dunkle Hand führt sie.'
       ]
     },
@@ -286,7 +289,7 @@ window.HUB_HITBOXES = {
       hoehe: 58,   // die Stadtwache — gepanzert und aufrecht
       visibleFromAct: 'auftrag',
       lines: [
-        'Die Patrouillen wachsen jeden Monat. So muss es sein — die Stadt ist unruhig.',
+        'Die Patrouillen wachsen jeden Monat. So muss es sein, die Stadt ist unruhig.',
         'Loyalität ist die einzige Münze, die zwischen den Strassen Bestand hat. Frag nicht warum.',
         'Wenn der Magistrat ruft, antwortet die Garde. Wenn der Klerus segnet, marschiert die Garde. So funktioniert es.'
       ]
@@ -306,7 +309,7 @@ window.HUB_HITBOXES = {
       placeholderColor: 0x6b5a44,
       placeholderAccent: 0x4a3d2c,
       lines: [
-        'Verzeih. Du gehst im Rathaus aus und ein — Du musst es doch wissen.'
+        'Verzeih. Du gehst im Rathaus aus und ein, Du musst es doch wissen.'
       ]
     }
   ]

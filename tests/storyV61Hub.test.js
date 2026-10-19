@@ -165,7 +165,10 @@ test('Die Quelle: Branka gibt sie, nach dem Sieg nimmt Thom sie ab', () => {
   assert.strictEqual(g.mode, 'offer', JSON.stringify(g));
   assert.strictEqual(g.quest, 'schattenrat_finale');
   assert.ok(/Harren hat gefragt/.test(g.texte.join(' ')), 'Branka erwaehnt Harren nicht');
-  stand({ espionage_informant: 'completed', schattenrat_finale: 'active' });
+  // Brankas fruehere Auftraege bleiben erledigt: seit Stufe 1b zeigt ein
+  // offener Story-Auftrag (etwa "Zweifel der Schmiedin") sein "!" auch neben
+  // einem laufenden.
+  stand(Object.assign({}, erledigt, { schattenrat_finale: 'active' }));
   assert.strictEqual(zeichen('branka'), '…');
   assert.notStrictEqual(zeichen('thom'), '?', 'Thom will die laufende Quelle schon abnehmen');
   stand({ espionage_informant: 'completed', schattenrat_finale: 'ready' });

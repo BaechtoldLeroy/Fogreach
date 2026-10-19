@@ -27,7 +27,7 @@
     auftrag: 'Du erwachst in der Archivschmiede. Woran Du Dich erinnerst: an Deinen Rang, an Dein Werkzeug, an nichts davor. Ratsherr Aldric wartet schon. \'Der Rat hat Arbeit für Dich, Archivschmied. Unten im Keller.\'',
     treuer_diener: 'Im Tagebuch der Bürgermeistertochter stehen alle drei Fraktionen, mit Namen. Harren liest lange. \'Sie ist nicht geflohen. Jemand hat sie verschwinden lassen.\' Am nächsten Morgen hat der Rat neue Aufträge für Dich. Er lobt Dich. Er beobachtet Dich.',
     erste_risse: 'Ein Gesicht, drei Masken, ein Zeichen: drei Ketten, ineinander verschlungen. Harren bittet Dich zu bleiben. \'Räum weiter für sie, und heimlich für mich.\' Von nun an gehst Du im Rathaus aus und ein und trägst jeden Abend etwas hinaus.',
-    wahrheit: 'Der Kettenmeister ist gefallen, das erste Siegel mit ihm. Doch der Widerstand verliert. Maras Leute werden verhaftet, noch bevor sie losgehen. Jemand verrät sie. Einer von euch.',
+    wahrheit: 'Der Kettenmeister ist gefallen, ein Hauptmann der Garde, den der Nebel geleert hatte. Geblieben war ihm nur sein Befehl. Doch der Widerstand verliert. Maras Leute werden verhaftet, noch bevor sie losgehen. Jemand verrät sie. Einer von euch.',
     bruch: 'Elara stand neben Aldric, an ihrem Ring das Zeichen der drei Ketten. Das Rathaus ist zu, die Kettenwache jagt Dich, oben bleibt Dir kein Ort. Elara ist hinabgestiegen, zur Esse unter der Stadt, auf Tiefe 30. Du folgst ihr, um die Esse zu zerstören.'
   };
 
@@ -54,12 +54,9 @@
         'Der Widerstand hat in letzter Zeit viel Pech. Tragisch.',
         'Man hört, Du triffst Dich mit Leuten, die man nicht treffen sollte. Man hört viel.',
         'Noch gehst Du hier aus und ein. Noch.'
-      ],
-      bruch: [
-        'Du stellst zu viele Fragen. Das endet nie gut.',
-        'Das Rathaus ist nicht mehr Deine Tür.',
-        'Lauf ruhig, Archivschmied. Alle Wege führen nach unten.'
       ]
+      // Stufe 1b: ab dem Bruch sitzt Aldric im verschlossenen Rathaus und
+      // steht nicht mehr im Hub; Zeilen fuer die Zeit danach braucht er nicht.
     },
     branka: {
       auftrag: [
@@ -136,9 +133,16 @@
         'Es gibt einen Maulwurf. Jemanden, dem wir alle vertrauen.',
         'Wenn Du etwas hörst, egal von wem, sag es mir zuerst.'
       ],
+      // Stufe 1b: zwischen Bruch und Maulwurf. Aldric hat Dich enttarnt,
+      // wer der Maulwurf ist, weiss noch keiner (getNpcDialogue).
+      enttarnt: [
+        'Aldric weiss, wer Du bist. Dann weiss er auch, wer mit Dir geredet hat.',
+        'Meine Leute sind weg, und jetzt jagen sie Dich. Der Maulwurf sitzt näher, als uns lieb ist.',
+        'Wenn Du hinabsteigst, bin ich nicht weit.'
+      ],
       bruch: [
         'Elara. Ich hätte es sehen müssen. Wir alle hätten es sehen müssen.',
-        'Meine Leute sitzen im Rathauskeller. Mein Netz lebt trotzdem. Es reicht für das, was kommt.',
+        'Meine Leute sind weg. Geleert, sagen die Späher. Mein Netz lebt trotzdem, und es reicht für das, was kommt.',
         'Wenn Du hinabsteigst, bin ich nicht weit.'
       ]
     },
@@ -162,6 +166,12 @@
         'Sie nennt sich jetzt Elara. Für mich bleibt sie Lene.',
         'Sie war hier. Eine Nacht. Dann ist sie wieder gegangen.',
         'Pass auf sie auf, da unten. Sie lässt sich nicht helfen.'
+      ],
+      // Stufe 1b: zwischen Bruch und Maulwurf (er weiss noch nicht, wo Lene steht).
+      enttarnt: [
+        'Die Kettenwache war bei mir und hat nach Dir gefragt. Ich habe gelogen, zum ersten Mal seit Jahren.',
+        'Sie nennt sich jetzt Elara. Für mich bleibt sie Lene.',
+        'Pass auf sie auf, da unten. Und auf Dich.'
       ],
       bruch: [
         'Lene stand neben Aldric? (Er setzt sich schwer.) Dann war auch ihre Flucht eine Lüge.',
@@ -221,7 +231,7 @@
       'story.act.auftrag.narrative': "You wake in the Archive Forge. What you remember: your rank, your tools, nothing before. Councillor Aldric is already waiting. 'The council has work for you, Archivesmith. Down in the cellar.'",
       'story.act.treuer_diener.narrative': "The mayor's daughter's diary names all three factions. Harren reads for a long time. 'She did not flee. Someone made her disappear.' The next morning the council has new work for you. It praises you. It watches you.",
       'story.act.erste_risse.narrative': "One face, three masks, one sign: three chains, interlocked. Harren asks you to stay. 'Keep cleaning for them, and secretly for me.' From now on you come and go in the town hall and carry something out every evening.",
-      'story.act.wahrheit.narrative': "The Chain Master has fallen, and the first seal with him. But the resistance is losing. Mara's people are arrested before they even set out. Someone is betraying them. One of you.",
+      'story.act.wahrheit.narrative': "The Chain Master has fallen, a captain of the guard whom the fog had emptied. All he had left was his order. But the resistance is losing. Mara's people are arrested before they even set out. Someone is betraying them. One of you.",
       'story.act.bruch.narrative': "Elara stood beside Aldric, the sign of the three chains on her ring. The town hall is closed, the chain guard hunts you, there is no place left for you up above. Elara has gone down, to the forge beneath the city, at depth 30. You follow her to destroy the forge.",
 
       'story.all_quests_ending': "The fog breaks. Not because anyone drives it away, but because too many people remember too much at once.\n\nThe press is running, and the city remembers.",
@@ -247,9 +257,6 @@
       'story.npc.aldric.wahrheit.0': "The resistance has had a lot of bad luck lately. Tragic.",
       'story.npc.aldric.wahrheit.1': "One hears you meet people one shouldn't meet. One hears a lot.",
       'story.npc.aldric.wahrheit.2': "You still come and go here. For now.",
-      'story.npc.aldric.bruch.0': "You ask too many questions. That never ends well.",
-      'story.npc.aldric.bruch.1': "The town hall is no longer your door.",
-      'story.npc.aldric.bruch.2': "Run, Archivesmith. All roads lead down.",
       'story.npc.branka.auftrag.0': "You seal files you can't remember the next day. Take care of yourself.",
       'story.npc.branka.auftrag.1': "You used to stand here asking questions until Aldric turned red. Do you remember?",
       'story.npc.branka.auftrag.2': "The fog takes something from everyone. From some it takes more.",
@@ -293,7 +300,10 @@
       'story.npc.mara.wahrheit.1': "There is a mole. Someone we all trust.",
       'story.npc.mara.wahrheit.2': "If you hear something, no matter from whom, tell me first.",
       'story.npc.mara.bruch.0': "Elara. I should have seen it. We all should have seen it.",
-      'story.npc.mara.bruch.1': "My people sit in the town hall cellar. My network lives anyway. It is enough for what is coming.",
+      'story.npc.mara.enttarnt.0': "Aldric knows who you are. Then he also knows who talked to you.",
+      'story.npc.mara.enttarnt.1': "My people are gone, and now they are hunting you. The mole is closer than we would like.",
+      'story.npc.mara.enttarnt.2': "When you go down, I won't be far.",
+      'story.npc.mara.bruch.1': "My people are gone. Emptied, the scouts say. My network lives anyway, and it is enough for what is coming.",
       'story.npc.mara.bruch.2': "When you go down, I won't be far.",
       'story.npc.harren.auftrag.0': "My daughter Lene has disappeared. Aldric says she fled. Lene doesn't flee.",
       'story.npc.harren.auftrag.1': "Every evening I put a light in the window. In case she's looking for the way.",
@@ -307,6 +317,9 @@
       'story.npc.harren.wahrheit.0': "She calls herself Elara now. To me she is still Lene.",
       'story.npc.harren.wahrheit.1': "She was here. One night. Then she left again.",
       'story.npc.harren.wahrheit.2': "Look after her down there. She won't let anyone help her.",
+      'story.npc.harren.enttarnt.0': "The chain guard came to me and asked about you. I lied, for the first time in years.",
+      'story.npc.harren.enttarnt.1': "She calls herself Elara now. To me she is still Lene.",
+      'story.npc.harren.enttarnt.2': "Look after her down there. And after yourself.",
       'story.npc.harren.bruch.0': "Lene stood beside Aldric? (He sits down heavily.) Then her escape was a lie too.",
       'story.npc.harren.bruch.1': "When you go down, tell her the light is still burning.",
       'story.npc.harren.bruch.2': "I'm too old to fight. But I won't leave her alone down there.",
@@ -355,13 +368,17 @@
       'story.akt.prolog': 'Prolog',
       'story.akt.n': 'Akt {n}',
       'story.journal.akt_prolog': 'Prolog · {name}',
-      'story.journal.akt_n': 'Akt {n} von {total}: {name}'
+      'story.journal.akt_n': 'Akt {n} von {total}: {name}',
+      'story.journal.entfallen': 'Entfallene Aufgaben:',
+      'story.journal.rat_keine_auftraege': 'Der Rat gibt Dir keine Aufträge mehr.'
     });
     window.i18n.register('en', {
       'story.akt.prolog': 'Prologue',
       'story.akt.n': 'Act {n}',
       'story.journal.akt_prolog': 'Prologue · {name}',
-      'story.journal.akt_n': 'Act {n} of {total}: {name}'
+      'story.journal.akt_n': 'Act {n} of {total}: {name}',
+      'story.journal.entfallen': 'Dropped tasks:',
+      'story.journal.rat_keine_auftraege': 'The council gives you no more assignments.'
     });
   }
   var AKT_ANZAHL = STORY_ACTS.length - 1;   // nummerierte Akte nach dem Prolog
@@ -575,9 +592,18 @@
     var act = getCurrentAct();
     var npcLines = NPC_DIALOGUE[npcId];
     if (!npcLines) return null;
-    var actLines = npcLines[act.id] || npcLines.auftrag || null;
-    if (!actLines) return null;
     var actId = npcLines[act.id] ? act.id : 'auftrag';
+    // Stufe 1b: Zwischen dem Bruch (Flag 'enttarnt', noch Akt 3) und dem
+    // Maulwurf (Akt 4) sprachen alle noch, als suche Dich niemand. Jetzt
+    // gelten die Zeilen des Bruchs; wer dort schon vom Maulwurf weiss (Mara,
+    // Harren), hat fuer diese Zeit eigene ('enttarnt').
+    var qsN = window.questSystem;
+    if (act.id === 'wahrheit' && qsN && typeof qsN.hasFlag === 'function' && qsN.hasFlag('enttarnt')) {
+      if (npcLines.enttarnt) actId = 'enttarnt';
+      else if (npcLines.bruch) actId = 'bruch';
+    }
+    var actLines = npcLines[actId] || null;
+    if (!actLines) return null;
     // Resolve each line via i18n (falls back to original German via cascade).
     return actLines.map(function (line, i) {
       return _i18nLookup('story.npc.' + npcId + '.' + actId + '.' + i, line);
@@ -590,6 +616,7 @@
     var act = getCurrentAct();
     var completedQuests = [];
     var activeQuests = [];
+    var entfalleneQuests = [];
 
     if (window.questSystem) {
       completedQuests = window.questSystem.getCompletedQuests().map(function (q) {
@@ -625,6 +652,12 @@
           ? window.questSystem.getQuestDescription(q) : q.description;
         return { title: qTitle, description: qDesc, progress: progress, progressPct: progressPct, npcId: q.npcId };
       });
+      // Stufe 1b: beim Bruch entfallene Auftraege des Rats (questSystem).
+      if (typeof window.questSystem.getEntfalleneQuests === 'function') {
+        entfalleneQuests = window.questSystem.getEntfalleneQuests().map(function (q) {
+          return { title: window.questSystem.getQuestTitle ? window.questSystem.getQuestTitle(q) : q.title, npcId: q.npcId };
+        });
+      }
     }
 
     return {
@@ -636,6 +669,7 @@
       highestWave: storyState.highestWave,
       completedQuests: completedQuests,
       activeQuests: activeQuests,
+      entfalleneQuests: entfalleneQuests,
       totalActs: AKT_ANZAHL,
       totalKills: storyState.totalKills || 0,
       totalRoomsCleared: storyState.totalRoomsCleared || 0,
@@ -1047,6 +1081,36 @@
           content.add(rewardLine);
           y += rewardLine.height + 4;
         }
+      });
+    }
+
+    // Stufe 1b: was beim Bruch entfallen ist, ohne Lohn.
+    if (data.entfalleneQuests && data.entfalleneQuests.length) {
+      y += 14;
+      var entHeader = scene.add.text(leftX, y, _i18nLookup('story.journal.entfallen', 'Entfallene Aufgaben:'), {
+        fontFamily: 'serif',
+        fontSize: 16,
+        color: '#c08878'
+      }).setOrigin(0, 0);
+      content.add(entHeader);
+      y += entHeader.height + 6;
+      data.entfalleneQuests.forEach(function (q) {
+        var line = scene.add.text(leftX + 12, y, '✕ ' + q.title, {
+          fontFamily: 'monospace',
+          fontSize: 13,
+          color: '#a08880',
+          wordWrap: { width: innerW - 16 }
+        }).setOrigin(0, 0);
+        content.add(line);
+        y += line.height + 2;
+        var vermerk = scene.add.text(leftX + 24, y, _i18nLookup('story.journal.rat_keine_auftraege', 'Der Rat gibt Dir keine Aufträge mehr.'), {
+          fontFamily: 'monospace',
+          fontSize: 11,
+          color: '#8a7a74',
+          wordWrap: { width: innerW - 28 }
+        }).setOrigin(0, 0);
+        content.add(vermerk);
+        y += vermerk.height + 4;
       });
     }
 
