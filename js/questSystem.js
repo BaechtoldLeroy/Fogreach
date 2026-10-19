@@ -1358,7 +1358,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       // #143: Die sechs Einfuehrungsquests.
       'quest.einfuehrung_wissen.title': 'What the Walls Know',
       'quest.einfuehrung_wissen.description': 'Bind a memory fragment in metal with Branka at the Archive Forge (knowledge tree).',
-      'quest.einfuehrung_wissen.dialogueOffer': "Steel alone does not cut through the council's lies. I say that to everyone, and everyone nods and does not understand it.\n\nYou are carrying a fragment. A piece of something somebody wrote down and the council burned. The archivesmiths used to bind such things in metal here, so the city would never lose them. Bind it in metal, then the fog cannot take it. I will show you how.",
+      'quest.einfuehrung_wissen.dialogueOffer': "Steel alone does not cut through the council's lies. I say that to everyone, and everyone nods and does not understand it.\n\nYou are carrying a fragment. A piece of something somebody wrote down and the council burned. The Archivesmiths used to bind such things in metal here, so the city would never lose them. Bind it in metal, then the fog cannot take it. I will show you how.",
       'quest.einfuehrung_wissen.dialogueProgress': 'The fragment is still lying around on you. Come to the anvil and bind it in metal. It will not be worth more if you wait.',
       'quest.einfuehrung_wissen.dialogueComplete': "(She looks at you a moment too long.) And? Nothing flashes, nothing chimes. That is what knowledge is like when it holds.\n\nEvery fragment you find down there, you bind here. The council collects them too, it just burns them.",
 
@@ -1395,14 +1395,14 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
 
       'quest.einfuehrung_schmiede.title': 'The First Edge',
       'quest.einfuehrung_schmiede.description': 'Go into the Forge and upgrade a piece of equipment at the workbench.',
-      'quest.einfuehrung_schmiede.dialogueOffer': "You wear what you found down there, and you wear it the way you carry a tool that is strange to you.\n\nCome with me into the Forge, the door right next to me. Put one of your pieces on the workbench and press \"Upgrade\" - then it becomes yours. This one is on me; after that it costs gold and iron chunks, and you do it alone.",
+      'quest.einfuehrung_schmiede.dialogueOffer': "You wear what you found down there, and you wear it the way you carry a tool that is strange to you.\n\nCome with me into the Forge, the door right next to me. Put one of your pieces on the workbench and press \"Upgrade\" - then it becomes yours. This one is on me; after that it costs gold and Iron Chunks, and you do it alone.",
       'quest.einfuehrung_schmiede.dialogueProgress': 'You have not done it yet. Go into the Forge, put a piece on the workbench and press "Upgrade". This time I pay.',
       'quest.einfuehrung_schmiede.dialogueComplete': "(She turns it once into the light.) You see. The same piece, only no longer the same.\n\nEvery time you come back up, you stop by here. Not because I say so, but because otherwise you go back down with what was good enough last week.",
 
       'quest.einfuehrung_presse.title': 'A Line That Stays',
-      'quest.einfuehrung_presse.description': 'Go into the Print Shop and have Thom the typesetter print an edict there.',
-      'quest.einfuehrung_presse.dialogueOffer': "The council prescribes every week what this city is to think. We can do the same - smaller, but we can do it.\n\nYou have printing sheets on you, I can see them. Come into the Print Shop, right next to me, and pick an edict - I will set it. It works as long as it hangs, and it costs you the council's attention. You should have felt both once, before it matters.",
-      'quest.einfuehrung_presse.dialogueProgress': 'Nothing is hanging yet. Go into the Print Shop, pick an edict, I will set it.',
+      'quest.einfuehrung_presse.description': 'Go into the Printing House and have Thom the Typesetter print an edict there.',
+      'quest.einfuehrung_presse.dialogueOffer': "The council prescribes every week what this city is to think. We can do the same - smaller, but we can do it.\n\nYou have Print Sheets on you, I can see them. Come into the Printing House, right next to me, and pick an edict - I will set it. It works as long as it hangs, and it costs you the council's attention. You should have felt both once, before it matters.",
+      'quest.einfuehrung_presse.dialogueProgress': 'Nothing is hanging yet. Go into the Printing House, pick an edict, I will set it.',
       'quest.einfuehrung_presse.dialogueComplete': "(He wipes his fingers on his smock.) Now it is on every corner, and somebody is reading it out loud.\n\nJust remember one thing: every line we print, the council puts on its scales. Do not print more than you can make good again down below.",
 
       'quest.einfuehrung_markt.title': 'What Lies Under the Table',
@@ -1416,7 +1416,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.einfuehrung_talente.dialogueOffer': "The council keeps a file on every citizen, and in yours there is a word that bothers me: undetermined.\n\nThat can be changed. You gather experience down there, and experience becomes points. Spend one. Fury, Chains or Shadow - take your pick. The council values people who commit.\n\nAnd then: a tool you do not keep at hand is no tool. Put it on a key.",
       'quest.einfuehrung_talente.dialogueProgress': 'Still undetermined. Open the tree and spend a point. Which one is your business.',
       'quest.einfuehrung_talente.dialogueProgressNext': 'Committed, good. But a tool you do not keep at hand is no tool. Put it on a key - in the loadout, K or through the menu.',
-      'quest.einfuehrung_talente.dialogueComplete': "(He notes something without looking up.) Committed. Good.\n\nThe file will outlive you, archive-smith. That is not a threat, that is administration.",
+      'quest.einfuehrung_talente.dialogueComplete': "(He notes something without looking up.) Committed. Good.\n\nThe file will outlive you, Archivesmith. That is not a threat, that is administration.",
 
       'quest.einfuehrung_akte.title': 'Your File',
       'quest.einfuehrung_akte.description': 'Look at your character stats (C or your portrait at the top left).',
@@ -1441,15 +1441,15 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.aldric_patrol.description': 'Clear 3 rooms in the cellars to secure all corridors.',
       // Akt 1 — Vertical Slice chain (feature 050)
       'quest.harren_daughter_investigation.title': 'The Vanished Daughter',
-      'quest.harren_daughter_investigation.description': 'Find the mayor daughter\'s journal fragment in the Rathauskeller.',
+      'quest.harren_daughter_investigation.description': 'Find the mayor\'s daughter\'s journal fragment in the Town Hall Cellar.',
       'quest.magistrat_verification.title': 'Magistrate Verification',
       'quest.magistrat_verification.description': 'Obtain the council-sealed verification document for the Magistrate.',
       'quest.klerus_purification.title': 'Purification of the Lower Chambers',
-      'quest.klerus_purification.description': 'Cleanse the lower Rathauskeller chambers — defeat 3 elite enemies. The heretic leaders only lurk from depth 3.',
+      'quest.klerus_purification.description': 'Cleanse the lower chambers of the Town Hall Cellar — defeat 3 elite enemies. The heretic leaders only lurk from depth 3.',
       'quest.garde_patrol_expansion.title': 'Patrol Expansion',
       'quest.garde_patrol_expansion.description': 'Demonstrate force for the new patrols — defeat 10 trespassers.',
       'quest.widerstand_proof.title': "The Council Document",
-      'quest.widerstand_proof.description': "Find a hidden council document in the Rathauskeller, a few rooms deeper.",
+      'quest.widerstand_proof.description': "Find a hidden council document in the Town Hall Cellar, a few rooms deeper.",
       'quest.council_collusion_reveal.title': 'The Secret Meeting',
       'quest.council_collusion_reveal.description': 'Watch the public council session. Then eavesdrop on the secret session in the council chamber beneath the town hall.',
       'quest.mara_contact.title': 'The Scout',
@@ -1462,7 +1462,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.elara_ritual.description': "Descend to depth 20 and defeat the Master of Ceremonies who holds the council's ritual chamber.",
       'quest.thom_truth.title': 'Forbidden Truths',
       'quest.thom_truth.description': "Find 5 print plates with the forbidden truths about the council (from depth 14).",
-      'quest.mara_warning.title': "The Chain Master",
+      'quest.mara_warning.title': "The Chainmaster",
       'quest.mara_warning.description': 'Defeat the Chainmaster at depth 10, who guards the way to the council\'s seal chambers.',
       'quest.branka_weapons.title': 'Weapons for the Resistance',
       'quest.branka_weapons.description': 'Craft 3 items at the Archive Forge.',
@@ -1477,11 +1477,11 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       // die i18n-Kaskade auf Deutsch zurück (Deutsch = Source-of-Truth).
       'quest.was_der_rauch_behaelt.title': 'What the Smoke Keeps',
       'quest.was_der_rauch_behaelt.description': "Descend to depth 25 and face the Echo, the echo of a thousand voices. Bring Mara's people home.",
-      'quest.was_der_rauch_behaelt.dialogueOffer': "The people they took from me are not dead. Not quite. Whoever goes down deep enough hears them, at depth 25, all at once. The scouts call it the Echo. It stands between you and the forge. Go there, don't listen too long, and bring them home.",
+      'quest.was_der_rauch_behaelt.dialogueOffer': "The people they took from me are not dead. Not quite. Whoever goes down deep enough hears them, at depth 25, all at once. The scouts call it the Echo. It stands between you and the Furnace. Go there, don't listen too long, and bring them home.",
       'quest.was_der_rauch_behaelt.dialogueProgress': "The Echo waits at depth 25. When it whispers, don't listen. Strike.",
-      'quest.was_der_rauch_behaelt.dialogueComplete': "You let them go. (She is silent for a long time.) Did you hear a name you know? (One of the voices was your own. You don't tell her.) Give Thom the names you could read. Then go. The forge is waiting, and Elara with it.",
+      'quest.was_der_rauch_behaelt.dialogueComplete': "You let them go. (She is silent for a long time.) Did you hear a name you know? (One of the voices was your own. You don't tell her.) Give Thom the names you could read. Then go. The Furnace is waiting, and Elara with it.",
       'quest.schattenrat_finale.title': 'The Source',
-      'quest.schattenrat_finale.description': "Descend to depth 30, to the forge beneath the city. Elara is already there. Afterwards Thom waits at the press.",
+      'quest.schattenrat_finale.description': "Descend to depth 30, to the Furnace beneath the city. Elara is already there. Afterwards Thom waits at the press.",
 
       // === Quest dialogues — English ===
       'quest.aldric_cleanup.dialogueOffer': "Vermin has settled in the cellars down below. Wild beasts, the guards say. Clear them out — ten of them, then we talk again.\n\nWill you take this task?",
@@ -1493,7 +1493,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.aldric_patrol.dialogueComplete': 'All corridors are safe. Good work, Archivesmith.',
 
       // === Akt 1 Vertical Slice (feature 050) — quest dialogues ===
-      'quest.harren_daughter_investigation.dialogueOffer': "My daughter has vanished. Aldric says she fled. The Clergy speaks of possession. The Guard talks of dereliction of duty.\n\nI trust none of the three until I have read her own words. Bring me the journal fragment she left behind. You will find it in the Rathauskeller — somewhere the council did not look.\n\nTrust no one until you have seen it yourself.",
+      'quest.harren_daughter_investigation.dialogueOffer': "My daughter has vanished. Aldric says she fled. The Clergy speaks of possession. The Guard talks of dereliction of duty.\n\nI trust none of the three until I have read her own words. Bring me the journal fragment she left behind. You will find it in the Town Hall Cellar — somewhere the council did not look.\n\nTrust no one until you have seen it yourself.",
       'quest.harren_daughter_investigation.dialogueProgress': 'Keep searching — the fragment is down there. Aldric, the Clergy and the Guard quarrel upstairs because each wants its own version. You will find the real one.',
       'quest.harren_daughter_investigation.dialogueComplete': "You have it. All three council factions are in it, by name. Lene did not simply flee, Archivesmith. Someone made her disappear.\n\nYou will get work from every side now. Take it. Listen to everything. Then come back to me.",
 
@@ -1509,7 +1509,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.garde_patrol_expansion.dialogueProgress': 'Ten troublemakers remain. Each fallen body is one more line in the report. The Guard waits on the outcome.',
       'quest.garde_patrol_expansion.dialogueComplete': "The report is written. Ten troublemakers fewer, and the Guard can propose more patrols to the council. No one else will vanish — or at least no one who matters. The Guard remembers who answers quickly.",
 
-      'quest.widerstand_proof.dialogueOffer': "You brought me the bundle and did not open it. Good. Then I can show you what I have seen, before you go on running their errands.\n\nI want YOU to see what I have seen. Down in the Rathauskeller lies a document the three council factions should never have signed together - and yet their seal is on it. All three.\n\nBring it to me. Then we talk.",
+      'quest.widerstand_proof.dialogueOffer': "You brought me the bundle and did not open it. Good. Then I can show you what I have seen, before you go on running their errands.\n\nI want YOU to see what I have seen. Down in the Town Hall Cellar lies a document the three council factions should never have signed together - and yet their seal is on it. All three.\n\nBring it to me. Then we talk.",
       'quest.widerstand_proof.dialogueProgress': "The document lies a few rooms deeper. It is small, but the seal upon it will take your breath away.",
       'quest.widerstand_proof.dialogueComplete': 'Three seals. One signature. Magistrate, Clergy, Guard — in public they pretend to be rivals. Behind closed doors they agree. Go to Harren. He has been waiting for the moment you would understand.',
 
@@ -1517,8 +1517,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.council_collusion_reveal.dialogueProgress': 'The council chamber lies down in the cellar. Put on the guard uniform, stay in the shadows and listen to what they say when nobody is watching.',
       'quest.council_collusion_reveal.dialogueComplete': "Now you have seen it. One face, three masks. You worked for each of them. You could flee, but a craftsman who keeps walking in and out of the town hall sees things a fugitive never sees. Stay where you are. Keep cleaning for them, and secretly for me. It is more dangerous. It is also the only thing that helps.",
       // === Feature 050 side-dialogue keys (consumed by WP03) ===
-      'sidedialog.branka.q2_eyebrow': 'Branka raises an eyebrow when she sees the Magistrat seal. "Another verification seal. Do you actually know what ends up written on these documents?"',
-      'sidedialog.thom.q4_eyebrow': "Thom glances up, then back at the press. \"Patrol expansion. The edict sounds reasonable. Go ask someone at the gazebo what 'reasonable' has meant this month.\"",
+      'sidedialog.branka.q2_eyebrow': 'Branka raises an eyebrow when she sees the Magistrate\'s seal. "Another verification seal. Do you actually know what ends up written on these documents?"',
+      'sidedialog.thom.q4_eyebrow': "Thom glances up, then back at the press. \"Patrol expansion. The edict sounds reasonable. Go ask someone at the pavilion what 'reasonable' has meant this month.\"",
 
       'quest.mara_contact.dialogueOffer': "You bought at my table and never asked how I know the way you pay. (She pushes the wares aside.) I know you from before, Archivesmith. From before you lost your memory. Back then you asked questions the council wanted buried.\n\nBefore I open my network to you, I want to see whether you can still see. Go down and scout three cellar rooms. Mark what the council hides there.",
       'quest.mara_contact.dialogueProgress': 'Not enough seen yet. Three rooms — and burn each one into your memory.',
@@ -1573,7 +1573,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.espionage_archive.description': "Infiltrate the council archive in disguise (from depth 12), eavesdrop on the scribes and recover the sealed file.",
       'quest.espionage_archive.dialogueOffer': "She was here. Lene. She says she fled, of her own will, and that she cannot stay. (He turns the ring of office on his finger.) I want to believe her, Archivesmith. But I want to read it.\n\nIn the council's archive lies her file, sealed, deep beneath the town hall, from depth 12. Go in disguised as a scribe, listen to what the others whisper, and bring me the file. Do not be seen.\n\nWill you do this for me?",
       'quest.espionage_archive.dialogueProgress': "The archive lies from depth 12. The scribes have said nothing useful yet. Stay in the archive, inconspicuous, and keep eavesdropping until you reach the sealed file.",
-      'quest.espionage_archive.dialogueComplete': "\"Missing, case closed\" — his daughter's disappearance, neatly filed, date, seal, signature. And the date falls before the day she vanished.\n\n(Harren reads it twice.) They planned it. Someone in the council filed Lene's disappearance before it happened.",
+      'quest.espionage_archive.dialogueComplete': "You have the file. \"Missing, case closed\" — his daughter's disappearance, neatly filed, date, seal, signature. And the date falls before the day she vanished.\n\n(Harren reads it twice.) They planned it. Someone in the council filed Lene's disappearance before it happened.",
 
       'quest.espionage_informant.title': 'The Mole',
       'quest.espionage_informant.description': "Unmask a council mole within the resistance's ranks, in disguise (from depth 23).",
@@ -1583,9 +1583,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
 
       'quest.elara_ritual.dialogueOffer': "Beneath the council's ritual chamber lies a shaft. It leads down to whatever makes the fog. The Master of Ceremonies holds the chamber in front of it. Descend to depth 20 and strike him down. Then I will show you where the shaft leads.\n\nAre you ready for the truth?",
       'quest.elara_ritual.dialogueProgress': "The Master of Ceremonies still holds the chamber. You will find him at depth 20. As long as he lives, you cannot reach the shaft.",
-      'quest.elara_ritual.dialogueComplete': "The Master of Ceremonies has fallen. (Behind him the shaft. Far below a glow, red as a forge, and from it the smoke rises, grey and thick.)\n\nThat is it. The forge. It burns what is in the vials: memories. Its smoke is the fog.\n\nYou cannot smash it. You have to loosen its binding, the way you loosen a seal. One strike in the right place, in the right direction. Your hands know how. I will show you the spot when the time comes.\n\nTake this amulet. It shields you from the fog when you go deeper.",
+      'quest.elara_ritual.dialogueComplete': "The Master of Ceremonies has fallen. (Behind him the shaft. Far below a glow, red as a furnace, and from it the smoke rises, grey and thick.)\n\nThat is it. The Furnace. It burns what is in the vials: memories. Its smoke is the fog.\n\nYou cannot smash it. You have to loosen its binding, the way you loosen a seal. One strike in the right place, in the right direction. Your hands know how. I will show you the spot when the time comes.\n\nTake this amulet. It shields you from the fog when you go deeper.",
       'quest.thom_truth.dialogueOffer': "I've printed enough of what the council wants. Time for the truth.\n\nFind five print plates, deep in the cellar, from depth 14 — they hold the real history.",
-      'quest.thom_truth.dialogueProgress': "The print plates lie deep in the town hall cellar, from depth 14. Keep searching.",
+      'quest.thom_truth.dialogueProgress': "The print plates lie deep in the Town Hall Cellar, from depth 14. Keep searching.",
       'quest.thom_truth.dialogueComplete': 'Fantastic! These plates contain proof the council wanted to destroy. The truth goes to print.',
 
       'quest.mara_warning.dialogueOffer': "At depth 10 the Chainmaster holds the way. He used to be a captain of the guard; now only his order is left. He binds whoever he wants to catch. Bring him down, and we will see what he guards.",
@@ -1603,15 +1603,15 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.elara_blade.dialogueProgress': "The blade waits for you.",
       'quest.elara_blade.dialogueComplete': "May it protect you. No matter what comes.",
 
-      'quest.mara_assault.dialogueOffer': "Aldric fled into the depths after the forge broke, with what is left of his chain guard. Up here his name is already on every sheet. Down there he may not even know any more that it is his.\n\nReach wave 30. I will find him, and then I will take you to him. Are you in?",
-      'quest.mara_assault.dialogueProgress': "The chain guard still holds out in the depths. Press on, to wave 30. I will wait for you there.",
+      'quest.mara_assault.dialogueOffer': "Aldric fled into the depths after the Furnace broke, with what is left of his Chain Guard. Up here his name is already on every sheet. Down there he may not even know any more that it is his.\n\nReach wave 30. I will find him, and then I will take you to him. Are you in?",
+      'quest.mara_assault.dialogueProgress': "The Chain Guard still holds out in the depths. Press on, to wave 30. I will wait for you there.",
 
       'quest.mara_assault.dialogueProgressNext': "I found him, all the way down. Go down once more, I will lead you to him.",
-      'quest.mara_assault.dialogueComplete': "He is empty. The man who had others emptied. (Mara stares into the flame of her lamp for a long time.) I thought I would be glad.\n\nThe chain guard is broken. The tunnels beneath the city belong to no one again. That is more than this city has had in a long time.",
+      'quest.mara_assault.dialogueComplete': "He is empty. The man who had others emptied. (Mara stares into the flame of her lamp for a long time.) I thought I would be glad.\n\nThe Chain Guard is broken. The tunnels beneath the city belong to no one again. That is more than this city has had in a long time.",
 
-      'quest.schattenrat_finale.dialogueOffer': "Elara has gone down, to the forge, at depth 30. She wears a true amulet of the council. You only have your hands. (She looks at your hammer.) That will do, and so will your hands. You are the only one who can loosen such a binding.\n\nAnd one more thing. Harren asked where you are going. I did not tell him. He will find out anyway.",
-      'quest.schattenrat_finale.dialogueProgress': "The forge lies at depth 30. The deeper you go, the more the fog wants from you. Hold on to what you are.",
-      'quest.schattenrat_finale.dialogueComplete': "(Thom wipes his hands on his smock as you come in. He does not ask what it was like down there. He can see it on you.)\n\nThe forge is broken. Outside, people stop in the street and say names they have not said in years. (He taps the press.) Now they believe what they read, because they know it again themselves. The plates are ready.",
+      'quest.schattenrat_finale.dialogueOffer': "Elara has gone down, to the Furnace, at depth 30. She wears a true amulet of the council. You only have your hands. (She looks at your hammer.) That will do, and so will your hands. You are the only one who can loosen such a binding.\n\nAnd one more thing. Harren asked where you are going. I did not tell him. He will find out anyway.",
+      'quest.schattenrat_finale.dialogueProgress': "The Furnace lies at depth 30. The deeper you go, the more the fog wants from you. Hold on to what you are.",
+      'quest.schattenrat_finale.dialogueComplete': "(Thom wipes his hands on his smock as you come in. He does not ask what it was like down there. He can see it on you.)\n\nThe Furnace is broken. Outside, people stop in the street and say names they have not said in years. (He taps the press.) Now they believe what they read, because they know it again themselves. The plates are ready.",
 
       // #68: die Aushaenge am Brett
       'quest.brett_stoerer.title': 'Notice: Quiet in the Cellars',
@@ -1624,7 +1624,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.brett_anfuehrer.dialogueOffer': 'GUARD: Three leaders, from depth 6. Whoever pays does not ask who they were.\n\n(The notice is fresh. The one beneath it, half covered, is looking for a missing seamstress.)',
       'quest.brett_anfuehrer.dialogueProgress': 'Three leaders, from depth 6. The notice is waiting.',
       'quest.brett_anfuehrer.dialogueComplete': 'The Guard pays in cash, at once. Nobody takes the notice down; it hangs there again the next morning.',
-      'quest.brett_aufruf.title': 'Call of the Print Shop',
+      'quest.brett_aufruf.title': 'Call of the Printing House',
       'quest.brett_aufruf.description': 'A call from the resistance: clear 5 chambers from depth 10.',
       'quest.brett_aufruf.dialogueOffer': 'Over the torn council posters someone has pasted a freshly printed sheet:\n\n"Whoever clears up down there makes room for the truth. Five chambers, from depth 10. Paper is at Thom\'s."',
       'quest.brett_aufruf.dialogueProgress': 'Five chambers from depth 10. The sheet is still up; someone nailed it down.',
@@ -1645,14 +1645,14 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       // #87: bisher ohne englische Fassung
       'quest.resistance_fetch_01.title': "The Sealed Bundle",
       'quest.resistance_fetch_01.description': "Fetch the sealed bundle from the cellar. No one may see it, and do not open it.",
-      'quest.resistance_fetch_01.dialogueOffer': "You are still standing. Good. Then you can do me a favour right away.\n\nSomewhere down here lies a bundle, sealed. Bring it to me without anyone seeing it. And do not open it. After that we talk about the council.",
+      'quest.resistance_fetch_01.dialogueOffer': "You are still standing. Good. Then you can do me a favor right away.\n\nSomewhere down here lies a bundle, sealed. Bring it to me without anyone seeing it. And do not open it. After that we talk about the council.",
       'quest.resistance_fetch_01.dialogueProgress': "The bundle lies somewhere down there. Look around, and leave it closed.",
       'quest.resistance_fetch_01.dialogueComplete': "You have it. And you did not open it. Good. Now I know I can trust you.\n\n(On the wax of the seal: three chains, intertwined. You have never seen this sign before.)",
 
       'quest.faction_campaign.title': "Edict of the Week",
       'quest.faction_campaign.description': "The city votes: three edicts, one wins. Have them printed at Thom's and post them on the notice boards in front of the town hall.",
       'quest.faction_campaign.dialogueOffer': "This week the city votes. Three edicts, Magistrate, Clergy, Guard, and the citizens choose one. Have them printed at Thom's and post them on the boards in front of the town hall. That is what order looks like when it is chosen.",
-      'quest.faction_campaign.dialogueProgress': "First print, then post. The print shop is just across the square.",
+      'quest.faction_campaign.dialogueProgress': "First print, then post. The Printing House is just across the square.",
       'quest.faction_campaign.dialogueComplete': "Good. The votes are being counted, and the council announces the result in public, in the council hall. As it should be.",
 
       'quest.klerus_district_purge.title': "Purging a District",
@@ -1680,8 +1680,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.elara_second_truth.dialogueComplete': "She tucked the report away. A true report, and no one will ever read it. \"Not everything helps,\" she said. You push the thought aside. For now.",
 
       'quest.the_reckoning.title': "The Reckoning",
-      'quest.the_reckoning.description': "The forge is broken. Thom waits at the press. The city shall learn everything.",
-      'quest.the_reckoning.dialogueOffer': "The plates are set. Everything goes on them, Aldric's name at the top. Then the council, the resistance, her. And the names of the disappeared. No seal stands beneath it, and the city will believe it anyway, because it is remembering again itself.",
+      'quest.the_reckoning.description': "The Furnace is broken. Thom waits at the press. The city shall learn everything.",
+      'quest.the_reckoning.dialogueOffer': "The plates are set. Everything goes on them, Aldric's name at the top. Then the council, the resistance, her. And the names of the disappeared. There is no seal beneath it, and the city will believe it anyway, because it is starting to remember on its own.",
       'quest.the_reckoning.dialogueProgress': "The press is waiting.",
       'quest.the_reckoning.dialogueComplete': "The fog thins. Not because someone drives it away, but because too many people remember too much at once. What stands in a thousand places, nobody can burn any more.",
 
@@ -1711,8 +1711,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.lohn.tier.3': 'Legendary',
       'quest.lohn.toast': 'Task complete: {title}',
       'quest.lohn.stufe': 'Level {level} reached — talents on [T]',
-      'quest.lohn.truhe': '{name} is in your chest — the inventory was full',
-      'quest.lohn.ausstehend': '{name} is waiting — inventory and chest are full',
+      'quest.lohn.truhe': '{name} is in your stash — the inventory was full',
+      'quest.lohn.ausstehend': '{name} is waiting — inventory and stash are full',
       'quest.lohn.nachgereicht': 'Delivered at last: {name}'
     });
 

@@ -206,7 +206,7 @@ if (window.i18n && typeof window.i18n.binden === 'function') {
     'room.desc.PrisonDepths':   'Dungeon Depths \u2014 Screams echo through the halls...',
     'room.desc.CouncilChamber': 'Council Chamber \u2014 The throne of the Chain Council stands abandoned...',
     'room.desc.ForgottenCrypt': 'Forgotten Crypt \u2014 Ancient seals glow faintly...',
-    'room.desc.DieQuelle':      'The Forge \u2014 This is where the fog is born.',
+    'room.desc.DieQuelle':      'The Furnace \u2014 This is where the fog is born.',
     'room.desc.ElarasVersteck': "Elara's Hideout \u2014 Nobody will find you here."
   });
 }
@@ -1707,7 +1707,7 @@ function enterRoom(scene, roomId) {
       if (_flucht && window.EventSystem && typeof window.EventSystem.showEventToast === 'function') {
         try {
           window.EventSystem.showEventToast(scene, _elaraT('Die Kettenwache! Lauf. Elara wartet hinter der nächsten Treppe.',
-            'The chain guard! Run. Elara is waiting past the next stairs.'), 'flucht');
+            'The Chain Guard! Run. Elara is waiting past the next stairs.'), 'flucht');
         } catch (e) {}
       }
       window.RoomMode.beginRoom(scene, {
@@ -3677,7 +3677,7 @@ var ELARA_SZENEN = {
         '(Die Wachen sind fort. Sie hilft Dir nicht auf, sie wartet, bis Du stehst.)\n\n',
         '(The guards are gone. She does not help you up, she waits until you stand.)\n\n') : _elaraT(
         '(Nebel quillt aus den Fugen. Die Kettenwache weicht zurück, als hätte etwas sie gerufen, und löst sich im Grau auf. Aus dem Dunkel tritt eine junge Frau, die Kapuze tief im Gesicht.)\n\n',
-        '(Fog seeps from the cracks. The chain guard falls back as if something called it, and dissolves into the grey. A young woman steps out of the dark, hood pulled low.)\n\n')) + rede,
+        '(Fog seeps from the cracks. The Chain Guard falls back as if something called it, and dissolves into the grey. A young woman steps out of the dark, hood pulled low.)\n\n')) + rede,
       wahlen: [
         { label: _elaraT('Wie hast Du das gemacht?', 'How did you do that?'),
           antwort: _elaraT('"Der Nebel gehorcht dem, der ihn kennt. Frag nicht weiter."', '"The fog obeys those who know it. Don\'t ask further."') },
@@ -4327,11 +4327,11 @@ var ALDRIC_ENDE = { seiten: function () { return [
       '(Mara waits at a bend, her lamp shuttered. She says nothing, she only nods towards the chamber beyond.)') },
   { text: _elaraT(
       '(Auf dem Boden, an die Wand gelehnt: Aldric. Kein Mantel, kein Siegelring. Seine Augen gehen über Dich hinweg, so wie Deine damals in der Schmiede über alles hinweggingen.)\n\nALDRIC: Du... kennst Du mich? Weisst Du, wer ich bin?',
-      '(On the floor, leaning against the wall: Aldric. No coat, no signet ring. His eyes pass over you, the way yours once passed over everything in the forge.)\n\nALDRIC: You... do you know me? Do you know who I am?'),
+      '(On the floor, leaning against the wall: Aldric. No coat, no signet ring. His eyes pass over you, the way yours once passed over everything in the smithy.)\n\nALDRIC: You... do you know me? Do you know who I am?'),
     wahlen: [
       { label: _elaraT('Ihm sagen, wer er war', 'Tell him who he was'), flags: ['aldric_erzaehlt'],
         antwort: _elaraT('(Du sagst es ihm. Ratsherr Aldric. Der Kettenrat, die Esse, die Phiolen, Dein eigener Amboss. Er hört zu wie jemand, dem man von einem Fremden erzählt.)\n\nALDRIC: Das klingt nach einem schlechten Menschen. (Er sieht auf seine Hände.) Danke, dass Du es mir gesagt hast.',
-          '(You tell him. Councillor Aldric. The Chain Council, the forge, the vials, your own anvil. He listens like someone being told about a stranger.)\n\nALDRIC: That sounds like a bad man. (He looks at his hands.) Thank you for telling me.') },
+          '(You tell him. Councillor Aldric. The Chain Council, the Furnace, the vials, your own anvil. He listens like someone being told about a stranger.)\n\nALDRIC: That sounds like a bad man. (He looks at his hands.) Thank you for telling me.') },
       { label: _elaraT('Schweigen', 'Stay silent'), flags: ['aldric_verschwiegen'],
         antwort: _elaraT('(Du sagst nichts. Er wartet, dann senkt er den Blick.)\n\nALDRIC: Schon gut. Vielleicht ist es besser so.\n\n(Der Mann, der andere geleert hat, ist selbst leer. Seine Geschichte bleibt bei Dir.)',
           '(You say nothing. He waits, then lowers his eyes.)\n\nALDRIC: Never mind. Perhaps it is better this way.\n\n(The man who emptied others is empty himself. His story stays with you.)') }
@@ -4605,7 +4605,7 @@ function _hinterhaltGegnerSetzen(scene, h) {
   try {
     if (window.EventSystem && typeof window.EventSystem.showEventToast === 'function') {
       window.EventSystem.showEventToast(scene, _elaraT('Hinterhalt! Die Kettenwache des Rats sperrt den Raum.',
-        'Ambush! The council\'s chain guard seals the room.'), 'hinterhalt');
+        'Ambush! The council\'s Chain Guard seals the room.'), 'hinterhalt');
     }
   } catch (e) {}
 }

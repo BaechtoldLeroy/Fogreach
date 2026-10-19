@@ -97,7 +97,7 @@ if (window.i18n) {
     'hub.dialog.choice.info': 'Learn more',
     'hub.dialog.choice.decline': 'Decline',
     'hub.dialog.choice.collect': 'Collect reward',
-    'hub.druckerei.name': 'Print Shop',
+    'hub.druckerei.name': 'Printing House',
     // #160
     'hub.anschlag.prompt': 'Post the edicts [E]',
     'hub.brett.prompt': 'Notice board [E]',
@@ -105,7 +105,7 @@ if (window.i18n) {
     'hub.anschlag.ausgehaengt': 'The edicts are up. The city votes. The council announces the result in the council hall.',
     'hub.edikt.gedruckt': 'Three edicts printed. Now to the notice boards in front of the town hall.',
     'hub.druckerei.line1': 'The printing press is idle.',
-    'hub.druckerei.line2': 'Setter Thom will fire it up again soon.',
+    'hub.druckerei.line2': 'Thom the Typesetter will fire it up again soon.',
     'hub.wave_select.title': 'The Descent',
     'hub.wave_select.subtitle': 'How deep into the fog do you descend?',
     'hub.wave_select.dungeon_level': 'Depth',
@@ -1535,7 +1535,7 @@ class HubSceneV2 extends Phaser.Scene {
   // In der Druckerei: Thom druckt die drei Edikte.
   _ediktDrucken() {
     const en = !!(window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en');
-    const name = en ? 'Setter Thom' : 'Setzer Thom';
+    const name = en ? 'Thom the Typesetter' : 'Setzer Thom';
     const npcData = { id: 'setzer_thom', name, lines: [] };
     this._dialogOpen = true;
     this._showDialoguePages(npcData, name, [{
@@ -3255,7 +3255,7 @@ class HubSceneV2 extends Phaser.Scene {
         this._ediktDrucken();
       } else if (!ph || !ph.isUnlocked()) {
         this._showNpcDialogue({
-          name: 'Setzer Thom',
+          name: _HUB_T('hub.npc.thom.name'),
           lines: [_HUB_T('printingHouse.dialog.locked')]
         });
       } else if (typeof window.openPrintingHouseScene === 'function') {
@@ -5088,7 +5088,7 @@ class HubSceneV2 extends Phaser.Scene {
     // hoert bei der Abgabe nur noch zu. Die frueheren Seiten "Komm mit" und
     // die Beschreibung der Sitzung waren deshalb nie zu sehen und sind weg.
     const page2 = isEN
-      ? 'Behind the locked doors of the Rathauskeller hall they met. Magistrate. Clergy. Guard. Three voices that never publicly agree in this city, and there, in the shadow of the wall candles, they spoke as a single mouth. Names were struck. One of them: the mayor\'s daughter.'
+      ? 'Behind the locked doors of the hall in the Town Hall Cellar they met. Magistrate. Clergy. Guard. Three voices that never publicly agree in this city, and there, in the shadow of the wall candles, they spoke as a single mouth. Names were struck. One of them: the mayor\'s daughter.'
       : 'Hinter den verschlossenen Türen der Rathauskeller-Halle trafen sie sich. Magistrat. Klerus. Garde. Drei Stimmen, die in der Stadt nie öffentlich übereinstimmen, und dort, im Schatten der Wandkerzen, sprachen sie wie ein einziger Mund. Namen wurden gestrichen. Einer davon: die Tochter des Bürgermeisters.';
 
     const page3Prompt = isEN

@@ -235,7 +235,7 @@
   // durch — der Streit der drei soll aber Wortmeldung fuer Wortmeldung kommen.
   function _seitenOeffentlich() {
     var sieger = ediktSieger();
-    var zeilen = [_t('(Der Ratssaal ist voll. Bürger bis an die Wände. Vorn drei Pulte, drei Farben.)', '(The council hall is full. Citizens up to the walls. At the front three lecterns, three colours.)')];
+    var zeilen = [_t('(Der Ratssaal ist voll. Bürger bis an die Wände. Vorn drei Pulte, drei Farben.)', '(The council hall is full. Citizens up to the walls. At the front three lecterns, three colors.)')];
     // #160: Die Sitzung verkuendet das Ergebnis der Abstimmung.
     if (sieger) {
       zeilen.push(_t('MAGISTRAT: ', 'MAGISTRATE: ') + _siegerText(sieger));
@@ -294,7 +294,7 @@
         ? _t('Eines der drei Siegel kennst Du. Du hast es selbst unter ein Dokument gesetzt, damals, als es eine Formalie war.', 'You know one of the three seals. You put it under a document yourself, back when it was a formality.')
         : null;
     var seiten = [
-      _t('(Die Ratskammer bei Nacht. Magistrat, Klerus und Garde legen die Farben ab. Vor ihnen ein einziges Blatt, drei Siegel, und auf jedem dasselbe Zeichen: drei Ketten, ineinander verschlungen.)', '(The council chamber at night. Magistrate, Clergy and Guard take off their colours. Before them a single sheet, three seals, and on each the same sign: three chains, intertwined.)'),
+      _t('(Die Ratskammer bei Nacht. Magistrat, Klerus und Garde legen die Farben ab. Vor ihnen ein einziges Blatt, drei Siegel, und auf jedem dasselbe Zeichen: drei Ketten, ineinander verschlungen.)', '(The council chamber at night. Magistrate, Clergy and Guard take off their colors. Before them a single sheet, three seals, and on each the same sign: three chains, intertwined.)'),
       _t('ALDRIC: Solange die Stadt glaubt, wir stritten, glaubt sie, sie habe eine Wahl.', 'ALDRIC: As long as the city believes we quarrel, it believes it has a choice.'),
       _t('KLERUS: Die Patrouillen sind verdoppelt. Das stand fest, bevor die erste Stimme gezählt war.', 'CLERGY: The patrols are doubled. That was settled before the first vote was counted.'),
       _t('GARDE: Wie jede Woche.', 'GUARD: Like every week.')
@@ -543,8 +543,8 @@
   // die inszenierte Rettung bekommen die allgemeine Fassung, ein Stand ganz
   // ohne Rettung gar keinen Rueckblick.
   function _maulwurfWaechter(art) {
-    if (art === 'voll') return _t('(An der Tür, neben den beiden, ein Kettenwächter. Auf seinem Helm ein roter Helmbusch. Du kennst ihn. Aus dem Keller.)', '(By the door, beside the two of them, a chain guard. On his helmet a red plume. You know him. From the cellar.)');
-    if (art === 'allgemein') return _t('(An der Tür, neben den beiden, ein Kettenwächter. Er sieht Dich an, als würde er Dich kennen. Aus dem Keller?)', '(By the door, beside the two of them, a chain guard. He looks at you as if he knew you. From the cellar?)');
+    if (art === 'voll') return _t('(An der Tür, neben den beiden, ein Kettenwächter. Auf seinem Helm ein roter Helmbusch. Du kennst ihn. Aus dem Keller.)', '(By the door, beside the two of them, a Chain Guard. On his helmet a red plume. You know him. From the cellar.)');
+    if (art === 'allgemein') return _t('(An der Tür, neben den beiden, ein Kettenwächter. Er sieht Dich an, als würde er Dich kennen. Aus dem Keller?)', '(By the door, beside the two of them, a Chain Guard. He looks at you as if he knew you. From the cellar?)');
     return null;
   }
 

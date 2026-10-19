@@ -37,7 +37,7 @@
     });
     window.i18n.register('en', {
       'find.nische.label':     'Loose Stones',
-      'find.nische.material':  'Behind the stones: {n} iron chunks.',
+      'find.nische.material':  'Behind the stones: {n} Iron Chunks.',
       'find.nische.fragment':  'Behind the stones: a knowledge fragment.',
       'find.nische.beute':     'Something lay behind the stones.',
       'find.nische.leer':      'Behind the stones: nothing but dust.',

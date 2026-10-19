@@ -112,7 +112,7 @@
       namenlos: 'Wer Du warst, bleibt im Nebel. Die Stadt nennt Dich den Archivschmied, und es genügt.'
     },
     en: {
-      presse: 'With the forge, fragments come back. People stop in the street and remember names, faces, days.',
+      presse: 'With the Furnace broken, fragments come back. People stop in the street and remember names, faces, days.',
       druck: 'Thom sets type all night, and you print everything: Aldric\'s name at the top, then the council, the resistance, Elara and the names of the disappeared.',
       nachhall: 'Among the names of the disappeared are those that stayed readable after the Echo: {namen}. Thom sets each one by hand, in large letters.',
       und: ' and ',
@@ -121,12 +121,12 @@
       plattenZeichen: 'Afterwards you forge new printing plates and give them away. The man who forged the sign of the three chains now makes tools for everyone.',
       nebel: 'The fog breaks. Not because anyone drives it away, but because too many people remember too much at once.',
       harren: 'Harren lies buried beneath the fountain. Next to his name someone has carved a second one: Lene.',
-      elaraLebt: 'Elara lives, behind the bars of the town hall cellar where she once rescued you. Every day she asks the guard whether the press is still running.',
+      elaraLebt: 'Elara lives, behind the bars of the Town Hall Cellar where she once rescued you. Every day she asks the guard whether the press is still running.',
       elaraTot: 'Elara lies beside her father. Her blade hangs above Thom\'s type case, and nobody touches it.',
       vieleZurueck: 'Many of the disappeared come back. The names on the petitions you kept were warned in time.',
       wenigeZurueck: 'Only a few of the disappeared come back. The names on the petitions you handed over were the first on the council\'s lists.',
       einigeZurueck: 'Some of the disappeared come back, blinking, as if from a long sleep.',
-      namenGewarnt: 'Many of the disappeared come back. Those you warned about the chain guard got away in time and now climb up out of the canals.',
+      namenGewarnt: 'Many of the disappeared come back. Those you warned about the Chain Guard got away in time and now climb up out of the canals.',
       namenAbgeliefert: 'Only a few of the disappeared come back. The names on the list you gave the priest were the first in the council\'s books.',
       aldricErzaehlt: 'Aldric lives in a chamber beneath the town hall. He heard his story from your mouth and reads it again every day on Thom\'s sheets, as if it were about a stranger.',
       aldricVerschwiegen: 'Aldric wanders the lower passages. His name is on every door in the city, and he does not know it is his.',

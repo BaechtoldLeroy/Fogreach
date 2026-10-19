@@ -60,7 +60,7 @@ if (window.i18n) {
     'inventory.tier.magic': 'Magic',
     'inventory.tier.rare': 'Rare',
     'inventory.tier.legendary': 'Legendary',
-    'inventory.material.MAT': 'Iron Chunk',
+    'inventory.material.MAT': 'Iron Chunks',
     'inventory.inschrift.ELARAS_KLINGE': 'Engraved near the hilt: three chains, interlocked.',
     'inventory.inschrift.erkannt': '(You know this sign. It was on the seals of the secret session.)',
     'inventory.inschrift.schmiedemarke': '(Beneath it, a smith\'s mark. Your hands know it before you do. It is yours.)',

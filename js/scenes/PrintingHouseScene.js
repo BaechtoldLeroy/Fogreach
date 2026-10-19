@@ -36,7 +36,7 @@
     });
     window.i18n.register('en', {
       'printingHouse.ui.title': 'Printing House',
-      'printingHouse.ui.paper': 'Print sheets',
+      'printingHouse.ui.paper': 'Print Sheets',
       'printingHouse.ui.suspicion': 'Council suspicion',
       'printingHouse.ui.state.alert': 'alert',
       'printingHouse.ui.state.hunt': 'hunt',
@@ -46,7 +46,7 @@
       'printingHouse.ui.active_edict': 'Active edict',
       'printingHouse.ui.no_active': 'No edict active',
       'printingHouse.ui.status.locked': 'From act {req}',
-      'printingHouse.ui.status.unaffordable': 'Not enough paper',
+      'printingHouse.ui.status.unaffordable': 'Not enough Print Sheets',
       'printingHouse.ui.status.active': 'Active',
       'printingHouse.ui.status.available': 'Print',
       'printingHouse.ui.status.blocked_by_active': 'Another edict active',

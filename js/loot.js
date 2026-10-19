@@ -23,10 +23,10 @@ if (window.i18n) {
   });
   window.i18n.register('en', {
     'loot.legacy.weapon': 'Sword',
-    'loot.legacy.head': 'Steel Helm',
+    'loot.legacy.head': 'Steel Helmet',
     'loot.legacy.body': 'Breastplate',
     'loot.legacy.boots': 'Boots',
-    'loot.legacy.material': 'Iron Chunk',
+    'loot.legacy.material': 'Iron Chunks',
     'loot.material.portal_scroll': 'Portal Scroll',
     'loot.material.stair_scroll': 'Stair Scroll',
     'loot.quest_item.QUEST_DOC': 'Protocol Transcript',

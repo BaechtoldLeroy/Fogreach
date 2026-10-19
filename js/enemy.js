@@ -3549,11 +3549,11 @@ if (window.i18n && typeof window.i18n.binden === 'function') {
     'boss.chainMaster.name': 'Chainmaster',
     'boss.chainMaster.lore': 'Once a captain of the guard, sent down out of duty to watch the way. When his amulet faded, the fog emptied him. All that is left is his order: no one passes.',
     'boss.ceremonyMaster.name': 'Master of Ceremonies',
-    'boss.ceremonyMaster.lore': 'He led the clergy\'s rituals out of conviction and stayed below of his own free will, believing he served forgetting. Only the ritual is left of him. He holds the chamber at the shaft to the forge and feeds it what the city forgets.',
-    'boss.nachhallEsse.name': 'The Echo of the Forge',
-    'boss.nachhallEsse.lore': 'Deep down, where the forge burned, the echo is loudest. What it burned finds no rest and looks for a shape.',
+    'boss.ceremonyMaster.lore': 'He led the clergy\'s rituals out of conviction and stayed below of his own free will, believing he served forgetting. Only the ritual is left of him. He holds the chamber at the shaft to the Furnace and feeds it what the city forgets.',
+    'boss.nachhallEsse.name': 'The Echo of the Furnace',
+    'boss.nachhallEsse.lore': 'Deep down, where the Furnace burned, the echo is loudest. What it burned finds no rest and looks for a shape.',
     'boss.elaraBesessen.name': 'Elara, possessed',
-    'boss.elaraBesessen.lore': 'The forge has taken her. What was once Elara reaches for everything you remember.',
+    'boss.elaraBesessen.lore': 'The Furnace has taken her. What was once Elara reaches for everything you remember.',
     'boss.nachhall.name': 'The Echo',
     'boss.nachhall.lore': 'No one. All the burned memories, so dense they have fused into a single being. The creatures are its fragments; it is the whole.'
   });

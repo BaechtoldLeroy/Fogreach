@@ -114,10 +114,10 @@
       });
     });
     I.register('en', {
-      'hub.phase.doubleAgent.aldric.0': 'The campaign is going splendidly, Archivesmith. Three colours, one result. Do not ask which.',
+      'hub.phase.doubleAgent.aldric.0': 'The campaign is going splendidly, Archivesmith. Three colors, one result. Do not ask which.',
       'hub.phase.doubleAgent.aldric.1': 'You clean up reliably. The council remembers who is reliable.',
       'hub.phase.broken.klerus_priester.0': 'The fog is gone from your eyes, Archivesmith. We call that possession.',
-      'hub.phase.broken.klerus_priester.1': 'The council prays for you. Then it sends the chain guard.',
+      'hub.phase.broken.klerus_priester.1': 'The council prays for you. Then it sends the Chain Guard.',
       'hub.phase.broken.stadtwache.0': 'I have orders to arrest you. (He looks around.) I did not see you. Not today.',
       'hub.phase.broken.stadtwache.1': 'The town hall is closed. Whoever asks why is on the list tomorrow.',
       'hub.phase.broken.buerger.0': 'Forgive me. They say you no longer go in and out of the town hall. They say they are looking for you.',

@@ -208,7 +208,7 @@ if (window.i18n) {
     'loot.item.WPN_HORNBOGEN': 'Horn Bow',
     'loot.item.WPN_GLUTBOGEN': 'Ember Bow',
     'loot.item.HD_KETTENHAUBE': 'Chain Coif',
-    'loot.item.HD_BRONZEHELM': 'Bronze Helm',
+    'loot.item.HD_BRONZEHELM': 'Bronze Helmet',
     'loot.item.HD_SCHLANGENMASKE': 'Serpent Mask',
     'loot.item.BD_LEDERHARNISCH': 'Leather Harness',
     'loot.item.BD_PLATTENPANZER': 'Plate Armor',

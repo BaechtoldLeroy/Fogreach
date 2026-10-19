@@ -309,12 +309,12 @@
     var seiten = [
       // Elara empfaengt Dich als Verbuendete.
       _t('(Die Esse. Ein Schacht aus Glut und Rauch, so hoch wie das Rathaus. Davor, ohne Kapuze: Elara. An ihrem Hals ein Amulett des Rats, ein echtes.)\n\nELARA: Du bist da. Ich wusste es. Jetzt löse die Bindung, so wie ich es Dir gezeigt habe, und die Esse ist Geschichte.',
-        '(The forge. A shaft of embers and smoke, as tall as the town hall. Before it, hood down: Elara. Around her neck an amulet of the council, a true one.)\n\nELARA: You are here. I knew it. Now loosen the binding, the way I showed you, and the forge is history.'),
+        '(The Furnace. A shaft of embers and smoke, as tall as the town hall. Before it, hood down: Elara. Around her neck an amulet of the council, a true one.)\n\nELARA: You are here. I knew it. Now loosen the binding, the way I showed you, and the Furnace is history.'),
       // 1. Der erhobene Hammer (Stufe 3: Bildunterschrift beim Ansetzen).
       _t('(Du setzt den Hammer an die Bindung, an der Stelle, die sie Dir gezeigt hat. Deine Hände wissen, was zu tun ist. Sie wissen es zu gut.)',
         '(You set the hammer to the binding, at the spot she showed you. Your hands know what to do. They know it too well.)'),
       _t('(Mitten im Schlag erkennst Du den Griff. Das ist kein Lösen. Das ist das Erneuern, das Du schon einmal verweigert hast, damals, als Du noch wusstest, wer Du bist.)\n\n(Du hältst inne. Der Hammer bleibt oben.)',
-        '(In the middle of the strike you recognise the grip. This is no loosening. This is the renewal you refused once before, back when you still knew who you were.)\n\n(You stop. The hammer stays raised.)'),
+        '(In the middle of the strike you recognize the grip. This is no loosening. This is the renewal you refused once before, back when you still knew who you were.)\n\n(You stop. The hammer stays raised.)'),
       _t('ELARA: (leise) Alles haben wir vorausgesehen. Nur nicht, dass Du es merkst.',
         'ELARA: (quietly) We foresaw everything. Except that you would notice.'),
       _t('ELARA: Der Rat hat Dich geleert, damit der Nebel Dich hier unten nicht auslöscht. Ich habe Dir einen Widerstand gegeben, damit Du hinab willst. Und ich habe Dir gezeigt, wie man die Bindung löst, damit Du sie erneuerst.\n\nWir brauchten nie Dein Ja, Archivschmied. Nur Deine Hände.',
@@ -323,12 +323,12 @@
       _t('(Schritte hinter Dir. Harren, ohne Amulett, grau vom Nebel. Er hat alles verloren, was er war. Bis auf eines.)\n\nHARREN: Lene.\n\n(Sie zögert. Einen Atemzug lang ist sie wieder ein Kind am Fenster.)',
         '(Footsteps behind you. Harren, without an amulet, grey with fog. He has lost everything he was. All but one thing.)\n\nHARREN: Lene.\n\n(She hesitates. For one breath she is a child at the window again.)'),
       _t('(Dann stösst sie ihn weg. Mit eigener Hand, bewusst, ohne den Blick abzuwenden. Er stürzt gegen den Rand des Schachts und steht nicht mehr auf.)\n\nELARA: Die Esse braucht keinen Vater.',
-        '(Then she pushes him away. With her own hand, deliberately, without looking away. He falls against the rim of the shaft and does not get up again.)\n\nELARA: The forge needs no father.'),
+        '(Then she pushes him away. With her own hand, deliberately, without looking away. He falls against the rim of the shaft and does not get up again.)\n\nELARA: The Furnace needs no father.'),
       // 3. Elara nimmt Deinen Hammer, und die Esse nimmt sie.
       _t('(Sie reisst Dir den Hammer aus der Hand.)\n\nELARA: Dann mache ich es selbst.\n\n(Sie schlägt gegen die Bindung. Einmal, zweimal. Die Glut antwortet.)',
         '(She tears the hammer from your hand.)\n\nELARA: Then I will do it myself.\n\n(She strikes the binding. Once, twice. The embers answer.)'),
       _t('(Doch sie ist keine Archivschmiedin. Die Bindung entgleitet ihr. Statt dass sie die Esse schmiedet, schmiedet die Esse sie. Der Rauch kriecht in sie hinein, und was sich aufrichtet, ist nicht mehr Elara.)',
-        '(But she is no Archivesmith. The binding slips away from her. Instead of her forging the forge, the forge forges her. The smoke crawls into her, and what rises is no longer Elara.)')
+        '(But she is no Archivesmith. The binding slips away from her. Instead of her forging the Furnace, the Furnace forges her. The smoke crawls into her, and what rises is no longer Elara.)')
     ];
     return seiten;
   }
@@ -412,7 +412,7 @@
     var FH = window.FinaleHandwerk;
     if (!FH) { danach(); return; }
     _toast(scene, 'Geh zur Esse und setze den Hammer an, so wie Elara es Dir gezeigt hat.',
-      'Walk to the forge and set your hammer to it, the way Elara showed you.');
+      'Walk to the Furnace and set your hammer to it, the way Elara showed you.');
     var texte = vorKampfSeiten();
     b.hammerHalt = scene.__finaleHammer = FH.halten(scene, {
       richtung: 'erneuern',
@@ -743,7 +743,7 @@
     var weiter = function () { _nachDemBruch(scene, b); };
     if (!FH) { weiter(); return; }
     _toast(scene, 'Nimm Deinen Hammer. Löse die Bindung an der Esse, diesmal in die andere Richtung.',
-      'Take your hammer. Loosen the binding at the forge, this time the other way.');
+      'Take your hammer. Loosen the binding at the Furnace, this time the other way.');
     scene.__finaleLoesen = FH.halten(scene, {
       richtung: 'loesen',
       beiFertig: function (h) {
@@ -825,7 +825,7 @@
     if (b.elara) { b.elara.setScale(b.elara.scaleX, b.elara.scaleY * 0.82).setFlipX(true).setName('finaleElaraFall'); }
     scene.events.once('shutdown', function () { _weg(b.elara); });
     _seiten(scene, [{ text: _t('(Elara liegt noch dort, wo sie fiel, und die Esse brennt weiter. Die Bindung wartet auf Deinen Hammer.)',
-      '(Elara still lies where she fell, and the forge keeps burning. The binding is waiting for your hammer.)') }],
+      '(Elara still lies where she fell, and the Furnace keeps burning. The binding is waiting for your hammer.)') }],
     function () { _letzterSchlag(scene, b); });
   }
 
@@ -861,7 +861,7 @@
         : _t('(Elaras Hieb geht fehl. Die Klinge, die sie Dir geschenkt hat, trägst Du noch am Gürtel. Du ziehst sie. Ihre eigene Klinge trifft sie. Sie sinkt in die Knie, und der Rauch weicht aus ihr wie aus einem erkalteten Ofen.)',
           '(Elara\'s blow goes wide. The blade she gave you still hangs at your belt. You draw it. Her own blade strikes her. She sinks to her knees, and the smoke leaves her like a cooling furnace.)'),
       _t('(Der Hammer liegt neben ihr. Du hebst ihn auf und setzt ihn noch einmal an die Bindung. Diesmal in die andere Richtung, so wie nur ein Archivschmied es kann.)\n\n(Ein Schlag. Die Bindung löst sich wirklich. Die Esse reisst von oben bis unten, die Glut erlischt, und es kommt kein neuer Rauch nach.)',
-        '(The hammer lies beside her. You pick it up and set it to the binding once more. This time in the other direction, the way only an Archivesmith can.)\n\n(One strike. The binding truly comes loose. The forge splits from top to bottom, the embers die, and no new smoke follows.)'),
+        '(The hammer lies beside her. You pick it up and set it to the binding once more. This time in the other direction, the way only an Archivesmith can.)\n\n(One strike. The binding truly comes loose. The Furnace splits from top to bottom, the embers die, and no new smoke follows.)'),
       _t('(Tief unten im Schacht lässt etwas los. Der Dämon verliert seinen Halt an der Stadt und fällt zurück in die Tiefe. Was er noch nicht verbrannt hatte, gibt er frei: Lichter steigen auf, Hunderte, hinauf zu den Gassen.)',
         '(Deep down in the shaft something lets go. The demon loses its hold on the city and falls back into the depths. What it had not yet burned, it releases: lights rise, hundreds of them, up towards the alleys.)'),
       _letzteWorte()

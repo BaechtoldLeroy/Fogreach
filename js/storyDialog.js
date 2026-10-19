@@ -222,7 +222,7 @@
     'storydialog.magistrat_verification.1.label': 'Damage it unnoticed',
     'storydialog.magistrat_verification.1.response': '(You press your thumb into the soft wax before you hand it over. Aldric seals without looking.)\n\nALDRIC: Good. The Magistrate thanks you.\n\n(The seal will not hold. Whoever looks closely will notice. Branka always looks closely.)',
 
-    'storydialog.hub_buerger_a2.prompt': 'CITIZEN: Whom should I believe, the council or the rumours? Whose are you?',
+    'storydialog.hub_buerger_a2.prompt': 'CITIZEN: Whom should I believe, the council or the rumors? Whose are you?',
     'storydialog.hub_buerger_a2.0.label': 'Neither.',
     'storydialog.hub_buerger_a2.0.response': 'CITIZEN: (stares at you) That is no answer that helps a father.',
     'storydialog.hub_buerger_a2.1.label': '(stay silent)',
@@ -242,7 +242,7 @@
 
     'storydialog.klerus_district_purge.prompt': 'PRIEST: The list. The Light does not like to wait.',
     'storydialog.klerus_district_purge.0.label': 'Hand over the list',
-    'storydialog.klerus_district_purge.0.response': 'PRIEST: The Light thanks you. (He folds the list without reading it. Tomorrow morning the chain guard will stand at every door whose name is on it.)',
+    'storydialog.klerus_district_purge.0.response': 'PRIEST: The Light thanks you. (He folds the list without reading it. Tomorrow morning the Chain Guard will stand at every door whose name is on it.)',
     'storydialog.klerus_district_purge.1.label': 'Warn the people first',
     'storydialog.klerus_district_purge.1.response': '(You give Mara a sign and take your time on the way to the town hall. In the night the houses on the list empty.)\n\nPRIEST: Empty? All of them? (He looks at you for a long time.) The infestation moves on. The Light will find it.',
 
@@ -266,13 +266,13 @@
     'storydialog.thom_truth.0.label': 'I stand behind it. Even if it costs something.',
     'storydialog.thom_truth.0.response': 'THOM: Then there are two of us. We pay the price together. That is enough to start.',
 
-    'storydialog.schattenrat_finale.prompt': 'BRANKA: Go to the forge. And come back.',
+    'storydialog.schattenrat_finale.prompt': 'BRANKA: Go to the Furnace. And come back.',
     'storydialog.schattenrat_finale.0.label': 'And Elara?',
     'storydialog.schattenrat_finale.0.response': 'BRANKA: Elara has made her choice. Make yours. With the hammer, not with your heart.',
     'storydialog.schattenrat_finale.1.label': 'And if I do not make it?',
     'storydialog.schattenrat_finale.1.response': 'BRANKA: Then nobody loosens this binding any more, in either direction. (She looks at you.) You will make it.',
 
-    'storydialog.edikt_anschlag.prompt': 'Three edicts, one board. Only one hangs at the very top, where it is read first. Whose colour do you hang on top?',
+    'storydialog.edikt_anschlag.prompt': 'Three edicts, one board. Only one hangs at the very top, where it is read first. Whose color do you hang on top?',
     'storydialog.edikt_anschlag.0.label': 'Magistrate on top — law and order',
     'storydialog.edikt_anschlag.0.response': 'The Magistrate\'s seal goes on top. Whoever reads it thinks of laws, not of chains.',
     'storydialog.edikt_anschlag.1.label': 'Clergy on top — the light of the council',

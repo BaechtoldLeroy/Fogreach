@@ -66,7 +66,7 @@
     window.i18n.register('en', {
       'start.loading': 'The city wakes in the fog …',
       'start.loading_hub': 'Out into the city …',
-      'start.loading_dungeon': 'Down into the town hall cellar …'
+      'start.loading_dungeon': 'Down into the Town Hall Cellar …'
     });
   }
   function T(key) { return window.i18n ? window.i18n.t(key) : key; }

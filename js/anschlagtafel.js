@@ -92,7 +92,7 @@
       'brett.zeile.epilogue.1': 'Ein Kind hat unten in die Ecke ein Wort gekritzelt. Es ist kein Name, es ist ein Datum.'
     });
     window.i18n.register('en', {
-      'brett.zeile.council.0': 'Three notices, three colours, one box for the pay. Beside them a price list for bread, crossed out twice.',
+      'brett.zeile.council.0': 'Three notices, three colors, one box for the pay. Beside them a price list for bread, crossed out twice.',
       'brett.zeile.council.1': 'At the very bottom, small and handwritten: "Whoever has seen my daughter, come to the alley behind the forge."',
       'brett.zeile.doubleAgent.0': 'The notices are fresh, but there is less and less on them. Two lines of campaign, then the seal.',
       'brett.zeile.doubleAgent.1': "Under the edge of the Clergy's poster a slip of paper peeks out that nobody printed. It is still damp.",
