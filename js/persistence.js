@@ -46,7 +46,9 @@
     ENDLESS_BEST: 'demonfall_endless_best',
     /** Einmal-Flags für die Intro-/Outro-Splashes im Hub. */
     SEEN_INTRO_SPLASH: 'demonfall_seen_intro_splash',
-    SEEN_OUTRO_SPLASH: 'demonfall_seen_outro_splash'
+    SEEN_OUTRO_SPLASH: 'demonfall_seen_outro_splash',
+    /** Ersteinstellung (Schwierigkeit/Steuerung) im Slot schon gezeigt. */
+    ERSTEINSTELLUNG: 'demonfall_ersteinstellung'
   });
 
   // Keys that should be wiped on "new game". SETTINGS is intentionally

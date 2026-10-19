@@ -60,7 +60,8 @@
     'demonfall_maxDepth',           // persistence
     'demonfall_lastDepth',          // persistence
     'demonfall_seen_intro_splash',  // HubSceneV2
-    'demonfall_seen_outro_splash'   // HubSceneV2
+    'demonfall_seen_outro_splash',  // HubSceneV2
+    'demonfall_ersteinstellung'     // ersteinstellung.js — schon gefragt
   ];
 
   var SLOT_PREFIX = 'demonfall.slot';

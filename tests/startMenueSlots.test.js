@@ -59,6 +59,10 @@ test('Startmenue: Slot loeschen, Slot wechseln und Neues Spiel', async () => {
   assert.notStrictEqual(h.window.sessionStorage.getItem('demonfall.pendingNewGame'), null,
     'Neues Spiel setzt das Start-Flag nicht');
   await neuAufbauen();
+  // Erst die Ersteinstellung (Schwierigkeit/Steuerung) bestaetigen.
+  await h.settle(() => !!start()._ersteinstellung, { maxRounds: 60 });
+  assert.ok(start()._ersteinstellung, 'keine Ersteinstellung nach Neues Spiel');
+  start()._ersteinstellung.bestaetigen();
   assert.ok(await h.waitForScene('HubSceneV2', { maxRounds: 250 }), 'Neues Spiel fuehrt nicht in den Hub');
   assert.strictEqual(h.hardErrors().length, 0,
     'Konsolenfehler: ' + h.hardErrors().map((e) => String(e.msg).slice(0, 120)).join(' | '));

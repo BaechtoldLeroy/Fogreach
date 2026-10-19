@@ -340,6 +340,9 @@ StartScene.prototype.preload = function () {
 
   // UI/environment sprites
   this.load.image('stairDown', 'assets/tiles/stairDown.png');
+  // Messing-Rahmen fuer die Ersteinstellung nach "Neues Spiel" (der Hub
+  // braucht dieselben Bilder ohnehin, Texturen gelten szenenuebergreifend).
+  if (window.uiRahmen) window.uiRahmen.vorladen(this);
 
   // Startmenue-Kulisse (PixelLab-Pixelgrafik, siehe _baueKulisse)
   // Was der Szenen-pack schon brachte (Ladebildschirm), nicht noch einmal.
@@ -472,10 +475,21 @@ StartScene.prototype.create = function () {
       return v;
     } catch (e) { return null; }
   })();
+  // Ein neues Spiel fragt beim ersten Mal im Slot nach Schwierigkeit und
+  // Steuerung (js/ersteinstellung.js), vor der Kulisse statt vor Schwarz.
+  const _starteNeu = (self) => {
+    const E = window.Ersteinstellung;
+    if (E && E.faellig()) {
+      if (!self.kulisse) self.kulisse = _baueKulisse(self);
+      E.zeige(self, () => loadRoomTemplatesAndStart.call(self));
+      return;
+    }
+    loadRoomTemplatesAndStart.call(self);
+  };
   if (_pendingNewGame !== null) {
     if (typeof window.pendingLoadedSave !== 'undefined') window.pendingLoadedSave = null;
     const selfNG = this;
-    setTimeout(() => loadRoomTemplatesAndStart.call(selfNG), 100);
+    setTimeout(() => _starteNeu(selfNG), 100);
     return;
   }
 
@@ -840,7 +854,7 @@ StartScene.prototype.create = function () {
       if (typeof window.pendingLoadedSave !== "undefined") {
         window.pendingLoadedSave = null;
       }
-      loadRoomTemplatesAndStart.call(this);
+      _starteNeu(this);
     });
 
   // ENDLOS-MODUS button (roguelike: no hub, descend forever, pick 1-of-3
