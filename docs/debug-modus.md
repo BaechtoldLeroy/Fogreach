@@ -135,6 +135,40 @@ sieht, nur im echten Browser (WebGL): `npx http-server -p 8080 -c-1 -s .`
 und `node tools/bossIntroBrowser.js [kettenmeister ...]` schreibt
 `vorschau/bossintro_browser_<boss>_<auftritt|plakette|rede|danach>.png`.
 
+### Das Finale an der Esse (Story-Kern v6.1, Stufe 3)
+
+`?finale=<schritt>` springt mit `?boss=elara` an eine Stelle des Finales. Die
+Flagge stellt den Queststand her ("Die Quelle" aktiv), loescht `harren_dead`,
+`elara_besiegt`, `elara_spared`, `elara_killed` und `story_ending` und setzt,
+was der Schritt braucht. `&room=DieQuelle` stellt die echte Arena (die Glut in
+der Mitte ist die Esse); ohne sie steht die Esse auf einem freien Fleck neben
+dem Spieler.
+
+| Schritt | Wirkung |
+|---|---|
+| `?finale=hammer` | von vorn: Elara empfaengt Dich, dann der erhobene Hammer (E halten an der Esse, auf dem Handy den Aktionsknopf) |
+| `?finale=erkenntnis` | wie `hammer`, der Spieler steht schon an der Esse: sofort halten, bis die Erkenntnis kommt |
+| `?finale=harren` | nach dem Loslassen: Elaras Satz, der Plan, Harren, der Stoss, der Hammer, die Besessenheit |
+| `?finale=kampf` | gleich der Kampf (die Szene gilt als gesehen) |
+| `?finale=raub` | Kampf, der erste Griff nach der Erinnerung nach 1,5 s; ohne belegte Faehigkeiten werden zwei gelernt und belegt |
+| `?finale=zonen` | Kampf bei 60 % LP: Phase 2, die Arena verlischt |
+| `?finale=echos` | Kampf, sie ruft sofort die Echos der Besiegten |
+| `?finale=schlag` | Kampf bei 1 LP: der naechste Treffer ist der letzte (ihre eigene Klinge, dann der letzte Schlag an der Esse) |
+| `?finale=loesen` | nach dem Kampf: Elara liegt an der Esse, gleich der letzte Schlag, dann das Urteil |
+
+`&finaleflags=a,b` setzt zusaetzliche Quest-Flags, etwa
+`self_remembered` (der erste Griff prallt an "Wer Du warst" ab),
+`zeichen_bemerkt` (sie beginnt bei 85 %), `convoy_blown` (Mara kommt nicht).
+
+```
+?debug=1&dungeon=30&room=DieQuelle&boss=elara&finale=hammer
+?debug=1&dungeon=30&room=DieQuelle&boss=elara&finale=raub&finaleflags=self_remembered
+?debug=1&dungeon=30&room=DieQuelle&boss=elara&finale=loesen
+```
+
+`dungeon=` loescht den Spielstand (siehe oben). Ein unbekannter Schritt wird
+auf der Konsole mit der Liste benannt und ignoriert.
+
 ### Spionage-Zwischenszenen (#197)
 
 Seit b447 fest im Spiel (die Vorschau-Flagge `spionszene` gibt es nicht mehr).

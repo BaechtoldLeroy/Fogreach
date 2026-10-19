@@ -32,7 +32,10 @@ fs.mkdirSync(ZIEL, { recursive: true });
     await page.addInitScript(() => {
       try { localStorage.setItem('demonfall_audio', JSON.stringify({ master: 0, sfx: 0, music: 0, muted: true })); } catch (e) {}
     });
-    await page.goto(`http://127.0.0.1:${PORT}/?debug=1&dungeon=1&boss=${boss}`, { waitUntil: 'load' });
+    // Elara: das Finale an der Esse ist seit Stufe 3 Handwerk (E halten), Enter
+    // kommt nicht hindurch. ?finale=kampf ueberspringt es (docs/debug-modus.md).
+    const extra = boss === 'elara' ? '&finale=kampf' : '';
+    await page.goto(`http://127.0.0.1:${PORT}/?debug=1&dungeon=1&boss=${boss}${extra}`, { waitUntil: 'load' });
     const phase = () => page.evaluate(() => {
       const g = window.game; const s = g && g.scene.getScene('GameScene');
       const z = s && s.__bossZwischenszene;
