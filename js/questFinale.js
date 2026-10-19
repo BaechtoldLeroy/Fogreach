@@ -89,6 +89,7 @@
       und: ' und ',
       glauben: 'Kein Blatt trägt ein Siegel. Die Stadt glaubt ihnen trotzdem, denn sie bestätigen, was jeder gerade selbst wieder weiss. Was an tausend Orten steht, kann niemand mehr verbrennen.',
       platten: 'Danach schmiedest Du neue Druckplatten und gibst sie weg. Der Mann, der die Siegel des Rats gemacht hat, macht jetzt Werkzeug für alle.',
+      plattenZeichen: 'Danach schmiedest Du neue Druckplatten und gibst sie weg. Der Mann, der das Zeichen der drei Ketten geschmiedet hat, macht jetzt Werkzeug für alle.',
       nebel: 'Der Nebel bricht. Nicht, weil ihn jemand vertreibt, sondern weil zu viele Menschen sich zu vieles zugleich merken.',
       harren: 'Harren liegt unter dem Brunnen begraben. Neben seinen Namen hat jemand einen zweiten geritzt: Lene.',
       elaraLebt: 'Elara lebt, hinter den Gittern des Rathauskellers, in dem sie Dich einst gerettet hat. Jeden Tag fragt sie die Wache, ob die Presse noch läuft.',
@@ -117,6 +118,7 @@
       und: ' and ',
       glauben: 'No sheet bears a seal. The city believes them anyway, because they confirm what everyone has just come to know again. What stands in a thousand places, nobody can burn any more.',
       platten: 'Afterwards you forge new printing plates and give them away. The man who made the council\'s seals now makes tools for everyone.',
+      plattenZeichen: 'Afterwards you forge new printing plates and give them away. The man who forged the sign of the three chains now makes tools for everyone.',
       nebel: 'The fog breaks. Not because anyone drives it away, but because too many people remember too much at once.',
       harren: 'Harren lies buried beneath the fountain. Next to his name someone has carved a second one: Lene.',
       elaraLebt: 'Elara lives, behind the bars of the town hall cellar where she once rescued you. Every day she asks the guard whether the press is still running.',
@@ -179,7 +181,9 @@
     if (flag(flags, 'aldric_erzaehlt')) out.push(T.aldricErzaehlt);
     else if (flag(flags, 'aldric_verschwiegen')) out.push(T.aldricVerschwiegen);
 
-    out.push(T.platten);
+    // v6.1, leise: Wer weiss, dass das Zeichen der drei Ketten von ihm ist
+    // (Klinge im Inventar oder Branka), dem bindet der Epilog es hier an.
+    out.push(flag(flags, 'schmiedemarke_erkannt') ? T.plattenZeichen : T.platten);
     out.push(st.remembered ? T.erinnert : T.namenlos);
     return out;
   }

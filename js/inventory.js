@@ -10,6 +10,7 @@ if (window.i18n) {
     'inventory.material.MAT': 'Eisenbrocken',
     'inventory.inschrift.ELARAS_KLINGE': 'Nahe am Heft eingraviert: drei Ketten, ineinander verschlungen.',
     'inventory.inschrift.erkannt': '(Du kennst dieses Zeichen. Es stand auf den Siegeln der geheimen Sitzung.)',
+    'inventory.inschrift.schmiedemarke': '(Darunter eine Schmiedemarke. Deine Hände kennen sie, bevor Du es tust. Es ist Deine.)',
     'inventory.material.fallback': 'Material',
     'inventory.label.rarity': 'Seltenheit',
     'inventory.label.power': 'Stärke',
@@ -58,6 +59,7 @@ if (window.i18n) {
     'inventory.material.MAT': 'Iron Chunk',
     'inventory.inschrift.ELARAS_KLINGE': 'Engraved near the hilt: three chains, interlocked.',
     'inventory.inschrift.erkannt': '(You know this sign. It was on the seals of the secret session.)',
+    'inventory.inschrift.schmiedemarke': '(Beneath it, a smith\'s mark. Your hands know it before you do. It is yours.)',
     'inventory.material.fallback': 'Material',
     'inventory.label.rarity': 'Rarity',
     'inventory.label.power': 'Item Power',
@@ -777,10 +779,13 @@ function initInventoryUI() {
       bodyLines.push('', _INV_T(_inschrift));
       if (_zeichenBekannt()) {
         bodyLines.push(_INV_T('inventory.inschrift.erkannt'));
+        // v6.1, leise: Das Zeichen der drei Ketten hast Du selbst geschmiedet.
+        // Keine Szene, nur diese Zeile; der Epilog greift sie auf.
+        bodyLines.push(_INV_T('inventory.inschrift.schmiedemarke'));
         const qs = window.questSystem;
-        if (qs && typeof qs.hasFlag === 'function' && !qs.hasFlag('zeichen_bemerkt')
-            && typeof qs.setFlag === 'function') {
-          qs.setFlag('zeichen_bemerkt');
+        if (qs && typeof qs.hasFlag === 'function' && typeof qs.setFlag === 'function') {
+          if (!qs.hasFlag('zeichen_bemerkt')) qs.setFlag('zeichen_bemerkt');
+          if (!qs.hasFlag('schmiedemarke_erkannt')) qs.setFlag('schmiedemarke_erkannt');
         }
       }
     }

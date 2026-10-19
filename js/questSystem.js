@@ -1235,14 +1235,16 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       rewards: { xp: 150, fragments: 1 },
       rewardTier: 'story',
       // Regler 4 im Finale (self_remembered).
-      completionFlags: ['self_remembered'],
+      // v6.1: Branka sagt Dir, dass das Zeichen der drei Ketten von Dir ist
+      // (schmiedemarke_erkannt, liest der Epilog).
+      completionFlags: ['self_remembered', 'schmiedemarke_erkannt'],
       prerequisites: ['branka_doubt'],
       requiredAct: 3,
       // v6.1: Splitter Deiner Phiole, nicht einer Akte. Was Branka daraus
       // bindet, kann der Nebel nicht mehr nehmen, auch Elara im Finale nicht.
       dialogueOffer: 'Unten haben Leute Scherben gefunden. Dickes Glas, und in jede ist ein Zeichen geritzt. Deins. (Sie sieht Dich lange an.) Das war eine Phiole, Archivschmied. Was in ihr war, warst Du.\n\nBring mir drei Splitter aus der Tiefe. Was noch an ihnen haftet, binden wir hier an Metall. Dann kann der Nebel es Dir nicht wieder nehmen.',
       dialogueProgress: 'Die Splitter liegen tief, ab Tiefe 17. Such weiter.',
-      dialogueComplete: 'Da bist Du. (Die Splitter liegen auf dem Amboss, und mit jedem Schlag kommt etwas zurück: eine Werkstatt, Siegel, Druckplatten für den Rat. Und ein Nein.)\n\nDu hast für sie geschmiedet. Dann hast Du verstanden, wofür, und Dich geweigert. Es war kein Unfall. Sie haben Dich geleert, weil sie Dich brauchten, nicht weil Du ihnen gefährlich warst.\n\n(Sie legt den Hammer weg.) Hör mir zu. Was wir hier gebunden haben, bleibt Dir. Aber Du bist nicht mehr leer, und der Nebel dort unten merkt das. Je mehr Du weisst, wer Du bist, desto mehr hat er Dir zu nehmen.'
+      dialogueComplete: 'Da bist Du. (Die Splitter liegen auf dem Amboss, und mit jedem Schlag kommt etwas zurück: eine Werkstatt, Siegel, Druckplatten für den Rat. Und ein Nein.)\n\nDu hast für sie geschmiedet. Das Zeichen der drei Ketten ist von Dir. Ich habe Dich daran arbeiten sehen. Dann hast Du verstanden, wofür, und Dich geweigert. Es war kein Unfall. Sie haben Dich geleert, weil sie Dich brauchten, nicht weil Du ihnen gefährlich warst.\n\n(Sie legt den Hammer weg.) Hör mir zu. Was wir hier gebunden haben, bleibt Dir. Aber Du bist nicht mehr leer, und der Nebel dort unten merkt das. Je mehr Du weisst, wer Du bist, desto mehr hat er Dir zu nehmen.'
     },
     elara_second_truth: {
       id: 'elara_second_truth',
@@ -1667,7 +1669,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.who_you_were.description': "Bring Branka three shards of your vial from the depths (from depth 17).",
       'quest.who_you_were.dialogueOffer': "People found shards down there. Thick glass, and a sign is scratched into every one. Yours. (She looks at you for a long time.) That was a vial, Archivesmith. What was inside it was you.\n\nBring me three shards from the depths. Whatever still clings to them, we bind to metal here. Then the fog cannot take it from you again.",
       'quest.who_you_were.dialogueProgress': "The shards lie deep, from depth 17. Keep searching.",
-      'quest.who_you_were.dialogueComplete': "There you are. (The shards lie on the anvil, and with every strike something comes back: a workshop, seals, printing plates for the council. And a no.)\n\nYou forged for them. Then you understood what for, and you refused. It was no accident. They emptied you because they needed you, not because you were dangerous to them.\n\n(She puts the hammer down.) Listen to me. What we bound here stays yours. But you are not empty any more, and the fog down there notices. The more you know who you are, the more it has to take from you.",
+      'quest.who_you_were.dialogueComplete': "There you are. (The shards lie on the anvil, and with every strike something comes back: a workshop, seals, printing plates for the council. And a no.)\n\nYou forged for them. The sign of the three chains is yours. I watched you work on it. Then you understood what for, and you refused. It was no accident. They emptied you because they needed you, not because you were dangerous to them.\n\n(She puts the hammer down.) Listen to me. What we bound here stays yours. But you are not empty any more, and the fog down there notices. The more you know who you are, the more it has to take from you.",
 
       'quest.elara_second_truth.title': "Elara's Second Truth",
       'quest.elara_second_truth.description': "Elara shows you who you are doing the last thing for.",

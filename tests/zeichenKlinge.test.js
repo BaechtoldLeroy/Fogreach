@@ -52,7 +52,9 @@ test('Ohne die geheime Sitzung erkennt man das Zeichen nicht', () => {
     return { body: body, flag: window.questSystem.hasFlag('zeichen_bemerkt') };
   })()`);
   assert.ok(!/geheimen Sitzung/.test(r.body), 'man erkennt ein Zeichen, das man nie gesehen hat');
+  assert.ok(!/Schmiedemarke/.test(r.body), 'die Schmiedemarke steht da, bevor man das Zeichen kennt');
   assert.strictEqual(r.flag, false, 'zeichen_bemerkt ohne die Sitzung gesetzt');
+  assert.strictEqual(H.run(`window.questSystem.hasFlag('schmiedemarke_erkannt')`), false);
 });
 
 test('Nach der Sitzung erkennt man es — und der Verrat gilt als vorhergesehen', () => {
@@ -100,6 +102,74 @@ test('Im Inventar: wer die Klinge genauer ansieht, entdeckt das Zeichen (v6.1)',
   assert.strictEqual(r.vorHover, false, 'das Oeffnen des Inventars allein entdeckt das Zeichen');
   assert.strictEqual(r.nachHover, true, 'das Ansehen der Klinge setzt zeichen_bemerkt nicht');
   assert.strictEqual(r.regler, true);
+});
+
+// v6.1, leise: Unter dem Zeichen eine Schmiedemarke, die Deine Haende kennen.
+// Keine Szene, nur die zweite Zeile im Tooltip, gleich nach dem Wiedererkennen.
+// Sie setzt schmiedemarke_erkannt, und der Epilog bindet es an.
+test('Im Inventar: unter dem Zeichen die eigene Schmiedemarke, und der Epilog nimmt sie auf', () => {
+  stand({ council_collusion_reveal: { status: 'completed', objectives: [] },
+    elara_ritual: { status: 'completed', objectives: [] } });
+  const r = H.run(`(function () {
+    var qs = window.questSystem;
+    for (var i = 0; i < inventory.length; i++) inventory[i] = null;
+    if (!qs.acceptQuest('elara_blade') || !qs.completeQuest('elara_blade')) return { fehler: 'Geschenk nicht abgeholt' };
+    var idx = inventory.findIndex(function (it) { return it && it.key === 'ELARAS_KLINGE'; });
+    if (idx < 0) return { fehler: 'die Klinge liegt nicht im Inventar' };
+    var vorher = window.QuestFinale.epilog(qs.getFlags()).join('\\n');
+    openInventory();
+    refreshInventoryUI();
+    var it = inventory[idx];
+    var zelle = (invUI.zellen || []).filter(function (z) { return z.c === it.gridX && z.r === it.gridY; })[0];
+    if (!zelle) return { fehler: 'kein Rasterfeld unter der Klinge' };
+    var vorHover = qs.hasFlag('schmiedemarke_erkannt');
+    zelle.bg.emit('pointerover', { x: 200, y: 200, worldX: 200, worldY: 200 });
+    // Was der Tooltip jetzt zeigt, aus dem Szenenbaum gelesen.
+    var sc = invUI._scene || window.game.scene.getScene('GameScene');
+    var tip = sc.children.list.concat.apply([], sc.children.list.map(function (o) { return o.list ? o.list : [o]; }))
+      .filter(function (o) { return o && o.type === 'Text' && o.visible && /Schmiedemarke/.test(o.text || ''); })
+      .map(function (o) { return o.text; })[0] || null;
+    closeInventory();
+    return { vorHover: vorHover, nachHover: qs.hasFlag('schmiedemarke_erkannt'), tip: tip, vorher: vorher,
+      nachher: window.QuestFinale.epilog(qs.getFlags()).join('\\n'),
+      en: window.QuestFinale.epilog(qs.getFlags(), 'en').join('\\n') };
+  })()`);
+  assert.ok(!r.fehler, r.fehler);
+  assert.ok(r.tip, 'der Tooltip zeigt keine Schmiedemarke');
+  assert.match(r.tip, /Darunter eine Schmiedemarke\. Deine Hände kennen sie, bevor Du es tust\. Es ist Deine\./);
+  // Die Zeile kommt nach dem Wiedererkennen, nicht davor.
+  assert.ok(r.tip.indexOf('geheimen Sitzung') < r.tip.indexOf('Schmiedemarke'), 'die Reihenfolge stimmt nicht: ' + r.tip);
+  assert.strictEqual(r.vorHover, false);
+  assert.strictEqual(r.nachHover, true, 'das Ansehen setzt schmiedemarke_erkannt nicht');
+  assert.ok(/die Siegel des Rats gemacht hat/.test(r.vorher), 'vorher ist der Epilog schon eingeweiht');
+  assert.match(r.nachher, /Der Mann, der das Zeichen der drei Ketten geschmiedet hat, macht jetzt Werkzeug für alle\./);
+  assert.match(r.en, /The man who forged the sign of the three chains now makes tools for everyone\./);
+});
+
+test('Branka in "Wer du warst": das Zeichen der drei Ketten ist von Dir', () => {
+  stand({ branka_doubt: { status: 'completed', objectives: [] } });
+  const r = H.run(`(function () {
+    var qs = window.questSystem;
+    var q = (qs.getAvailableQuests('branka') || []).filter(function (x) { return x.id === 'who_you_were'; })[0]
+      || { id: 'who_you_were' };
+    var def = qs.getQuestDialogue ? qs.getQuestDialogue(q, 'complete') : '';
+    window.i18n.setLanguage('en');
+    var en = qs.getQuestDialogue ? qs.getQuestDialogue(q, 'complete') : '';
+    window.i18n.setLanguage('de');
+    var ok = qs.acceptQuest('who_you_were');
+    var aktiv = qs.getActiveQuests().filter(function (x) { return x.id === 'who_you_were'; })[0];
+    if (aktiv) aktiv.objectives.forEach(function (o) { o.current = o.required; });
+    var fertig = qs.completeQuest('who_you_were');
+    return { de: def, en: en, ok: ok, fertig: fertig, flag: qs.hasFlag('schmiedemarke_erkannt'),
+      selbst: qs.hasFlag('self_remembered') };
+  })()`);
+  assert.match(r.de, /Du hast für sie geschmiedet\. Das Zeichen der drei Ketten ist von Dir\. Ich habe Dich daran arbeiten sehen\. Dann hast Du verstanden/);
+  // Der Rest ihres Textes bleibt.
+  assert.match(r.de, /Sie haben Dich geleert, weil sie Dich brauchten/);
+  assert.match(r.en, /The sign of the three chains is yours\. I watched you work on it\./);
+  assert.ok(r.ok && r.fertig, 'der Auftrag liess sich nicht abschliessen');
+  assert.strictEqual(r.flag, true, 'Brankas Abschluss setzt schmiedemarke_erkannt nicht');
+  assert.strictEqual(r.selbst, true);
 });
 
 test('Andere Stuecke tragen keine Gravur', () => {
