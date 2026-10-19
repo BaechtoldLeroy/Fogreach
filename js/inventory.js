@@ -48,8 +48,9 @@ if (window.i18n) {
     'inventory.btn.stair': 'Treppe ({count})',
     'inventory.btn.stats': 'Charakterwerte',
     // Feature 059 (#42) WP05: run-amulet slot styling. Stufe 1b (Story v6.1):
-    // die Kellerfunde sind schwache Nachbildungen der Ratsamulette.
-    'inv.amulet.badge': 'Nachbildung',
+    // die Kellerfunde sind schwache Nachbildungen der Ratsamulette. Das steht
+    // im Tooltip; die Plakette unter dem Platz sagt nur, wie lange es haelt.
+    'inv.amulet.badge': 'Nur dieser Lauf',
     'inv.amulet.locked': 'Ab Tiefe 10',
     'inv.amulet.run_hint': 'Nachbildung · hält einen Lauf'
   });
@@ -97,7 +98,7 @@ if (window.i18n) {
     'inventory.btn.stair': 'Stairs ({count})',
     'inventory.btn.stats': 'Character Stats',
     // Feature 059 (#42) WP05: run-amulet slot styling.
-    'inv.amulet.badge': 'Replica',
+    'inv.amulet.badge': 'This run only',
     'inv.amulet.locked': 'From depth 10',
     'inv.amulet.run_hint': 'Replica · lasts one run'
   });

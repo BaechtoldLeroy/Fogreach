@@ -95,6 +95,8 @@ test('Oberflaeche: kein "Dungeon", "Run" oder "Item" in den geaenderten deutsche
   const funde = keys.map((k) => [k, de(k)]).filter(([, v]) => /Dungeon|\bRun\b|\bItems?\b|Council/.test(v) || /MISSING/.test(v));
   assert.deepStrictEqual(funde, []);
   assert.strictEqual(de('inv.amulet.run_hint'), 'Nachbildung · hält einen Lauf');
+  // Die Plakette unter dem Platz sagt nur die Dauer (gemeldet: "Nachbildung" als Platzname war seltsam).
+  assert.strictEqual(de('inv.amulet.badge'), 'Nur dieser Lauf');
   assert.strictEqual(de('printingHouse.edict.amulets_distributed.label'), 'Laternen verteilt');
   assert.strictEqual(de('quest.reward.RITUAL_AMULETT'), 'Nebelamulett des Rats');
 });
