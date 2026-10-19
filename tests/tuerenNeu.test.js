@@ -42,7 +42,7 @@ function raumMitToren(H) {
     var sc = ${GS};
     function spur(o) {
       var waag = o === 'horizontal';
-      var t = sc._doors.filter(function (d) { return d && d.active && d.getData('orientation') === o; });
+      var t = (sc._doors || []).filter(function (d) { return d && d.active && d.getData('orientation') === o; });
       if (!t.length) return null;
       var mx = 0, my = 0; t.forEach(function (d) { mx += d.x; my += d.y; }); mx /= t.length; my /= t.length;
       t.sort(function (a, b) { return Math.hypot(a.x - mx, a.y - my) - Math.hypot(b.x - mx, b.y - my); });

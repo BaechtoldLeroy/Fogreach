@@ -15,11 +15,12 @@ const D = window.questSystem.QUEST_DEFINITIONS;
 // Entscheidungen beim Abgeben (storyDialog, Auswahl mit setFlags).
 const WAHL = (window.storyDialog && window.storyDialog.byQuest) || {};
 
-// Story v5: fünf Akte (Index 0 = Der Dienst), Namen wie in js/storySystem.js.
-const ACTS = ['Der Dienst', 'Treuer Diener', 'Das Doppelspiel', 'Die Enttarnung', 'Die Quelle'];
+// Story v6.1: Prolog und vier Akte (Index 0 = Prolog · Der Dienst), Namen wie
+// in js/storySystem.js, die Nummer fuer den Spieler ist der Index (Stufe 1b).
+const ACTS = ['Prolog · Der Dienst', 'Akt 1 · Treuer Diener', 'Akt 2 · Das Doppelspiel', 'Akt 3 · Die Enttarnung', 'Akt 4 · Die Quelle'];
 const NPC = {
   aldric: 'Ratsherr Aldric', harren: 'Bürgermeister Harren', elara: 'Elara',
-  mara: 'Mara vom Untergrund', branka: 'Schmiedemeisterin Branka', thom: 'Setzer Thom',
+  mara: 'Späherin Mara', branka: 'Schmiedemeisterin Branka', thom: 'Setzer Thom',
   klerus_priester: 'Klerus-Priester', stadtwache: 'Stadtwache', widerstand: 'Widerstand'
 };
 const TICK = String.fromCharCode(96);
@@ -120,6 +121,8 @@ out += '2. Die Quest gehört diesem NPC (`npcId`)\n';
 out += '3. `currentAct >= requiredAct`\n';
 out += '4. **Alle** `prerequisites` sind abgeschlossen\n';
 out += '5. Optionales `gate()` liefert `true` _(z. B. Maras Schwarzmarkt-Auftrag erst ab erreichter Tiefe 4)_\n\n';
+out += '**Reihenfolge im Gespräch (Stufe 1b):** Abgabe, dann ein neuer **Story-Auftrag** (Gewicht story, boss oder finale), dann der Stand eines laufenden Auftrags, dann ein neuer Nebenauftrag. Story-Aufträge kommen also auch neben einem laufenden Nebenauftrag derselben Figur.\n\n';
+out += '**Aldric nach dem Bruch:** Ab `enttarnt` steht er nicht mehr im Hub. Was er noch vergeben hatte, laufend oder nie angenommen, bekommt den Status `entfallen` (kein Lohn; im Journal: „Der Rat gibt Dir keine Aufträge mehr.“).\n\n';
 out += '**`minDepth` gated nicht das Angebot, sondern den Fortschritt:** Ziele zählen erst, wenn der laufende Run auf mindestens dieser Tiefe ist.\n\n';
 out += '**Akt-Index → Name:** ' + ACTS.map((a, i) => '`' + i + '` ' + a).join(' · ') + '\n\n';
 out += '## Ziel-Typen und ihre Trigger\n\n';

@@ -74,7 +74,7 @@ test('In der Arena leuchtet die Quelle — und erlischt nach dem Kampf', () => {
     return { da: !!(g && g.active), text: sc._raumBeschriftung };
   })()`);
   assert.strictEqual(r.da, true, 'die Quelle ist nicht zu sehen');
-  assert.ok(/Die Quelle/.test(r.text || ''), 'keine Beschriftung: ' + r.text);
+  assert.ok(/Die Esse/.test(r.text || ''), 'keine Beschriftung: ' + r.text);   // Stufe 1b: die Esse, nicht die Quelle
 
   H.run(`window.Finale.nachKampf(window.game.scene.getScene('GameScene'))`);
   const nachher = H.run(`(function () { var g = window.game.scene.getScene('GameScene')._quelleGlow; return !!(g && g.active); })()`);

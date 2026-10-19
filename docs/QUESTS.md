@@ -42,11 +42,11 @@ Der Bogen ist **rein quest-getrieben**: ein Akt steigt nur, wenn eine Quest ihn 
 
 | Index | Akt | Wird erreicht durch |
 |---|---|---|
-| `0` | Der Dienst | _Startzustand_ |
-| `1` | Treuer Diener | Abschluss von **Die verschwundene Tochter** |
-| `2` | Das Doppelspiel | Abschluss von **Die geheime Sitzung** |
-| `3` | Die Enttarnung | Abschluss von **Der Kettenmeister** |
-| `4` | Die Quelle | Abschluss von **Der Maulwurf** |
+| `0` | Prolog · Der Dienst | _Startzustand_ |
+| `1` | Akt 1 · Treuer Diener | Abschluss von **Die verschwundene Tochter** |
+| `2` | Akt 2 · Das Doppelspiel | Abschluss von **Die geheime Sitzung** |
+| `3` | Akt 3 · Die Enttarnung | Abschluss von **Der Kettenmeister** |
+| `4` | Akt 4 · Die Quelle | Abschluss von **Der Maulwurf** |
 
 Jeder Akt hat einen Trigger — die Leiter ist lückenlos.
 
@@ -64,9 +64,13 @@ Ein NPC bietet eine Quest an, wenn **alle** Bedingungen gelten:
 4. **Alle** `prerequisites` sind abgeschlossen
 5. Optionales `gate()` liefert `true` _(z. B. Maras Schwarzmarkt-Auftrag erst ab erreichter Tiefe 4)_
 
+**Reihenfolge im Gespräch (Stufe 1b):** Abgabe, dann ein neuer **Story-Auftrag** (Gewicht story, boss oder finale), dann der Stand eines laufenden Auftrags, dann ein neuer Nebenauftrag. Story-Aufträge kommen also auch neben einem laufenden Nebenauftrag derselben Figur.
+
+**Aldric nach dem Bruch:** Ab `enttarnt` steht er nicht mehr im Hub. Was er noch vergeben hatte, laufend oder nie angenommen, bekommt den Status `entfallen` (kein Lohn; im Journal: „Der Rat gibt Dir keine Aufträge mehr.“).
+
 **`minDepth` gated nicht das Angebot, sondern den Fortschritt:** Ziele zählen erst, wenn der laufende Run auf mindestens dieser Tiefe ist.
 
-**Akt-Index → Name:** `0` Der Dienst · `1` Treuer Diener · `2` Das Doppelspiel · `3` Die Enttarnung · `4` Die Quelle
+**Akt-Index → Name:** `0` Prolog · Der Dienst · `1` Akt 1 · Treuer Diener · `2` Akt 2 · Das Doppelspiel · `3` Akt 3 · Die Enttarnung · `4` Akt 4 · Die Quelle
 
 ## Ziel-Typen und ihre Trigger
 
@@ -119,7 +123,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ---
 
-# Akt-Index 0 — Der Dienst
+# Akt-Index 0 — Prolog · Der Dienst
 
 ## Säuberung der Keller
 
@@ -204,7 +208,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Was unter dem Tisch liegt
 
-`einfuehrung_markt` · **NPC:** Mara vom Untergrund · **Kette:** 1
+`einfuehrung_markt` · **NPC:** Späherin Mara · **Kette:** 1
 
 > Kauf Mara auf dem Schwarzmarkt etwas ab.
 
@@ -420,7 +424,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 `einfuehrung_wissen` · **NPC:** Schmiedemeisterin Branka · **Kette:** 2
 
-> Geh zu Mara und verbau dort im Wissensbaum ein Erinnerungsfragment.
+> Bind bei Branka in der Archivschmiede ein Erinnerungsfragment in Metall (Wissensbaum).
 
 - **Ziel:** `system` → `wissen` ×1
 - **Vorbedingung:** Der erste Schliff **+** Die verschwundene Tochter
@@ -430,22 +434,22 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 > Stahl allein schneidet die Lügen des Rates nicht. Das sage ich jedem, und jeder nickt und versteht es nicht.
 > 
-> Du trägst ein Fragment bei Dir. Ein Stück von etwas, das jemand aufgeschrieben und der Rat verbrannt hat. Verbau es — nicht in einer Klinge, in Dir. Den Wissensbaum hütet Mara; geh zu ihr, sie zeigt ihn Dir. Dann weisst Du, was ich meine.
+> Du trägst ein Fragment bei Dir. Ein Stück von etwas, das jemand aufgeschrieben und der Rat verbrannt hat. Früher haben die Archivschmiede so etwas hier in Metall gebunden, damit die Stadt es nie verliert. Bind es in Metall, dann kann der Nebel es nicht nehmen. Ich zeig Dir, wie.
 
 **Unterwegs**
 
-> Das Fragment liegt noch bei Dir herum. Geh zu Mara, lass Dir den Wissensbaum zeigen und setz es ein. Es wird nicht mehr wert, wenn Du wartest.
+> Das Fragment liegt noch bei Dir herum. Komm an den Amboss und bind es in Metall. Es wird nicht mehr wert, wenn Du wartest.
 
 **Abschluss**
 
-> (Sie sieht Dich einen Moment zu lange an.) Und? Nichts blitzt, nichts klingelt. So ist Wissen.
+> (Sie sieht Dich einen Moment zu lange an.) Und? Nichts blitzt, nichts klingelt. So ist Wissen, wenn es hält.
 > 
-> Jedes Fragment, das Du unten findest, gehört da hinein. Der Rat sammelt sie auch — nur verbrennt er sie.
+> Jedes Fragment, das Du unten findest, bindest Du hier. Der Rat sammelt sie auch, nur verbrennt er sie.
 
 
 ## Der Alte mit dem Karren
 
-`einfuehrung_amulett` · **NPC:** Mara vom Untergrund · **Kette:** 2
+`einfuehrung_amulett` · **NPC:** Späherin Mara · **Kette:** 2
 
 > Kauf dem wandernden Händler in der Tiefe etwas ab.
 
@@ -595,7 +599,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 > Am nächsten Morgen stehen vier Namen im Blatt. Zwei davon kennt die Stadt.
 
 
-# Akt-Index 1 — Treuer Diener
+# Akt-Index 1 — Akt 1 · Treuer Diener
 
 ## Das versiegelte Bündel
 
@@ -670,9 +674,9 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 **Angebot**
 
-> Du hast das Fragment gesehen, Archivschmied. Dann weisst du, dass die Tochter nicht aus eigenem Willen geflohen ist. Sie wurde von einer dunklen Hand geführt — die untere Kammern bersten vor solchen Schatten.
+> Du hast das Fragment gesehen, Archivschmied. Dann weisst Du, dass die Tochter nicht aus eigenem Willen geflohen ist. Sie wurde von einer dunklen Hand geführt, die unteren Kammern bersten vor solchen Schatten.
 > 
-> Reinige sie. Drei der Anführer dieser ketzerischen Präsenz lauern noch dort unten, tiefer als die ersten Gänge — steige bis Tiefe 3 hinab. Fälle sie im Namen der Ordnung. Die Seele der Tochter wird es dir danken — wenn das Licht sie wiederfindet.
+> Reinige sie. Drei der Anführer dieser ketzerischen Präsenz lauern noch dort unten, tiefer als die ersten Gänge. Steige bis Tiefe 3 hinab. Fälle sie im Namen der Ordnung. Die Seele der Tochter wird es Dir danken, wenn das Licht sie wiederfindet.
 > 
 > Die Reinigung ist eine geistliche Pflicht. Nimm sie an.
 
@@ -682,7 +686,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 **Abschluss**
 
-> Du hast die Ketzerei geschlagen. Die untere Kammern atmen wieder. Die Ordnung bleibt — durch dich. Der Klerus segnet deine Hand. Bring sie weiter dorthin, wo das Licht es verlangt.
+> Du hast die Ketzerei geschlagen. Die unteren Kammern atmen wieder. Die Ordnung bleibt, durch Dich. Der Klerus segnet Deine Hand. Bring sie weiter dorthin, wo das Licht es verlangt.
 
 
 ## Patrouillen-Erweiterung
@@ -785,11 +789,11 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 > Gut. Die Stimmen werden gezählt, und das Ergebnis verkündet der Rat öffentlich, im Ratssaal. So gehört sich das.
 
 
-# Akt-Index 2 — Das Doppelspiel
+# Akt-Index 2 — Akt 2 · Das Doppelspiel
 
 ## Die Späherin
 
-`mara_contact` · **NPC:** Mara vom Untergrund · **Kette:** 1
+`mara_contact` · **NPC:** Späherin Mara · **Kette:** 1
 
 > Kundschafte für Mara drei Kellerräume des Rats aus.
 
@@ -925,9 +929,9 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Der Kettenmeister
 
-`mara_warning` · **NPC:** Mara vom Untergrund · **Kette:** 2
+`mara_warning` · **NPC:** Späherin Mara · **Kette:** 2
 
-> Besiege den Kettenmeister-Boss, der die ersten echten Beweise bewacht.
+> Besiege den Kettenmeister auf Tiefe 10, der den Weg zu den Siegelkammern des Rats bewacht.
 
 - **Ziel:** `boss_kill` → `kettenmeister` ×1
 - **Vorbedingung:** Die Späherin **+** Der Konvoi
@@ -935,15 +939,15 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 **Angebot**
 
-> Der Kettenmeister hält die Siegel auf Tiefe 10. Er fesselt, was er fangen will. Fäll ihn, dann haben wir den ersten harten Beweis.
+> Auf Tiefe 10 hält der Kettenmeister den Weg. Früher war er Hauptmann der Garde, heute ist nur noch sein Befehl übrig. Er fesselt, wen er fangen will. Fäll ihn, dann sehen wir, was er bewacht.
 
 **Unterwegs**
 
-> Der Kettenmeister lebt noch, auf Tiefe 10. Wenn er dich kettet, schlag die Kette, sonst hält er dich.
+> Der Kettenmeister lebt noch, auf Tiefe 10. Wenn er Dich kettet, schlag die Kette, sonst hält er Dich.
 
 **Abschluss**
 
-> Der Kettenmeister ist gefallen, die Beweise gesichert. Jetzt kann niemand mehr leugnen, dass der Rat Menschen verarbeitet.
+> Der Kettenmeister ist gefallen. Hinter ihm lagen Kammern voller Siegel. Der Rat versiegelt dort unten mehr als Akten, und jetzt haben wir den ersten Beweis dafür.
 
 
 ## Verbotene Abschriften
@@ -1001,9 +1005,9 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Der Konvoi
 
-`espionage_convoy` · **NPC:** Mara vom Untergrund · **Kette:** 6
+`espionage_convoy` · **NPC:** Späherin Mara · **Kette:** 6
 
-> Beschatte verkleidet einen Council-Konvoi im Lagerhaus und höre ihn ab.
+> Beschatte verkleidet einen Konvoi des Rats im Lagerhaus und höre ihn ab.
 
 - **Ziel:** `observe` → `convoy_intel` ×1
 - **Vorbedingung:** Die Späherin
@@ -1024,7 +1028,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 > Du hast es gehört. Keine Vorräte, keine Waffen. Kisten voller Phiolen, jede mit dem Wachs des Rats versiegelt. Was darin ist, sagt keiner, auch nicht, wenn sie unter sich sind. Nur wohin sie gehen: hinab, mit dem nächsten Transport.
 
 
-# Akt-Index 3 — Die Enttarnung
+# Akt-Index 3 — Akt 3 · Die Enttarnung
 
 ## Verbotene Wahrheiten
 
@@ -1052,8 +1056,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 **Entscheidung beim Abgeben**
 
-- _Ich stehe dahinter._ (`thom_ally`): THOM: Dann sind wir zwei. Das reicht, um anzufangen.
-- _Wahrheit hat einen Preis._ (`thom_ally`): THOM: Den zahle ich. Gut, dass Du ihn kennst. Wir halten zusammen.
+- _Ich stehe dahinter. Auch wenn es etwas kostet._ (`thom_ally`): THOM: Dann sind wir zwei. Den Preis zahlen wir zusammen. Das reicht, um anzufangen.
 
 
 ## Ein Hund namens Bruno
@@ -1087,7 +1090,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 - **Ziel:** `boss_kill` → `zeremonienmeister` ×1
 - **Vorbedingung:** Elaras Geheimnis
-- **Belohnung:** mind. 150 XP (bzw. 100 % des Stufenbedarfs, Boss) · **Ritualamulett** (selten, auf Spielerstufe gewürfelt)
+- **Belohnung:** mind. 150 XP (bzw. 100 % des Stufenbedarfs, Boss) · **Nebelamulett des Rats** (selten, auf Spielerstufe gewürfelt)
 
 **Angebot**
 
@@ -1215,8 +1218,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 **Entscheidung beim Abgeben**
 
-- _Ja. Sag es mir._ (`branka_ally`): BRANKA: Jemand, der nicht aufhören konnte zu fragen. Wie jetzt. Wir stehen zusammen, wenn es soweit ist.
-- _Später. Erst der Rat._ (`branka_ally`): BRANKA: Auch recht. Aber ich vergesse nicht, dass Du gefragt hast.
+- _Dann weiss ich, wo ich stehe._ (`branka_ally`): BRANKA: Jemand, der nicht aufhören konnte zu fragen. Wie jetzt. Wir stehen zusammen, wenn es so weit ist.
 
 
 ## Elaras zweite Wahrheit
@@ -1271,7 +1273,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 `espionage_archive` · **NPC:** Bürgermeister Harren · **Kette:** 7 · **Fortschritt erst ab Tiefe 12**
 
-> Infiltriere verkleidet das Council-Archiv (ab Tiefe 12), höre die Schreiber ab und birg den versiegelten Akt.
+> Infiltriere verkleidet das Archiv des Rats (ab Tiefe 12), höre die Schreiber ab und birg den versiegelten Akt.
 
 - **Ziel:** `observe` → `archive_record` ×1
 - **Vorbedingung:** keine (dazu eine Bedingung im Code, `gate`)
@@ -1298,9 +1300,9 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Der Maulwurf
 
-`espionage_informant` · **NPC:** Mara vom Untergrund · **Kette:** 8 · **Fortschritt erst ab Tiefe 23**
+`espionage_informant` · **NPC:** Späherin Mara · **Kette:** 8 · **Fortschritt erst ab Tiefe 23**
 
-> Enttarne verkleidet einen Council-Maulwurf in den Reihen des Widerstands (ab Tiefe 23).
+> Enttarne verkleidet einen Maulwurf des Rats in den Reihen des Widerstands (ab Tiefe 23).
 
 - **Ziel:** `observe` → `informant_id` ×1
 - **Vorbedingung:** Das versiegelte Archiv **+** Der Bruch
@@ -1321,11 +1323,11 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 > Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neben Aldric. An ihrem Ring das Zeichen der drei Ketten. Sie hat uns alle geführt — direkt in seine Hände.
 
 
-# Akt-Index 4 — Die Quelle
+# Akt-Index 4 — Akt 4 · Die Quelle
 
 ## Was der Rauch behält
 
-`was_der_rauch_behaelt` · **NPC:** Mara vom Untergrund · **Kette:** 1 · **Fortschritt erst ab Tiefe 25**
+`was_der_rauch_behaelt` · **NPC:** Späherin Mara · **Kette:** 1 · **Fortschritt erst ab Tiefe 25**
 
 > Steig auf Tiefe 25 hinab und stell Dich dem Nachhall, dem Echo aus tausend Stimmen. Bring Maras Leute nach Hause.
 
@@ -1350,7 +1352,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 `thom_pamphlets` · **NPC:** Setzer Thom · **Kette:** 2 · **Fortschritt erst ab Tiefe 22**
 
-> Schliesse 3 tiefe Dungeon-Durchläufe ab (ab Tiefe 22), um Flugblätter bis in die untersten Gänge zu verteilen.
+> Schliesse 3 tiefe Läufe in die Keller ab (ab Tiefe 22), um Flugblätter bis in die untersten Gänge zu verteilen.
 
 - **Ziel:** `dungeon_run` → `dungeon_complete` ×3
 - **Vorbedingung:** Verbotene Wahrheiten
@@ -1385,7 +1387,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 **Angebot**
 
-> Elara ist hinabgestiegen, zur Esse, auf Tiefe 30. Sie trägt ein echtes Amulett des Rats. Du hast nur Deine Hände. (Sie legt Dir den Hammer in die Hand.) Die reichen. Du bist der Einzige, der eine solche Bindung lösen kann.
+> Elara ist hinabgestiegen, zur Esse, auf Tiefe 30. Sie trägt ein echtes Amulett des Rats. Du hast nur Deine Hände. (Sie sieht auf Deinen Hammer.) Der reicht, und Deine Hände auch. Du bist der Einzige, der eine solche Bindung lösen kann.
 > 
 > Und noch etwas. Harren hat gefragt, wohin Du gehst. Ich habe es ihm nicht gesagt. Er wird es trotzdem herausfinden.
 
@@ -1427,7 +1429,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Die letzte Wache
 
-`mara_assault` · **NPC:** Mara vom Untergrund · **Kette:** 3
+`mara_assault` · **NPC:** Späherin Mara · **Kette:** 3
 
 > Dring bis Welle 30 vor. Dort unten führt Mara Dich zu Aldric.
 
