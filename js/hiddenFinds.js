@@ -210,7 +210,13 @@
   //
   // 0,22 / 0,8 = 0,275 gleicht genau das aus und nicht mehr: der Durchgang
   // soll so haeufig bleiben wie vorher, nicht haeufiger werden.
-  var DURCHGANG_CHANCE = 0.275;
+  //
+  // b474: die Vorpruefung (Ecken in der Mauer, Vorplatz, erreichbar vom
+  // Start) verwirft Plaetze, an denen die Kammer sonst halb frei stand oder
+  // nicht zu betreten war — gemessen 14 -> 11 von 38 Vorlagen, im Spiel
+  // 47 -> 37 von 100 Raeumen, Faktor ~0,79. 0,275 / 0,79 = 0,348; 0,34
+  // bleibt knapp darunter und unter der Fundchance.
+  var DURCHGANG_CHANCE = 0.34;
 
   function willDurchgang(rng) {
     // ?find=durchgang erzwingt die Kammer in JEDEM Raum.
@@ -286,40 +292,104 @@
     return { label: label, amRand: amRand };
   }
 
-  function _setzeBoden(raster, x, y) {
+  function _setzeZeichen(raster, x, y, c) {
     var z = raster[y];
     if (typeof z === 'string') {
-      raster[y] = z.slice(0, x) + BODEN + z.slice(x + 1);
+      raster[y] = z.slice(0, x) + c + z.slice(x + 1);
     } else if (Array.isArray(z)) {
-      z[x] = (typeof z[x] === 'number') ? 0 : BODEN;
+      z[x] = c;
     }
+  }
+
+  function _setzeBoden(raster, x, y) {
+    var z = raster[y];
+    if (Array.isArray(z) && typeof z[x] === 'number') z[x] = 0;
+    else _setzeZeichen(raster, x, y, BODEN);
+  }
+
+  // Ohne Legende: Boden ist alles, was weder Wand noch Leere (' ') ist — so
+  // zaehlen auch 'P' und der Zierboden '+'. Mit Legende entscheidet der
+  // Aufrufer (roomTemplates kennt die Bodenregel der Vorlage).
+  function _istBodenStandard(c) {
+    if (c === null || c === undefined) return false;
+    if (typeof c === 'number') return c === 0;
+    return c !== '#' && c !== ' ';
+  }
+
+  /** Welche Bodenzellen erreicht man vom Startpunkt aus (4er-Nachbarschaft)? */
+  function _erreichbar(raster, W, H, istBoden, start) {
+    var sx = Math.round(start.x), sy = Math.round(start.y);
+    // Der Startpunkt kann auf einem Zierstueck liegen: naechsten Boden suchen.
+    if (!istBoden(_zeichen(raster, sx, sy))) {
+      var gefunden = null;
+      for (var r = 1; r <= 3 && !gefunden; r++) {
+        for (var dy = -r; dy <= r && !gefunden; dy++) {
+          for (var dx = -r; dx <= r && !gefunden; dx++) {
+            if (istBoden(_zeichen(raster, sx + dx, sy + dy))) gefunden = { x: sx + dx, y: sy + dy };
+          }
+        }
+      }
+      if (!gefunden) return null;
+      sx = gefunden.x; sy = gefunden.y;
+    }
+    var gesehen = new Uint8Array(W * H), stapel = [sx, sy];
+    gesehen[sy * W + sx] = 1;
+    while (stapel.length) {
+      var py = stapel.pop(), px = stapel.pop();
+      var nb = [px + 1, py, px - 1, py, px, py + 1, px, py - 1];
+      for (var i = 0; i < nb.length; i += 2) {
+        var nx = nb[i], ny = nb[i + 1];
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H || gesehen[ny * W + nx]) continue;
+        if (!istBoden(_zeichen(raster, nx, ny))) continue;
+        gesehen[ny * W + nx] = 1;
+        stapel.push(nx, ny);
+      }
+    }
+    return gesehen;
   }
 
   /**
    * Sucht eine Wandflaeche, die zur Kammer werden kann, und stanzt sie aus.
    *
-   * Bedingungen an den Platz:
-   *  - KAMMER_B x KAMMER_H Zellen, ALLE Wand
-   *  - nicht am Kartenrand (sonst stanzt man nach draussen)
-   *  - genau EIN angrenzendes Bodenfeld als Mund — mehrere Zugaenge waeren
-   *    kein verschuetteter Durchgang, sondern eine Abkuerzung
+   * Alles, was sich am RASTER pruefen laesst, wird VOR dem Stanzen geprueft.
+   * Gemeldet als "dunkle Bereiche, als ob das eine Kammer haette sein sollen":
+   * eine Kammer, die hinterher scheitert, hinterlaesst sonst ein Loch.
    *
-   * @param {Array<Array<number>>} raster wird VERAENDERT (Aufrufer kopiert)
+   * Bedingungen an den Platz:
+   *  - KAMMER_B x KAMMER_H Zellen, ALLE Wand, nicht am Kartenrand
+   *  - Zugang nur von EINER Seite; die drei anderen Seiten und deren Ecken
+   *    sind Wand (die Kammer steckt ganz im Mauerband, auch diagonal)
+   *  - auf der Zugangsseite mindestens zwei nebeneinanderliegende Bodenfelder,
+   *    vor denen noch einmal Boden liegt (die Spielfigur muss heranlaufen
+   *    koennen), und kein Nachbar ist Leere oder ein Zierstueck
+   *  - mit opts.start: dieser Vorplatz ist vom Startpunkt aus erreichbar
+   *  - die Wandmasse haengt am Raumrand (keine freistehenden Klotze)
+   *
+   * @param {Array<string|Array>} raster wird VERAENDERT (Aufrufer kopiert)
    * @param {function} [rng]
-   * @returns {{kammer:Array,mund:{x:number,y:number}}|null}
+   * @param {{istBoden?:function, start?:{x:number,y:number}}} [opts]
+   * @returns {{kammer:Array,mund:{x:number,y:number},vorher:Array}|null}
    */
-  function stanzeKammer(raster, rng) {
+  function stanzeKammer(raster, rng, opts) {
     // Zeilen sind Strings ODER Felder — beides zulassen. Die urspruengliche
     // Pruefung verlangte Felder und brach bei den echten String-Zeilen
     // sofort ab, ohne dass es auffiel: sie gab einfach null zurueck.
     if (!Array.isArray(raster) || !raster.length) return null;
     if (typeof raster[0] !== 'string' && !Array.isArray(raster[0])) return null;
     var r = (typeof rng === 'function') ? rng : Math.random;
+    opts = opts || {};
+    var istBoden = (typeof opts.istBoden === 'function') ? opts.istBoden : _istBodenStandard;
     var H = raster.length, W = raster[0].length;
     if (!W) return null;
 
-    // Einmal je Raum: welche Wandmasse haengt am Raumrand?
+    // Einmal je Raum: welche Wandmasse haengt am Raumrand, was ist erreichbar?
     var massen = _wandMassen(raster, W, H);
+    var erreicht = opts.start ? _erreichbar(raster, W, H, istBoden, opts.start) : null;
+    if (opts.start && !erreicht) return null;
+    var bodenDa = function (x, y) {
+      if (!istBoden(_zeichen(raster, x, y))) return false;
+      return !erreicht || !!erreicht[y * W + x];
+    };
 
     var kandidaten = [];
     for (var y = 1; y + KAMMER_H <= H - 1; y++) {
@@ -332,55 +402,82 @@
         }
         if (!alleWand) continue;
 
-        // Angrenzende Bodenfelder zaehlen (4er-Nachbarschaft des Blocks).
-        var muender = [];
+        // Die vier Seiten des Blocks, jeweils mit Blickrichtung nach aussen.
+        var seiten = [
+          { id: 'links',  zellen: [], ax: -1, ay: 0 },
+          { id: 'rechts', zellen: [], ax: 1,  ay: 0 },
+          { id: 'oben',   zellen: [], ax: 0,  ay: -1 },
+          { id: 'unten',  zellen: [], ax: 0,  ay: 1 }
+        ];
         for (dy = 0; dy < KAMMER_H; dy++) {
-          if (!_istWand(raster, x - 1, y + dy)) muender.push({ x: x - 1, y: y + dy });
-          if (!_istWand(raster, x + KAMMER_B, y + dy)) muender.push({ x: x + KAMMER_B, y: y + dy });
+          seiten[0].zellen.push({ x: x - 1, y: y + dy });
+          seiten[1].zellen.push({ x: x + KAMMER_B, y: y + dy });
         }
         for (dx = 0; dx < KAMMER_B; dx++) {
-          if (!_istWand(raster, x + dx, y - 1)) muender.push({ x: x + dx, y: y - 1 });
-          if (!_istWand(raster, x + dx, y + KAMMER_H)) muender.push({ x: x + dx, y: y + KAMMER_H });
+          seiten[2].zellen.push({ x: x + dx, y: y - 1 });
+          seiten[3].zellen.push({ x: x + dx, y: y + KAMMER_H });
         }
-        // Alle Muender muessen auf DERSELBEN Seite liegen. "Genau einer" war zu
-        // streng: eine Nische an einer Korridorwand hat zwei Muender
-        // nebeneinander und ist trotzdem eine Sackgasse. Was hier ausgeschlossen
+        // Alle Muender muessen auf DERSELBEN Seite liegen. Was ausgeschlossen
         // wird, ist der Durchbruch zwischen zwei Seiten — das waere eine
         // Abkuerzung, kein verschuetteter Durchgang.
-        // MINDESTENS ZWEI Muender: die Begehbarkeitspruefung verwirft
-        // 1-Kachel-Engstellen ausdruecklich (CHAR_CLEAR_HALF_W/H in
-        // roomManager, "1-Tile-Korridore als unpassierbar"). Mit einem
-        // Kachel breiten Mund war die Kammer NIE erreichbar — gemessen war
-        // keine einzige betretbar, obwohl das Wandraster Boden meldete.
-        if (muender.length < 2) continue;
-        var seiten = {};
-        muender.forEach(function (m) {
-          if (m.x < x) seiten.links = 1;
-          else if (m.x >= x + KAMMER_B) seiten.rechts = 1;
-          else if (m.y < y) seiten.oben = 1;
-          else seiten.unten = 1;
+        var offen = seiten.filter(function (s) {
+          return s.zellen.some(function (z) { return !_istWand(raster, z.x, z.y); });
         });
-        if (Object.keys(seiten).length !== 1) continue;
+        if (offen.length !== 1) continue;
+        var seite = offen[0];
+        // Jede Oeffnung ist echter Boden — keine Leere, kein Zierstueck.
+        if (seite.zellen.some(function (z) {
+          return !_istWand(raster, z.x, z.y) && !istBoden(_zeichen(raster, z.x, z.y));
+        })) continue;
+
+        // Ecken, die NICHT an der Zugangsseite liegen, muessen Wand sein —
+        // sonst beruehrt die Kammer diagonal den Boden und steht halb frei.
+        var ecken = [
+          { x: x - 1, y: y - 1, s: ['links', 'oben'] },
+          { x: x + KAMMER_B, y: y - 1, s: ['rechts', 'oben'] },
+          { x: x - 1, y: y + KAMMER_H, s: ['links', 'unten'] },
+          { x: x + KAMMER_B, y: y + KAMMER_H, s: ['rechts', 'unten'] }
+        ];
+        if (ecken.some(function (e) {
+          return e.s.indexOf(seite.id) < 0 && !_istWand(raster, e.x, e.y);
+        })) continue;
+
+        // MINDESTENS ZWEI nebeneinanderliegende Muender mit Boden davor: die
+        // Begehbarkeitspruefung verwirft 1-Kachel-Engstellen ausdruecklich
+        // (CHAR_CLEAR_HALF_W/H in roomManager). Mit einem Kachel breiten
+        // Mund war die Kammer NIE erreichbar.
+        var lauf = [], besterLauf = [];
+        seite.zellen.forEach(function (z) {
+          if (bodenDa(z.x, z.y) && bodenDa(z.x + seite.ax, z.y + seite.ay)) {
+            lauf.push(z);
+            if (lauf.length > besterLauf.length) besterLauf = lauf.slice();
+          } else {
+            lauf = [];
+          }
+        });
+        if (besterLauf.length < 2) continue;
 
         // Die Masse, in der der Block steckt, muss bis zum Raumrand reichen —
         // sonst ist es keine Mauer, sondern ein Felsklotz im offenen Raum.
-        // Der Block ist hier noch Wand, traegt also selbst ein Label.
         if (!massen.amRand[massen.label[y][x]]) continue;
 
-        kandidaten.push({ x: x, y: y, mund: muender[0] });
+        kandidaten.push({ x: x, y: y, mund: besterLauf[0] });
       }
     }
     if (!kandidaten.length) return null;
 
     var w = kandidaten[Math.floor(r() * kandidaten.length)];
-    var kammer = [];
+    var kammer = [], vorher = [];
     for (var ky = 0; ky < KAMMER_H; ky++) {
       for (var kx = 0; kx < KAMMER_B; kx++) {
+        // Das Original merken: scheitert die Kammer spaeter, wird exakt
+        // zurueckgebaut (mauereKammerZu).
+        vorher.push(_zeichen(raster, w.x + kx, w.y + ky));
         _setzeBoden(raster, w.x + kx, w.y + ky);
         kammer.push({ x: w.x + kx, y: w.y + ky });
       }
     }
-    return { kammer: kammer, mund: w.mund };
+    return { kammer: kammer, mund: w.mund, vorher: vorher };
   }
 
   /**
@@ -400,19 +497,181 @@
   }
 
   /**
+   * Raeumt die Verdeckung der vorigen Kammer ab.
+   *
+   * GEMELDET: "Es spawnen manchmal dunkle Bereiche, als ob das eine Kammer
+   * haette sein sollen." Die schwarze Verdeckung haengt an keiner Raumliste.
+   * Bis b465 verschwand sie trotzdem beim Raumwechsel, weil das Abraeumen des
+   * Gerölls die Kammer "oeffnete". Seit nur noch das Zerschlagen oeffnet, blieb
+   * sie stehen und lag im naechsten Raum mitten auf dem Boden — gemessen in
+   * 99 von 100 Raeumen mit erzwungener Kammer. Darum raeumt jeder Raumaufbau
+   * sie hier ausdruecklich ab.
+   */
+  function raeumeKammerAuf(scene) {
+    if (!scene) return;
+    var alt = scene._kammerVerdeckung;
+    scene._kammerVerdeckung = null;
+    scene._kammerToken = null;
+    scene._kammerMarkierung = null;
+    if (Array.isArray(alt)) {
+      alt.slice().forEach(function (g) { try { g.destroy(); } catch (e) {} });
+      alt.length = 0;
+    }
+  }
+
+  /**
+   * Baut eine gestanzte Kammer zurueck zur Wand, wenn sie nach dem Stanzen
+   * scheitert (nicht betretbar, Geroell im Freiraum der Treppe, Ausnahme).
+   *
+   * Vorher blieb dann "eine offene, leere Nische": ein Loch in der Mauer ohne
+   * Schutt, ohne Fund. Jetzt wird alles wiederhergestellt, was das Stanzen
+   * veraendert hat: Raster (liest die Minikarte und die Spawnregeln live),
+   * Wandkoerper, Wandbild, Sichtgeometrie und Begehbarkeit.
+   *
+   * @returns {boolean} true, wenn zurueckgebaut wurde
+   */
+  function mauereKammerZu(scene, kammerInfo, ox, oy, T) {
+    if (!scene || !kammerInfo || !Array.isArray(kammerInfo.kammer) || !kammerInfo.kammer.length) return false;
+    ox = ox || 0; oy = oy || 0;
+    T = T || scene._minimapTileSize || 32;
+    var kammer = kammerInfo.kammer, vorher = kammerInfo.vorher || [];
+    var W = (typeof window !== 'undefined') ? window : {};
+
+    // 1) Raster: genau die Zeichen von vorher.
+    var grid = scene._minimapWallsGrid;
+    if (Array.isArray(grid)) {
+      kammer.forEach(function (t, i) {
+        var c = vorher[i];
+        _setzeZeichen(grid, t.x, t.y, (c === undefined || c === null) ? '#' : c);
+      });
+    }
+
+    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    kammer.forEach(function (t) {
+      minX = Math.min(minX, t.x); maxX = Math.max(maxX, t.x);
+      minY = Math.min(minY, t.y); maxY = Math.max(maxY, t.y);
+    });
+    var x0 = ox + minX * T, y0 = oy + minY * T;
+    var w = (maxX - minX + 1) * T, h = (maxY - minY + 1) * T;
+    var cx = x0 + w / 2, cy = y0 + h / 2;
+
+    // 2) Was inzwischen in der Kammer steht, vor den Mund stellen — sonst
+    // steckt es gleich in der Wand. (Gemessen bisher nie, aber billig.)
+    var vor = kammerInfo.mund
+      ? { x: ox + (kammerInfo.mund.x + 0.5) * T, y: oy + (kammerInfo.mund.y + 0.5) * T }
+      : null;
+    var drin = function (o) {
+      return o && o.active !== false && Number.isFinite(o.x) && Number.isFinite(o.y)
+        && o.x >= x0 && o.x < x0 + w && o.y >= y0 && o.y < y0 + h;
+    };
+    var kinder = function (g) {
+      try { return (g && typeof g.getChildren === 'function') ? g.getChildren().slice() : []; } catch (e) { return []; }
+    };
+    if (vor) {
+      var bewegt = kinder(W.enemies).concat(W.player ? [W.player] : []);
+      bewegt.forEach(function (o) {
+        if (!drin(o)) return;
+        try {
+          if (o.body && typeof o.body.reset === 'function') o.body.reset(vor.x, vor.y);
+          else o.setPosition(vor.x, vor.y);
+        } catch (e) {}
+      });
+      var fest = kinder(W.obstacles).concat(kinder(W.lootGroup), scene._activeLootSprites || []);
+      fest.forEach(function (o) {
+        if (!drin(o) || (o.getData && o.getData('isMergedWall'))) return;
+        try {
+          o.setPosition(vor.x, vor.y);
+          if (typeof o.refreshBody === 'function') o.refreshBody();
+        } catch (e) {}
+      });
+    }
+
+    // 3) Wandkoerper: dieselbe Textur wie die uebrigen Waende des Raums, sonst
+    // haelt die Sichtpruefung (_buildWallCache: obstacleWall/wall_*) ihn nicht
+    // fuer Wand und man saehe durch ihn hindurch.
+    var tex = 'obstacleWall', bild = null;
+    kinder(W.obstacles).some(function (o) {
+      if (o && o.getData && o.getData('isMergedWall') && o.texture) { tex = o.texture.key; return true; }
+      return false;
+    });
+    try {
+      var wand = (typeof W.spawnWallRect === 'function') ? W.spawnWallRect(cx, cy, w, h, tex) : null;
+      if (wand && typeof wand.setData === 'function') wand.setData('kammerZugemauert', true);
+    } catch (e) {}
+
+    // 4) Wandbild: das gebackene Bild hat an der Stelle ein Loch. Eine Kachel-
+    // flaeche derselben Textur deckt es — auf der Tiefe der Wandkante, damit
+    // auch die Schattenkanten, die rund um das Loch gezeichnet wurden,
+    // darunter verschwinden. 'isFloor' wie das gebackene Bild: Platzierungen
+    // laufen ueber Physik und Raster, nicht ueber dieses Bild.
+    try {
+      (scene._templateWalls || []).some(function (o) {
+        if (o && o.getData && o.getData('isBakedWall')) { bild = o; return true; }
+        return false;
+      });
+      if (scene.add && typeof scene.add.tileSprite === 'function' && scene.textures
+          && scene.textures.exists && scene.textures.exists(tex)) {
+        var tiefe = (W.WELT_TIEFEN && W.WELT_TIEFEN.WANDKANTE) || 39.5;
+        var deck = scene.add.tileSprite(cx, cy, w, h, tex).setOrigin(0.5).setDepth(tiefe);
+        if (bild && bild.isTinted && typeof deck.setTint === 'function') deck.setTint(bild.tintTopLeft);
+        if (typeof deck.setData === 'function') {
+          deck.setData('isFloor', true);
+          deck.setData('kammerZugemauert', true);
+        }
+        scene._templateWalls = scene._templateWalls || [];
+        scene._templateWalls.push(deck);
+      }
+    } catch (e) {}
+
+    // 5) Sicht und Begehbarkeit neu: die Kammerzellen waren begehbar und
+    // durchsichtig.
+    try { if (typeof W.invalidateWallCache === 'function') W.invalidateWallCache(); } catch (e) {}
+    try { if (typeof W.recomputeAccessibleArea === 'function') W.recomputeAccessibleArea(scene); } catch (e) {}
+    scene._kammerMarkierung = null;
+    return true;
+  }
+
+  /**
    * Schuettet die gestanzte Kammer zu und legt die Belohnung hinein (unrein).
    *
    * Der Schutt ist ein gewoehnliches zerstoerbares Hindernis vom Typ 'rubble' —
    * das kennt das Spiel schon (roomTemplates: destructibleTypes), also gilt
    * dieselbe Zerschlag-Mechanik wie bei Faessern, ohne neuen Sonderweg.
    *
+   * Scheitert irgendeine Pruefung, wird die Kammer zurueckgemauert: kein Loch,
+   * keine Meldung, kein Gegenstand.
+   *
    * @param {object} kammerInfo  Rueckgabe von stanzeKammer
    * @param {number} ox,oy,T     Ursprung und Kachelgroesse in Weltkoordinaten
    */
   function verschuetteKammer(scene, kammerInfo, ox, oy, T) {
-    if (!scene || !kammerInfo || !kammerInfo.kammer || !kammerInfo.mund) return false;
+    if (!scene) return false;
+    raeumeKammerAuf(scene);
+    if (!kammerInfo || !kammerInfo.kammer || !kammerInfo.mund) return false;
+    var schutt = [], ok = false, grund = 'Ausnahme';
+    try {
+      grund = _verschuetten(scene, kammerInfo, ox, oy, T, schutt);
+      ok = (grund === true);
+    } catch (e) { ok = false; }
+    if (ok) return true;
+    schutt.forEach(function (s) {
+      try { if (s.body) s.body.enable = false; } catch (e) {}
+      try { s.destroy(); } catch (e) {}
+    });
+    mauereKammerZu(scene, kammerInfo, ox, oy, T);
+    try {
+      if (window.DebugGate && window.DebugGate.aktiv() && typeof console !== 'undefined') {
+        console.log('[Durchgang] Kammer bei Kachel ' + kammerInfo.kammer[0].x + '/' + kammerInfo.kammer[0].y
+          + ' verworfen (' + grund + ') — wieder zugemauert, kein Geroell, kein Fund.');
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  /** @returns {true|string} true oder der Grund des Scheiterns */
+  function _verschuetten(scene, kammerInfo, ox, oy, T, schuttStuecke) {
     var eingang = kammerEingang(kammerInfo.kammer, kammerInfo.mund);
-    if (!eingang) return false;
+    if (!eingang) return 'kein Eingang';
     var mitte = function (t) { return { x: ox + (t.x + 0.5) * T, y: oy + (t.y + 0.5) * T }; };
 
     // Ist die Kammer ueberhaupt BETRETBAR? Das Wandraster allein genuegt
@@ -425,15 +684,7 @@
         var m = mitte(t);
         return scene.isPointAccessible(m.x, m.y);
       });
-      if (!frei) {
-        try {
-          if (window.DebugGate && window.DebugGate.aktiv() && typeof console !== 'undefined') {
-            console.log('[Durchgang] Kammer bei Kachel ' + eingang.x + '/' + eingang.y
-              + ' waere nicht betretbar (Figur passt nicht hinein) — kein Geroell gesetzt.');
-          }
-        } catch (e) {}
-        return false;
-      }
+      if (!frei) return 'nicht betretbar';
     }
 
     // Schutt ueber die GANZE Oeffnung, nicht nur eine Kachel: ein einzelnes
@@ -447,45 +698,37 @@
     });
     if (!eingangsReihe.length) eingangsReihe = [eingang];
 
-    var schuttStuecke = [];
-    try {
-      var spawn = scene.spawnObstacle
-        || (window.RoomTemplates && window.RoomTemplates.spawnObstacle);
-      if (typeof spawn !== 'function') return false;
-      eingangsReihe.forEach(function (t) {
-        var p = mitte(t);
-        var s = spawn.call(scene, p.x, p.y, 'rubble');
-        if (s && typeof s.setData === 'function') {
-          s.setData('kammerSchutt', true);
-          schuttStuecke.push(s);
-        }
-      });
-      if (!schuttStuecke.length) return false;
-      // Kein Schutt im Freiraum einer Treppe. Das Netz (raeumePropsAufTreppen)
-      // ist da laengst gelaufen, und nachraeumen ginge auch nicht: das destroy
-      // eines Brockens oeffnet die Kammer samt Belohnung (unten). Also lieber
-      // eine offene, leere Nische als eine verdeckte Treppe — wie oben bei der
-      // unbetretbaren Kammer. Noch hoert niemand auf 'destroy'.
-      var _anTreppe = typeof window.imTreppenFreiraum === 'function'
-        && schuttStuecke.some(function (s) { return window.imTreppenFreiraum(scene, s); });
-      if (_anTreppe) {
-        schuttStuecke.forEach(function (s) {
-          try { if (s.body) s.body.enable = false; } catch (e) {}
-          try { s.destroy(); } catch (e) {}
-        });
-        return false;
+    var spawn = scene.spawnObstacle
+      || (window.RoomTemplates && window.RoomTemplates.spawnObstacle);
+    if (typeof spawn !== 'function') return 'kein spawnObstacle';
+    eingangsReihe.forEach(function (t) {
+      var p = mitte(t);
+      var s = spawn.call(scene, p.x, p.y, 'rubble');
+      if (s && typeof s.setData === 'function') {
+        s.setData('kammerSchutt', true);
+        schuttStuecke.push(s);
       }
-      // Fuer den Minikarten-Marker im Debug-Modus (minimap.js).
-      scene._kammerMarkierung = { kammer: kammerInfo.kammer, schutt: eingang };
-      try {
-        if (window.DebugGate && window.DebugGate.aktiv() && typeof console !== 'undefined') {
-          console.log('[Durchgang] Geroell auf ' + schuttStuecke.length + ' Kachel(n) ab '
-            + eingang.x + '/' + eingang.y + ', zerschlagbar.'
-            + ' Kammer verdeckt, oeffnet sich beim letzten Stueck.'
-            + ' Minikarte: blau = Kammer, orange = Geroell.');
-        }
-      } catch (e) {}
-    } catch (e) { return false; }
+    });
+    // Jede Kachel der Oeffnung braucht ihr Stueck — eine Luecke waere ein
+    // Durchblick auf die verdeckte Kammer.
+    if (schuttStuecke.length !== eingangsReihe.length) return 'Geroell unvollstaendig';
+    // Kein Schutt im Freiraum einer Treppe. Das Netz (raeumePropsAufTreppen)
+    // ist da laengst gelaufen, und nachraeumen ginge auch nicht: das destroy
+    // eines Brockens oeffnet die Kammer samt Belohnung (unten).
+    var anTreppe = typeof window.imTreppenFreiraum === 'function'
+      && schuttStuecke.some(function (s) { return window.imTreppenFreiraum(scene, s); });
+    if (anTreppe) return 'Geroell im Freiraum der Treppe';
+
+    // Fuer den Minikarten-Marker im Debug-Modus (minimap.js).
+    scene._kammerMarkierung = { kammer: kammerInfo.kammer, schutt: eingang };
+    try {
+      if (window.DebugGate && window.DebugGate.aktiv() && typeof console !== 'undefined') {
+        console.log('[Durchgang] Geroell auf ' + schuttStuecke.length + ' Kachel(n) ab '
+          + eingang.x + '/' + eingang.y + ', zerschlagbar.'
+          + ' Kammer verdeckt, oeffnet sich beim letzten Stueck.'
+          + ' Minikarte: blau = Kammer, orange = Geroell.');
+      }
+    } catch (e) {}
 
     // --- Die Kammer bleibt VERBORGEN, bis der Schutt faellt -----------------
     //
@@ -530,6 +773,11 @@
         verdeckung.push(g);
       }
     } catch (e) {}
+    // An der Szene festhalten: der naechste Raumaufbau raeumt sie ab
+    // (raeumeKammerAuf), ob die Kammer geoeffnet wurde oder nicht.
+    var token = {};
+    scene._kammerVerdeckung = verdeckung;
+    scene._kammerToken = token;
 
     // Belohnung erst, wenn aufgebrochen ist — vorher waere sie sichtbar.
     var hinten = kammerInfo.kammer[0], weit = -1;
@@ -538,20 +786,19 @@
       if (d > weit) { weit = d; hinten = t; }
     });
 
-    var geoeffnet = false, zerschlagen = 0;
+    var weg = function () {
+      verdeckung.slice().forEach(function (r) { try { r.destroy(); } catch (e) {} });
+      verdeckung.length = 0;
+    };
+    var geoeffnet = false;
     function oeffnen() {
       if (geoeffnet) return;
       // Beim ERSTEN Brocken, nicht erst beim letzten: sobald eine Luecke da
       // ist, sieht man hinein — der Rest waere nur noch Aufraeumen vor einer
       // schwarzen Wand.
-      zerschlagen++;
       geoeffnet = true;
       // Weglichten statt wegschalten: der Nebel weicht, er verschwindet nicht
       // schlagartig. Ohne Tween-Manager (Test) sofort raus.
-      var weg = function () {
-        verdeckung.forEach(function (r) { try { r.destroy(); } catch (e) {} });
-        verdeckung.length = 0;
-      };
       if (scene.tweens && typeof scene.tweens.add === 'function' && verdeckung.length) {
         try {
           scene.tweens.add({ targets: verdeckung.slice(), alpha: 0, duration: 420,
@@ -578,11 +825,15 @@
     // Beute geleert wurde. Gemeldet als "zu oft 'hinter dem Schutt liegt
     // etwas', und dann liegt das Item irgendwo rum": Meldung und Gegenstand
     // landeten im neuen Raum, in dem es gar keine Kammer gibt.
+    // Verschwindet ein Brocken auf anderem Weg, solange dieser Raum noch steht,
+    // faellt wenigstens die Verdeckung — ohne Belohnung, aber kein schwarzer
+    // Kasten vor einer offenen Kammer.
     schuttStuecke.forEach(function (s) {
       try {
         if (s && typeof s.once === 'function') {
           s.once('destroy', function () {
             if (s.__zerschlagen) oeffnen();
+            else if (scene._kammerToken === token) weg();
           });
         }
       } catch (e) {}
@@ -876,6 +1127,8 @@
     _belohnung: _belohnung,
     kammerEingang: kammerEingang,
     verschuetteKammer: verschuetteKammer,
+    mauereKammerZu: mauereKammerZu,
+    raeumeKammerAuf: raeumeKammerAuf,
     LAGER_HEILUNG: LAGER_HEILUNG,
     FALLE_GEGNER: FALLE_GEGNER,
     beuteArt: beuteArt,

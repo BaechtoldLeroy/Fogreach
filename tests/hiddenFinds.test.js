@@ -337,3 +337,120 @@ test('An der durchgehenden Mauer wird weiterhin gestanzt', () => {
     assert.strictEqual(g[t.y][t.x], '.', 'Zelle ' + t.x + '/' + t.y + ' nicht ausgestanzt');
   });
 });
+
+// --- Vorpruefung VOR dem Stanzen (b474) -------------------------------------
+//
+// Gemeldet: "dunkle Bereiche, als ob das eine Kammer haette sein sollen, die
+// es nicht an eine Mauer geschafft hat." Was sich am Raster pruefen laesst,
+// wird jetzt geprueft, BEVOR ein Loch entsteht.
+
+/** Ring um die Kammer ohne die Zugangsseite: alles, was nicht Wand ist. */
+function ringOffen(g, r) {
+  const xs = r.kammer.map((t) => t.x), ys = r.kammer.map((t) => t.y);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const m = r.mund, offen = [];
+  for (let y = y0 - 1; y <= y1 + 1; y++) {
+    for (let x = x0 - 1; x <= x1 + 1; x++) {
+      if (x >= x0 && x <= x1 && y >= y0 && y <= y1) continue;
+      const zugang = (m.x < x0 && x < x0) || (m.x > x1 && x > x1) || (m.y < y0 && y < y0) || (m.y > y1 && y > y1);
+      if (!zugang && g[y][x] !== '#') offen.push(x + '/' + y);
+    }
+  }
+  return offen;
+}
+
+test('Eine Kammer, die diagonal an Boden stoesst, wird nicht gestanzt', () => {
+  // Zugang von unten. Der Block x=2..4 haette oben links (1/1) Boden an der
+  // Ecke — er stuende halb frei. x=3..5 ist sauber eingemauert.
+  const vorlage = [
+    '#########',
+    '#.#######',
+    '#########',
+    '#########',
+    '#########',
+    '#.......#',
+    '#.......#',
+    '#########',
+  ];
+  let gestanzt = 0;
+  for (let i = 0; i < 10; i++) {
+    const g = vorlage.slice();
+    const r = H.stanzeKammer(g, () => i / 10);
+    if (!r) continue;
+    gestanzt++;
+    assert.deepStrictEqual(ringOffen(vorlage, r), [], 'Kammer bei ' + JSON.stringify(r.kammer[0]));
+  }
+  assert.ok(gestanzt > 0, 'die saubere Stelle muss bleiben');
+});
+
+test('Ohne Vorplatz vor dem Mund wird nicht gestanzt', () => {
+  // Der Boden vor der Wand ist nur EINE Kachel tief: die Figur (56 px hoch)
+  // kaeme nie bis an den Mund heran.
+  const flach = [
+    '#########',
+    '#########',
+    '#########',
+    '#########',
+    '#..###..#',
+    '#########',
+  ];
+  assert.strictEqual(H.stanzeKammer(flach.slice(), () => 0), null);
+  // Gegenprobe: eine Kachel mehr Boden davor, und es geht.
+  const tief = [
+    '#########',
+    '#########',
+    '#########',
+    '#########',
+    '#..###..#',
+    '#..###..#',
+    '#########',
+  ];
+  assert.ok(H.stanzeKammer(tief.slice(), () => 0), 'mit Vorplatz muss es gehen');
+});
+
+test('Der Vorplatz muss vom Startpunkt aus erreichbar sein', () => {
+  // Zwei Haelften, durch eine Mauer getrennt; der Start liegt links.
+  const vorlage = [
+    '###########',
+    '#....#....#',
+    '#....#....#',
+    '###########',
+    '###########',
+    '###########',
+    '###########',
+  ];
+  let rechts = 0;
+  for (let i = 0; i < 20; i++) {
+    const r = H.stanzeKammer(vorlage.slice(), () => i / 20, { start: { x: 1, y: 1 } });
+    assert.ok(r, 'links ist Platz');
+    // Der Mund liegt links; die Kammer darf bis unter die Trennmauer reichen,
+    // aber nicht in die rechte Haelfte.
+    assert.ok(r.mund.x <= 4, 'Mund in der unerreichbaren Haelfte: ' + JSON.stringify(r.mund));
+    r.kammer.forEach((t) => assert.ok(t.x <= 5, 'Kammer unter der rechten Haelfte: ' + t.x + '/' + t.y));
+    const ohne = H.stanzeKammer(vorlage.slice(), () => i / 20);
+    if (ohne && ohne.kammer.some((t) => t.x >= 6)) rechts++;
+  }
+  assert.ok(rechts > 0, 'Gegenprobe: ohne Startpunkt gibt es auch rechts Kammern');
+});
+
+test('Zurueckmauern stellt das Raster exakt her', () => {
+  const vorlage = [
+    '#########',
+    '#.......#',
+    '#.......#',
+    '#########',
+    '#########',
+    '#########',
+    '#########',
+  ];
+  [false, true].forEach((alsFeld) => {
+    const g = alsFeld ? vorlage.map((z) => z.split('')) : vorlage.slice();
+    const r = H.stanzeKammer(g, () => 0);
+    assert.ok(r, 'es gibt einen Platz');
+    assert.strictEqual(r.vorher.length, r.kammer.length, 'das Original jeder Zelle ist gemerkt');
+    assert.ok(r.kammer.every((t) => g[t.y][t.x] === '.'), 'ausgestanzt');
+    assert.strictEqual(H.mauereKammerZu({ _minimapWallsGrid: g }, r, 0, 0, 32), true);
+    const zurueck = alsFeld ? g.map((z) => z.join('')) : g;
+    assert.deepStrictEqual(zurueck, vorlage, alsFeld ? 'Feld-Zeilen' : 'String-Zeilen');
+  });
+});

@@ -360,10 +360,30 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
   // Rechtecken zusammen und die Optik wird in ein Bild gebacken; ein Loch
   // waere dort nur noch mit Rechteck-Chirurgie zu haben.
   scene._kammer = null;
+  // Die Verdeckung der VORIGEN Kammer gehoert zu keinem Raum — ohne das lag
+  // sie als schwarzer Kasten mitten im neuen Raum.
+  try {
+    if (window.HiddenFinds && typeof window.HiddenFinds.raeumeKammerAuf === 'function') {
+      window.HiddenFinds.raeumeKammerAuf(scene);
+    }
+  } catch (e) {}
   try {
     if (window.HiddenFinds && typeof window.HiddenFinds.stanzeKammer === 'function'
         && window.HiddenFinds.willDurchgang(Math.random)) {
-      scene._kammer = window.HiddenFinds.stanzeKammer(wallsGrid, Math.random);
+      // Dieselbe Bodenregel wie isFloorChar unten (das steht erst danach) und
+      // der Startpunkt: der Vorplatz der Kammer muss von dort erreichbar sein.
+      const _kLegende = (tpl.layout && tpl.layout.legend) || {};
+      const _kIstBoden = (ch) => {
+        if (ch === '.') return true;
+        const key = _kLegende[ch];
+        const istWand = key === 'wall' || key === 'obstacleWall'
+          || (typeof key === 'string' && key.startsWith('wall_'));
+        return !!key && !istWand && !AUTO_OBSTACLE_TILE_KEYS.has(key);
+      };
+      scene._kammer = window.HiddenFinds.stanzeKammer(wallsGrid, Math.random, {
+        istBoden: _kIstBoden,
+        start: tpl.spawns && tpl.spawns.player ? tpl.spawns.player : null
+      });
       // #113: Ohne Mitschrift ist nicht zu unterscheiden, ob die Kammer gar
       // nicht gestanzt wurde oder ob man sie nur nicht findet.
       if (window.DebugGate && window.DebugGate.aktiv() && typeof console !== 'undefined') {
