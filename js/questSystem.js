@@ -577,10 +577,12 @@
     verseuchte_kammer: {
       id: 'verseuchte_kammer',
       title: 'Die verseuchte Kammer',
-      description: 'Aldric schickt dich, eine "verseuchte" Kammer zu reinigen. Dring bis zu ihr vor.',
+      description: 'Aldric schickt dich, eine "verseuchte" Kammer zu reinigen. Dring bis zu ihr vor, sie liegt ab Tiefe 15.',
       npcId: 'aldric',
       type: 'explore',
       chain: 4,
+      minDepth: 15,
+      angebotAb: 15,
       objectives: [
         { type: 'explore', target: 'room', current: 0, required: 2 }
       ],
@@ -588,8 +590,8 @@
       rewardTier: 'story',
       prerequisites: ['council_surveillance'],
       requiredAct: 3,
-      dialogueOffer: 'Eine untere Kammer ist verseucht — Ketzerei. Reinige sie. Frag nicht, was du findest.\n\nGeh.',
-      dialogueProgress: 'Die Kammer liegt tiefer. Dring weiter vor.',
+      dialogueOffer: 'Eine untere Kammer ist verseucht — Ketzerei, ab Tiefe 15. Reinige sie. Frag nicht, was du findest.\n\nGeh.',
+      dialogueProgress: 'Die Kammer liegt tiefer, ab Tiefe 15. Dring weiter vor.',
       // v6.1: Hier siehst Du, WO Menschen abgefuellt werden. Was in den Phiolen
       // ist und wohin sie gehen, zeigt erst der Schacht (elara_ritual).
       dialogueComplete: 'Du stehst in der Kammer. Kein Ketzer weit und breit. Auf dem Boden ein Kreidekreis, an seinem Rand Ketten, in den Stein geschlagen. Daneben Kisten voller leerer Phiolen, sauber aufgereiht, jede mit einem Etikett, auf dem noch kein Name steht.\n\n(Hier werden Menschen abgefüllt. Aldric hat Dich geschickt, um die Spuren zu verwischen. Du prägst Dir alles ein. Mara soll es wissen, und Aldric soll glauben, Du hättest nur geputzt.)'
@@ -597,11 +599,12 @@
     bruch_confrontation: {
       id: 'bruch_confrontation',
       title: 'Der Bruch',
-      description: 'Aldric hat Wachen auf Dich gehetzt. Schlag Dich durch, besiege 3 Elite-Wachen. Sie stellen Dich erst in der Tiefe (ab Tiefe 8). Branka weiss ein Versteck.',
+      description: 'Aldric hat Wachen auf Dich gehetzt. Schlag Dich durch, besiege 3 Elite-Wachen. Sie stellen Dich erst in der Tiefe (ab Tiefe 20). Branka weiss ein Versteck.',
       npcId: 'branka',
       type: 'kill',
       chain: 5,
-      minDepth: 8,
+      minDepth: 20,
+      angebotAb: 20,
       objectives: [
         { type: 'kill', target: 'elite_enemy', current: 0, required: 3 }
       ],
@@ -614,8 +617,8 @@
       prerequisites: ['verseuchte_kammer', 'elara_second_truth'],
       requiredAct: 3,
       completionFlags: ['enttarnt'],
-      dialogueOffer: 'Aldric weiss es. Dein Doppelspiel ist aufgeflogen, seine Elite-Wachen riegeln die tiefen Gänge ab, ab Tiefe 8 stellst Du sie. Schlag Dich durch und komm zu mir. Ich kenne einen Ort, an dem Dich keiner sucht.',
-      dialogueProgress: 'Aldrics Elite-Wachen halten die Tiefe. Ab Tiefe 8 stellst Du sie.',
+      dialogueOffer: 'Aldric weiss es. Dein Doppelspiel ist aufgeflogen, seine Elite-Wachen riegeln die tiefen Gänge ab, ab Tiefe 20 stellst Du sie. Schlag Dich durch und komm zu mir. Ich kenne einen Ort, an dem Dich keiner sucht.',
+      dialogueProgress: 'Aldrics Elite-Wachen halten die Tiefe. Ab Tiefe 20 stellst Du sie.',
       // v6.1: Branka versteckt Dich nicht selbst, sie bringt Dich zu Elara.
       dialogueComplete: 'Du stellst zu viele Fragen, hat er gesagt. Jetzt fragst Du nicht mehr, Du weisst es. Die Tarnung ist verbrannt, oben ist kein Ort mehr für Dich.\n\n(Branka zieht Dir eine Kapuze über und führt Dich durch die Kanäle, bis zu einem Spalt in der Kellerwand.) Elara wartet dort unten. Bei ihr findet Dich keiner. Geh. Ich halte die Schmiede offen.'
     },
@@ -820,6 +823,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       npcId: 'branka',
       type: 'craft',
       chain: 3,
+      // Angeboten erst ab Tiefe 24. Kein minDepth: der wuerde das Schmieden
+      // im Hub an die Tiefe des letzten Laufs binden.
+      angebotAb: 24,
       objectives: [
         { type: 'craft', target: 'craft_item', current: 0, required: 3 }
       ],
@@ -834,11 +840,12 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     thom_pamphlets: {
       id: 'thom_pamphlets',
       title: 'Die Pamphlete',
-      description: 'Schliesse 3 tiefe Läufe in die Keller ab (ab Tiefe 22), um Flugblätter bis in die untersten Gänge zu verteilen.',
+      description: 'Schliesse 3 tiefe Läufe in die Keller ab (ab Tiefe 27), um Flugblätter bis in die untersten Gänge zu verteilen.',
       npcId: 'thom',
       type: 'dungeon_runs',
       chain: 2,
-      minDepth: 22,
+      minDepth: 27,
+      angebotAb: 27,
       objectives: [
         { type: 'dungeon_run', target: 'dungeon_complete', current: 0, required: 3 }
       ],
@@ -846,8 +853,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       rewardTier: 'story',
       prerequisites: ['thom_truth'],
       requiredAct: 4,
-      dialogueOffer: 'Die oberen Gänge lesen unsere Wahrheit schon. Jetzt brauchen wir die Tiefe, dort, wo der Rat seine Geheimnisse hält.\n\nSchliess drei Durchläufe ab Tiefe 22 ab und nimm die Blätter mit hinunter. Wer dort unten liest, liest dort, wo der Rat es nicht erwartet.',
-      dialogueProgress: 'Nur tiefe Durchläufe zählen, ab Tiefe 22. Schliess drei davon ab. Jeder trägt unsere Blätter weiter hinunter.',
+      dialogueOffer: 'Die oberen Gänge lesen unsere Wahrheit schon. Jetzt brauchen wir die Tiefe, dort, wo der Rat seine Geheimnisse hält.\n\nSchliess drei Durchläufe ab Tiefe 27 ab und nimm die Blätter mit hinunter. Wer dort unten liest, liest dort, wo der Rat es nicht erwartet.',
+      dialogueProgress: 'Nur tiefe Durchläufe zählen, ab Tiefe 27. Schliess drei davon ab. Jeder trägt unsere Blätter weiter hinunter.',
       // v6.1: abgeschwaecht. Aufwachen tut die Stadt erst im Finale.
       dialogueComplete: 'Die unteren Gänge lesen mit. Die Blätter wandern von Hand zu Hand, bis hinab zu den Kammern des Rats. Und der Rat merkt es: Gestern hat die Garde zwei Drucker verhört, die nie für mich gearbeitet haben. (Er grinst schief.)\n\nDeine Erfahrung wächst nun schneller. (+10% XP)'
     },
@@ -860,6 +867,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       type: 'dialogue',
       chain: 3,
       elaraGift: true,
+      // Angebot erst ab Tiefe 20 (nach dem Zeremonienmeister). Kein minDepth:
+      // Annahme und Abschluss sind eine Szene, kein Kellerziel.
+      angebotAb: 20,
       objectives: [
         { type: 'dialogue', target: 'elara_gift', current: 0, required: 1 }
       ],
@@ -1020,11 +1030,12 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     brett_laeufe: {
       id: 'brett_laeufe',
       title: 'Aushang: Zweimal hinab',
-      description: 'Ein Rats-Aushang: schliesse 2 Läufe ab Tiefe 8 ab.',
+      description: 'Ein Rats-Aushang: schliesse 2 Läufe ab Tiefe 18 ab.',
       npcId: 'anschlagtafel',
       type: 'dungeon_run',
       chain: 2,
-      minDepth: 8,
+      minDepth: 18,
+      angebotAb: 18,
       repeatable: true,
       objectives: [
         { type: 'dungeon_run', target: 'dungeon_complete', current: 0, required: 2 }
@@ -1034,18 +1045,19 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       prerequisites: [],
       requiredAct: 0,
       gate: function () { return window.Anschlagtafel && window.Anschlagtafel.haengt('brett_laeufe'); },
-      dialogueOffer: 'GARDE: Zwei vollständige Gänge ab Tiefe 8. Nicht die Hälfte, nicht fast — ganz durch, beide Male.\n\n(Darunter jemand mit Kohle: "Sie zahlen für den Weg, nicht für das, was man sieht.")',
-      dialogueProgress: 'Zwei ganze Gänge ab Tiefe 8. Halbe zählen nicht.',
+      dialogueOffer: 'GARDE: Zwei vollständige Gänge ab Tiefe 18. Nicht die Hälfte, nicht fast — ganz durch, beide Male.\n\n(Darunter jemand mit Kohle: "Sie zahlen für den Weg, nicht für das, was man sieht.")',
+      dialogueProgress: 'Zwei ganze Gänge ab Tiefe 18. Halbe zählen nicht.',
       dialogueComplete: 'Die Garde zahlt ohne Nachfragen. Was Du unten gesehen hast, will niemand wissen.'
     },
     brett_welle: {
       id: 'brett_welle',
       title: 'Aushang: Standhalten',
-      description: 'Ein Rats-Aushang: überstehe Welle 6, auf Tiefe 6 oder tiefer.',
+      description: 'Ein Rats-Aushang: überstehe Welle 14, auf Tiefe 14 oder tiefer.',
       npcId: 'anschlagtafel',
       type: 'wave',
       chain: 3,
-      minDepth: 6,
+      minDepth: 14,
+      angebotAb: 14,
       repeatable: true,
       // Die Welle IST die Lauftiefe: enterRoom setzt currentWave = Tiefe - 1,
       // startNextWave zaehlt einmal hoch, jeder Raum meldet also Welle = Tiefe
@@ -1054,25 +1066,26 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       // ab Tiefe 6 — erst auf Tiefe 12 erreichbar. Gefordert wird deshalb nie
       // mehr als minDepth (tests/wellenZiele.test.js).
       objectives: [
-        { type: 'wave', target: 'reach_wave', current: 0, required: 6 }
+        { type: 'wave', target: 'reach_wave', current: 0, required: 14 }
       ],
       rewards: { xp: 100, gold: 180 },
       rewardTier: 'neben',
       prerequisites: [],
       requiredAct: 0,
       gate: function () { return window.Anschlagtafel && window.Anschlagtafel.haengt('brett_welle'); },
-      dialogueOffer: 'KLERUS: Hinab bis Tiefe 6, und dort eine Ansturmwelle überstehen, ohne zu weichen. Standhaftigkeit ist eine Tugend, und der Rat belohnt Tugend.\n\n(Das Siegel darunter ist frisch. Die Tinte noch feucht.)',
-      dialogueProgress: 'Eine Welle auf Tiefe 6. Weichen zählt nicht.',
+      dialogueOffer: 'KLERUS: Hinab bis Tiefe 14, und dort eine Ansturmwelle überstehen, ohne zu weichen. Standhaftigkeit ist eine Tugend, und der Rat belohnt Tugend.\n\n(Das Siegel darunter ist frisch. Die Tinte noch feucht.)',
+      dialogueProgress: 'Eine Welle auf Tiefe 14. Weichen zählt nicht.',
       dialogueComplete: 'Der Priester am Kasten segnet Dich, während er abzählt. Beides dauert gleich lang.'
     },
     brett_zeugen: {
       id: 'brett_zeugen',
       title: 'Aufruf: Nehmt ihnen die Anführer',
-      description: 'Ein Aufruf des Widerstands: besiege 4 Elite-Gegner ab Tiefe 12.',
+      description: 'Ein Aufruf des Widerstands: besiege 4 Elite-Gegner ab Tiefe 22.',
       npcId: 'anschlagtafel',
       type: 'kill',
       chain: 4,
-      minDepth: 12,
+      minDepth: 22,
+      angebotAb: 22,
       repeatable: true,
       objectives: [
         { type: 'kill', target: 'elite_enemy', current: 0, required: 4 }
@@ -1082,8 +1095,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       prerequisites: [],
       requiredAct: 0,
       gate: function () { return window.Anschlagtafel && window.Anschlagtafel.haengt('brett_zeugen'); },
-      dialogueOffer: 'Aus Thoms Presse, quer über ein zerfetztes Rats-Plakat geklebt:\n\n"Vier von denen, die unten befehlen. Ab Tiefe 12. Wer befiehlt, hat einen Namen — und wir drucken Namen."',
-      dialogueProgress: 'Vier Anführer ab Tiefe 12. Die Presse wartet auf die Namen.',
+      dialogueOffer: 'Aus Thoms Presse, quer über ein zerfetztes Rats-Plakat geklebt:\n\n"Vier von denen, die unten befehlen. Ab Tiefe 22. Wer befiehlt, hat einen Namen — und wir drucken Namen."',
+      dialogueProgress: 'Vier Anführer ab Tiefe 22. Die Presse wartet auf die Namen.',
       dialogueComplete: 'Am nächsten Morgen stehen vier Namen im Blatt. Zwei davon kennt die Stadt.'
     },
     brett_stoerer: {
@@ -1110,11 +1123,12 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     brett_anfuehrer: {
       id: 'brett_anfuehrer',
       title: 'Aushang: Die Anführer',
-      description: 'Ein Rats-Aushang: besiege 3 Elite-Gegner ab Tiefe 6.',
+      description: 'Ein Rats-Aushang: besiege 3 Elite-Gegner ab Tiefe 10.',
       npcId: 'anschlagtafel',
       type: 'kill',
       chain: 2,
-      minDepth: 6,
+      minDepth: 10,
+      angebotAb: 10,
       repeatable: true,
       objectives: [
         { type: 'kill', target: 'elite_enemy', current: 0, required: 3 }
@@ -1124,18 +1138,19 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       prerequisites: [],
       requiredAct: 0,
       gate: function () { return window.Anschlagtafel && window.Anschlagtafel.haengt('brett_anfuehrer'); },
-      dialogueOffer: 'GARDE: Drei Anführer, ab Tiefe 6. Wer zahlt, fragt nicht, wer sie waren.\n\n(Der Aushang ist frisch. Der darunter, halb verdeckt, sucht eine vermisste Näherin.)',
-      dialogueProgress: 'Drei Anführer, ab Tiefe 6. Der Aushang wartet.',
+      dialogueOffer: 'GARDE: Drei Anführer, ab Tiefe 10. Wer zahlt, fragt nicht, wer sie waren.\n\n(Der Aushang ist frisch. Der darunter, halb verdeckt, sucht eine vermisste Näherin.)',
+      dialogueProgress: 'Drei Anführer, ab Tiefe 10. Der Aushang wartet.',
       dialogueComplete: 'Die Garde zahlt bar und sofort. Den Aushang nimmt niemand ab; er hängt am nächsten Morgen wieder da.'
     },
     brett_aufruf: {
       id: 'brett_aufruf',
       title: 'Aufruf der Druckerei',
-      description: 'Ein Aufruf des Widerstands: räume 5 Kammern ab Tiefe 10.',
+      description: 'Ein Aufruf des Widerstands: räume 5 Kammern ab Tiefe 16.',
       npcId: 'anschlagtafel',
       type: 'explore',
       chain: 3,
-      minDepth: 10,
+      minDepth: 16,
+      angebotAb: 16,
       repeatable: true,
       objectives: [
         { type: 'explore', target: 'room', current: 0, required: 5 }
@@ -1145,8 +1160,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       prerequisites: [],
       requiredAct: 0,
       gate: function () { return window.Anschlagtafel && window.Anschlagtafel.haengt('brett_aufruf'); },
-      dialogueOffer: 'Über den zerfetzten Rats-Plakaten klebt ein frisch gedrucktes Blatt:\n\n"Wer unten aufräumt, macht Platz für die Wahrheit. Fünf Kammern, ab Tiefe 10. Papier gibt es bei Thom."',
-      dialogueProgress: 'Fünf Kammern ab Tiefe 10. Das Blatt hängt noch, jemand hat es festgenagelt.',
+      dialogueOffer: 'Über den zerfetzten Rats-Plakaten klebt ein frisch gedrucktes Blatt:\n\n"Wer unten aufräumt, macht Platz für die Wahrheit. Fünf Kammern, ab Tiefe 16. Papier gibt es bei Thom."',
+      dialogueProgress: 'Fünf Kammern ab Tiefe 16. Das Blatt hängt noch, jemand hat es festgenagelt.',
       dialogueComplete: 'Am Rand des Blattes steht jetzt ein Strich mehr. Thom legt Papier und Münzen unter den Stein daneben.'
     },
     // #148 / Story-Bibel §14: zwei rein menschliche Nebenquests ohne Bezug zur
@@ -1193,10 +1208,12 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     klerus_district_purge: {
       id: 'klerus_district_purge',
       title: 'Reinigung eines Bezirks',
-      description: 'Reinige einen "befallenen" Bezirk — besiege 8 Gegner und bring die Namen.',
+      description: 'Reinige einen "befallenen" Bezirk — besiege 8 Gegner ab Tiefe 7 und bring die Namen.',
       npcId: 'klerus_priester',
       type: 'kill',
       chain: 3,
+      minDepth: 7,
+      angebotAb: 7,
       objectives: [
         { type: 'kill', target: 'enemy', current: 0, required: 8 }
       ],
@@ -1205,7 +1222,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       prerequisites: [],
       requiredAct: 2,
       dialogueOffer: 'Ein Bezirk ist befallen. Reinige ihn. Wer das Licht scheut, hat etwas zu verbergen. Bring mir die Namen der Befallenen.',
-      dialogueProgress: 'Noch nicht gereinigt. Die Befallenen zeigen sich in der Tiefe.',
+      dialogueProgress: 'Noch nicht gereinigt. Die Befallenen zeigen sich in der Tiefe, ab Tiefe 7.',
       // v6.1: zwei Abschluesse. Die Wahl folgt auf diesen Text
       // (storyDialog.byQuest.klerus_district_purge): die Leute warnen
       // (namen_gewarnt) oder die Liste abliefern (namen_abgeliefert). Sie
@@ -1268,6 +1285,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       npcId: 'elara',
       type: 'dialogue',
       chain: 4,
+      // Angebot erst ab Tiefe 20. Kein minDepth: ihr Ziel feuert die Riss-
+      // Szene im Hub, nicht ein Kellerlauf.
+      angebotAb: 20,
       // Teil-Reveal, KEIN advanceAct (der Bruch triggert den Aktwechsel). Objective
       // 'dialogue' (Auto-Complete): die inszenierte Szene folgt später.
       objectives: [
@@ -1387,21 +1407,21 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.brett_kammern.dialogueComplete': 'A scribe strikes through six lines. He does not look at you while he does it. The pay is in the box.',
 
       'quest.brett_laeufe.title': 'Notice: Twice Below',
-      'quest.brett_laeufe.description': 'A council notice: complete 2 runs from depth 8.',
-      'quest.brett_laeufe.dialogueOffer': "GUARD: Two complete descents from depth 8. Not half, not nearly - all the way through, both times.\n\n(Below it, in charcoal: 'They pay for the walking, not for what you see.')",
-      'quest.brett_laeufe.dialogueProgress': 'Two whole descents from depth 8. Half ones do not count.',
+      'quest.brett_laeufe.description': 'A council notice: complete 2 runs from depth 18.',
+      'quest.brett_laeufe.dialogueOffer': "GUARD: Two complete descents from depth 18. Not half, not nearly - all the way through, both times.\n\n(Below it, in charcoal: 'They pay for the walking, not for what you see.')",
+      'quest.brett_laeufe.dialogueProgress': 'Two whole descents from depth 18. Half ones do not count.',
       'quest.brett_laeufe.dialogueComplete': 'The Guard pays without questions. Nobody wants to hear what you saw down there.',
 
       'quest.brett_welle.title': 'Notice: Hold the Line',
-      'quest.brett_welle.description': 'A council notice: survive wave 6, at depth 6 or deeper.',
-      'quest.brett_welle.dialogueOffer': "CLERGY: Down to depth 6, and there withstand a wave of assault without giving ground. Steadfastness is a virtue, and the council rewards virtue.\n\n(The seal below it is fresh. The ink still wet.)",
-      'quest.brett_welle.dialogueProgress': 'One wave at depth 6. Giving ground does not count.',
+      'quest.brett_welle.description': 'A council notice: survive wave 14, at depth 14 or deeper.',
+      'quest.brett_welle.dialogueOffer': "CLERGY: Down to depth 14, and there withstand a wave of assault without giving ground. Steadfastness is a virtue, and the council rewards virtue.\n\n(The seal below it is fresh. The ink still wet.)",
+      'quest.brett_welle.dialogueProgress': 'One wave at depth 14. Giving ground does not count.',
       'quest.brett_welle.dialogueComplete': 'The priest at the box blesses you while he counts it out. Both take the same amount of time.',
 
       'quest.brett_zeugen.title': 'Call: Take Their Leaders',
-      'quest.brett_zeugen.description': 'A resistance call: defeat 4 elite enemies from depth 12.',
-      'quest.brett_zeugen.dialogueOffer': "From Thom's press, pasted across a shredded council poster:\n\n'Four of those who give the orders down there. From depth 12. Whoever gives orders has a name - and we print names.'",
-      'quest.brett_zeugen.dialogueProgress': 'Four leaders from depth 12. The press is waiting for the names.',
+      'quest.brett_zeugen.description': 'A resistance call: defeat 4 elite enemies from depth 22.',
+      'quest.brett_zeugen.dialogueOffer': "From Thom's press, pasted across a shredded council poster:\n\n'Four of those who give the orders down there. From depth 22. Whoever gives orders has a name - and we print names.'",
+      'quest.brett_zeugen.dialogueProgress': 'Four leaders from depth 22. The press is waiting for the names.',
       'quest.brett_zeugen.dialogueComplete': 'The next morning four names are in the paper. Two of them the city knows.',
       'quest.einfuehrung_amulett.description': 'Buy something from the wandering merchant in the depths.',
       'quest.einfuehrung_amulett.dialogueOffer': "There is an old man wandering about down there with a cart. Do not ask me how he gets in - I do not know, and I do not want to know.\n\nBuy something off him. Anything. He carries stock that would never cross my table, and deeper down there are amulets hanging from that cart. I just want you to have stood in front of him once.",
@@ -1485,7 +1505,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.branka_weapons.title': 'Weapons for the Resistance',
       'quest.branka_weapons.description': 'Craft 3 items at the Archive Forge.',
       'quest.thom_pamphlets.title': 'The Pamphlets',
-      'quest.thom_pamphlets.description': 'Complete 3 deep runs into the cellars (from depth 22) to spread the leaflets into the lowest passages.',
+      'quest.thom_pamphlets.description': 'Complete 3 deep runs into the cellars (from depth 27) to spread the leaflets into the lowest passages.',
       'quest.elara_blade.title': "Elara's Gift",
       'quest.elara_blade.description': "Elara has had a special blade forged for you.",
       'quest.elara_blade.abgabeHinweis': 'Elara is waiting for you in the cellar.',
@@ -1572,15 +1592,15 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
 
       // Feature 062: umbenannt ritual_chamber -> verseuchte_kammer.
       'quest.verseuchte_kammer.title': 'The Tainted Chamber',
-      'quest.verseuchte_kammer.description': 'Aldric sends you to cleanse a "tainted" chamber. Press through to it.',
-      'quest.verseuchte_kammer.dialogueOffer': 'A lower chamber is tainted — heresy. Cleanse it. Do not ask what you find.\n\nGo.',
-      'quest.verseuchte_kammer.dialogueProgress': 'The chamber lies deeper. Press on.',
+      'quest.verseuchte_kammer.description': 'Aldric sends you to cleanse a "tainted" chamber. Press through to it, it lies from depth 15.',
+      'quest.verseuchte_kammer.dialogueOffer': 'A lower chamber is tainted — heresy, from depth 15. Cleanse it. Do not ask what you find.\n\nGo.',
+      'quest.verseuchte_kammer.dialogueProgress': 'The chamber lies deeper, from depth 15. Press on.',
       'quest.verseuchte_kammer.dialogueComplete': "You stand in the chamber. No heretic in sight. On the floor a chalk circle, chains at its edge, hammered into the stone. Beside it crates full of empty vials, neatly lined up, each with a label that bears no name yet.\n\n(This is where people are drawn off into vials. Aldric sent you to wipe away the traces. You commit it all to memory. Mara should know, and Aldric should believe you only cleaned.)",
 
       'quest.bruch_confrontation.title': 'The Break',
-      'quest.bruch_confrontation.description': "Aldric set guards on you. Cut your way through, defeat 3 elite guards. They only confront you in the depths (from depth 8). Branka knows a hiding place.",
-      'quest.bruch_confrontation.dialogueOffer': "Aldric knows. Your double game is exposed, his elite guards are sealing off the deep passages, from depth 8 you will face them. Cut your way through and come to me. I know a place where nobody will look for you.",
-      'quest.bruch_confrontation.dialogueProgress': "Aldric's elite guards hold the depths. From depth 8 you will face them.",
+      'quest.bruch_confrontation.description': "Aldric set guards on you. Cut your way through, defeat 3 elite guards. They only confront you in the depths (from depth 20). Branka knows a hiding place.",
+      'quest.bruch_confrontation.dialogueOffer': "Aldric knows. Your double game is exposed, his elite guards are sealing off the deep passages, from depth 20 you will face them. Cut your way through and come to me. I know a place where nobody will look for you.",
+      'quest.bruch_confrontation.dialogueProgress': "Aldric's elite guards hold the depths. From depth 20 you will face them.",
       'quest.bruch_confrontation.dialogueComplete': "You ask too many questions, he said. Now you no longer ask, you know. Your cover is burned, there is no place left for you up here.\n\n(Branka pulls a hood over your head and leads you through the canals, to a crack in the cellar wall.) Elara is waiting down there. With her nobody will find you. Go. I will keep the forge open.",
       'quest.espionage_convoy.title': 'The Convoy',
       'quest.espionage_convoy.description': 'Shadow a council convoy in the warehouse in disguise and eavesdrop on it.',
@@ -1614,8 +1634,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.branka_weapons.dialogueProgress': 'The forge waits. Craft more items.',
       'quest.branka_weapons.dialogueComplete': 'Well forged. These weapons will make the difference.',
 
-      'quest.thom_pamphlets.dialogueOffer': "The upper passages already read our truth. Now we need the depths, where the council keeps its secrets.\n\nComplete three runs from depth 22 and take the sheets down with you. Whoever reads down there reads where the council does not expect it.",
-      'quest.thom_pamphlets.dialogueProgress': "Only deep runs count, from depth 22. Complete three of them. Each one carries our sheets further down.",
+      'quest.thom_pamphlets.dialogueOffer': "The upper passages already read our truth. Now we need the depths, where the council keeps its secrets.\n\nComplete three runs from depth 27 and take the sheets down with you. Whoever reads down there reads where the council does not expect it.",
+      'quest.thom_pamphlets.dialogueProgress': "Only deep runs count, from depth 27. Complete three of them. Each one carries our sheets further down.",
       'quest.thom_pamphlets.dialogueComplete': "The lower passages are reading along. The sheets travel from hand to hand, all the way down to the council's chambers. And the council notices: yesterday the guard questioned two printers who never worked for me. (He grins crookedly.)\n\nYour experience now grows faster. (+10% XP)",
 
       'quest.elara_blade.dialogueOffer': "Take this. I had it forged for you. In case...\n\nWill you accept Elara's Blade?",
@@ -1639,14 +1659,14 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.brett_stoerer.dialogueProgress': 'The notice is still up. Twelve troublemakers from depth 3.',
       'quest.brett_stoerer.dialogueComplete': 'You scratch a mark under the notice. The pay lies in the box beneath it, counted out, without a word.',
       'quest.brett_anfuehrer.title': 'Notice: The Leaders',
-      'quest.brett_anfuehrer.description': 'A council notice: defeat 3 elite enemies from depth 6.',
-      'quest.brett_anfuehrer.dialogueOffer': 'GUARD: Three leaders, from depth 6. Whoever pays does not ask who they were.\n\n(The notice is fresh. The one beneath it, half covered, is looking for a missing seamstress.)',
-      'quest.brett_anfuehrer.dialogueProgress': 'Three leaders, from depth 6. The notice is waiting.',
+      'quest.brett_anfuehrer.description': 'A council notice: defeat 3 elite enemies from depth 10.',
+      'quest.brett_anfuehrer.dialogueOffer': 'GUARD: Three leaders, from depth 10. Whoever pays does not ask who they were.\n\n(The notice is fresh. The one beneath it, half covered, is looking for a missing seamstress.)',
+      'quest.brett_anfuehrer.dialogueProgress': 'Three leaders, from depth 10. The notice is waiting.',
       'quest.brett_anfuehrer.dialogueComplete': 'The Guard pays in cash, at once. Nobody takes the notice down; it hangs there again the next morning.',
       'quest.brett_aufruf.title': 'Call of the Printing House',
-      'quest.brett_aufruf.description': 'A call from the resistance: clear 5 chambers from depth 10.',
-      'quest.brett_aufruf.dialogueOffer': 'Over the torn council posters someone has pasted a freshly printed sheet:\n\n"Whoever clears up down there makes room for the truth. Five chambers, from depth 10. Paper is at Thom\'s."',
-      'quest.brett_aufruf.dialogueProgress': 'Five chambers from depth 10. The sheet is still up; someone nailed it down.',
+      'quest.brett_aufruf.description': 'A call from the resistance: clear 5 chambers from depth 16.',
+      'quest.brett_aufruf.dialogueOffer': 'Over the torn council posters someone has pasted a freshly printed sheet:\n\n"Whoever clears up down there makes room for the truth. Five chambers, from depth 16. Paper is at Thom\'s."',
+      'quest.brett_aufruf.dialogueProgress': 'Five chambers from depth 16. The sheet is still up; someone nailed it down.',
       'quest.brett_aufruf.dialogueComplete': 'There is one more mark along the edge of the sheet now. Thom leaves paper and coins under the stone beside it.',
 
       // #148: die beiden menschlichen Nebenquests
@@ -1676,9 +1696,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.faction_campaign.dialogueComplete': "Good. The votes are being counted, and the council announces the result in public, in the council hall. As it should be.",
 
       'quest.klerus_district_purge.title': "Purging a District",
-      'quest.klerus_district_purge.description': "Purge an \"infested\" district — defeat 8 enemies and bring back the names.",
+      'quest.klerus_district_purge.description': "Purge an \"infested\" district — defeat 8 enemies from depth 7 and bring back the names.",
       'quest.klerus_district_purge.dialogueOffer': "A district is infested. Purge it. Whoever shuns the Light has something to hide. Bring me the names of the infested.",
-      'quest.klerus_district_purge.dialogueProgress': "Not purged yet. The infested show themselves in the depths.",
+      'quest.klerus_district_purge.dialogueProgress': "Not purged yet. The infested show themselves in the depths, from depth 7.",
       'quest.klerus_district_purge.dialogueComplete': "You bring the names? (The priest holds out his hand for the list.)\n\n(The infested had faces. You knew none of them, and yet every one seemed familiar. Mara took a copy from you before you came here. The list is still in your hand.)",
 
       'quest.garde_night_escort.title': "Night Escort",
@@ -1934,6 +1954,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       if (def.npcId !== npcId) return false;
       // Check act requirement
       if (typeof def.requiredAct === 'number' && currentAct < def.requiredAct) return false;
+      // Angebotstiefe: erst, wenn die erreichte Tiefe so weit ist.
+      if (_erreichteTiefe() < angebotsTiefe(def)) return false;
       // Check prerequisites
       if (Array.isArray(def.prerequisites) && def.prerequisites.length > 0) {
         for (var i = 0; i < def.prerequisites.length; i++) {
@@ -2043,7 +2065,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       status: 'active',
       objectives: def.objectives.map(function (o) {
         return { type: o.type, target: o.target, current: 0, required: o.required };
-      })
+      }),
+      // Die Mindesttiefe bei Annahme (s. _mindestTiefe).
+      abTiefe: (typeof def.minDepth === 'number') ? def.minDepth : null
     };
 
     // Auto-complete dialogue quests immediately upon acceptance
@@ -2075,11 +2099,49 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
   // Akt "Bruch" → T22; Akt 3/5/6 are already depth-gated via reach_wave
   // 20/30/40). No gate (no minDepth) → always passes.
   function _questDepthMet(id) {
-    var def = QUEST_DEFINITIONS[id];
-    if (!def || typeof def.minDepth !== 'number') return true;
+    var m = _mindestTiefe(id);
+    if (typeof m !== 'number') return true;
     var d = (typeof window !== 'undefined' && typeof window.DUNGEON_DEPTH === 'number')
       ? window.DUNGEON_DEPTH : 1;
-    return d >= def.minDepth;
+    return d >= m;
+  }
+
+  // b475: Mindesttiefen verschoben (Aushaenge, Bruch, Pamphlete, ...). Ein
+  // laufender Auftrag behaelt die Tiefe, mit der er angenommen wurde: neue
+  // tragen sie als state.abTiefe, Altstaende ohne Vermerk die von vorher.
+  // Wer also mitten im Bruch auf Tiefe 12 steht, muss nicht auf 20.
+  var ALTE_MINDESTTIEFE = {
+    brett_anfuehrer: 6, brett_welle: 6, brett_aufruf: 10, brett_laeufe: 8, brett_zeugen: 12,
+    bruch_confrontation: 8, thom_pamphlets: 22, verseuchte_kammer: null, klerus_district_purge: null
+  };
+  function _mindestTiefe(id) {
+    var def = QUEST_DEFINITIONS[id];
+    var st = questState[id];
+    if (st && st.status === 'active') {
+      if (Object.prototype.hasOwnProperty.call(st, 'abTiefe')) return st.abTiefe;
+      if (Object.prototype.hasOwnProperty.call(ALTE_MINDESTTIEFE, id)) return ALTE_MINDESTTIEFE[id];
+    }
+    return (def && typeof def.minDepth === 'number') ? def.minDepth : null;
+  }
+
+  /**
+   * Ab welcher ERREICHTEN Tiefe (Persistence.getMaxDepth) der Auftrag
+   * angeboten wird. Eigenes Feld statt minDepth: minDepth bindet zusaetzlich
+   * den Fortschritt an die Tiefe des laufenden Laufs, und das waere fuer
+   * Ziele im Hub falsch (Schmieden, Elaras Szenen). Laufende und
+   * abgeschlossene Auftraege beruehrt es nicht, es filtert nur das Angebot.
+   */
+  function angebotsTiefe(questOrId) {
+    var def = (typeof questOrId === 'string') ? QUEST_DEFINITIONS[questOrId] : questOrId;
+    return (def && typeof def.angebotAb === 'number') ? def.angebotAb : 1;
+  }
+
+  function _erreichteTiefe() {
+    try {
+      var P = window.Persistence;
+      if (P && typeof P.getMaxDepth === 'function') return Math.max(1, P.getMaxDepth() | 0);
+    } catch (e) {}
+    return 1;
   }
 
   /**
@@ -2088,11 +2150,11 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
    * das, damit unterhalb der Tiefe nichts faellt, das dann nicht zaehlt.
    */
   function tiefeErreicht(id, tiefe) {
-    var def = QUEST_DEFINITIONS[id];
-    if (!def || typeof def.minDepth !== 'number') return true;
+    var m = _mindestTiefe(id);
+    if (typeof m !== 'number') return true;
     var d = (typeof tiefe === 'number') ? tiefe
       : (typeof window !== 'undefined' && typeof window.DUNGEON_DEPTH === 'number') ? window.DUNGEON_DEPTH : 1;
-    return d >= def.minDepth;
+    return d >= m;
   }
 
   function updateQuestProgress(type, target, amount) {
@@ -2967,6 +3029,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     acceptQuest: acceptQuest,
     updateQuestProgress: updateQuestProgress,
     tiefeErreicht: tiefeErreicht,
+    angebotsTiefe: angebotsTiefe,
     onWaveCompleted: onWaveCompleted,
     onDungeonCompleted: onDungeonCompleted,
     onBossKilled: onBossKilled,

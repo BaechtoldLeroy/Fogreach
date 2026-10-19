@@ -125,6 +125,7 @@ out += '5. Optionales `gate()` liefert `true` _(z. B. Maras Schwarzmarkt-Auftrag
 out += '**Reihenfolge im Gespräch (Stufe 1b):** Abgabe, dann ein neuer **Story-Auftrag** (Gewicht story, boss oder finale), dann der Stand eines laufenden Auftrags, dann ein neuer Nebenauftrag. Story-Aufträge kommen also auch neben einem laufenden Nebenauftrag derselben Figur.\n\n';
 out += '**Aldric nach dem Bruch:** Ab `enttarnt` steht er nicht mehr im Hub. Was er noch vergeben hatte, laufend oder nie angenommen, bekommt den Status `entfallen` (kein Lohn; im Journal: „Der Rat gibt Dir keine Aufträge mehr.“).\n\n';
 out += '**`minDepth` gated nicht das Angebot, sondern den Fortschritt:** Ziele zählen erst, wenn der laufende Run auf mindestens dieser Tiefe ist.\n\n';
+out += '**`angebotAb` gated das Angebot:** angeboten wird erst, wenn die erreichte Tiefe so weit ist. Laufende Aufträge behalten die Mindesttiefe ihrer Annahme.\n\n';
 out += '**Akt-Index → Name:** ' + ACTS.map((a, i) => '`' + i + '` ' + a).join(' · ') + '\n\n';
 out += '## Ziel-Typen und ihre Trigger\n\n';
 out += '| Typ | Trigger im Code |\n|---|---|\n';
@@ -199,6 +200,7 @@ Object.keys(byAct).map(Number).sort((a, b) => a - b).forEach((a) => {
     out += TICK + q.id + TICK + ' · **NPC:** ' + (NPC[q.npcId] || q.npcId)
       + (q.turnInNpcId ? ' · **Abgabe bei:** ' + (NPC[q.turnInNpcId] || q.turnInNpcId) : '')
       + ' · **Kette:** ' + (q.chain || 0)
+      + (q.angebotAb ? ' · **Angebot ab Tiefe ' + q.angebotAb + '**' : '')
       + (q.minDepth ? ' · **Fortschritt erst ab Tiefe ' + q.minDepth + '**' : '') + '\n\n';
     out += quote(q.description) + '\n\n';
     out += '- **Ziel:** ' + objStr(q) + '\n';

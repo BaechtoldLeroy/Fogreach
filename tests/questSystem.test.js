@@ -527,16 +527,16 @@ test('#41 minDepth: depth-gated kill quest frozen below minDepth, advances at/ab
   assert.strictEqual(cur(), 1, 'progresses once at/above depth 3');
 });
 
-test('#41 minDepth: thom_pamphlets only counts completed runs at/above depth 22', () => {
+test('#41 minDepth: thom_pamphlets only counts completed runs at/above depth 27', () => {
   const qs = freshSystem();
-  assert.strictEqual(qs.acceptQuest('thom_pamphlets'), true, 'accept thom_pamphlets (minDepth 22)');
+  assert.strictEqual(qs.acceptQuest('thom_pamphlets'), true, 'accept thom_pamphlets (minDepth 27)');
   const cur = () => qs.getActiveQuests('thom').find((q) => q.id === 'thom_pamphlets').objectives[0].current;
-  globalThis.window.DUNGEON_DEPTH = 21;
+  globalThis.window.DUNGEON_DEPTH = 26;
   qs.onDungeonCompleted();
   assert.strictEqual(cur(), 0, 'a shallow run does not count');
-  globalThis.window.DUNGEON_DEPTH = 22;
+  globalThis.window.DUNGEON_DEPTH = 27;
   qs.onDungeonCompleted();
-  assert.strictEqual(cur(), 1, 'a depth-22 run counts');
+  assert.strictEqual(cur(), 1, 'a depth-27 run counts');
 });
 
 test('#41 minDepth: ungated quest still advances at any depth', () => {

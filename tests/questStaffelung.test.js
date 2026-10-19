@@ -63,9 +63,11 @@ function groessteLuecke(akt, von, bis) {
   const beats = new Set([von, bis]);
   Object.values(D).forEach((q) => {
     if ((q.requiredAct ?? 0) !== akt) return;
-    beats.add(typeof q.minDepth === 'number' ? Math.max(von, q.minDepth) : von);
+    // Ein Angebot ab einer Tiefe (angebotAb, b475) ist ebenso ein Beat.
+    const ab = Math.max(q.minDepth || 0, q.angebotAb || 0);
+    beats.add(ab ? Math.max(von, ab) : von);
   });
-  if (akt === 4) [22, 23, 24].forEach((t) => beats.add(t));   // thom_pamphlets: drei Laeufe ab 22
+  if (akt === 4) [27, 28, 29].forEach((t) => beats.add(t));   // thom_pamphlets: drei Laeufe ab 27
   const s = [...beats].filter((t) => t >= von && t <= bis).sort((a, b) => a - b);
   let max = 0;
   for (let i = 1; i < s.length; i++) max = Math.max(max, s[i] - s[i - 1]);

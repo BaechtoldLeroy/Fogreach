@@ -70,6 +70,8 @@ Ein NPC bietet eine Quest an, wenn **alle** Bedingungen gelten:
 
 **`minDepth` gated nicht das Angebot, sondern den Fortschritt:** Ziele zählen erst, wenn der laufende Run auf mindestens dieser Tiefe ist.
 
+**`angebotAb` gated das Angebot:** angeboten wird erst, wenn die erreichte Tiefe so weit ist. Laufende Aufträge behalten die Mindesttiefe ihrer Annahme.
+
 **Akt-Index → Name:** `0` Prolog · Der Dienst · `1` Akt 1 · Treuer Diener · `2` Akt 2 · Das Doppelspiel · `3` Akt 3 · Die Enttarnung · `4` Akt 4 · Die Quelle
 
 ## Ziel-Typen und ihre Trigger
@@ -476,23 +478,23 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Aushang: Zweimal hinab
 
-`brett_laeufe` · **NPC:** anschlagtafel · **Kette:** 2 · **Fortschritt erst ab Tiefe 8**
+`brett_laeufe` · **NPC:** anschlagtafel · **Kette:** 2 · **Angebot ab Tiefe 18** · **Fortschritt erst ab Tiefe 18**
 
-> Ein Rats-Aushang: schliesse 2 Läufe ab Tiefe 8 ab.
+> Ein Rats-Aushang: schliesse 2 Läufe ab Tiefe 18 ab.
 
 - **Ziel:** `dungeon_run` → `dungeon_complete` ×2
 - **Vorbedingung:** keine (dazu eine Bedingung im Code, `gate`)
-- **Belohnung:** mind. 110 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 220 Gold (wächst mit der Tiefe ab 8)
+- **Belohnung:** mind. 110 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 220 Gold (wächst mit der Tiefe ab 18)
 
 **Angebot**
 
-> GARDE: Zwei vollständige Gänge ab Tiefe 8. Nicht die Hälfte, nicht fast — ganz durch, beide Male.
+> GARDE: Zwei vollständige Gänge ab Tiefe 18. Nicht die Hälfte, nicht fast — ganz durch, beide Male.
 > 
 > (Darunter jemand mit Kohle: "Sie zahlen für den Weg, nicht für das, was man sieht.")
 
 **Unterwegs**
 
-> Zwei ganze Gänge ab Tiefe 8. Halbe zählen nicht.
+> Zwei ganze Gänge ab Tiefe 18. Halbe zählen nicht.
 
 **Abschluss**
 
@@ -501,23 +503,23 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Aushang: Die Anführer
 
-`brett_anfuehrer` · **NPC:** anschlagtafel · **Kette:** 2 · **Fortschritt erst ab Tiefe 6**
+`brett_anfuehrer` · **NPC:** anschlagtafel · **Kette:** 2 · **Angebot ab Tiefe 10** · **Fortschritt erst ab Tiefe 10**
 
-> Ein Rats-Aushang: besiege 3 Elite-Gegner ab Tiefe 6.
+> Ein Rats-Aushang: besiege 3 Elite-Gegner ab Tiefe 10.
 
 - **Ziel:** `kill` → `elite_enemy` ×3
 - **Vorbedingung:** keine (dazu eine Bedingung im Code, `gate`)
-- **Belohnung:** mind. 90 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 200 Gold (wächst mit der Tiefe ab 6)
+- **Belohnung:** mind. 90 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 200 Gold (wächst mit der Tiefe ab 10)
 
 **Angebot**
 
-> GARDE: Drei Anführer, ab Tiefe 6. Wer zahlt, fragt nicht, wer sie waren.
+> GARDE: Drei Anführer, ab Tiefe 10. Wer zahlt, fragt nicht, wer sie waren.
 > 
 > (Der Aushang ist frisch. Der darunter, halb verdeckt, sucht eine vermisste Näherin.)
 
 **Unterwegs**
 
-> Drei Anführer, ab Tiefe 6. Der Aushang wartet.
+> Drei Anführer, ab Tiefe 10. Der Aushang wartet.
 
 **Abschluss**
 
@@ -526,23 +528,23 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Aushang: Standhalten
 
-`brett_welle` · **NPC:** anschlagtafel · **Kette:** 3 · **Fortschritt erst ab Tiefe 6**
+`brett_welle` · **NPC:** anschlagtafel · **Kette:** 3 · **Angebot ab Tiefe 14** · **Fortschritt erst ab Tiefe 14**
 
-> Ein Rats-Aushang: überstehe Welle 6, auf Tiefe 6 oder tiefer.
+> Ein Rats-Aushang: überstehe Welle 14, auf Tiefe 14 oder tiefer.
 
-- **Ziel:** `wave` → `reach_wave` ×6
+- **Ziel:** `wave` → `reach_wave` ×14
 - **Vorbedingung:** keine (dazu eine Bedingung im Code, `gate`)
-- **Belohnung:** mind. 100 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 180 Gold (wächst mit der Tiefe ab 6)
+- **Belohnung:** mind. 100 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 180 Gold (wächst mit der Tiefe ab 14)
 
 **Angebot**
 
-> KLERUS: Hinab bis Tiefe 6, und dort eine Ansturmwelle überstehen, ohne zu weichen. Standhaftigkeit ist eine Tugend, und der Rat belohnt Tugend.
+> KLERUS: Hinab bis Tiefe 14, und dort eine Ansturmwelle überstehen, ohne zu weichen. Standhaftigkeit ist eine Tugend, und der Rat belohnt Tugend.
 > 
 > (Das Siegel darunter ist frisch. Die Tinte noch feucht.)
 
 **Unterwegs**
 
-> Eine Welle auf Tiefe 6. Weichen zählt nicht.
+> Eine Welle auf Tiefe 14. Weichen zählt nicht.
 
 **Abschluss**
 
@@ -551,23 +553,23 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Aufruf der Druckerei
 
-`brett_aufruf` · **NPC:** anschlagtafel · **Kette:** 3 · **Fortschritt erst ab Tiefe 10**
+`brett_aufruf` · **NPC:** anschlagtafel · **Kette:** 3 · **Angebot ab Tiefe 16** · **Fortschritt erst ab Tiefe 16**
 
-> Ein Aufruf des Widerstands: räume 5 Kammern ab Tiefe 10.
+> Ein Aufruf des Widerstands: räume 5 Kammern ab Tiefe 16.
 
 - **Ziel:** `explore` → `room` ×5
 - **Vorbedingung:** keine (dazu eine Bedingung im Code, `gate`)
-- **Belohnung:** mind. 120 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 150 Gold (wächst mit der Tiefe ab 10) · 4 Druckblätter
+- **Belohnung:** mind. 120 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 150 Gold (wächst mit der Tiefe ab 16) · 4 Druckblätter
 
 **Angebot**
 
 > Über den zerfetzten Rats-Plakaten klebt ein frisch gedrucktes Blatt:
 > 
-> "Wer unten aufräumt, macht Platz für die Wahrheit. Fünf Kammern, ab Tiefe 10. Papier gibt es bei Thom."
+> "Wer unten aufräumt, macht Platz für die Wahrheit. Fünf Kammern, ab Tiefe 16. Papier gibt es bei Thom."
 
 **Unterwegs**
 
-> Fünf Kammern ab Tiefe 10. Das Blatt hängt noch, jemand hat es festgenagelt.
+> Fünf Kammern ab Tiefe 16. Das Blatt hängt noch, jemand hat es festgenagelt.
 
 **Abschluss**
 
@@ -576,23 +578,23 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Aufruf: Nehmt ihnen die Anführer
 
-`brett_zeugen` · **NPC:** anschlagtafel · **Kette:** 4 · **Fortschritt erst ab Tiefe 12**
+`brett_zeugen` · **NPC:** anschlagtafel · **Kette:** 4 · **Angebot ab Tiefe 22** · **Fortschritt erst ab Tiefe 22**
 
-> Ein Aufruf des Widerstands: besiege 4 Elite-Gegner ab Tiefe 12.
+> Ein Aufruf des Widerstands: besiege 4 Elite-Gegner ab Tiefe 22.
 
 - **Ziel:** `kill` → `elite_enemy` ×4
 - **Vorbedingung:** keine (dazu eine Bedingung im Code, `gate`)
-- **Belohnung:** mind. 130 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 160 Gold (wächst mit der Tiefe ab 12)
+- **Belohnung:** mind. 130 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 160 Gold (wächst mit der Tiefe ab 22)
 
 **Angebot**
 
 > Aus Thoms Presse, quer über ein zerfetztes Rats-Plakat geklebt:
 > 
-> "Vier von denen, die unten befehlen. Ab Tiefe 12. Wer befiehlt, hat einen Namen — und wir drucken Namen."
+> "Vier von denen, die unten befehlen. Ab Tiefe 22. Wer befiehlt, hat einen Namen — und wir drucken Namen."
 
 **Unterwegs**
 
-> Vier Anführer ab Tiefe 12. Die Presse wartet auf die Namen.
+> Vier Anführer ab Tiefe 22. Die Presse wartet auf die Namen.
 
 **Abschluss**
 
@@ -975,9 +977,9 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Reinigung eines Bezirks
 
-`klerus_district_purge` · **NPC:** Klerus-Priester · **Kette:** 3
+`klerus_district_purge` · **NPC:** Klerus-Priester · **Kette:** 3 · **Angebot ab Tiefe 7** · **Fortschritt erst ab Tiefe 7**
 
-> Reinige einen "befallenen" Bezirk — besiege 8 Gegner und bring die Namen.
+> Reinige einen "befallenen" Bezirk — besiege 8 Gegner ab Tiefe 7 und bring die Namen.
 
 - **Ziel:** `kill` → `enemy` ×8
 - **Vorbedingung:** keine
@@ -989,7 +991,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 **Unterwegs**
 
-> Noch nicht gereinigt. Die Befallenen zeigen sich in der Tiefe.
+> Noch nicht gereinigt. Die Befallenen zeigen sich in der Tiefe, ab Tiefe 7.
 
 **Abschluss**
 
@@ -1115,7 +1117,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Elaras Geschenk
 
-`elara_blade` · **NPC:** Elara · **Kette:** 3
+`elara_blade` · **NPC:** Elara · **Kette:** 3 · **Angebot ab Tiefe 20**
 
 > Elara hat eine besondere Klinge für Dich schmieden lassen.
 
@@ -1163,9 +1165,9 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Die verseuchte Kammer
 
-`verseuchte_kammer` · **NPC:** Ratsherr Aldric · **Kette:** 4
+`verseuchte_kammer` · **NPC:** Ratsherr Aldric · **Kette:** 4 · **Angebot ab Tiefe 15** · **Fortschritt erst ab Tiefe 15**
 
-> Aldric schickt dich, eine "verseuchte" Kammer zu reinigen. Dring bis zu ihr vor.
+> Aldric schickt dich, eine "verseuchte" Kammer zu reinigen. Dring bis zu ihr vor, sie liegt ab Tiefe 15.
 
 - **Ziel:** `explore` → `room` ×2
 - **Vorbedingung:** Überwachung
@@ -1173,13 +1175,13 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 **Angebot**
 
-> Eine untere Kammer ist verseucht — Ketzerei. Reinige sie. Frag nicht, was du findest.
+> Eine untere Kammer ist verseucht — Ketzerei, ab Tiefe 15. Reinige sie. Frag nicht, was du findest.
 > 
 > Geh.
 
 **Unterwegs**
 
-> Die Kammer liegt tiefer. Dring weiter vor.
+> Die Kammer liegt tiefer, ab Tiefe 15. Dring weiter vor.
 
 **Abschluss**
 
@@ -1223,7 +1225,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Elaras zweite Wahrheit
 
-`elara_second_truth` · **NPC:** Elara · **Kette:** 4
+`elara_second_truth` · **NPC:** Elara · **Kette:** 4 · **Angebot ab Tiefe 20**
 
 > Elara zeigt dir, für wen du das Letzte tust.
 
@@ -1246,9 +1248,9 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Der Bruch
 
-`bruch_confrontation` · **NPC:** Schmiedemeisterin Branka · **Kette:** 5 · **Fortschritt erst ab Tiefe 8**
+`bruch_confrontation` · **NPC:** Schmiedemeisterin Branka · **Kette:** 5 · **Angebot ab Tiefe 20** · **Fortschritt erst ab Tiefe 20**
 
-> Aldric hat Wachen auf Dich gehetzt. Schlag Dich durch, besiege 3 Elite-Wachen. Sie stellen Dich erst in der Tiefe (ab Tiefe 8). Branka weiss ein Versteck.
+> Aldric hat Wachen auf Dich gehetzt. Schlag Dich durch, besiege 3 Elite-Wachen. Sie stellen Dich erst in der Tiefe (ab Tiefe 20). Branka weiss ein Versteck.
 
 - **Ziel:** `kill` → `elite_enemy` ×3
 - **Vorbedingung:** Die verseuchte Kammer **+** Elaras zweite Wahrheit
@@ -1256,11 +1258,11 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 **Angebot**
 
-> Aldric weiss es. Dein Doppelspiel ist aufgeflogen, seine Elite-Wachen riegeln die tiefen Gänge ab, ab Tiefe 8 stellst Du sie. Schlag Dich durch und komm zu mir. Ich kenne einen Ort, an dem Dich keiner sucht.
+> Aldric weiss es. Dein Doppelspiel ist aufgeflogen, seine Elite-Wachen riegeln die tiefen Gänge ab, ab Tiefe 20 stellst Du sie. Schlag Dich durch und komm zu mir. Ich kenne einen Ort, an dem Dich keiner sucht.
 
 **Unterwegs**
 
-> Aldrics Elite-Wachen halten die Tiefe. Ab Tiefe 8 stellst Du sie.
+> Aldrics Elite-Wachen halten die Tiefe. Ab Tiefe 20 stellst Du sie.
 
 **Abschluss**
 
@@ -1350,9 +1352,9 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Die Pamphlete
 
-`thom_pamphlets` · **NPC:** Setzer Thom · **Kette:** 2 · **Fortschritt erst ab Tiefe 22**
+`thom_pamphlets` · **NPC:** Setzer Thom · **Kette:** 2 · **Angebot ab Tiefe 27** · **Fortschritt erst ab Tiefe 27**
 
-> Schliesse 3 tiefe Läufe in die Keller ab (ab Tiefe 22), um Flugblätter bis in die untersten Gänge zu verteilen.
+> Schliesse 3 tiefe Läufe in die Keller ab (ab Tiefe 27), um Flugblätter bis in die untersten Gänge zu verteilen.
 
 - **Ziel:** `dungeon_run` → `dungeon_complete` ×3
 - **Vorbedingung:** Verbotene Wahrheiten
@@ -1362,11 +1364,11 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 > Die oberen Gänge lesen unsere Wahrheit schon. Jetzt brauchen wir die Tiefe, dort, wo der Rat seine Geheimnisse hält.
 > 
-> Schliess drei Durchläufe ab Tiefe 22 ab und nimm die Blätter mit hinunter. Wer dort unten liest, liest dort, wo der Rat es nicht erwartet.
+> Schliess drei Durchläufe ab Tiefe 27 ab und nimm die Blätter mit hinunter. Wer dort unten liest, liest dort, wo der Rat es nicht erwartet.
 
 **Unterwegs**
 
-> Nur tiefe Durchläufe zählen, ab Tiefe 22. Schliess drei davon ab. Jeder trägt unsere Blätter weiter hinunter.
+> Nur tiefe Durchläufe zählen, ab Tiefe 27. Schliess drei davon ab. Jeder trägt unsere Blätter weiter hinunter.
 
 **Abschluss**
 
@@ -1404,7 +1406,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Waffen für den Widerstand
 
-`branka_weapons` · **NPC:** Schmiedemeisterin Branka · **Kette:** 3
+`branka_weapons` · **NPC:** Schmiedemeisterin Branka · **Kette:** 3 · **Angebot ab Tiefe 24**
 
 > Stelle 3 Gegenstände in der Archivschmiede her.
 

@@ -31,6 +31,8 @@ function stand(akt, offen, flags) {
     window.storySystem.loadStorySaveData({ currentActIndex: ${akt},
       eventsSeen: ['auftrag', 'treuer_diener', 'erste_risse', 'wahrheit', 'bruch'] });
     var qs = window.questSystem, st = qs.getQuestSaveData();
+    // Tief genug, dass kein Angebot an seiner Tiefe haengt (angebotAb, b475).
+    (window.SlotStorage || localStorage).setItem('demonfall_maxDepth', '30');
     st.quests = {}; st.flags = ${JSON.stringify(flags || {})};
     st.flags.hub_intro_a0_seen = true;
     var offen = ${JSON.stringify(offen)};

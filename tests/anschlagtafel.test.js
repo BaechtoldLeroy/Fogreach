@@ -43,12 +43,14 @@ test('Im Rats-Hub haengt genau ein Kopfgeld, und es wechselt mit der Tiefe', () 
 test('Nach dem Bruch haengt genau ein Aufruf, und auch der wechselt', () => {
   // Zwei Aufrufe statt einem: der Widerstand hat mehr als eine Sorge, und
   // ein Brett, an dem immer dasselbe haengt, sieht niemand mehr an.
-  [1, 2, 3, 4].forEach((tiefe) => {
+  // Gebrochen ist der Hub erst nach dem Bruch (ab Tiefe 20), dort haengen
+  // beide (Aufruf ab 16, Zeugen ab 22, b475).
+  [22, 23, 24, 25].forEach((tiefe) => {
     const haengend = AT.WIDERSTAND_AUFRUFE.filter((id) => AT.haengt(id, 'broken', tiefe));
     assert.strictEqual(haengend.length, 1, 'Tiefe ' + tiefe + ': ' + haengend.join(','));
   });
-  const a = AT.WIDERSTAND_AUFRUFE.find((id) => AT.haengt(id, 'broken', 2));
-  const b = AT.WIDERSTAND_AUFRUFE.find((id) => AT.haengt(id, 'broken', 3));
+  const a = AT.WIDERSTAND_AUFRUFE.find((id) => AT.haengt(id, 'broken', 22));
+  const b = AT.WIDERSTAND_AUFRUFE.find((id) => AT.haengt(id, 'broken', 23));
   assert.notStrictEqual(a, b, 'der Aufruf wechselt nicht mit dem Lauf: ' + a);
   // Und nichts vom Rat.
   AT.RATS_AUSHAENGE.forEach((id) => {
@@ -66,9 +68,10 @@ test('Das Brett traegt genug Varianz, um nicht auswendig gelernt zu werden', () 
     'nur ' + AT.RATS_AUSHAENGE.length + ' Rats-Aushaenge');
   assert.ok(AT.WIDERSTAND_AUFRUFE.length >= 2,
     'nur ' + AT.WIDERSTAND_AUFRUFE.length + ' Aufrufe');
-  // Ueber fuenf Laeufe muss jeder einmal drankommen.
+  // Ueber fuenf Laeufe muss jeder einmal drankommen — sobald alle angeboten
+  // werden (der tiefste ab 18, b475).
   const gesehen = new Set();
-  for (let t = 1; t <= AT.RATS_AUSHAENGE.length; t++) {
+  for (let t = 22; t < 22 + AT.RATS_AUSHAENGE.length; t++) {
     AT.RATS_AUSHAENGE.forEach((id) => { if (AT.haengt(id, 'council', t)) gesehen.add(id); });
   }
   assert.strictEqual(gesehen.size, AT.RATS_AUSHAENGE.length,

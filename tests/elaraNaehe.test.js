@@ -307,6 +307,8 @@ test('Die Klinge bekommt man in Akt 3 im Dungeon, in einem Gespraech', () => {
   const r = H.run(`(function () {
     var sc = window.game.scene.getScene('GameScene');
     var qs = window.questSystem;
+    // Angeboten ab Tiefe 20 (b475), nach dem Zeremonienmeister.
+    (window.SlotStorage || localStorage).setItem('demonfall_maxDepth', '20');
     var angebot = qs.getAvailableQuests('elara').filter(function (q) { return q.id === 'elara_blade'; })[0];
     if (!angebot) return { fehler: 'elara_blade wird in Akt 3 nicht angeboten' };
     _elaraAuftragsDialog(sc, { id: 'elara_blade', modus: 'angebot', quest: angebot }, 'Weiter', false);

@@ -100,9 +100,9 @@ test('Abgabe zahlt die skalierten Werte aus', () => {
   W.Persistence = { getMaxDepth: () => 24 };
   abgeben(qs, 'brett_anfuehrer');
   assert.strictEqual(xp, 200);              // 0.4 * 500
-  assert.strictEqual(gold, 800);            // 200 * 24 / 6
+  assert.strictEqual(gold, 480);            // 200 * 24 / 10 (ab Tiefe 10, b475)
   assert.deepStrictEqual({ xp: qs.getErhaltenerLohn('brett_anfuehrer').xp, gold: qs.getErhaltenerLohn('brett_anfuehrer').gold },
-    { xp: 200, gold: 800 }, 'der Vermerk weicht vom Ausgezahlten ab');
+    { xp: 200, gold: 480 }, 'der Vermerk weicht vom Ausgezahlten ab');
 });
 
 // ------------------------------------------------------------ Einfuehrungen

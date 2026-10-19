@@ -56,15 +56,24 @@
   function haengt(id, phase, tiefe) {
     var p = phase || _phase();
     var t = (typeof tiefe === 'number') ? tiefe : _tiefe();
+    // Es wechselt nur, was auf dieser Tiefe schon angeboten wird (angebotAb,
+    // b475). Sonst hinge ein Aushang, den das Brett gar nicht anbietet.
+    var bereit = function (x) {
+      var qs = window.questSystem;
+      return !(qs && typeof qs.angebotsTiefe === 'function') || t >= qs.angebotsTiefe(x);
+    };
     // Der Epilog braucht keine eigene Abfrage: er ist weder 'broken' noch
     // 'council'/'doubleAgent', faellt also unten von selbst heraus.
+    var liste;
     if (WIDERSTAND_AUFRUFE.indexOf(id) !== -1) {
       if (p !== 'broken') return false;
-      return WIDERSTAND_AUFRUFE[t % WIDERSTAND_AUFRUFE.length] === id;
+      liste = WIDERSTAND_AUFRUFE.filter(bereit);
+    } else {
+      if (RATS_AUSHAENGE.indexOf(id) === -1) return false;
+      if (p !== 'council' && p !== 'doubleAgent') return false;
+      liste = RATS_AUSHAENGE.filter(bereit);
     }
-    if (RATS_AUSHAENGE.indexOf(id) === -1) return false;
-    if (p !== 'council' && p !== 'doubleAgent') return false;
-    return RATS_AUSHAENGE[t % RATS_AUSHAENGE.length] === id;
+    return liste.length > 0 && liste[t % liste.length] === id;
   }
 
   /** Was sonst noch am Brett steht (Flavor des Dialogs), je Phase. */
