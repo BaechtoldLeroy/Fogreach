@@ -113,6 +113,12 @@ before(async () => {
   // --- Neues Spiel -> Hub (derselbe Weg wie "Neues Spiel" nach dem Neuladen)
   H.run(`window.sessionStorage.setItem('demonfall.pendingNewGame', '1');
     window.game.scene.getScene('StartScene').scene.restart()`);
+  // Seit b470 fragt ein neuer Slot zuerst Schwierigkeit und Steuerung ab (auch
+  // dieses Fenster muss englisch sein).
+  assert.ok(await bis(() => H.run("!!window.game.scene.getScene('StartScene')._ersteinstellung")), 'keine Ersteinstellung nach Neues Spiel');
+  await takte(10);
+  sammle('ersteinstellung');
+  H.run("window.game.scene.getScene('StartScene')._ersteinstellung.bestaetigen()");
   assert.ok(await H.waitForScene('HubSceneV2', { maxRounds: 250 }), 'HubSceneV2 wurde nicht erreicht');
   await takte(30);
   sammle('hub');
