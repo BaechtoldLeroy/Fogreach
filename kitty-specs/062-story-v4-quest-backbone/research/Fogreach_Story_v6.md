@@ -4,7 +4,7 @@
 
 ## Der Kern
 
-Unter Fogreach brennt eine Esse, die Erinnerungen verbrennt. Ihr Rauch ist der Nebel, und wer ihn atmet, vergisst.
+Unter Fogreach brennt eine Esse, die Erinnerungen verbrennt. In ihrem Feuer ist ein uralter Dämon gebunden. Er frisst, was man ihm gibt, und sein Atem ist der Nebel: Wer ihn atmet, vergisst.
 
 Der Kettenrat ist offiziell gewählt und tritt als drei streitende Fraktionen auf, Magistrat, Klerus und Garde. Innen gehören ihre Spitzen demselben Kreis an, dem Schattenrat. Er füttert die Esse mit beschlagnahmten Schriften und mit den Erinnerungen der Verschwundenen.
 
@@ -16,7 +16,9 @@ Am Ende, mit erhobenem Hammer, durchschaust Du, was Deine Hände gerade tun, und
 
 ## Die Welt
 
-**Die Esse.** Unter der Stadt liegt das alte Archiv. In seinem Herzen steht die erste Archivschmiede, eine riesige Esse. Früher wurden dort Erinnerungen in Metall gebunden, damit die Stadt sie nie verliert. Der Rat hat sie umgedreht: Sie verbrennt Erinnerungen.
+**Die Esse.** Unter der Stadt liegt das alte Archiv. In seinem Herzen steht die erste Archivschmiede, eine riesige Esse. Früher wurden dort Erinnerungen in Metall gebunden, damit die Stadt sie nie verliert. Die Glut, die das konnte, war ein Dämon, den die ersten Archivschmiede gebunden hatten: Er musste bewahren, was man ihm anvertraute. Der Rat hat die Bindung umgedreht: Jetzt füttert er den Dämon mit Erinnerungen, der Dämon verbrennt sie und atmet dafür den Nebel aus. Mit jeder Generation muss die Bindung erneuert werden, sonst verliert sie ihren Griff.
+
+**Die Pakte.** Die Macht des Rats ist geliehen. Jedes Mitglied des Schattenrats hat seinen Pakt mit dem Dämon im Feuer der Esse gesiegelt: Erinnerungen als Tribut, dafür Gehorsam einer vergesslichen Stadt. Wichtig: Der Dämon nimmt nur, was Menschen ihm geben. Das Böse liegt nicht bei ihm, sondern bei denen, die ihn füttern.
 
 **Der Nebel.** Er ist der Rauch der Esse. Oben in den Gassen ist er dünn und macht die Leute vergesslich: Sie vergessen das Unrecht von gestern. Gehorchen tun sie selbst, aus Angst vor Registrierung, Protokoll und Strafe. Der Nebel nimmt die Erinnerung, die Ordnung nimmt den Mut. In der Tiefe ist er so dicht, dass er einen Menschen ganz auslöscht. Ohne Esse kommt kein neuer Rauch nach.
 
@@ -121,9 +123,9 @@ Elara ist mit einem echten Amulett des Rats bis zur Esse gelangt. Sie empfängt 
 
 1. **Der erhobene Hammer.** Du setzt an, so wie sie es Dir gezeigt hat. Mitten im Schlag erkennst Du, was Deine Hände tun: Das ist kein Lösen, das ist das Erneuern, das Du schon einmal verweigert hast. Du hältst inne. Das ist die zentrale Szene des Spiels, der einzige Moment, den niemand für Dich vorbereitet hat. Elara begreift es zuerst: «Alles haben wir vorausgesehen. Nur nicht, dass Du es merkst.» Dann spricht sie den Plan offen aus.
 2. **Harren.** Er erreicht sie und ruft sie «Lene», mit der letzten Erinnerung, die er noch hat. Sie zögert einen Moment. Dann stösst sie ihn weg, bewusst, mit eigener Hand, und er stirbt. Sie wählt die Esse und nicht ihren Vater. Das ist ihr Punkt ohne Rückkehr, und er liegt vor der Besessenheit.
-3. **Elara nimmt Deinen Hammer** und versucht es selbst. Doch sie ist keine ausgebildete Archivschmiedin. Ohne das Handwerk kann sie die Bindung nicht halten: Statt dass sie die Esse schmiedet, schmiedet die Esse sie und nimmt sie.
+3. **Elara nimmt Deinen Hammer** und versucht es selbst. Doch sie ist keine ausgebildete Archivschmiedin. Ohne das Handwerk kann sie die Bindung nicht halten: Statt dass sie den Dämon bindet, nimmt der Dämon sie. Elara ist besessen.
 4. **Der Kampf gegen die besessene Elara.** Sie löscht Teile der Arena, lässt Besiegte zurückkehren und greift nach Deiner Erinnerung. Je mehr Du im Spiel zurückgewonnen hast, desto mehr kann sie Dir nehmen. Was Du in «Wer du warst» zurückholst, gehört nicht dazu: Diese Erinnerung hast Du selbst aus der Tiefe geborgen und gebunden, an sie kommt sie nicht heran. Am Ende trifft sie ihre eigene Klinge.
-5. **Der letzte Schlag ist Handwerk.** Du nimmst Deinen Hammer zurück und löst die Bindung der Esse in die andere Richtung. Nur ein Archivschmied kann das. Die Esse zerbricht, es kommt kein neuer Rauch nach.
+5. **Der letzte Schlag ist Handwerk.** Du nimmst Deinen Hammer zurück und löst die Bindung der Esse in die andere Richtung. Nur ein Archivschmied kann das. Die Esse zerbricht, der Dämon verliert seinen Halt in der Stadt und fällt zurück in die Tiefe. Kein Atem mehr, kein neuer Nebel. Was er zuletzt noch nicht verbrannt hatte, gibt er frei: Darum kehren oben Erinnerungen zurück.
 6. **Richten oder verschonen.** Mara verlangt, dass Du Elara richtest. Du entscheidest. Damit stellt sich die Frage auch an den Widerstand: Welche Mittel sind gerechtfertigt? Die Frage betrifft eine echte Schuld: Elara hat ihren Vater bewusst getötet.
 7. **Die Presse.** Mit der Esse kehren Bruchstücke zurück: Die Leute erinnern sich plötzlich an Namen, Gesichter, Tage. An Thoms Presse druckst Du alles: zuoberst Aldrics Namen, dann den Rat, den Widerstand, Elara und die Namen der Verschwundenen aus dem Nachhall. Die Drucke tragen kein Siegel, aber die Stadt glaubt ihnen, weil sie bestätigen, was sie gerade selbst wieder weiss. Was an tausend Orten steht, kann niemand mehr verbrennen. Der Nebel dünnt aus. Danach schmiedest Du neue Druckplatten und gibst sie weg: Der Mann, der die Siegel des Rats gemacht hat, macht jetzt Werkzeug für alle.
 
@@ -169,14 +171,14 @@ Elara ist mit einem echten Amulett des Rats bis zur Esse gelangt. Sie empfängt 
 
 Je tiefer, desto dichter der Nebel, desto stärker, was darin lebt. Alle Bosse erzählen dieselbe Geschichte: Wer für den Rat hinabsteigt, wird von der Tiefe verschluckt.
 
-**Die Kreaturen.** Im dichten Nebel verfangen sich verbrannte Erinnerungen und nehmen Gestalt an: Ängste, Wut, halbe Gesichter, die keinem mehr gehören. Dazu kommen die Geleerten, Menschen, deren Erinnerungen abgefüllt wurden und die ziellos durch die Gänge irren. Der Klerus nennt all das «Ketzerei» und «Besessenheit», damit niemand fragt, woher es kommt. Einige Gegner sind Verschwundene, also Opfer, gegen die Du trotzdem kämpfst. Wer Maras Liste warnt, trifft später weniger bekannte Gesichter.
+**Die Kreaturen.** Der Nebel ist der Atem des Dämons, und je dichter er wird, desto mehr bringt er hervor: seine Brut, Wichte und Bestien, die aus verbrannten Ängsten und Wut Gestalt annehmen, dazu halbe Gesichter, die keinem mehr gehören. Kultisten und Beschwörer sind der innere Kreis des Klerus, der dem Dämon dient und die Rituale vorbereitet. Dazu kommen die Geleerten, Menschen, deren Erinnerungen abgefüllt wurden und die ziellos durch die Gänge irren. Der Klerus nennt all das «Ketzerei» und «Besessenheit», damit niemand fragt, woher es kommt. Die bittere Ironie: Am Ende ist Elara wirklich besessen, vom Dämon der Esse. Einige Gegner sind Verschwundene, also Opfer, gegen die Du trotzdem kämpfst. Wer Maras Liste warnt, trifft später weniger bekannte Gesichter.
 
 | Boss | Tiefe | Wer er war | Mechanik |
 | --- | --- | --- | --- |
 | Der Kettenmeister | 10 | Hauptmann der Garde, aus Pflicht hinabgeschickt, um den Weg zu bewachen. Als das Amulett nachliess, hat ihn der Nebel geleert. Geblieben ist sein Befehl. | Fesseln und Binden |
 | Der Zeremonienmeister | 20 | Priester, der die Rituale aus Überzeugung leitete. Er ist freiwillig unten geblieben, weil er glaubte, dem Vergessen zu dienen. Nur das Ritual selbst ist übrig. Hält die Kammer am Schacht. | Löschen und Nebel, Vorbote des Finales |
 | Der Nachhall | 25 | Niemand. Alle verbrannten Erinnerungen, so dicht, dass sie zu einem Wesen verschmolzen sind. Die Kreaturen sind seine Bruchstücke, es ist das Ganze. | Ein Echo aus tausend Stimmen: flüstert Erinnerungsbruchstücke, wechselt die Gestalt |
-| Elara, besessen | 30 | Keine Archivschmiedin. Die Esse nimmt sie, als sie sie selbst neu schmieden will. | Löscht Arena, holt Besiegte zurück, greift nach Deiner Erinnerung |
+| Elara, besessen | 30 | Keine Archivschmiedin. Der Dämon der Esse nimmt sie, als sie ihn selbst neu binden will. | Löscht Arena, holt Besiegte zurück, greift nach Deiner Erinnerung |
 
 Kettenmeister und Zeremonienmeister zeigen zwei Arten des Mitlaufens: aus Pflicht und aus Glauben.
 
@@ -194,8 +196,8 @@ Kettenmeister und Zeremonienmeister zeigen zwei Arten des Mitlaufens: aus Pflich
 | 2. «Frieden durch Ordnung» hat einen Preis | Registrierung, Protokolle und Strafen. Der Nebel nimmt nur die Erinnerung, gehorchen tun die Leute aus Angst. Der Spitzel, der jede Abweichung meldet, ist das Gesicht dieses Systems. |
 | 3. Wer die Presse hat, hat die Wahrheit | Du hast früher die Druckplatten für den Rat geschmiedet. Am Ende druckt Thom alles, und Du gibst neue Platten weg. Das Gegenmittel sind viele Stimmen, nicht eine richtige. |
 | 4. Dezentrales Wissen schützt vor Missbrauch | Nur was gesiegelt ist, gilt als wahr, und die Esse verbrennt den Rest. Im Kleinen schützt Dich der Wissensbaum, weil Du Erinnerung bindest. Im Grossen wird die Esse zerstört, nicht weitergeführt. Was an tausend Orten steht, kann niemand verbrennen. |
-| 5. Die Ketten sind politisch und wörtlich | Jedes Mitglied des Schattenrats hat seine Mitschuld gesiegelt, jeder hält die Siegel der anderen. Der Rat selbst hängt an der Esse und damit an dem Archivschmied, den er geleert hat. Wer Mächtige verstehen will, fragt, wem sie verpflichtet sind. |
-| 6. Mitläufertum ist der Normalfall | Du hast Siegel, Schlösser und Druckplatten für den Rat gemacht, und jeder Abstieg im Spiel hat ihm gedient, bis zum erhobenen Hammer. Der Kettenmeister lief aus Pflicht mit, der Zeremonienmeister aus Glauben. |
+| 5. Die Ketten sind politisch und wörtlich | Jedes Mitglied des Schattenrats hat seine Mitschuld gesiegelt, im Feuer der Esse als Pakt mit dem Dämon, und jeder hält die Siegel der anderen. Der Rat selbst hängt an der Esse und damit an dem Archivschmied, den er geleert hat. Wer Mächtige verstehen will, fragt, wem sie verpflichtet sind. |
+| 6. Mitläufertum ist der Normalfall | Du hast Siegel, Schlösser und Druckplatten für den Rat gemacht, und jeder Abstieg im Spiel hat ihm gedient, bis zum erhobenen Hammer. Der Kettenmeister lief aus Pflicht mit, der Zeremonienmeister aus Glauben. Der Dämon nimmt nur, was Menschen ihm geben: Er ist kein Vorwand, er ist der Abnehmer. |
 | 7. Widerstand ist nicht automatisch rein | Der sichtbare Widerstand ist eine Falle des Rats. Der echte kämpft gegen Geleerte, die selbst Opfer sind, und Mara verlangt Elaras Tod. Am Ende druckst Du alles, auch Namen, die das trifft. Welche Mittel sind gerechtfertigt? |
 | 8. Das Private ist der Einstieg ins Politische | Eine verschwundene Tochter und Deine eigene verlorene Erinnerung führen Schritt für Schritt zum ganzen System. |
 
