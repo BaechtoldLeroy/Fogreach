@@ -48,6 +48,15 @@ test('Regel: passt er nirgends, der erreichbare Platz mit der geringsten Ueberla
   assert.deepStrictEqual(p, { x: 80, y: 200 });
 });
 
+test('koerperMasse rechnet wie Arcade, nicht wie body.reset', () => {
+  // Phaser 3.70: reset() legt den Koerper auf getTopLeft() — ohne Versatz.
+  // Jedes Bild setzt Arcade ihn dann auf x + scale * (offset - displayOrigin).
+  const sprite = { x: 500, y: 400, scaleX: 2, scaleY: 2, displayOriginX: 40, displayOriginY: 60 };
+  sprite.body = { width: 60, height: 100, offset: { x: 10, y: 5 }, x: 0, y: 0,
+    reset(x, y) { this.x = x - sprite.displayOriginX * 2; this.y = y - sprite.displayOriginY * 2; } };
+  assert.deepStrictEqual(SR.koerperMasse(sprite), { dx: -60, dy: -110, w: 60, h: 100 });
+});
+
 // ------------------------------------------------------------ im Spiel
 
 const ARENEN = {

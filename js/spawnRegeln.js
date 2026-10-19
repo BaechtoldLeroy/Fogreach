@@ -157,6 +157,15 @@
     // Der Koerper folgt der Figur erst im naechsten Physikschritt; reset
     // gleicht beides sofort ab (setzt auch die Geschwindigkeit auf 0).
     if (typeof b.reset === 'function') b.reset(sprite.x, sprite.y);
+    // Aber Vorsicht: reset legt den Koerper auf die linke obere Ecke des
+    // BILDES (getTopLeft), ohne den Koerperversatz. Den Abstand also so
+    // rechnen, wie Arcade ihn jedes Bild setzt (Body.preUpdate). Sonst lag
+    // Elaras Koerper (Versatz 4/22 bei Skala 2,3, Bild je Richtung anders
+    // gross) bis 100 px daneben, und ein "freier" Platz stak in der Wand.
+    if (b.offset && isFinite(sprite.displayOriginX) && isFinite(sprite.scaleX)) {
+      return { dx: sprite.scaleX * (b.offset.x - sprite.displayOriginX),
+        dy: sprite.scaleY * (b.offset.y - sprite.displayOriginY), w: b.width, h: b.height };
+    }
     return { dx: b.x - sprite.x, dy: b.y - sprite.y, w: b.width, h: b.height };
   }
 
