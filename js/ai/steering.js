@@ -87,7 +87,22 @@ function obstacleAvoidance(me, obstacles, aheadDist=80){
   const center = v((closest.left+closest.right)/2, (closest.top+closest.bottom)/2);
   const away = v(me.x - center.x, me.y - center.y);
   if (away.lengthSq()===0) return v();
-  return away.normalize().scale(120); // „Stärke“ der Vermeidung
+  away.normalize();
+  // Liegt das Hindernis voraus, zeigt „weg vom Mittelpunkt“ nach hinten: der
+  // Gegner bremste davor bis fast auf null und kroch auf die Kante zu, statt
+  // auszuweichen (gemessen: Ratte genau hinter einer Kiste, 10 bis 30 px/s).
+  // Dann nur der seitliche Anteil, voll stark; genau mittig eine feste Seite.
+  const d = dir.clone().normalize();
+  const along = away.x * d.x + away.y * d.y;
+  if (along < 0) {
+    const lat = v(away.x - d.x * along, away.y - d.y * along);
+    if (lat.lengthSq() < 0.01) {
+      if (!me._ausweichSeite) me._ausweichSeite = Math.random() < 0.5 ? -1 : 1;
+      return v(-d.y * me._ausweichSeite, d.x * me._ausweichSeite).scale(120);
+    }
+    return lat.normalize().scale(120);
+  }
+  return away.scale(120); // „Stärke“ der Vermeidung
 }
 
 function hasLineOfSight(from, to, obstacles){

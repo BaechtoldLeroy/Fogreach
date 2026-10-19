@@ -2583,6 +2583,155 @@ var GEGNER_LAUF_MS = 760;        // ein ganzer Zyklus, gleich fuer 4 und 8 Bilde
 var GEGNER_LAUF_MIN_PX_S = 12;   // darunter gilt der Gegner als stehend
 var GEGNER_LAUF_NACHLAUF = 150;  // ms; kurze Stockungen lassen den Gang weiterlaufen
 
+// --- Um Hindernisse herum ---------------------------------------------------
+// Gefunden ueber den seltenen Ausfall in tests/gegnerLauf.test.js: Gegner
+// drueckten mit vollem Tempo gegen eine Kiste (body.blocked, Position fest)
+// oder krochen davor auf der Stelle, und kamen nie heran. Drei Teile:
+//   * Steering.obstacleAvoidance lenkt seitlich statt bremsend (steering.js),
+//   * _anWandGleiten: an der Wand gleiten statt druecken, auch in den
+//     Bildern ohne Beruehrung, solange die Wand noch neben ihm liegt,
+//   * _umwegWennFest: wer trotzdem nicht vom Fleck kommt, geht quer.
+var GLEITEN_HALTEN_MS = 700;   // so lange bleibt ein Gegner bei seiner Seite
+var GLEITEN_KANTE = 8;         // px: so nah muss eine Hinderniskante am Koerper liegen
+
+/** Das Hindernis, an dessen Seite `wand` der Koerper gerade anliegt (oder null). */
+function _wandRechteck(enemy, wand) {
+  var b = enemy.body;
+  var rects = (typeof obstacles !== 'undefined' && obstacles && obstacles.__steerRects) || null;
+  if (!b || !rects) return null;
+  var l = b.x, r = b.x + b.width, o = b.y, u = b.y + b.height;
+  for (var i = 0; i < rects.length; i++) {
+    var q = rects[i];
+    if (wand === 'up' && Math.abs(q.bottom - o) <= GLEITEN_KANTE && q.left < r && q.right > l) return q;
+    if (wand === 'down' && Math.abs(q.top - u) <= GLEITEN_KANTE && q.left < r && q.right > l) return q;
+    if (wand === 'left' && Math.abs(q.right - l) <= GLEITEN_KANTE && q.top < u && q.bottom > o) return q;
+    if (wand === 'right' && Math.abs(q.left - r) <= GLEITEN_KANTE && q.top < u && q.bottom > o) return q;
+  }
+  return null;
+}
+
+/** Liegt die gemerkte Wand noch neben dem Koerper (quer zur Wand gesehen)? */
+function _wandNochDa(enemy) {
+  var q = enemy._gleitRect, b = enemy.body, w = enemy._gleitWand;
+  if (!q || !b) return false;
+  if (w === 'up' || w === 'down') return q.left < b.x + b.width && q.right > b.x;
+  return q.top < b.y + b.height && q.bottom > b.y;
+}
+
+function _gleitenAnwenden(desired, wand, s) {
+  if (wand === 'left' || wand === 'right') {
+    desired.y = s * Math.max(Math.abs(desired.y), Math.abs(desired.x));
+    desired.x = 0;
+  } else {
+    desired.x = s * Math.max(Math.abs(desired.x), Math.abs(desired.y));
+    desired.y = 0;
+  }
+}
+
+/**
+ * Gleiten statt Druecken: steht der Koerper an einer Wand und zeigt die
+ * Wunschrichtung hinein, wandert dieser Anteil in die Querrichtung.
+ * Veraendert `desired` an Ort und Stelle.
+ */
+function _anWandGleiten(enemy, desired, ziel, time) {
+  var bl = enemy && enemy.body && enemy.body.blocked;
+  if (!bl || !desired) return;
+  var hinein = function (w) {
+    return (w === 'left' && desired.x < 0) || (w === 'right' && desired.x > 0)
+      || (w === 'up' && desired.y < 0) || (w === 'down' && desired.y > 0);
+  };
+  var wand = (bl.left && desired.x < 0) ? 'left' : (bl.right && desired.x > 0) ? 'right'
+    : (bl.up && desired.y < 0) ? 'up' : (bl.down && desired.y > 0) ? 'down' : null;
+  if (!wand) {
+    // Ein Bild ohne Beruehrung: liegt die Wand noch neben ihm und zeigt der
+    // Wunsch wieder hinein, weiter gleiten. Sonst machte dieses Bild den
+    // Schritt zur Seite rueckgaengig, und er pendelte vor der Kante (gemessen:
+    // Ratte und Brute an einer quer liegenden Kiste).
+    var w = enemy._gleitBis > time ? enemy._gleitWand : null;
+    var um = enemy._umrunden;
+    if (um && time < um.bis && hinein(um.wand)) {
+      // An der Kante vorbei: erst an der Wand entlang nach vorn, bis er
+      // ueber ihre Rueckseite hinaus ist, nicht gleich wieder schraeg hinein.
+      var b = enemy.body, q = um.rect, fertig =
+        um.wand === 'up' ? b.y + b.height < q.top : um.wand === 'down' ? b.y > q.bottom
+        : um.wand === 'left' ? b.x + b.width < q.left : b.x > q.right;
+      if (fertig) { enemy._umrunden = null; return; }
+      var t = Math.max(Math.hypot(desired.x, desired.y), 1);
+      if (um.wand === 'up' || um.wand === 'down') { desired.y = um.wand === 'up' ? -t : t; desired.x = um.seite * Math.abs(desired.x) * 0.3; }
+      else { desired.x = um.wand === 'left' ? -t : t; desired.y = um.seite * Math.abs(desired.y) * 0.3; }
+      return;
+    }
+    if (w && hinein(w) && _wandNochDa(enemy)) _gleitenAnwenden(desired, w, enemy._gleitSeite);
+    else if (w && !_wandNochDa(enemy)) {
+      if (enemy._gleitRect) enemy._umrunden = { wand: w, rect: enemy._gleitRect, seite: enemy._gleitSeite, bis: time + 1500 };
+      enemy._gleitWand = null; enemy._gleitRect = null;
+    }
+    return;
+  }
+  var vorige = (enemy._gleitBis > time) ? enemy._gleitWand : null;
+  var querAchse = function (x) { return x === 'left' || x === 'right' ? 'x' : 'y'; };
+  // Die Seite nur an einer neuen Wand waehlen, an derselben halten: neu
+  // gewaehlt in jedem Bild pendelte der Gegner um die Linie zum Ziel.
+  if (vorige !== wand) {
+    var lauf = querAchse(wand) === 'x' ? enemy.body.velocity.y : enemy.body.velocity.x;
+    var quer = ziel ? (querAchse(wand) === 'x' ? ziel.y - enemy.y : ziel.x - enemy.x) : 0;
+    var q = _wandRechteck(enemy, wand);
+    if (q) {
+      // Zur naeheren Kante des Hindernisses.
+      var mitte = querAchse(wand) === 'x' ? enemy.y : enemy.x;
+      var a = querAchse(wand) === 'x' ? q.top : q.left, e = querAchse(wand) === 'x' ? q.bottom : q.right;
+      enemy._gleitSeite = (mitte - a) < (e - mitte) ? -1 : 1;
+    } else if (Math.abs(lauf) > 15) {
+      enemy._gleitSeite = lauf > 0 ? 1 : -1;
+    } else if (vorige && querAchse(vorige) !== querAchse(wand)) {
+      // Ecke ohne Schwung: weg von der Wand, an der er eben stand.
+      enemy._gleitSeite = (vorige === 'up' || vorige === 'left') ? 1 : -1;
+    } else {
+      enemy._gleitSeite = Math.abs(quer) > 24 ? (quer > 0 ? 1 : -1) : (Math.random() < 0.5 ? -1 : 1);
+    }
+    enemy._gleitRect = q;
+  } else if (!enemy._gleitRect) {
+    enemy._gleitRect = _wandRechteck(enemy, wand);
+  }
+  enemy._gleitWand = wand;
+  enemy._gleitBis = time + GLEITEN_HALTEN_MS;
+  _gleitenAnwenden(desired, wand, enemy._gleitSeite);
+}
+
+var FEST_PRUEF_MS = 400;      // so oft wird der Fortschritt gemessen
+var FEST_MIN_WEG = 8;         // weniger als das in FEST_PRUEF_MS heisst fest
+var UMWEG_MS = 600;           // so lange geht er quer
+/**
+ * Will der Gegner laufen (mindestens halbes Tempo), kommt aber in
+ * FEST_PRUEF_MS kaum voran, geht er UMWEG_MS quer zur Richtung auf sein Ziel.
+ * Die Seite haelt er, solange Umwege etwas bringen; bringt einer nichts, die
+ * andere. Veraendert `desired` an Ort und Stelle.
+ */
+function _umwegWennFest(enemy, desired, ziel, maxSpeed, time) {
+  if (!enemy || !desired || !ziel) return;
+  var u = enemy._umweg;
+  if (u && time < u.bis) {
+    var tempo = Math.max(Math.hypot(desired.x, desired.y), maxSpeed * 0.8);
+    desired.x = u.x * tempo; desired.y = u.y * tempo;
+    return;
+  }
+  if (u && !u.geprueft) {
+    u.geprueft = true;
+    if (Math.hypot(enemy.x - u.vonX, enemy.y - u.vonY) < FEST_MIN_WEG * 2) enemy._umwegSeite = -(enemy._umwegSeite || 1);
+  }
+  var f = enemy._fortschritt;
+  if (!f || time - f.t >= FEST_PRUEF_MS) {
+    var will = Math.hypot(desired.x, desired.y);
+    var zx = ziel.x - enemy.x, zy = ziel.y - enemy.y, zd = Math.hypot(zx, zy);
+    if (f && zd > 1 && will >= maxSpeed * 0.5 && Math.hypot(enemy.x - f.x, enemy.y - f.y) < FEST_MIN_WEG) {
+      if (!enemy._umwegSeite) enemy._umwegSeite = Math.random() < 0.5 ? -1 : 1;
+      var s = enemy._umwegSeite;
+      enemy._umweg = { x: -zy / zd * s, y: zx / zd * s, bis: time + UMWEG_MS, vonX: enemy.x, vonY: enemy.y };
+    }
+    enemy._fortschritt = { t: time, x: enemy.x, y: enemy.y };
+  }
+}
+
 /**
  * Bildname und Richtung fuer den Lauf. Anders als _gegnerBildTeile NICHT aus
  * dem Texturnamen gelesen: waehrend des Laufs steht dort ein walk_-Bild.
