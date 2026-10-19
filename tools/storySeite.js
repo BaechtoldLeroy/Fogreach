@@ -65,7 +65,7 @@ const AKTE = [
       'Ihre Angst: wie es ist, die eigene Familie nicht sehen zu dürfen.',
       'Das Wiedersehen mit Harren. Sie zögert einen Atemzug zu lang, bevor sie ihn umarmt.'] },
   { idx: 3, id: 'wahrheit', titel: 'Die Enttarnung', label: 'Akt 3',
-    inhalt: 'Der Widerstand verliert, Maras Leute werden verhaftet, bevor sie losgehen. Es gibt einen Maulwurf. Im Ratsarchiv findest Du Elaras Akte: «Vermisst, Fall geschlossen», datiert vor dem Tag ihres Verschwindens. In der verseuchten Kammer siehst Du, wo Menschen abgefüllt werden. Am Schacht zur Esse erklärt Elara Dir, wie man sie «zerstört»: indem man ihre Bindung löst. Aldric enttarnt Dich, Branka bringt Dich in Elaras Versteck. Du folgst dem Maulwurf bis in die Ratskammer: Elara neben Aldric, an ihrem Ring das Zeichen.',
+    inhalt: 'Der Widerstand verliert, Maras Leute werden verhaftet, bevor sie losgehen. Es gibt einen Maulwurf. Im Ratsarchiv findest Du Elaras Akte: «Vermisst, Fall geschlossen», datiert vor dem Tag ihres Verschwindens. In der verseuchten Kammer siehst Du, wo Menschen abgefüllt werden. Am Schacht zur Esse erklärt Elara Dir, wie man sie «zerstört»: indem man ihre Bindung löst. Aldric enttarnt Dich, Branka bringt Dich in Elaras Versteck. Du folgst dem Maulwurf bis in die Ratskammer: Elara neben Aldric, an ihrem Ring das Zeichen. An der Tür steht der Kettenwächter mit dem roten Helmbusch aus dem Keller, und im Rückblick siehst Du die Rettung, wie sie war.',
     boss: 'Zeremonienmeister (Tiefe 20)',
     momente: ['Die Klinge: «Ich habe sie für Dich schmieden lassen.» Wer sie im Inventar genauer ansieht, findet das Zeichen der drei Ketten im Stahl.',
       'Eine wahre Meldung, die sie verschweigt: «Nicht alles hilft.»',

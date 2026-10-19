@@ -208,6 +208,26 @@ zweites Mal.
 
 `leer` ruehrt den Queststand NICHT an.
 
+### Elaras Rettung und der Rueckblick (Story-Kern v6.1)
+
+| Flagge | Wirkung |
+|---|---|
+| `?rettung=1` | Hinterhalt der Kettenwache gleich im ersten Raum; wie im Spiel endet er, wenn die LP unter die Haelfte fallen (oder nach 30 s), dann die Zwischensequenz der Rettung |
+| `?rettung=sofort` | wie `1`, aber ohne Kampf: die Zwischensequenz beginnt 1,5 s nachdem die Wachen stehen |
+| `?rueckblick=voll` | im Hub: die Maulwurf-Szene (Elara neben Aldric, der Waechter mit dem roten Helmbusch) mit dem Rueckblick auf die Rettung, alle drei Spuren hervorgehoben |
+| `?rueckblick=allgemein` | dasselbe fuer einen alten Spielstand ohne die inszenierte Rettung: kein Helmbusch, kein Nicken |
+| `?rueckblick=keiner` | Spielstand ganz ohne Rettung: die Maulwurf-Szene laeuft ohne Waechter und ohne Rueckblick |
+
+`rettung` stellt den Stand her, den die Rettung braucht (Harrens erster
+Auftrag erledigt, `elaraMet`, `elara_rettung_gesehen` und `rettung_inszeniert`
+geloescht). `rueckblick` setzt nur die drei Flaggen. Die Zwischensequenz
+ueberspringt nur ESC oder der Knopf, und auch dann erst bis zu Elaras Zeile.
+
+```
+?debug=1&dungeon=3&rettung=sofort
+?debug=1&autostart=1&rueckblick=voll
+```
+
 
 ### Die sechs Sondergegner (#12)
 

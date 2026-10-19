@@ -77,7 +77,13 @@ Der Rat kontrolliert den Nachschub, nicht die Esse selbst. Er liefert die Kohle,
 | Der Spitzel | Zuträger des Rats in den Gassen und Kellern. | Meldet jede Abweichung. Das Gesicht der alltäglichen Überwachung. |
 | Klerus-Priester, Stadtwache | Stimmen der Fraktionen. | Nennen Flucht «Besessenheit» und Aufräumen «Reinigung». |
 
-**Das Zeichen.** Das Siegel des Schattenrats, ein Kreis aus drei ineinandergreifenden Ketten. Es ist wörtlich gemeint: Jedes Mitglied hat seine Beteiligung an den Ritualen gesiegelt, und jeder hält die Siegel der anderen. Keiner kann aussteigen, ohne die anderen mitzureissen. Man sieht es auf Elaras Bündel, auf dem Dokument mit den drei Siegeln, eingraviert in ihrer Klinge, auf dem Befehl des Maulwurfs und zuletzt an Elaras Ring. Optional: Du hast dieses Siegel früher selbst geschmiedet.
+**Das Zeichen.** Das Siegel des Schattenrats, ein Kreis aus drei ineinandergreifenden Ketten. Es ist wörtlich gemeint: Jedes Mitglied hat seine Beteiligung an den Ritualen gesiegelt, und jeder hält die Siegel der anderen. Keiner kann aussteigen, ohne die anderen mitzureissen. Man sieht es auf Elaras Bündel, auf dem Dokument mit den drei Siegeln, eingraviert in ihrer Klinge, auf dem Befehl des Maulwurfs und zuletzt an Elaras Ring. Du hast dieses Siegel früher selbst geschmiedet (siehe «Die Schmiedemarke»).
+
+**Die Schmiedemarke (leise).** Es gibt keine Enthüllungsszene. Drei Stellen tragen es, und wer sie nicht findet, verpasst nichts:
+
+- Wer Elaras Klinge im Inventar ansieht und das Zeichen von der geheimen Sitzung kennt, liest unter der Gravur eine zweite Zeile: «Darunter eine Schmiedemarke. Deine Hände kennen sie, bevor Du es tust. Es ist Deine.»
+- Branka sagt es beim Abschluss von «Wer du warst»: «Das Zeichen der drei Ketten ist von Dir. Ich habe Dich daran arbeiten sehen.»
+- Wer es auf einem der beiden Wege erfahren hat (Flagge `schmiedemarke_erkannt`), dem bindet der Epilog es an: «Der Mann, der das Zeichen der drei Ketten geschmiedet hat, macht jetzt Werkzeug für alle.» Alle anderen lesen wie bisher von den Siegeln des Rats.
 
 ## Ablauf nach Akten
 
@@ -87,7 +93,7 @@ Jede Enthüllung geht eine Stufe tiefer, keine wird zweimal erzählt.
 
 **Akt 1 · Treuer Diener.**
 
-1. Elara rettet Dich im Keller vor der Kettenwache. Erst danach gibt sie Dir Aufträge: das versiegelte Bündel, dann das Dokument mit den drei Siegeln.
+1. Elara rettet Dich im Keller vor der Kettenwache (Zwischensequenz, siehe «Die Rettung, inszeniert»). Erst danach gibt sie Dir Aufträge: das versiegelte Bündel, dann das Dokument mit den drei Siegeln.
 2. Du arbeitest für Magistrat, Klerus und Garde.
 3. Die Stadt stimmt über das Edikt der Woche ab. In der öffentlichen Sitzung wird das Ergebnis verkündet: Egal was gewinnt, die Patrouillen verdoppeln sich.
 4. In der geheimen Sitzung siehst Du: ein Gesicht, drei Masken, das Zeichen der drei Ketten.
@@ -111,7 +117,17 @@ Jede Enthüllung geht eine Stufe tiefer, keine wird zweimal erzählt.
 4. Beim Zeremonienmeister (Tiefe 20) stehst Du am Schacht zur Esse. Zum ersten Mal siehst Du ihr Glühen und verstehst, was in den Phiolen ist. Elara erklärt Dir, wie man die Esse «zerstört»: indem man ihre Bindung löst.
 5. Elara schenkt Dir eine Klinge: «Ich habe sie für Dich schmieden lassen.» Wer sie im Inventar genauer ansieht, findet das Zeichen der drei Ketten im Stahl. Später verschweigt sie eine wahre Meldung: «Nicht alles hilft.»
 6. Aldric enttarnt Dich. Die Kettenwache jagt Dich, Branka bringt Dich in Elaras Versteck, Elara bleibt die Nacht bei Dir.
-7. Du folgst dem Maulwurf bis in die Ratskammer: Elara neben Aldric, an ihrem Ring das Zeichen.
+7. Du folgst dem Maulwurf bis in die Ratskammer: Elara neben Aldric, an ihrem Ring das Zeichen. An der Tür steht der Kettenwächter mit dem roten Helmbusch aus dem Keller, und ein Rückblick zeigt Dir die Rettung noch einmal, diesmal so, wie sie war.
+
+**Die Rettung, inszeniert.** Im Keller (ab Raum 3 des ersten Laufs nach Harrens erstem Auftrag) sperrt die Kettenwache den Raum. Der Kampf ist nicht zu gewinnen und endet, wenn Du unter die Hälfte Deiner Lebenspunkte fällst oder nach 30 Sekunden. Dann beginnt die Zwischensequenz: Die Spieluhr steht, Messingbalken fahren ein, und überspringen lässt sie sich nur bewusst (ESC oder der Knopf, und auch dann nur bis zu Elaras Zeile). Drei Spuren sind gelegt, beim ersten Sehen unauffällig, im Rückblick eindeutig:
+
+- Die Wachen weichen einen Takt zurück, bevor Elara überhaupt hervortritt, als hätte jemand ein Zeichen gegeben. Erst dann schlägt sie zu.
+- Einer der Wachen trägt einen roten Helmbusch, schon während des Kampfes. Elara tritt neben ihm aus dem Nebel, und er nickt ihr kaum merklich zu.
+- Sie sagt: «Steh auf, Archivschmied.» Du hast ihr nie gesagt, wer Du bist.
+
+Danach steht sie mit [E] im Raum, ihre Worte folgen als Gespräch, und der Auftrag kommt wie bisher erst, wenn Du zu ihr gehst.
+
+**Der Rückblick.** In der Ratskammer (Maulwurf) steht derselbe Wächter mit demselben Helmbusch neben Elara und Aldric. Ein kurzer Rückblick spielt die Rettung entsättigt noch einmal ab und hält an jeder Spur an: Messingringe um die zurückweichenden Wachen, bevor Elara da ist; ein Heranholen an den Wächter, dessen Busch als einzige Farbe rot wird, während er nickt; ihre Zeile mit dem Wort «Archivschmied» in Messing, darunter: «Du hattest ihr nie gesagt, wer Du bist.» Alte Spielstände, die die Rettung ohne Zwischensequenz erlebt haben, bekommen eine allgemeine Fassung ohne Helmbusch und Nicken (ihre Zeile ist dann die aus dem Gespräch: «Du. Der Archivschmied.»). Ein Stand ganz ohne Rettung bekommt keinen Rückblick, die Szene läuft wie bisher.
 
 **Akt 4 · Die Quelle.** Das Rathaus ist zu, oben bleibt Dir kein Ort. Elara ist zur Esse hinabgestiegen (Tiefe 30). Du folgst ihr, um die Esse zu zerstören. Harren folgt Dir ohne Amulett. Auf Tiefe 25 stellt sich Dir der Nachhall in den Weg, ein Echo aus tausend Stimmen, darunter Deine eigene.
 
@@ -209,8 +225,8 @@ Kettenmeister und Zeremonienmeister zeigen zwei Arten des Mitlaufens: aus Pflich
 
 ## Noch offen
 
-- [ ] Rettungsszene in Akt 1 als Zwischensequenz schreiben und im Rückblick als inszeniert erkennbar machen.
-- [ ] Optional entscheiden: Hast Du das Siegel der drei Ketten früher selbst geschmiedet?
+- [x] Rettungsszene in Akt 1 als Zwischensequenz schreiben und im Rückblick als inszeniert erkennbar machen (siehe «Die Rettung, inszeniert» und «Der Rückblick»).
+- [x] Hast Du das Siegel der drei Ketten früher selbst geschmiedet? Ja, leise: Schmiedemarke auf der Klinge, Brankas Satz, ein Halbsatz im Epilog (siehe «Die Schmiedemarke»).
 - [ ] Neue Dialogzeilen für die 19 Aufträge oben schreiben.
 - [ ] Text bereinigen: kein «ß», «Ü» statt «Ue», einheitlich «Du», keine Gedankenstriche, «Council» und «Dungeon» eindeutschen, Tippfehler («die untere Kammern», «schoner Lebensweise»).
 - [x] «Wer du warst» bringt im Endkampf keinen Nachteil.
