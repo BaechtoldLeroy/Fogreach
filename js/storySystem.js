@@ -664,7 +664,10 @@
           ? window.questSystem.getQuestTitle(q) : q.title;
         var qDesc = window.questSystem && window.questSystem.getQuestDescription
           ? window.questSystem.getQuestDescription(q) : q.description;
-        return { title: qTitle, description: qDesc, progress: progress, progressPct: progressPct, npcId: q.npcId };
+        // Fertig, aber unten abzugeben (Elara): sagen, wo.
+        var hinweis = (typeof window.questSystem.getAbgabeHinweis === 'function')
+          ? window.questSystem.getAbgabeHinweis(q) : '';
+        return { title: qTitle, description: qDesc, progress: progress, progressPct: progressPct, npcId: q.npcId, hinweis: hinweis };
       });
       // Stufe 1b: beim Bruch entfallene Auftraege des Rats (questSystem).
       if (typeof window.questSystem.getEntfalleneQuests === 'function') {
@@ -1043,6 +1046,18 @@
         barFill.fillStyle(0x4488ff, 0.9).fillRoundedRect(leftX + 12, y, fillW, barH, 3);
         content.add(barFill);
         y += barH + 6;
+
+        // Wo der fertige Auftrag abgegeben wird (in der Farbe des "?" im Hub).
+        if (q.hinweis) {
+          var hinweisText = scene.add.text(leftX + 16, y, q.hinweis, {
+            fontFamily: 'monospace',
+            fontSize: 12,
+            color: '#88ff88',
+            wordWrap: { width: innerW - 24 }
+          }).setOrigin(0, 0);
+          content.add(hinweisText);
+          y += hinweisText.height + 4;
+        }
 
         // Description
         var desc = scene.add.text(leftX + 16, y, q.description, {

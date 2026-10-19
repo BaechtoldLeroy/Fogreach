@@ -388,6 +388,10 @@
       id: 'widerstand_proof',
       title: 'Das Ratsdokument',
       description: 'Finde ein verstecktes Ratsdokument im Rathauskeller, ein paar Räume tiefer.',
+      // Elara kommt nicht in den Hub; abgegeben wird, wenn sie unten
+      // auftaucht (roomManager, ELARA_AUFTRAEGE). Der Hinweis sagt das,
+      // sobald der Auftrag fertig ist (getAbgabeHinweis).
+      abgabeHinweis: 'Bring Elara das Ratsdokument. Sie findet Dich im Keller.',
       npcId: 'elara',
       type: 'fetch',
       chain: 2,
@@ -468,6 +472,7 @@
       id: 'elara_meeting',
       title: 'Elaras Geheimnis',
       description: 'Finde 2 geheime Dokumente, die Elara versteckt hat.',
+      abgabeHinweis: 'Bring Elara die beiden Dokumente. Sie findet Dich im Keller.',
       npcId: 'elara',
       type: 'fetch',
       chain: 1,
@@ -708,6 +713,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       id: 'resistance_fetch_01',
       title: 'Das versiegelte Bündel',
       description: 'Hol das versiegelte Bündel aus dem Keller. Niemand darf es sehen, und öffne es nicht.',
+      abgabeHinweis: 'Bring Elara das Bündel. Sie findet Dich im Keller.',
       npcId: 'elara',
       // #155/#156: Vorher "kill enemy x5" — der Auftrag sprach von einem Buendel,
       // es gab aber keines. Jetzt ein echter Fund (loot.js: sealed_bundle). Das
@@ -735,6 +741,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       id: 'elara_ritual',
       title: 'Die Ritualkammer',
       description: 'Steige auf Tiefe 20 hinab und besiege den Zeremonienmeister, der die Ritualkammer des Rats hält.',
+      abgabeHinweis: 'Elara wartet im Keller auf Dich.',
       npcId: 'elara',
       type: 'boss',
       chain: 2,
@@ -848,6 +855,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       id: 'elara_blade',
       title: 'Elaras Geschenk',
       description: 'Elara hat eine besondere Klinge für Dich schmieden lassen.',
+      abgabeHinweis: 'Elara wartet im Keller auf Dich.',
       npcId: 'elara',
       type: 'dialogue',
       chain: 3,
@@ -1250,6 +1258,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       id: 'elara_second_truth',
       title: 'Elaras zweite Wahrheit',
       description: 'Elara zeigt dir, für wen du das Letzte tust.',
+      abgabeHinweis: 'Elara wartet im Keller auf Dich.',
       npcId: 'elara',
       type: 'dialogue',
       chain: 4,
@@ -1333,7 +1342,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
   // EN translation that is missing returns the German value via the i18n
   // lookup cascade (active → de → [MISSING:key]).
   if (window.i18n) {
-    var QUEST_FIELDS = ['title', 'description', 'dialogueOffer', 'dialogueProgress', 'dialogueProgressNext', 'dialogueComplete'];
+    var QUEST_FIELDS = ['title', 'description', 'dialogueOffer', 'dialogueProgress', 'dialogueProgressNext', 'dialogueComplete', 'abgabeHinweis'];
     var _autoDe = {};
     Object.keys(QUEST_DEFINITIONS).forEach(function (id) {
       var q = QUEST_DEFINITIONS[id];
@@ -1450,16 +1459,19 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.garde_patrol_expansion.description': 'Demonstrate force for the new patrols — defeat 10 trespassers.',
       'quest.widerstand_proof.title': "The Council Document",
       'quest.widerstand_proof.description': "Find a hidden council document in the Town Hall Cellar, a few rooms deeper.",
+      'quest.widerstand_proof.abgabeHinweis': 'Take the council document to Elara. She will find you in the cellar.',
       'quest.council_collusion_reveal.title': 'The Secret Meeting',
       'quest.council_collusion_reveal.description': 'Watch the public council session. Then eavesdrop on the secret session in the council chamber beneath the town hall.',
       'quest.mara_contact.title': 'The Scout',
       'quest.mara_contact.description': 'Scout three Council cellar rooms for Mara.',
       'quest.elara_meeting.title': "Elara's Secret",
       'quest.elara_meeting.description': 'Find 2 secret documents Elara has hidden.',
+      'quest.elara_meeting.abgabeHinweis': 'Take both documents to Elara. She will find you in the cellar.',
       'quest.branka_doubt.title': "The Smith's Doubt",
       'quest.branka_doubt.description': "Defeat 5 elite enemies to find evidence for Branka's suspicions.",
       'quest.elara_ritual.title': 'The Ritual Chamber',
       'quest.elara_ritual.description': "Descend to depth 20 and defeat the Master of Ceremonies who holds the council's ritual chamber.",
+      'quest.elara_ritual.abgabeHinweis': 'Elara is waiting for you in the cellar.',
       'quest.thom_truth.title': 'Forbidden Truths',
       'quest.thom_truth.description': "Find 5 print plates with the forbidden truths about the council (from depth 14).",
       'quest.mara_warning.title': "The Chainmaster",
@@ -1470,6 +1482,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.thom_pamphlets.description': 'Complete 3 deep runs into the cellars (from depth 22) to spread the leaflets into the lowest passages.',
       'quest.elara_blade.title': "Elara's Gift",
       'quest.elara_blade.description': "Elara has had a special blade forged for you.",
+      'quest.elara_blade.abgabeHinweis': 'Elara is waiting for you in the cellar.',
       'quest.mara_assault.title': "The Last Watch",
       'quest.mara_assault.description': "Reach wave 30. Down there Mara leads you to Aldric.",
       // Feature 062: umbenannt harren_rescue -> schattenrat_finale; final_truth
@@ -1646,6 +1659,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.resistance_fetch_01.title': "The Sealed Bundle",
       'quest.resistance_fetch_01.description': "Fetch the sealed bundle from the cellar. No one may see it, and do not open it.",
       'quest.resistance_fetch_01.dialogueOffer': "You are still standing. Good. Then you can do me a favor right away.\n\nSomewhere down here lies a bundle, sealed. Bring it to me without anyone seeing it. And do not open it. After that we talk about the council.",
+      'quest.resistance_fetch_01.abgabeHinweis': 'Take the bundle to Elara. She will find you in the cellar.',
       'quest.resistance_fetch_01.dialogueProgress': "The bundle lies somewhere down there. Look around, and leave it closed.",
       'quest.resistance_fetch_01.dialogueComplete': "You have it. And you did not open it. Good. Now I know I can trust you.\n\n(On the wax of the seal: three chains, intertwined. You have never seen this sign before.)",
 
@@ -1675,6 +1689,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
 
       'quest.elara_second_truth.title': "Elara's Second Truth",
       'quest.elara_second_truth.description': "Elara shows you who you are doing the last thing for.",
+      'quest.elara_second_truth.abgabeHinweis': 'Elara is waiting for you in the cellar.',
       'quest.elara_second_truth.dialogueOffer': "Before you do the last thing, you should know for whom. Come, just the two of us.",
       'quest.elara_second_truth.dialogueProgress': "Elara is waiting for you. Just the two of you.",
       'quest.elara_second_truth.dialogueComplete': "She tucked the report away. A true report, and no one will ever read it. \"Not everything helps,\" she said. You push the thought aside. For now.",
@@ -1969,6 +1984,19 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     var def = (typeof questOrId === 'string') ? QUEST_DEFINITIONS[questOrId]
       : (questOrId && QUEST_DEFINITIONS[questOrId.id]) || questOrId;
     return (def && (def.turnInNpcId || def.npcId)) || null;
+  }
+
+  /**
+   * Wo ein fertiger Auftrag abgegeben wird, wenn nicht im Hub. Elaras
+   * Auftraege nimmt sie unten im Keller ab — sie kommt nicht in die Stadt.
+   * Ohne den Hinweis stand der Auftrag fertig im Journal, und keiner im Hub
+   * nahm ihn ab. Leer, solange er nicht fertig ist oder oben abgegeben wird.
+   */
+  function getAbgabeHinweis(questOrId) {
+    var id = (typeof questOrId === 'string') ? questOrId : (questOrId && questOrId.id);
+    var def = id && QUEST_DEFINITIONS[id];
+    if (!def || !def.abgabeHinweis || !isQuestReadyToComplete(id)) return '';
+    return getQuestField(def, 'abgabeHinweis');
   }
 
   /**
@@ -2688,6 +2716,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       var msg = (window.i18n && typeof window.i18n.t === 'function')
         ? window.i18n.t('quest.toast.completed', { title: title })
         : ('Quest-Ziel erfüllt: ' + title);
+      var hinweis = getAbgabeHinweis(def.id);
+      if (hinweis) msg += '\n' + hinweis;
       // #197: waehrend einer Spionage-Mission wird der Text zur
       // letzten Seite der Abhoer-Szene statt eines Toasts.
       if (window.SpionageSzenen && typeof window.SpionageSzenen.zielToast === 'function'
@@ -2903,6 +2933,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     active.forEach(function (q) {
       var fullTitle = getQuestField(q, 'title');
       var shortName = fullTitle.length > 16 ? fullTitle.substring(0, 14) + suffix : fullTitle;
+      var hinweis = getAbgabeHinweis(q);
+      if (hinweis) { lines.push(shortName + ': ' + hinweis); return; }
       q.objectives.forEach(function (obj) {
         if (window.i18n) {
           lines.push(window.i18n.t('quest.tracker.progress', {
@@ -2925,6 +2957,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     istStoryAuftrag: istStoryAuftrag,
     getEntfalleneQuests: getEntfalleneQuests,
     abgabeNpc: abgabeNpc,
+    getAbgabeHinweis: getAbgabeHinweis,
     getCompletedQuests: getCompletedQuests,
     acceptQuest: acceptQuest,
     updateQuestProgress: updateQuestProgress,
