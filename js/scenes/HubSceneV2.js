@@ -2277,7 +2277,9 @@ class HubSceneV2 extends Phaser.Scene {
         const keyName = 'keydown-' + (idx + 1);
         // Use the `keydown` event with a code check for number keys
         const numHandler = (event) => {
-          if (event.code === 'Digit' + (idx + 1)) {
+          if (event.code === 'Digit' + (idx + 1) && !event.repeat) {
+            // Eine Zifferntaste waehlt nie blind: erst den Text zu Ende zeigen.
+            if (this._dialogTextUeberspringen()) return;
             this._handleDialogueChoice(choice.action, npcData, titleStr, pages, questMode, questData, pageIndex, keyClosers);
           }
         };
@@ -2396,14 +2398,20 @@ class HubSceneV2 extends Phaser.Scene {
     const closeDialog = () => this._closeDialog(keyClosers);
 
     this.time.delayedCall(0, () => {
-      // ESC always closes
-      const escHandler = () => closeDialog();
+      // ESC schliesst — aber wie Leertaste und Enter erst, wenn der Text
+      // ganz dasteht. Vorher verschluckte ESC den halb geschriebenen Satz.
+      // Eine gehaltene Taste wiederholt sich (fuer Enter und ESC hat der Hub
+      // keine Key-Objekte, die Phaser die Wiederholung filtern liessen): sie
+      // darf weder den Text ueberspringen UND gleich schliessen noch durch alle
+      // Seiten blaettern.
+      const escHandler = (ev) => { if (ev && ev.repeat) return; if (!this._dialogTextUeberspringen()) closeDialog(); };
       this.input.keyboard.on('keydown-ESC', escHandler);
       keyClosers.push({ eventName: 'keydown-ESC', handler: escHandler });
 
       if (hasNextPage && !hasChoices) {
         // Space/Enter/E advance to next page
-        const advanceHandler = () => {
+        const advanceHandler = (ev) => {
+          if (ev && ev.repeat) return;
           // #139: Der erste Druck holt den Text zu Ende, der zweite blaettert.
           // Ohne das waere ein Aufbau eine Bevormundung — man muesste warten.
           if (this._dialogTextUeberspringen()) return;
@@ -2419,7 +2427,7 @@ class HubSceneV2 extends Phaser.Scene {
       } else if (!hasChoices) {
         // Last page without choices — close on space/enter/E
         // #139: erst den Text zu Ende holen, dann schliessen.
-        const closeHandler = () => { if (!this._dialogTextUeberspringen()) closeDialog(); };
+        const closeHandler = (ev) => { if (ev && ev.repeat) return; if (!this._dialogTextUeberspringen()) closeDialog(); };
         this.input.keyboard.on('keydown-SPACE', closeHandler);
         keyClosers.push({ eventName: 'keydown-SPACE', handler: closeHandler });
         this.input.keyboard.on('keydown-ENTER', closeHandler);
@@ -2433,7 +2441,8 @@ class HubSceneV2 extends Phaser.Scene {
           page.choices.find(c => c.action === 'accept' || c.action === 'complete')
           || page.choices[0];
         if (primaryChoice) {
-          const primaryHandler = () => {
+          const primaryHandler = (ev) => {
+            if (ev && ev.repeat) return;
             // #139: erst zu Ende lesen lassen, dann bestaetigen. Die Knoepfe
             // selbst wirken sofort — wer gezielt klickt, hat sich entschieden.
             if (this._dialogTextUeberspringen()) return;
@@ -2608,12 +2617,17 @@ class HubSceneV2 extends Phaser.Scene {
         this._closeDialog(keyClosers);
         const self = this;
         const abschluss = function () {
+          self._dialogOpen = false;
           if (qs && typeof qs.completeQuest === 'function') {
             try { qs.completeQuest('elara_second_truth'); } catch (_) {}
           }
           self._refreshQuestIndicators();
         };
         if (window.storyScenes && typeof window.storyScenes.playElaraFirstCrack === 'function') {
+          // Solange die Szene laeuft, gilt der Hub als "im Dialog" — wie bei
+          // der oeffentlichen Sitzung. Sonst oeffnete E, gedrueckt um Elaras
+          // Satz zu Ende zu sehen, das Gespraech mit ihr ueber der Szene.
+          this._dialogOpen = true;
           try { window.storyScenes.playElaraFirstCrack(this, abschluss); }
           catch (_) { abschluss(); }
         } else {

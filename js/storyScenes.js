@@ -69,14 +69,25 @@
     }
     var lauf = TW.anTextobjekt(scene, text, voll, { sprecher: sprecher, onFertig: fertig });
 
-    // Klicken ueberspringt den Aufbau — dieselbe Geste wie im Hub.
+    // Klicken ueberspringt den Aufbau — dieselbe Geste wie im Hub. Eine Taste
+    // ebenso: vorher tat sie waehrend des Aufbaus gar nichts, und wer wie in
+    // jedem anderen Dialog drueckte, um den Satz zu Ende zu sehen, wartete.
     if (scene.input && typeof scene.input.on === 'function') {
       var beiKlick = function () { lauf.ueberspringen(); };
+      var beiTaste = function (ev) {
+        if (ev && ev.repeat) return;
+        lauf.ueberspringen();
+      };
       scene.input.on('pointerdown', beiKlick);
+      var kb = scene.input.keyboard;
+      if (kb && typeof kb.on === 'function') kb.on('keydown', beiTaste);
       // Loesbar, BEVOR der Weiter-Halt bindet: sonst wuerde ein einziger
       // Klick beides ausloesen — ueberspringen und gleich weiterschalten.
+      // (Der Halt bindet im selben Tastendruck, der hier ueberspringt; Phaser
+      // ruft dabei nur die Hoerer, die vor dem Druck schon standen.)
       lauf.skipLoesen = function () {
         try { scene.input.off('pointerdown', beiKlick); } catch (e) {}
+        try { if (kb && typeof kb.off === 'function') kb.off('keydown', beiTaste); } catch (e) {}
         lauf.skipLoesen = function () {};
       };
       var altAbbrechen = lauf.abbrechen;
@@ -363,7 +374,7 @@
       mitE = null;
     };
     var vorher = scene.children ? scene.children.list.slice() : [];
-    ES.showEventChoiceDialog(scene, text, [{ label: _t('Weiter', 'Continue'), callback: function () {
+    var dialog = ES.showEventChoiceDialog(scene, text, [{ label: _t('Weiter', 'Continue'), callback: function () {
       tasteLoesen();
       weiter();
     } }]);
@@ -375,6 +386,9 @@
         if (ev && ev.repeat) return;
         // Dasselbe E darf nicht zusaetzlich die Faehigkeit auf Slot 3 ausloesen.
         try { window.__eventConsumedEAt = Date.now(); window.__eventConsumedE = true; } catch (e) {}
+        // Wie Leertaste und Enter: steht der Satz noch nicht ganz da, zeigt E
+        // ihn erst zu Ende. Vorher blaetterte E mitten im Aufbau weiter.
+        if (dialog && typeof dialog.ueberspringen === 'function' && dialog.ueberspringen()) return;
         knopf.emit('pointerdown');
       };
       scene.input.keyboard.on('keydown-E', mitE);

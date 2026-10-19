@@ -209,6 +209,12 @@
     function beiTaste(ev) {
       if (!offen || !ev || ev.repeat || Date.now() < bereitAb) return;
       var k = ev.key;
+      // Steht der Text noch nicht ganz da, zeigt jede Taste dieses Dialogs
+      // ihn erst zu Ende — auch die Ziffern: eine Entscheidung trifft man
+      // nicht ueber einen halben Satz hinweg.
+      var zifferTaste = wahlen.length > 1 && parseInt(k, 10) >= 1 && parseInt(k, 10) <= wahlen.length;
+      var weiterTaste = k === 'Escape' || k === ' ' || k === 'Enter' || ev.keyCode === 27 || ev.keyCode === 32 || ev.keyCode === 13;
+      if ((zifferTaste || weiterTaste) && aufbau && aufbau.ueberspringen()) return;
       if (wahlen.length > 1) {
         var n = parseInt(k, 10);
         if (n >= 1 && n <= wahlen.length) waehle(n - 1);

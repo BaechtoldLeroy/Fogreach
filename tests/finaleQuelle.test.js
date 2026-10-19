@@ -434,7 +434,10 @@ test('Der Konvoi: wer die Klinge zieht, verbrennt Maras Netz (#84)', async () =>
     'Mara hilft trotz verbranntem Netz');
   assert.ok(d && /Maras Netz/.test(d.text) && d.wahlen.length === 1, 'keine Folge-Seite: ' + JSON.stringify(d));
   // Die Folge-Seite schliesst mit der Leertaste, wie jeder Ein-Knopf-Dialog.
-  assert.strictEqual(await konvoiTaste(' '), null, 'die Leertaste schliesst die Folge-Seite nicht');
+  // Steht ihr Satz noch nicht ganz da, zeigt der erste Druck ihn zu Ende
+  // (b470, tests/dialogTasteVollText.test.js); spaetestens der zweite schliesst.
+  const nachErstem = await konvoiTaste(' ');
+  if (nachErstem) assert.strictEqual(await konvoiTaste(' '), null, 'die Leertaste schliesst die Folge-Seite nicht');
   assert.strictEqual(H.run('!!window.eventChoiceOpen'), false);
 });
 

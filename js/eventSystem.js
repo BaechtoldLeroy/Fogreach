@@ -965,6 +965,11 @@
     // E key handler
     var interactHandler = function () {
       if (used || !obj.active || typeof player === 'undefined' || !player) return;
+      // Steht schon ein Dialog offen, gehoert E nicht der Figur. Sonst oeffnete
+      // dasselbe E nach Elaras Rettung ihr Angebot UEBER den laufenden
+      // Rettungsdialog: dessen Text war weg, und der naechste Tastendruck
+      // bestaetigte den verdeckten Dialog darunter.
+      if (_dialogOffen()) return;
       var dx = obj.x - player.x;
       var dy = obj.y - player.y;
       if (Math.sqrt(dx * dx + dy * dy) > 80) return;
@@ -2141,6 +2146,7 @@
       // E key to interact
       interactHandler = function() {
         if (!inRange || !merchant || !merchant.active) return;
+        if (_dialogOffen()) return;   // kein Laden ueber einem offenen Dialog
         if (typeof window.openShopScene === 'function') {
           // Pass dungeon merchant flag for cheaper prices, no reroll tab
           window._dungeonMerchant = true;
@@ -2735,6 +2741,14 @@
     }
   }
 
+  /**
+   * Ist gerade ein modaler Ereignis-/Story-Dialog offen? Dieselbe globale
+   * Marke, an der InputScheme die Kampfeingaben sperrt.
+   */
+  function _dialogOffen() {
+    return !!window.eventChoiceOpen;
+  }
+
   // --- Choice dialog overlay (032-random-event-rework) ---
   // Wie viele Wahlen der Dialog hoechstens zeigt. Wer mehr uebergibt, verliert
   // die hinteren — und das ist genau einmal passiert (siehe unten).
@@ -2889,7 +2903,10 @@
     // ueberspringt die Taste nur den Aufbau und waehlt nie etwas.
     if (scene.input && scene.input.keyboard) {
       var onlyChoice = (choices.length === 1) ? choices[0] : null;
-      dismissKeyHandler = function () {
+      dismissKeyHandler = function (ev) {
+        // Gehaltene Taste: nicht ueberspringen UND gleich bestaetigen. (Die
+        // Spielszene filtert das ueber ihre Key-Objekte schon, der Hub nicht.)
+        if (ev && ev.repeat) return;
         if (_aufbau && typeof _aufbau.ueberspringen === 'function' && _aufbau.ueberspringen()) return;
         if (!onlyChoice) return;
         cleanup(); // hängt die Tasten selbst wieder ab
@@ -2899,6 +2916,13 @@
       scene.input.keyboard.on('keydown-SPACE', dismissKeyHandler);
       scene.input.keyboard.on('keydown-ENTER', dismissKeyHandler);
     }
+
+    // Fuer Aufrufer, die eine weitere Taste anbinden (die geheime Sitzung
+    // nimmt E dazu): dieselbe Regel, erst der ganze Text, dann weiter.
+    return {
+      laeuft: function () { return !!(_aufbau && _aufbau.laeuft()); },
+      ueberspringen: function () { return !!(_aufbau && _aufbau.ueberspringen()); }
+    };
   }
 
   function registerEventType(def) {

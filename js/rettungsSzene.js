@@ -563,7 +563,20 @@
     // eine der drei Spuren und soll niemandem verloren gehen.
     function ueberspringen() {
       if (beendet || ausklangLaeuft) return;
-      if (zustand.phase === 'rede') { ausklang(); return; }
+      if (zustand.phase === 'rede') {
+        // Auch auf der Rede gilt: ihre Zeile geht nicht verloren. Steht sie
+        // noch nicht ganz da, holt ESC sie erst zu Ende, das naechste beendet.
+        // Vorher schnitt ESC den Satz mitten im Aufbau ab.
+        if (rede && rede.text !== _t('rettung.zeile')) {
+          try { if (zustand.lauf) zustand.lauf.ueberspringen(); } catch (e) {}
+          rede.setText(_t('rettung.zeile'));
+          bereitAb = Date.now() + frist(EINGABE_AB);
+          return;
+        }
+        if (Date.now() < bereitAb) return;   // wie weiter(): kurz stehen lassen
+        ausklang();
+        return;
+      }
       notiere('uebersprungen');
       uhren.forEach(function (u) { try { clearTimeout(u); } catch (e) {} });
       uhren.length = 0;
