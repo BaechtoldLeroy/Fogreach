@@ -512,6 +512,9 @@
       var bx = boss.x, by = boss.y;
       boss.setPosition(e.x, e.y);
       if (boss.body && boss.body.reset) boss.body.reset(e.x, e.y);
+      // Das Echo ist klein, der Nachhall nicht: auf dem Platz des Echos ragte
+      // sein Koerper gemessen in 3 von 4 Taeuschen in Wand oder Hindernis.
+      if (typeof window.bossFreiStellen === 'function') window.bossFreiStellen(scene, boss, { x: e.x, y: e.y }, 0);
       if (e.active) {
         e.setPosition(bx, by);
         if (e.body && e.body.reset) e.body.reset(bx, by);

@@ -235,7 +235,161 @@
     return p;
   }
 
+  // ---------------------------------------------------------------------
+  // Grosse Koerper (Bosse)
+  // ---------------------------------------------------------------------
+  //
+  // "Der Kettenmeister stand in der rechten Wand, unerreichbar." spawnBoss
+  // setzte den Boss auf Spieler + Zufallsversatz und pruefte nur die
+  // Weltgrenze. Gemessen ueber 3 Laeufe x alle Raeume: der Koerper ueberlappte
+  // beim Spawn in 60 % (Kettenmeister) bis 90 % (Elara) der Faelle eine Wand
+  // oder ein Hindernis, bis 96 px tief. Arcade trennt so tiefe Ueberlappungen
+  // nicht mehr, der Boss blieb stecken.
+
+  /**
+   * Platz fuer einen grossen Koerper: der GANZE Koerper (plus `rand`) liegt
+   * frei in der Welt, seine Mitte auf einem erreichbaren Kandidaten.
+   * Reine Funktion, ohne Zufall.
+   *
+   *  1. Nur Kandidaten, auf denen der Koerper mit `rand` Luft frei steht
+   *     (mit weniger Luft, wenn es mit keinem geht).
+   *  2. Davon die mit `mindest` px Abstand zum Spieler — sonst der entfernteste.
+   *  3. Unter ihnen der dem Wunschplatz naechste.
+   *  4. Passt der Koerper nirgends ganz, der Kandidat mit der geringsten
+   *     Ueberlappung. Erreichbar geht vor frei: ein freier Platz hinter der
+   *     Wand macht den Kampf unmoeglich.
+   *
+   * @param {Array<{x:number,y:number}>} kandidaten erreichbare Punkte (Koerpermitte)
+   * @param {{dx:number,dy:number,w:number,h:number}} masse Koerper relativ zur Position
+   * @param {Array<{x,y,w,h}>} feste Waende und Hindernisse
+   * @param {{welt?:{x,y,w,h}, rand?:number, wunsch?:{x,y}, spieler?:{x,y}, mindest?:number}} [opts]
+   * @returns {{x:number,y:number}|null} Position der Figur (nicht der Koerpermitte)
+   */
+  function grosserKoerperPlatz(kandidaten, masse, feste, opts) {
+    var o = opts || {};
+    var m = masse || KOERPER_ERSATZ;
+    var welt = o.welt;
+    var spieler = o.spieler || null;
+    var mindest = (typeof o.mindest === 'number') ? o.mindest : 0;
+    var ziel = o.wunsch || spieler;
+    var rand0 = (typeof o.rand === 'number') ? o.rand : 12;
+    var raender = [rand0, Math.min(rand0, 4), 0];
+    var naheWand = festeNachbarn(feste);
+
+    // Erst ordnen, dann der Reihe nach pruefen: der erste freie gewinnt.
+    // (Alle Kandidaten gegen alle Waende zu pruefen dauerte in Hoehlenraeumen
+    // mit tausenden Zellen ueber zwei Minuten.)
+    var weit = [], nah = [];
+    (kandidaten || []).forEach(function (k) {
+      if (!k || !isFinite(k.x) || !isFinite(k.y)) return;
+      var f = { mitte: k, pos: { x: k.x - m.dx - m.w / 2, y: k.y - m.dy - m.h / 2 } };
+      if (!spieler || abstand(k, spieler) >= mindest) {
+        f.rang = ziel ? abstand(f.pos, ziel) : 0;
+        weit.push(f);
+      } else {
+        f.rang = -abstand(k, spieler);   // zu nah: der entfernteste zuerst
+        nah.push(f);
+      }
+    });
+    var nachRang = function (a, b) { return a.rang - b.rang; };
+    var reihe = weit.sort(nachRang).concat(nah.sort(nachRang));
+    var rechteck = function (k, rand) {
+      return { x: k.x - m.w / 2 - rand, y: k.y - m.h / 2 - rand, w: m.w + 2 * rand, h: m.h + 2 * rand };
+    };
+    var inWelt = function (r) {
+      return !welt || (r.x >= welt.x && r.y >= welt.y && r.x + r.w <= welt.x + welt.w && r.y + r.h <= welt.y + welt.h);
+    };
+    for (var ri = 0; ri < raender.length; ri++) {
+      for (var i = 0; i < reihe.length; i++) {
+        var r = rechteck(reihe[i].mitte, raender[ri]);
+        if (inWelt(r) && eindringtiefe(r, naheWand(r)) <= 0) return reihe[i].pos;
+      }
+    }
+    var knapp = null, knappTief = Infinity;
+    reihe.forEach(function (f) {
+      var r = rechteck(f.mitte, 0);
+      if (!inWelt(r)) return;
+      var t = eindringtiefe(r, naheWand(r));
+      if (t < knappTief) { knappTief = t; knapp = f; }
+    });
+    return knapp ? knapp.pos : null;
+  }
+
+  /** Raster ueber die festen Rechtecke: liefert nur die, die `r` beruehren koennten. */
+  function festeNachbarn(feste) {
+    var Z = 64, fach = {};
+    (feste || []).forEach(function (f) {
+      if (!f) return;
+      for (var gx = Math.floor(f.x / Z); gx <= Math.floor((f.x + f.w) / Z); gx++) {
+        for (var gy = Math.floor(f.y / Z); gy <= Math.floor((f.y + f.h) / Z); gy++) {
+          (fach[gx + '|' + gy] || (fach[gx + '|' + gy] = [])).push(f);
+        }
+      }
+    });
+    return function (r) {
+      var raus = [];
+      for (var gx = Math.floor(r.x / Z); gx <= Math.floor((r.x + r.w) / Z); gx++) {
+        for (var gy = Math.floor(r.y / Z); gy <= Math.floor((r.y + r.h) / Z); gy++) {
+          var l = fach[gx + '|' + gy];
+          if (l) for (var i = 0; i < l.length; i++) raus.push(l[i]);
+        }
+      }
+      return raus;
+    };
+  }
+
+  /**
+   * Stellt einen grossen Koerper (Boss) auf einen freien, erreichbaren Platz,
+   * moeglichst nah am Wunschplatz. Kandidaten sind die erreichbaren Zellen
+   * des Raums (scene._accessibleArea). Ohne Kandidaten der naechste freie
+   * Punkt um die Weltmitte.
+   * @param {object} scene
+   * @param {object} sprite   Figur mit Arcade-Koerper (Groesse schon gesetzt)
+   * @param {Array} feste     Rechtecke der festen Koerper
+   * @param {{wunsch?:{x,y}, mindest?:number, rand?:number}} [opts]
+   * @returns {{x:number,y:number}|null} neuer Platz
+   */
+  function grossFreiStellen(scene, sprite, feste, opts) {
+    var o = opts || {};
+    if (!sprite || !sprite.body) return null;
+    var masse = koerperMasse(sprite);
+    var wb = scene && scene.physics && scene.physics.world && scene.physics.world.bounds;
+    var welt = wb ? { x: wb.x, y: wb.y, w: wb.width, h: wb.height } : null;
+    var a = scene && scene._accessibleArea;
+    var zellen = (a && a.reachableCells && a.reachableCells.length) ? a.reachableCells
+      : (a && a.fallbackCandidates) || [];
+    // Die Koerpermitte darf irgendwo in der erreichbaren Zelle liegen, nicht
+    // nur auf ihrer Mitte: in engen Raeumen passt ein grosser Boss sonst um
+    // wenige Pixel nirgends hin.
+    var VERSATZ = [0, -12, 12, -6, 6];
+    var kandidaten = [];
+    zellen.forEach(function (c) {
+      VERSATZ.forEach(function (vx) {
+        VERSATZ.forEach(function (vy) { kandidaten.push({ x: c.x + vx, y: c.y + vy }); });
+      });
+    });
+    var sp = (typeof player !== 'undefined' && player && player.body)
+      ? { x: player.body.x + player.body.width / 2, y: player.body.y + player.body.height / 2 } : null;
+    var p = grosserKoerperPlatz(kandidaten, masse, feste, {
+      welt: welt, rand: o.rand, wunsch: o.wunsch || { x: sprite.x, y: sprite.y },
+      spieler: sp, mindest: o.mindest || 0
+    });
+    if (!p && welt && !kandidaten.length) {
+      p = naechsterFreierPunkt(welt.x + welt.w / 2, welt.y + welt.h / 2, function (x, y) {
+        var r = koerperBei(x, y, masse);
+        if (r.x < welt.x || r.y < welt.y || r.x + r.w > welt.x + welt.w || r.y + r.h > welt.y + welt.h) return false;
+        return eindringtiefe(r, feste) <= 0;
+      }, { schritt: 16, maxRadius: Math.max(welt.w, welt.h) });
+    }
+    if (!p) return null;
+    sprite.setPosition(p.x, p.y);
+    if (typeof sprite.body.reset === 'function') sprite.body.reset(p.x, p.y);
+    return p;
+  }
+
   var api = {
+    grosserKoerperPlatz: grosserKoerperPlatz,
+    grossFreiStellen: grossFreiStellen,
     mindestAbstand: mindestAbstand,
     waehleGegnerPlatz: waehleGegnerPlatz,
     koerperBei: koerperBei,

@@ -3697,6 +3697,10 @@ function spawnBoss() {
   }
 
   makeBoss.call(this, boss, def, cycle);
+  // Erst jetzt steht die Koerpergroesse fest. Der Zufallsplatz oben ist nur
+  // der Wunsch: der ganze Koerper muss frei und erreichbar stehen, sonst
+  // steckt der Boss in der Wand (spawnRegeln.js, grossFreiStellen).
+  _bossFreiStellen(this, boss, { x: x, y: y }, 160);
 
   // #77: Bei der inszenierten Erstbegegnung KEIN Blitz und kein Ruckeln —
   // beides zerschlaegt genau den ruhigen Moment, den der Beat herstellt.
@@ -3748,6 +3752,16 @@ function spawnBoss() {
   // (wave.js -> window.__climaxEnemy) und damit die Treppe zu sperren.
   return boss;
 }
+
+/** Boss auf einen freien Platz nahe `wunsch` stellen (ganzer Koerper frei). */
+function _bossFreiStellen(scene, boss, wunsch, mindest) {
+  try {
+    var SR = (typeof window !== 'undefined') ? window.SpawnRegeln : null;
+    if (!SR || typeof SR.grossFreiStellen !== 'function' || typeof obstacles === 'undefined') return null;
+    return SR.grossFreiStellen(scene, boss, SR.festeRechtecke([obstacles]), { wunsch: wunsch, mindest: mindest || 0 });
+  } catch (e) { return null; }
+}
+if (typeof window !== 'undefined') window.bossFreiStellen = _bossFreiStellen;
 
 // Wenn die fuehrende Quest aktiv ist, liest die Kettenmeister-Intro nicht die
 // generische Lore, sondern knuepft an Maras Warnung an — so ist die (durch die
@@ -4488,6 +4502,10 @@ function bossShadowDash(boss) {
     }
 
     boss.setPosition(newX, newY);
+    // Der Zielpunkt prueft nur die Weltgrenze; Elaras Koerper (161x283) stand
+    // danach gemessen in 9 von 10 Spruengen in Wand oder Hindernis.
+    const frei = _bossFreiStellen(scene, boss, { x: newX, y: newY }, 0);
+    if (frei) { newX = frei.x; newY = frei.y; }
     boss.setAlpha(1);
 
     const burstG = scene.add.graphics().setDepth(1001);

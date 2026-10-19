@@ -408,8 +408,15 @@ describe('Debug-Weg: Boss per ?boss= beim Betreten des Raums', () => {
       sc.cameras.main.centerOn(player.x, player.y);
       window.__between = Phaser.Math.Between;
       Phaser.Math.Between = function (a) { return a < 0 ? -40 : 0; };
+      // Der Platz bleibt, wo der Wunsch ihn hinlegt (oben an der Wand): seit
+      // b474 schiebt grossFreiStellen den Boss sonst von der Wand weg, und
+      // genau diesen Fall soll die Kamera hier zeigen.
+      window.__freiStellen = window.SpawnRegeln.grossFreiStellen;
+      window.SpawnRegeln.grossFreiStellen = function () { return null; };
     })()`);
-    try { H.lab.spawnBoss(); } finally { H.run('Phaser.Math.Between = window.__between'); }
+    try { H.lab.spawnBoss(); } finally {
+      H.run('Phaser.Math.Between = window.__between; window.SpawnRegeln.grossFreiStellen = window.__freiStellen');
+    }
     bisRede(H);
     const r = JSON.parse(H.run(`(function () {
       var sc = ${SC}, kam = sc.cameras.main;
