@@ -45,7 +45,7 @@
       // Der Text steht deshalb hier — je Rang formuliert, weil die Wirkung
       // mit dem Rang waechst.
       'skilltree.passive.combat_poison_blade': '10 % Chance je Rang, einen Gegner zu vergiften.',
-      'skilltree.passive.combat_lethal_thrust': '+10 % Kritchance je Rang waehrend des Stosses.',
+      'skilltree.passive.combat_lethal_thrust': '+10 % Kritchance je Rang für Hammer der Ahnen und Wirbelwind.',
       'skilltree.passive.combat_chain_lightning': 'Der Wirbel springt je Rang auf einen weiteren Gegner ueber.',
       'skilltree.passive.mobility_wind_gust': 'Geschosse durchschlagen je Rang einen Gegner mehr.',
       'skilltree.passive.survival_thorn_armor': 'Reflektiert 1,5 % der max-LP des Angreifers je Rang.',
@@ -97,7 +97,7 @@
       'skilltree.toast.locked': 'Node locked',
       'skilltree.toast.maxed': 'Maximum rank reached',
       'skilltree.passive.combat_poison_blade': '10% chance per rank to poison an enemy.',
-      'skilltree.passive.combat_lethal_thrust': '+10% crit chance per rank during the thrust.',
+      'skilltree.passive.combat_lethal_thrust': '+10% crit chance per rank for Hammer of the Ancestors and Whirlwind.',
       'skilltree.passive.combat_chain_lightning': 'The spin chains to one more enemy per rank.',
       'skilltree.passive.mobility_wind_gust': 'Projectiles pierce one more enemy per rank.',
       'skilltree.passive.survival_thorn_armor': 'Reflects 1.5% of the attacker max HP per rank.',

@@ -1044,7 +1044,14 @@ function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack', 
     return { damage: 0, isCrit: false, shieldBlocked: true };
   }
 
-  const critChance = Phaser.Math.Clamp(playerCritChance || 0, 0, 0.95);
+  // Schwachstelle (combat_lethal_thrust): +10 % Kritchance je Rang fuer den
+  // Hammer der Ahnen und den Wirbelwind. Frueher nur der Hammer, und das ueber
+  // ein voruebergehendes Umschreiben von playerCritChance im Hammer selbst.
+  let _schwachBonus = 0;
+  if ((abilityKey === 'hammer' || abilityKey === 'whirlwind') && typeof window.skillRang === 'function') {
+    _schwachBonus = 0.10 * (window.skillRang('combat_lethal_thrust') || 0);
+  }
+  const critChance = Phaser.Math.Clamp((playerCritChance || 0) + _schwachBonus, 0, 0.95);
   const isCrit = Math.random() < critChance;
   const bonus = getAbilityBonus(abilityKey);
   const damageMult = 1 + (bonus.damage || 0);
@@ -2893,15 +2900,7 @@ function releaseChargedSlash(forceMaxCharge = false) {
   if (_hammerGlimmen) { _hammerGlimmen.ende(); _hammerGlimmen = null; }
   _spezialZeigen(scene, 'hammer', forward, SPEZIAL_DAUER.hammer, { von: SPEZIAL_HAMMER_SCHLAG });
 
-  // Tödlicher Stoß (Lethal Thrust): +25% crit chance
-  let _savedCritChance;
-  // #93: +10 % Kritchance je Rang waehrend des Stosses (war pauschal +25 %).
-  const _schwachRang = (typeof window.skillRang === 'function')
-    ? window.skillRang('combat_lethal_thrust') : 0;
-  if (_schwachRang > 0) {
-    _savedCritChance = playerCritChance;
-    playerCritChance = Math.min(1, (playerCritChance || 0) + 0.10 * _schwachRang);
-  }
+  // Schwachstelle wirkt in dealDamageToEnemy (abilityKey 'hammer').
 
   const hits = new Set();
   forEachEnemyInRange(impactDist + slamRadius, (enemy) => {
@@ -2924,10 +2923,6 @@ function releaseChargedSlash(forceMaxCharge = false) {
 
   // Props im Einschlagradius zerschlagen (Zentrum = Einschlag, NICHT Spieler).
   breakDestructiblesInRange(scene, slamRadius, { cx: ix, cy: iy });
-
-  if (_savedCritChance !== undefined) {
-    playerCritChance = _savedCritChance;
-  }
 
   isAttacking = true;
   scene.time.delayedCall(220, () => {

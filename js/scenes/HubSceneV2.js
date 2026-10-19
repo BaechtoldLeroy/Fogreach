@@ -557,6 +557,12 @@ class HubSceneV2 extends Phaser.Scene {
         if (typeof invOpen !== 'undefined' && invOpen) closeInventory(); else openInventory();
       }
     });
+    // ESC schliesst das Inventar auch im Hub (im Dungeon schon, main.js).
+    // No-Op, wenn es zu ist: dann greifen die ESC-Handler der offenen Overlays.
+    this._invEscHandler = () => {
+      if (typeof invOpen !== 'undefined' && invOpen && typeof closeInventory === 'function') closeInventory();
+    };
+    this.input.keyboard.on('keydown-ESC', this._invEscHandler);
     this.input.keyboard.on('keydown-P', () => {
       // FPS-Anzeige nur im Debug-Modus (#88).
       if (!(window.DebugGate && window.DebugGate.aktiv())) return;
@@ -681,6 +687,7 @@ class HubSceneV2 extends Phaser.Scene {
         this._mobileInteractHandler = null;
       }
       this.input.keyboard.off('keydown-I');
+      if (this._invEscHandler) { this.input.keyboard.off('keydown-ESC', this._invEscHandler); this._invEscHandler = null; }
       this.input.keyboard.off('keydown-J', this._handleJournal, this);
       this.input.keyboard.off('keydown-K', this._handleLoadout, this);
       this.input.keyboard.off('keydown-C', this._handleStats, this);
