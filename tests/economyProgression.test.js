@@ -10,8 +10,8 @@
 //
 // main.js/storage.js sind keine ladbaren IIFE-Module (sie referenzieren viele
 // freie Script-Scope-Globals), darum:
-//   - Die Level-Kurve wird über die identische zentrale Formel geprüft (die in
-//     main.js als getNeededXP lebt) — Quelle der Wahrheit unten gespiegelt.
+//   - Die Level-Kurve wird aus dem Quelltext von main.js gezogen (tests/xpKurve.js)
+//     und so geprüft, wie sie im Spiel steht.
 //   - Die Save-/Migrations-Logik wird gegen das ECHTE SkillTree-Modul über
 //     denselben Algorithmus geprüft, den applySaveToState in storage.js fährt.
 
@@ -23,14 +23,10 @@ if (!globalThis.window) require('./setup');
 loadGameModule('js/skillTree.js');
 const ST = globalThis.window.SkillTree;
 
-// ── Gespiegelte zentrale Level-Kurve (identisch zu main.js getNeededXP) ──────
-const XP_CURVE_BASE = 4;
-const XP_CURVE_SCALE = 1;
-const XP_CURVE_EXP = 1.6;
-function getNeededXP(level) {
-  const lvl = Math.max(1, Math.floor(Number(level) || 1));
-  return Math.round(XP_CURVE_BASE + XP_CURVE_SCALE * Math.pow(lvl, XP_CURVE_EXP));
-}
+// ── Die ECHTE Level-Kurve aus main.js ────────────────────────────────────────
+// Frueher hier gespiegelt — der Spiegel stand noch auf BASE 4 / EXP 1.6, als
+// main.js laengst 15 / 2.5 / 1.8 hatte, und prüfte damit nichts mehr.
+const { getNeededXP } = require('./xpKurve');
 // Alte, ~lineare Kurve (Referenz für "steiler als vorher").
 const oldNeededXP = (level) => 2 * level;
 
@@ -60,10 +56,10 @@ beforeEach(() => { ST._configureForTest({}); });
 // ───────────────────────────────── Level-Kurve ──────────────────────────────
 
 test('Level-Kurve: erwartete Beispiel-Schwellen (L1/5/10/20)', () => {
-  assert.strictEqual(getNeededXP(1), 5);
-  assert.strictEqual(getNeededXP(5), 17);
-  assert.strictEqual(getNeededXP(10), 44);
-  assert.strictEqual(getNeededXP(20), 125);
+  assert.strictEqual(getNeededXP(1), 63);
+  assert.strictEqual(getNeededXP(5), 105);
+  assert.strictEqual(getNeededXP(10), 218);
+  assert.strictEqual(getNeededXP(20), 609);
 });
 
 test('Level-Kurve: streng monoton steigend über L1..50', () => {

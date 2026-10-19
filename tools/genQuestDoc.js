@@ -34,7 +34,8 @@ function rew(r, q) {
   if (!r) return '–';
   const p = [];
   const anteil = window.questSystem.LOHN_ANTEIL[q && q.rewardTier];
-  if (r.xp || anteil) p.push('mind. ' + (r.xp || 0) + ' XP' + (anteil ? ' (bzw. ' + Math.round(anteil * 100) + ' % des Stufenbedarfs, ' + GEWICHT[q.rewardTier] + ')' : ''));
+  if (q && q.rewardTier === 'einfuehrung') { if (r.xp) p.push(r.xp + ' XP (fest, Einführung — wächst nicht mit dem Stufenbedarf)'); }
+  else if (r.xp || anteil) p.push('mind. ' + (r.xp || 0) + ' XP' + (anteil ? ' (bzw. ' + Math.round(anteil * 100) + ' % des Stufenbedarfs, ' + GEWICHT[q.rewardTier] + ')' : ''));
   if (r.gold) p.push('mind. ' + r.gold + ' Gold (wächst mit der Tiefe ab ' + ((q && q.minDepth) || 1) + ')');
   if (r.materials) Object.entries(r.materials).forEach(([k, v]) => p.push(v + ' ' + k));
   if (r.druckblaetter) p.push(r.druckblaetter + ' Druckblätter');

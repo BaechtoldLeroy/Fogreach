@@ -482,10 +482,21 @@ let playerCritChance = 0;
 //
 // XP pro Kill = 1 (player.js addXP.call ohne Argument); zusätzlich geben Raum-
 // Clear + gelöste Spezialräume XP (roomManager). Der ANFANG soll sich langsamer
-// anfühlen -> höherer Sockel (BASE 6 -> 15). Der flache Sockel hebt v. a. die
-// frühen Level (später dominiert ohnehin der Potenz-Term).
-// Beispiel-Schwellen: L1 = 18, L2 = 24, L3 = 32, L5 = 60, L10 = 173, L20 = 564.
-const XP_CURVE_BASE = 15;    // konstanter Sockel (war 6) -> langsamerer Start
+// anfühlen -> höherer Sockel. Der flache Sockel hebt v. a. die frühen Level
+// (später dominiert ohnehin der Potenz-Term).
+//
+// BASE 15 -> 60: Mit 15 stand man nach dem ersten Lauf samt Questlohn schon
+// auf Stufe 7-8. Gemessen (headless, Tiefe 1, 9 volle Läufe, jeder Raum
+// geräumt, Ereignisse an, Fragmente aufgehoben): ein erster Lauf bringt 99 /
+// 130 / 167 XP (min / Mittel / max). Dazu Aldrics zwei Aufträge (30 + 40)
+// und die fünf danach offenen Einführungen (je fest 10, questSystem) — mit
+// BASE 60 landet jeder dieser Läufe auf Stufe 4 (das Mittel mitten in der
+// Leiste), mit 50 rutscht der beste schon auf 5, mit 70 der schwächste auf 3.
+// Alte Spielstände behalten Stufe und XP: die Schwellen steigen nur, also
+// liegt kein gespeicherter Stand über seinem neuen Bedarf.
+// Beispiel-Schwellen: L1 = 63, L2 = 69, L3 = 78, L5 = 105, L10 = 218, L20 = 609
+// (vorher 18 / 24 / 33 / 60 / 173 / 564; Summe bis L20 4793 statt 3938).
+const XP_CURVE_BASE = 60;    // konstanter Sockel (war 15, davor 6) -> langsamerer Start
 const XP_CURVE_SCALE = 2.5;  // Multiplikator auf den Potenz-Term
 const XP_CURVE_EXP = 1.8;    // >1 ⇒ progressiv steiler pro Level
 

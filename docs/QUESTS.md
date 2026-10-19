@@ -160,7 +160,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 - **Ziel:** `system` → `upgrade` ×1
 - **Vorbedingung:** Säuberung der Keller
-- **Belohnung:** mind. 40 XP (bzw. 40 % des Stufenbedarfs, Neben) · 8 MAT
+- **Belohnung:** 10 XP (fest, Einführung — wächst nicht mit dem Stufenbedarf) · 8 MAT
 
 **Angebot**
 
@@ -187,7 +187,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 - **Ziel:** `system` → `edikt` ×1
 - **Vorbedingung:** Säuberung der Keller
-- **Belohnung:** mind. 40 XP (bzw. 40 % des Stufenbedarfs, Neben) · 2 Druckblätter
+- **Belohnung:** 10 XP (fest, Einführung — wächst nicht mit dem Stufenbedarf) · 2 Druckblätter
 
 **Angebot**
 
@@ -214,7 +214,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 - **Ziel:** `system` → `markt` ×1
 - **Vorbedingung:** Säuberung der Keller (dazu eine Bedingung im Code, `gate`)
-- **Belohnung:** mind. 40 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 30 Gold (wächst mit der Tiefe ab 1)
+- **Belohnung:** 10 XP (fest, Einführung — wächst nicht mit dem Stufenbedarf) · mind. 30 Gold (wächst mit der Tiefe ab 1)
 
 **Angebot**
 
@@ -241,7 +241,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 - **Ziel:** `system` → `talent` ×1; `system` → `loadout` ×1
 - **Vorbedingung:** Säuberung der Keller
-- **Belohnung:** mind. 40 XP (bzw. 40 % des Stufenbedarfs, Neben) · 1 Heiltrank
+- **Belohnung:** 10 XP (fest, Einführung — wächst nicht mit dem Stufenbedarf) · 1 Heiltrank
 
 **Angebot**
 
@@ -270,7 +270,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 - **Ziel:** `system` → `charakterwerte` ×1
 - **Vorbedingung:** Säuberung der Keller (dazu eine Bedingung im Code, `gate`)
-- **Belohnung:** mind. 40 XP (bzw. 40 % des Stufenbedarfs, Neben) · 1 Heiltrank
+- **Belohnung:** 10 XP (fest, Einführung — wächst nicht mit dem Stufenbedarf) · 1 Heiltrank
 
 **Angebot**
 
@@ -401,7 +401,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 - **Ziel:** `system` → `truhe` ×1
 - **Vorbedingung:** Der erste Schliff (dazu eine Bedingung im Code, `gate`)
-- **Belohnung:** mind. 40 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 30 Gold (wächst mit der Tiefe ab 1)
+- **Belohnung:** 10 XP (fest, Einführung — wächst nicht mit dem Stufenbedarf) · mind. 30 Gold (wächst mit der Tiefe ab 1)
 
 **Angebot**
 
@@ -428,7 +428,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 - **Ziel:** `system` → `wissen` ×1
 - **Vorbedingung:** Der erste Schliff **+** Die verschwundene Tochter
-- **Belohnung:** mind. 40 XP (bzw. 40 % des Stufenbedarfs, Neben) · 1 Wissens-Fragment(e)
+- **Belohnung:** 10 XP (fest, Einführung — wächst nicht mit dem Stufenbedarf) · 1 Wissens-Fragment(e)
 
 **Angebot**
 
@@ -455,7 +455,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 - **Ziel:** `system` → `haendler` ×1
 - **Vorbedingung:** Was unter dem Tisch liegt
-- **Belohnung:** mind. 40 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 45 Gold (wächst mit der Tiefe ab 1)
+- **Belohnung:** 10 XP (fest, Einführung — wächst nicht mit dem Stufenbedarf) · mind. 45 Gold (wächst mit der Tiefe ab 1)
 
 **Angebot**
 

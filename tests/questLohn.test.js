@@ -48,9 +48,11 @@ beforeEach(() => resetStore());
 test('Skalierung: frueh gilt die Zahl aus der Definition', () => {
   const qs = frisch();
   const D = qs.QUEST_DEFINITIONS;
-  // Stufe 1 braucht 18 XP — 40 % davon liegen unter jeder Angabe.
-  assert.deepStrictEqual(qs.lohnBerechnen(D.einfuehrung_markt, { xpFuerStufe: 18, maxTiefe: 1 }), { xp: 40, gold: 30 });
-  assert.deepStrictEqual(qs.lohnBerechnen(D.brett_kammern, { xpFuerStufe: 18, maxTiefe: 4 }), { xp: 70, gold: 140 });
+  // Stufe 1 braucht 63 XP — 40 % davon liegen unter jeder Angabe. Einfuehrungen
+  // geben fest 10 (eigenes Gewicht, waechst nicht mit).
+  assert.deepStrictEqual(qs.lohnBerechnen(D.einfuehrung_markt, { xpFuerStufe: 63, maxTiefe: 1 }), { xp: 10, gold: 30 });
+  assert.deepStrictEqual(qs.lohnBerechnen(D.aldric_cleanup, { xpFuerStufe: 63, maxTiefe: 1 }), { xp: 30, gold: 0 });
+  assert.deepStrictEqual(qs.lohnBerechnen(D.brett_kammern, { xpFuerStufe: 63, maxTiefe: 4 }), { xp: 70, gold: 140 });
 });
 
 test('Skalierung: Erfahrung als Anteil des Stufenbedarfs, je nach Gewicht', () => {

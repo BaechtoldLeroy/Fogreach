@@ -98,6 +98,8 @@
     // Quest ist ein Grund: nach ihr hat man in der Schmiede einmal etwas
     // verbessert und weiss, wozu sie taugt. Die Belohnung ist bewusst klein
     // — gross genug, sie anzunehmen, zu klein, um zum Pflichtweg zu werden.
+    // Erfahrung fest 10 (rewardTier 'einfuehrung', waechst nicht mit dem
+    // Stufenbedarf); der Lohn ist das Geschenk zum System.
     //
     // Wer sie liegen laesst, bekommt sie nicht nachgereicht: sie bleibt beim
     // NPC stehen und ist jederzeit abholbar.
@@ -111,8 +113,8 @@
       objectives: [
         { type: 'system', target: 'upgrade', current: 0, required: 1 }
       ],
-      rewards: { xp: 40, materials: { MAT: 8 } },
-      rewardTier: 'neben',
+      rewards: { xp: 10, materials: { MAT: 8 } },
+      rewardTier: 'einfuehrung',
       prerequisites: ['aldric_cleanup'],
       requiredAct: 0,
       dialogueOffer: 'Du trägst das, was Du unten gefunden hast, und Du trägst es, wie man ein Werkzeug trägt, das einem fremd ist.\n\nKomm mit in die Schmiede, die Tür gleich neben mir. Leg eines Deiner Stücke auf die Werkbank und drück auf „Ausbauen“ — dann wird es Deins. Diesmal geht es auf mich; danach kostet es Gold und Eisenbrocken, und Du machst es allein.',
@@ -129,8 +131,8 @@
       objectives: [
         { type: 'system', target: 'edikt', current: 0, required: 1 }
       ],
-      rewards: { xp: 40, druckblaetter: 2 },
-      rewardTier: 'neben',
+      rewards: { xp: 10, druckblaetter: 2 },
+      rewardTier: 'einfuehrung',
       prerequisites: ['aldric_cleanup'],
       requiredAct: 0,
       dialogueOffer: 'Der Rat schreibt jede Woche vor, was die Stadt denken soll. Wir können dasselbe — kleiner, aber wir können es.\n\nDu hast Druckblätter dabei, ich sehe sie. Komm rein in die Druckerei, gleich neben mir, und such Dir ein Edikt aus — ich setze es. Es wirkt, solange es hängt, und es kostet Dich Aufmerksamkeit beim Rat. Beides sollst Du einmal gespürt haben, bevor es darauf ankommt.',
@@ -147,8 +149,8 @@
       objectives: [
         { type: 'system', target: 'markt', current: 0, required: 1 }
       ],
-      rewards: { xp: 40, gold: 30 },
-      rewardTier: 'neben',
+      rewards: { xp: 10, gold: 30 },
+      rewardTier: 'einfuehrung',
       prerequisites: ['aldric_cleanup'],
       requiredAct: 0,
       // Angeboten erst, wenn ihr Stand offen ist (Schwarzmarkt ab erreichter
@@ -179,8 +181,8 @@
         { type: 'system', target: 'talent', current: 0, required: 1 },
         { type: 'system', target: 'loadout', current: 0, required: 1 }
       ],
-      rewards: { xp: 40, potions: 1 },
-      rewardTier: 'neben',
+      rewards: { xp: 10, potions: 1 },
+      rewardTier: 'einfuehrung',
       prerequisites: ['aldric_cleanup'],
       requiredAct: 0,
       dialogueOffer: 'Der Rat führt über jeden Bürger eine Akte, und in Deiner steht ein Wort, das mich stört: unbestimmt.\n\nDas lässt sich ändern. Du sammelst unten Erfahrung, und Erfahrung wird zu Punkten. Setz einen. Wut, Ketten oder Schatten — such es Dir aus. Der Rat schätzt Leute, die sich festlegen.\n\nUnd dann: Ein Werkzeug, das Du nicht griffbereit hast, ist kein Werkzeug. Leg es auf eine Taste.',
@@ -202,8 +204,8 @@
       objectives: [
         { type: 'system', target: 'charakterwerte', current: 0, required: 1 }
       ],
-      rewards: { xp: 40, potions: 1 },
-      rewardTier: 'neben',
+      rewards: { xp: 10, potions: 1 },
+      rewardTier: 'einfuehrung',
       prerequisites: ['aldric_cleanup'],
       requiredAct: 0,
       gate: function () { return _spielerStufe() >= 2; },
@@ -224,8 +226,8 @@
       objectives: [
         { type: 'system', target: 'truhe', current: 0, required: 1 }
       ],
-      rewards: { xp: 40, gold: 30 },
-      rewardTier: 'neben',
+      rewards: { xp: 10, gold: 30 },
+      rewardTier: 'einfuehrung',
       prerequisites: ['einfuehrung_schmiede'],
       requiredAct: 0,
       gate: function () { return _laeufeAbgeschlossen(); },
@@ -248,8 +250,8 @@
       objectives: [
         { type: 'system', target: 'wissen', current: 0, required: 1 }
       ],
-      rewards: { xp: 40, fragments: 1 },
-      rewardTier: 'neben',
+      rewards: { xp: 10, fragments: 1 },
+      rewardTier: 'einfuehrung',
       prerequisites: ['einfuehrung_schmiede', 'harren_daughter_investigation'],
       // requiredAct 0, obwohl sie fruehestens in Akt 1 auftaucht: die
       // Voraussetzung oeffnet den Akt selbst, und der Akt-1-Bestand soll eine
@@ -274,8 +276,8 @@
       objectives: [
         { type: 'system', target: 'haendler', current: 0, required: 1 }
       ],
-      rewards: { xp: 40, gold: 45 },
-      rewardTier: 'neben',
+      rewards: { xp: 10, gold: 45 },
+      rewardTier: 'einfuehrung',
       prerequisites: ['einfuehrung_markt'],
       requiredAct: 0,
       dialogueOffer: 'Da unten läuft ein Alter mit einem Karren herum. Frag mich nicht, wie er hineinkommt — ich weiss es nicht, und ich will es nicht wissen.\n\nKauf ihm etwas ab. Irgendetwas. Er führt Zeug, das über meinen Tisch nie gehen würde, und tiefer unten hängen Amulette an seinem Karren. Ich will nur, dass Du einmal bei ihm gestanden hast.',
@@ -2240,7 +2242,12 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
   // Erfahrung: ein Anteil des Bedarfs fuer die NAECHSTE Stufe, je nach Gewicht
   // des Auftrags (rewardTier). Ein Bosskampf ist rund eine Stufe wert, ein
   // Nebenauftrag knapp die Haelfte.
-  var LOHN_ANTEIL = { neben: 0.4, story: 0.7, boss: 1.0, finale: 1.5 };
+  //
+  // Einfuehrungen (einfuehrung_*) wachsen NICHT mit: sie fuehren ein System
+  // vor, ihr eigentlicher Lohn ist das Geschenk dazu (Material, Druckblaetter,
+  // Gold, Trank, Fragment). Mit je 40 XP hoben sie zusammen mit dem ersten
+  // Lauf auf Stufe 7 — jetzt fest 10 XP, Anteil 0.
+  var LOHN_ANTEIL = { einfuehrung: 0, neben: 0.4, story: 0.7, boss: 1.0, finale: 1.5 };
 
   /**
    * Erfahrung und Gold, die dieser Auftrag JETZT einbringt. Reine Funktion.
@@ -2257,7 +2264,10 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
   function lohnBerechnen(def, lage) {
     var r = (def && def.rewards) || {};
     var l = lage || {};
-    var anteil = LOHN_ANTEIL[def && def.rewardTier] || LOHN_ANTEIL.neben;
+    // Nicht "|| neben": der Anteil 0 der Einfuehrungen ist gewollt und darf
+    // nicht auf den Neben-Anteil zurueckfallen.
+    var tier = def && def.rewardTier;
+    var anteil = Object.prototype.hasOwnProperty.call(LOHN_ANTEIL, tier) ? LOHN_ANTEIL[tier] : LOHN_ANTEIL.neben;
     var bedarf = Math.max(0, Number(l.xpFuerStufe) || 0);
     var xp = Math.max(Number(r.xp) || 0, Math.round(anteil * bedarf));
     var gold = 0;
