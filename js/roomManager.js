@@ -3324,8 +3324,19 @@ function _resetElaraEncounterRunState() {
   _elaraTreppeSperrRaum = null;
   _elaraWartetZiel = null;
   _elaraStage2SpawnTarget = null;
+  // Fehlte: das Ziel der spaeteren Elara-Auftraege ueberlebte den Lauf. Lag es
+  // jenseits des letzten Raums (Raum 8+ bei 7 Raeumen), wartete sie im
+  // naechsten Lauf auf einen Raum, der nie kam.
+  _elaraSpaetSpawnZiel = null;
   _hinterhaltAbbrechen();
 }
+
+/**
+ * Wann Elara zur ABGABE kommt: im naechsten Raum. Gemeldet: "Elara kommt zu
+ * selten, wenn der Auftrag bereit ist." Mit 3..5 Raeumen fiel der Zielraum
+ * bei 7 Raeumen je Lauf oft hinter das Ende.
+ */
+function _abgabeAbstand() { return 1; }
 
 function _rollDistance() {
   // 3..5 inclusive
@@ -3493,7 +3504,7 @@ function _maybeFireElaraCellarEncounter(scene, roomId) {
   if (!q5Done && typeof qs.isQuestReadyToComplete === 'function'
       && qs.isQuestReadyToComplete('widerstand_proof')) {
     if (_elaraStage2SpawnTarget === null || roomId > _elaraStage2SpawnTarget) {
-      _elaraStage2SpawnTarget = roomId + _rollDistance();
+      _elaraStage2SpawnTarget = roomId + _abgabeAbstand();
     }
     if (roomId === _elaraStage2SpawnTarget) {
       _spawnElaraSprite(scene, /* stage */ 2);
@@ -3593,7 +3604,7 @@ function _elaraSpaetereAuftraege(scene, roomId) {
   if (!faellig) { _elaraSpaetSpawnZiel = null; return; }
 
   if (_elaraSpaetSpawnZiel === null || roomId > _elaraSpaetSpawnZiel) {
-    _elaraSpaetSpawnZiel = roomId + _rollDistance();
+    _elaraSpaetSpawnZiel = roomId + (faellig.modus === 'abgabe' ? _abgabeAbstand() : _rollDistance());
   }
   if (roomId !== _elaraSpaetSpawnZiel) return;
   _elaraSpaetSpawnZiel = null;                   // verbraucht; naechster Bedarf wuerfelt neu
