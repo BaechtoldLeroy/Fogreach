@@ -1754,7 +1754,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         } catch (e) { /* swallow */ }
       });
       // Die Auftakt-Seiten (Liste) folgen der Sprache wie die Felder oben.
-      if (Array.isArray(q.dialogueIntro)) {
+      if (Array.isArray(q.dialogueIntro) && typeof window.i18n.binden === 'function') {
         q.dialogueIntro.forEach(function (_, i) {
           window.i18n.binden(q.dialogueIntro, i, 'quest.' + id + '.dialogueIntro.' + i);
         });
