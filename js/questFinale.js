@@ -78,11 +78,15 @@
   // Reine Funktion wie computeFinaleState: Flags rein, Absaetze raus.
   // v6.1: Die Presse druckt alles, und die Stadt glaubt es ohne Siegel, weil
   // sie sich mit dem Bruch der Esse selbst wieder erinnert. Danach gibst Du
-  // neue Druckplatten weg. TODO(Stufe 2): die Namen aus dem Nachhall.
+  // neue Druckplatten weg. Stufe 2: die Namen, die nach dem Nachhall lesbar
+  // zurueckblieben (flags.nachhall_namen, eine Liste aus questSystem.getFlags),
+  // stehen gleich nach dem Druck.
   var EPILOG = {
     de: {
       presse: 'Mit der Esse kehren Bruchstücke zurück. Die Leute bleiben auf der Strasse stehen und erinnern sich an Namen, an Gesichter, an Tage.',
       druck: 'Thom setzt die ganze Nacht, und Du druckst alles: zuoberst Aldrics Namen, dann den Rat, den Widerstand, Elara und die Namen der Verschwundenen.',
+      nachhall: 'Unter den Namen der Verschwundenen stehen auch die, die nach dem Nachhall lesbar zurückblieben: {namen}. Thom setzt jeden einzeln, in grossen Lettern.',
+      und: ' und ',
       glauben: 'Kein Blatt trägt ein Siegel. Die Stadt glaubt ihnen trotzdem, denn sie bestätigen, was jeder gerade selbst wieder weiss. Was an tausend Orten steht, kann niemand mehr verbrennen.',
       platten: 'Danach schmiedest Du neue Druckplatten und gibst sie weg. Der Mann, der die Siegel des Rats gemacht hat, macht jetzt Werkzeug für alle.',
       nebel: 'Der Nebel bricht. Nicht, weil ihn jemand vertreibt, sondern weil zu viele Menschen sich zu vieles zugleich merken.',
@@ -109,6 +113,8 @@
     en: {
       presse: 'With the forge, fragments come back. People stop in the street and remember names, faces, days.',
       druck: 'Thom sets type all night, and you print everything: Aldric\'s name at the top, then the council, the resistance, Elara and the names of the disappeared.',
+      nachhall: 'Among the names of the disappeared are those that stayed readable after the Echo: {namen}. Thom sets each one by hand, in large letters.',
+      und: ' and ',
       glauben: 'No sheet bears a seal. The city believes them anyway, because they confirm what everyone has just come to know again. What stands in a thousand places, nobody can burn any more.',
       platten: 'Afterwards you forge new printing plates and give them away. The man who made the council\'s seals now makes tools for everyone.',
       nebel: 'The fog breaks. Not because anyone drives it away, but because too many people remember too much at once.',
@@ -143,7 +149,14 @@
   function epilog(flags, lang) {
     var T = EPILOG[lang === 'en' ? 'en' : 'de'];
     var st = computeFinaleState(flags);
-    var out = [T.presse, T.druck, T.glauben, T.nebel];
+    var out = [T.presse, T.druck];
+    var namen = (flags && Array.isArray(flags.nachhall_namen)) ? flags.nachhall_namen.filter(Boolean) : [];
+    if (namen.length) {
+      var liste = namen.length === 1 ? namen[0]
+        : namen.slice(0, -1).join(', ') + T.und + namen[namen.length - 1];
+      out.push(T.nachhall.replace('{namen}', liste));
+    }
+    out.push(T.glauben, T.nebel);
     if (flag(flags, 'harren_dead')) out.push(T.harren);
     out.push(st.elara === 'lives' ? T.elaraLebt : T.elaraTot);
 

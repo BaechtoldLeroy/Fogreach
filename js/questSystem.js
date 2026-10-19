@@ -891,6 +891,31 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       dialogueProgressNext: 'Ich habe ihn gefunden, ganz unten. Steig noch einmal hinab, ich führe Dich hin.',
       dialogueComplete: 'Er ist leer. Der Mann, der andere hat leeren lassen. (Mara sieht lange in die Flamme ihrer Lampe.) Ich dachte, ich würde mich freuen.\n\nDie Kettenwache ist zerschlagen. Die Gänge unter der Stadt gehören wieder niemandem. Das ist mehr, als diese Stadt lange hatte.'
     },
+    // v6.1 Stufe 2: Der Nachhall auf Tiefe 25 (js/nachhall.js). Maras
+    // verhaftete Leute wurden geleert, ihre Erinnerungen stecken in ihm.
+    // Zwischen dem Maulwurf und der Quelle. Der Boss erscheint nur, solange
+    // dieser Auftrag laeuft (Nachhall.wartet); sonst bleibt Tiefe 25 ein
+    // gewoehnlicher Lauf mit Mini-Boss.
+    was_der_rauch_behaelt: {
+      id: 'was_der_rauch_behaelt',
+      title: 'Was der Rauch behält',
+      description: 'Steig auf Tiefe 25 hinab und stell Dich dem Nachhall, dem Echo aus tausend Stimmen. Bring Maras Leute nach Hause.',
+      npcId: 'mara',
+      type: 'boss',
+      // Vor der Quelle (chain 2) einsortiert, in Journal und Uebersicht.
+      chain: 1,
+      minDepth: 25,
+      objectives: [
+        { type: 'boss_kill', target: 'nachhall', current: 0, required: 1 }
+      ],
+      rewards: { xp: 220 },
+      rewardTier: 'boss',
+      prerequisites: ['espionage_informant'],
+      requiredAct: 4,
+      dialogueOffer: 'Die Leute, die sie mir genommen haben, sind nicht tot. Nicht ganz. Wer tief genug hinabsteigt, hört sie, auf Tiefe 25, alle durcheinander. Die Späher nennen es den Nachhall. Er steht zwischen Dir und der Esse. Geh hin, hör nicht zu lange zu und bring sie nach Hause.',
+      dialogueProgress: 'Der Nachhall wartet auf Tiefe 25. Wenn er flüstert, hör nicht hin. Schlag zu.',
+      dialogueComplete: 'Du hast sie gehen lassen. (Sie schweigt lange.) Hast Du einen Namen gehört, den Du kennst? (Eine der Stimmen war Deine eigene. Du sagst es ihr nicht.) Gib Thom die Namen, die Du lesen konntest. Dann geh. Die Esse wartet, und Elara mit ihr.'
+    },
     // Feature 062: umbenannt von 'harren_rescue'. Akt 4, die Quelle selbst.
     schattenrat_finale: {
       id: 'schattenrat_finale',
@@ -909,9 +934,11 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       ],
       rewards: { xp: 250, items: [{ tier: 2 }] },
       rewardTier: 'finale',
-      // TODO(Stufe 2): "Was der Rauch behaelt" (Mara, Nachhall auf Tiefe 25)
-      // liegt zwischen dem Maulwurf und diesem Auftrag.
-      prerequisites: ['espionage_informant'],
+      // v6.1 Stufe 2: "Was der Rauch behaelt" (Mara, Nachhall auf Tiefe 25)
+      // liegt zwischen dem Maulwurf und diesem Auftrag. Alte Staende, in
+      // denen die Quelle schon laeuft oder abgeschlossen ist, sperrt das
+      // nicht: Vorbedingungen gelten nur fuer noch nicht angenommene Auftraege.
+      prerequisites: ['espionage_informant', 'was_der_rauch_behaelt'],
       requiredAct: 4,
       // #157: Nicht mehr der Schattenrat — Elara ist zur Quelle hinabgestiegen.
       dialogueOffer: 'Elara ist hinabgestiegen, zur Esse, auf Tiefe 30. Sie trägt ein echtes Amulett des Rats. Du hast nur Deine Hände. (Sie legt Dir den Hammer in die Hand.) Die reichen. Du bist der Einzige, der eine solche Bindung lösen kann.\n\nUnd noch etwas. Harren hat gefragt, wohin Du gehst. Ich habe es ihm nicht gesagt. Er wird es trotzdem herausfinden.',
@@ -1440,6 +1467,11 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       // Feature 062: umbenannt harren_rescue -> schattenrat_finale; final_truth
       // entfernt (-> the_reckoning). Neue/umbenannte Quests ohne EN fallen über
       // die i18n-Kaskade auf Deutsch zurück (Deutsch = Source-of-Truth).
+      'quest.was_der_rauch_behaelt.title': 'What the Smoke Keeps',
+      'quest.was_der_rauch_behaelt.description': "Descend to depth 25 and face the Echo, the echo of a thousand voices. Bring Mara's people home.",
+      'quest.was_der_rauch_behaelt.dialogueOffer': "The people they took from me are not dead. Not quite. Whoever goes down deep enough hears them, at depth 25, all at once. The scouts call it the Echo. It stands between you and the forge. Go there, don't listen too long, and bring them home.",
+      'quest.was_der_rauch_behaelt.dialogueProgress': "The Echo waits at depth 25. When it whispers, don't listen. Strike.",
+      'quest.was_der_rauch_behaelt.dialogueComplete': "You let them go. (She is silent for a long time.) Did you hear a name you know? (One of the voices was your own. You don't tell her.) Give Thom the names you could read. Then go. The forge is waiting, and Elara with it.",
       'quest.schattenrat_finale.title': 'The Source',
       'quest.schattenrat_finale.description': "Descend to depth 30, to the forge beneath the city. Elara is already there. Afterwards Thom waits at the press.",
 
@@ -1790,6 +1822,12 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
   // an already-ready quest won't re-toast.
   let _criteriaToasted = {};
 
+  // v6.1 Stufe 2: Die Namen, die nach dem Nachhall lesbar zurueckblieben
+  // (js/nachhall.js verklingen). Thom druckt sie im Epilog mit
+  // (questFinale.epilog liest sie aus getFlags().nachhall_namen).
+  let nachhallNamen = [];
+  var NACHHALL_NAMEN_MAX = 6;
+
   function _initQuestState() {
     questState = {};
     _criteriaToasted = {};
@@ -1816,7 +1854,30 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
   // spätere Finale-Feature (computeFinaleState), das mehrere Flags gleichzeitig
   // auswertet.
   function getFlags() {
-    return Object.assign({}, questFlags);
+    var f = Object.assign({}, questFlags);
+    // Keine Flagge, sondern eine Liste: steht nur da, wenn es Namen gibt.
+    if (nachhallNamen.length) f.nachhall_namen = nachhallNamen.slice();
+    return f;
+  }
+
+  /** Die Namen aus dem Nachhall (Kopie). */
+  function getNachhallNamen() {
+    return nachhallNamen.slice();
+  }
+
+  /**
+   * Namen aus dem Nachhall festhalten. Spaetere Siege ergaenzen die Liste,
+   * ohne Doppelte, hoechstens NACHHALL_NAMEN_MAX.
+   */
+  function setNachhallNamen(liste) {
+    if (!Array.isArray(liste)) return;
+    liste.forEach(function (n) {
+      if (typeof n !== 'string' || !n.trim()) return;
+      if (nachhallNamen.indexOf(n) >= 0 || nachhallNamen.length >= NACHHALL_NAMEN_MAX) return;
+      nachhallNamen.push(n);
+    });
+    _notifyUpdate();
+    _persistIfPossible();
   }
 
   // ---- Core Functions ----
@@ -2627,6 +2688,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       storyVersion: STORY_VERSION,
       quests: JSON.parse(JSON.stringify(questState)),
       flags: JSON.parse(JSON.stringify(questFlags)),
+      nachhallNamen: nachhallNamen.slice(),
       ausstehend: JSON.parse(JSON.stringify(_ausstehend))
     };
   }
@@ -2635,6 +2697,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     if (!data || typeof data !== 'object') return;
     _initQuestState();
     questFlags = {};
+    nachhallNamen = [];
     // Wartende Lohnstuecke gehoeren zum Charakter, nicht zur Story — sie
     // ueberstehen auch den Altstand-Reset unten.
     _ausstehend = Array.isArray(data.ausstehend) ? data.ausstehend.filter(Boolean) : [];
@@ -2678,6 +2741,10 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     Object.keys(srcFlags).forEach(function (k) {
       questFlags[k] = !!srcFlags[k];
     });
+    if (Array.isArray(data.nachhallNamen)) {
+      nachhallNamen = data.nachhallNamen.filter(function (n) { return typeof n === 'string' && n; })
+        .slice(0, NACHHALL_NAMEN_MAX);
+    }
     _backfillAdvanceActs();
     _notifyUpdate();
   }
@@ -2801,6 +2868,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     setFlag: setFlag,
     hasFlag: hasFlag,
     getFlags: getFlags,
+    getNachhallNamen: getNachhallNamen,
+    setNachhallNamen: setNachhallNamen,
     STORY_VERSION: STORY_VERSION,
     getQuestSaveData: getQuestSaveData,
     loadQuestSaveData: loadQuestSaveData,

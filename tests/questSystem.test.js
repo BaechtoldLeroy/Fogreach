@@ -775,10 +775,10 @@ test('062 T014: entfernte/umbenannte IDs weg, v4-Nachfolger da', () => {
 
 // --- T015 — Struktur-Invarianten -------------------------------------------
 
-test('062 T015: 51 Quests (34 + zwei Nebenquests #148 + sieben Aushaenge #68 + acht Einfuehrungen #143), keine doppelten ids/titles', () => {
+test('062 T015: 52 Quests (34 + zwei Nebenquests #148 + sieben Aushaenge #68 + acht Einfuehrungen #143 + der Nachhall, v6.1 Stufe 2), keine doppelten ids/titles', () => {
   const D = freshSystem().QUEST_DEFINITIONS;
   const ids = Object.keys(D);
-  assert.strictEqual(ids.length, 51, 'die v4-Struktur hat 34 Quests, dazu zwei Nebenquests (#148), sieben Aushaenge am Brett (#68) und acht Einfuehrungsquests (#143: dazu Akte und Truhe)');
+  assert.strictEqual(ids.length, 52, 'die v4-Struktur hat 34 Quests, dazu zwei Nebenquests (#148), sieben Aushaenge am Brett (#68), acht Einfuehrungsquests (#143: dazu Akte und Truhe) und "Was der Rauch behält" (Stufe 2)');
   const titles = ids.map((id) => D[id].title);
   assert.strictEqual(new Set(titles).size, titles.length, 'keine doppelten Titel');
   const idField = ids.map((id) => D[id].id).filter(Boolean);

@@ -153,7 +153,8 @@ const zeichen = (npc) => H.run(`${HUB}._questZeichen('${npc}')`);
 test('Die Quelle: Branka gibt sie, nach dem Sieg nimmt Thom sie ab', () => {
   H.run('window.storySystem.advanceToAct(4)');
   // Brankas fruehere Auftraege sind erledigt (sonst stuende der erste vorn).
-  const erledigt = { espionage_informant: 'completed' };
+  // Stufe 2: zwischen Maulwurf und Quelle liegt der Nachhall.
+  const erledigt = { espionage_informant: 'completed', was_der_rauch_behaelt: 'completed' };
   Array.from(H.run(`Object.keys(window.questSystem.QUEST_DEFINITIONS).filter(function (id) {
     return window.questSystem.QUEST_DEFINITIONS[id].npcId === 'branka' && id !== 'schattenrat_finale'; })`))
     .forEach((id) => { erledigt[id] = 'completed'; });

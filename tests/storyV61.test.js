@@ -82,12 +82,13 @@ test('Der Bruch bleibt in Akt 3 und schliesst das Rathaus, der Maulwurf oeffnet 
   assert.strictEqual(qs.hasFlag('mole_evidence'), true);
 });
 
-test('Die Quelle: Branka gibt sie nach dem Maulwurf, Thom nimmt sie ab', () => {
+test('Die Quelle: Branka gibt sie nach dem Maulwurf (und dem Nachhall), Thom nimmt sie ab', () => {
   const { qs } = system(4);
   stand(qs, {});
   assert.ok(angebot(qs, 'branka').indexOf('schattenrat_finale') < 0, 'die Quelle kommt vor dem Maulwurf');
   assert.ok(angebot(qs, 'harren').indexOf('schattenrat_finale') < 0, 'Harren vergibt die Quelle noch');
-  stand(qs, { espionage_informant: 'completed' });
+  // Stufe 2: dazwischen liegt "Was der Rauch behaelt" (tests/nachhallAuftrag.test.js).
+  stand(qs, { espionage_informant: 'completed', was_der_rauch_behaelt: 'completed' });
   assert.ok(angebot(qs, 'branka').indexOf('schattenrat_finale') >= 0, 'Branka bietet die Quelle nicht an');
   qs.acceptQuest('schattenrat_finale');
   const bei = (npc) => qs.getActiveQuestsAt(npc).map((q) => q.id);
@@ -160,6 +161,9 @@ test('v5-Stand nach dem Bruch (schon Akt 4, Maulwurf laeuft): Akt bleibt, Maulwu
   }, flags: { elaraReturnedToHub: true, bruch_nacht_gesehen: true } });
   assert.strictEqual(story.akt, 4, 'der Akt faellt zurueck');
   assert.strictEqual(qs.completeQuest('espionage_informant'), true);
+  // Stufe 2: erst der Nachhall, dann die Quelle.
+  assert.ok(angebot(qs, 'mara').indexOf('was_der_rauch_behaelt') >= 0, 'der Nachhall bleibt unerreichbar');
+  abschliessen(qs, 'was_der_rauch_behaelt');
   assert.ok(angebot(qs, 'branka').indexOf('schattenrat_finale') >= 0, 'die Quelle bleibt unerreichbar');
 });
 
