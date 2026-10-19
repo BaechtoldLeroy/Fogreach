@@ -70,7 +70,7 @@ const AKTE = [
     momente: ['Die Klinge: «Ich habe sie für Dich schmieden lassen.» Wer sie im Inventar genauer ansieht, findet das Zeichen der drei Ketten im Stahl.',
       'Eine wahre Meldung, die sie verschweigt: «Nicht alles hilft.»',
       'Die Nacht nach dem Bruch: Branka bringt Dich zu ihr, sie bleibt die Nacht bei Dir.'] },
-  { idx: 4, id: 'bruch', titel: 'Die Quelle', label: 'Akt 4',
+  { idx: 4, id: 'bruch', titel: 'Die Esse', label: 'Akt 4',
     inhalt: 'Das Rathaus ist zu, oben bleibt Dir kein Ort. Elara ist zur Esse hinabgestiegen, und Du folgst ihr, um sie zu zerstören. Harren folgt Dir ohne Amulett; mit jeder Tiefe nimmt ihm der Nebel mehr, bis nur «Lene» bleibt. An der Esse, mit erhobenem Hammer, durchschaust Du, was Deine Hände tun, und hältst inne. «Alles haben wir vorausgesehen. Nur nicht, dass Du es merkst.» Harren erreicht sie, sie stösst ihn bewusst weg, nimmt Deinen Hammer, und die Esse nimmt sie. Der letzte Schlag ist Handwerk: Du löst die Bindung in die andere Richtung, die Esse zerbricht. Mara verlangt, dass Du Elara richtest. Danach druckst Du alles, und die Stadt glaubt es, weil sie sich erinnert. In «Die letzte Wache» führt Mara Dich zu Aldric, leer vom Nebel.',
     boss: 'Der Nachhall (Tiefe 25), Elara, besessen (Tiefe 30)', momente: [] }
 ];

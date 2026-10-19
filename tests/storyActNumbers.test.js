@@ -46,7 +46,7 @@ const EXPECTED = [
   { idx: 1, num: 1, label: 'Akt 1',  id: 'treuer_diener', name: 'Treuer Diener' },
   { idx: 2, num: 2, label: 'Akt 2',  id: 'erste_risse',   name: 'Das Doppelspiel' },
   { idx: 3, num: 3, label: 'Akt 3',  id: 'wahrheit',      name: 'Die Enttarnung' },
-  { idx: 4, num: 4, label: 'Akt 4',  id: 'bruch',         name: 'Die Quelle' }
+  { idx: 4, num: 4, label: 'Akt 4',  id: 'bruch',         name: 'Die Esse' }
 ];
 
 test('STORY_ACTS hat genau 5 Akte in der erwarteten Reihenfolge', () => {
@@ -101,7 +101,7 @@ test('Journal zeigt "Prolog · Der Dienst", dann "Akt N von 4"', () => {
   assert.strictEqual(j2.actNumber, 2);
   assert.strictEqual(j2.actLine, 'Akt 2 von 4: Das Doppelspiel');
   S.advanceToAct(4);
-  assert.strictEqual(S.getJournalData().actLine, 'Akt 4 von 4: Die Quelle');
+  assert.strictEqual(S.getJournalData().actLine, 'Akt 4 von 4: Die Esse');
 });
 
 test('Wave-Meilensteine sind entfernt: onWaveCompleted erzeugt keine Splash-Karte', () => {

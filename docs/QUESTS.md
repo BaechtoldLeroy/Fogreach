@@ -46,7 +46,7 @@ Der Bogen ist **rein quest-getrieben**: ein Akt steigt nur, wenn eine Quest ihn 
 | `1` | Akt 1 · Treuer Diener | Abschluss von **Die verschwundene Tochter** |
 | `2` | Akt 2 · Das Doppelspiel | Abschluss von **Die geheime Sitzung** |
 | `3` | Akt 3 · Die Enttarnung | Abschluss von **Der Kettenmeister** |
-| `4` | Akt 4 · Die Quelle | Abschluss von **Der Maulwurf** |
+| `4` | Akt 4 · Die Esse | Abschluss von **Der Maulwurf** |
 
 Jeder Akt hat einen Trigger — die Leiter ist lückenlos.
 
@@ -72,7 +72,7 @@ Ein NPC bietet eine Quest an, wenn **alle** Bedingungen gelten:
 
 **`angebotAb` gated das Angebot:** angeboten wird erst, wenn die erreichte Tiefe so weit ist. Laufende Aufträge behalten die Mindesttiefe ihrer Annahme.
 
-**Akt-Index → Name:** `0` Prolog · Der Dienst · `1` Akt 1 · Treuer Diener · `2` Akt 2 · Das Doppelspiel · `3` Akt 3 · Die Enttarnung · `4` Akt 4 · Die Quelle
+**Akt-Index → Name:** `0` Prolog · Der Dienst · `1` Akt 1 · Treuer Diener · `2` Akt 2 · Das Doppelspiel · `3` Akt 3 · Die Enttarnung · `4` Akt 4 · Die Esse
 
 ## Ziel-Typen und ihre Trigger
 
@@ -121,7 +121,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 | Kettenmeister | 10 | Der Kettenmeister (Mara) |
 | Zeremonienmeister | 20 | Die Ritualkammer (Elara) |
 | Der Nachhall | 25 | Was der Rauch behält (Mara); flüstert aus dem Gespielten, wechselt die Gestalt (Hall, Schwarm, Chor), Namen gehen an Thoms Presse |
-| Elara, besessen | 30 | Die Quelle (Branka, Abgabe bei Thom) |
+| Elara, besessen | 30 | Die Esse (Branka, Abgabe bei Thom) |
 | Der Nachhall der Esse | 30, 60, … | kein Auftrag: steht dort, wenn die Quelle nicht läuft (ersetzt den Schattenrat) |
 
 ---
@@ -1326,7 +1326,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 > Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neben Aldric. An ihrem Ring das Zeichen der drei Ketten. Sie hat uns alle geführt — direkt in seine Hände.
 
 
-# Akt-Index 4 — Akt 4 · Die Quelle
+# Akt-Index 4 — Akt 4 · Die Esse
 
 ## Was der Rauch behält
 
@@ -1378,7 +1378,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 > Deine Erfahrung wächst nun schneller. (+10% XP)
 
 
-## Die Quelle
+## Die Esse
 
 `schattenrat_finale` · **NPC:** Schmiedemeisterin Branka · **Abgabe bei:** Setzer Thom · **Kette:** 2
 
@@ -1437,7 +1437,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 > Dring bis Welle 30 vor. Dort unten führt Mara Dich zu Aldric.
 
 - **Ziel:** `wave` → `reach_wave` ×30; `observe` → `aldric_gefunden` ×1
-- **Vorbedingung:** Die Quelle
+- **Vorbedingung:** Die Esse
 - **Belohnung:** mind. 300 XP (bzw. 100 % des Stufenbedarfs, Boss) · **Ausrüstungsstück** (selten, auf Spielerstufe gewürfelt)
 
 **Angebot**
@@ -1487,7 +1487,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 > Die Esse ist zerbrochen. Thom wartet an der Presse. Die Stadt soll alles erfahren.
 
 - **Ziel:** `dialogue` → `press_decision` ×1
-- **Vorbedingung:** Die Quelle
+- **Vorbedingung:** Die Esse
 - **Belohnung:** mind. 500 XP (bzw. 150 % des Stufenbedarfs, Finale) · schaltet frei: story_ending
 
 **Angebot**

@@ -85,7 +85,7 @@ test('Branka: mit laufendem "Wer du warst" bietet sie "Der Bruch" an', () => {
   assert.strictEqual(g.zeichen, '!', 'ueber Branka steht kein "!" fuer den Bruch');
 });
 
-test('Branka: mit laufendem "Wer du warst" bietet sie "Die Quelle" an', () => {
+test('Branka: mit laufendem "Wer du warst" bietet sie "Die Esse" an', () => {
   stand(4, { schattenrat_finale: 'available', mara_assault: 'available', the_reckoning: 'available',
     who_you_were: 'active' }, { enttarnt: true });
   assert.deepStrictEqual(angebote('branka'), ['schattenrat_finale'], 'der Stand misst nicht, was er soll');

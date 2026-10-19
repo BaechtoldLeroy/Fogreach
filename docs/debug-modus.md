@@ -138,7 +138,7 @@ und `node tools/bossIntroBrowser.js [kettenmeister ...]` schreibt
 ### Das Finale an der Esse (Story-Kern v6.1, Stufe 3)
 
 `?finale=<schritt>` springt mit `?boss=elara` an eine Stelle des Finales. Die
-Flagge stellt den Queststand her ("Die Quelle" aktiv), loescht `harren_dead`,
+Flagge stellt den Queststand her ("Die Esse" aktiv), loescht `harren_dead`,
 `elara_besiegt`, `elara_spared`, `elara_killed` und `story_ending` und setzt,
 was der Schritt braucht. `&room=DieQuelle` stellt die echte Arena (die Glut in
 der Mitte ist die Esse); ohne sie steht die Esse auf einem freien Fleck neben

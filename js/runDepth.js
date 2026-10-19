@@ -46,7 +46,7 @@
     // Quelle schon laeuft oder fertig ist, haelt das Tor nicht auf.
     { tiefe: 24, questId: 'was_der_rauch_behaelt', titel: 'Was der Rauch behält',
       oder: ['schattenrat_finale'] },
-    { tiefe: 29, questId: 'schattenrat_finale', titel: 'Die Quelle' }
+    { tiefe: 29, questId: 'schattenrat_finale', titel: 'Die Esse' }
   ];
 
   /** Laeuft (oder lief) diese Quest schon? */

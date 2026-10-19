@@ -15,7 +15,7 @@
     { id: 'treuer_diener', name: 'Treuer Diener' },
     { id: 'erste_risse',   name: 'Das Doppelspiel' },
     { id: 'wahrheit',      name: 'Die Enttarnung' },
-    { id: 'bruch',         name: 'Die Quelle' }   // #89: Titel aus der Story-Bibel v5
+    { id: 'bruch',         name: 'Die Esse' }     // #89 Story-Bibel; seit b478 Esse statt Quelle
   ];
 
   // ---- Narrative texts shown at act transitions ----
@@ -226,7 +226,7 @@
       'story.act.treuer_diener.name': 'The Loyal Servant',
       'story.act.erste_risse.name': 'The Double Game',
       'story.act.wahrheit.name': 'The Unmasking',
-      'story.act.bruch.name': 'The Source',
+      'story.act.bruch.name': 'The Furnace',
 
       'story.act.auftrag.narrative': "You wake in the Archive Forge. What you remember: your rank, your tools, nothing before. Councillor Aldric is already waiting. 'The council has work for you, Archivesmith. Down in the cellar.'",
       'story.act.treuer_diener.narrative': "The mayor's daughter's diary names all three factions. Harren reads for a long time. 'She did not flee. Someone made her disappear.' The next morning the council has new work for you. It praises you. It watches you.",

@@ -310,7 +310,7 @@ describe('Zwischenszene', () => {
     H.run(`${HUB}.input.keyboard.emit('keydown-ESC')`);
     const r = H.run(`(function () { var qs = window.questSystem; qs.areAllQuestChainsComplete = window.__echtAlle;
       return { offen: ${HUB}._dialogOpen, naechste: window.storySystem.consumePendingEvent() }; })()`);
-    assert.strictEqual(erst, 'Die Quelle');
+    assert.strictEqual(erst, 'Die Esse');
     assert.strictEqual(dann, 'Epilog', 'der Epilog folgte nicht');
     assert.strictEqual(offen, true);
     assert.strictEqual(r.offen, false, 'nach der Kette bleibt der Hub blockiert');

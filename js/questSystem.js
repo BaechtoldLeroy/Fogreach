@@ -941,7 +941,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     // Feature 062: umbenannt von 'harren_rescue'. Akt 4, die Quelle selbst.
     schattenrat_finale: {
       id: 'schattenrat_finale',
-      title: 'Die Quelle',
+      title: 'Die Esse',
       description: 'Steig auf Tiefe 30 hinab, zur Esse unter der Stadt. Elara ist schon dort. Danach wartet Thom an der Presse.',
       // v6.1: Branka gibt den Auftrag (Harren steigt selbst hinab und stirbt
       // im Finale), abgegeben wird er bei Thom (turnInNpcId). Unten an der
@@ -1519,7 +1519,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.was_der_rauch_behaelt.dialogueOffer': "The people they took from me are not dead. Not quite. Whoever goes down deep enough hears them, at depth 25, all at once. The scouts call it the Echo. It stands between you and the Furnace. Go there, don't listen too long, and bring them home.",
       'quest.was_der_rauch_behaelt.dialogueProgress': "The Echo waits at depth 25. When it whispers, don't listen. Strike.",
       'quest.was_der_rauch_behaelt.dialogueComplete': "You let them go. (She is silent for a long time.) Did you hear a name you know? (One of the voices was your own. You don't tell her.) Give Thom the names you could read. Then go. The Furnace is waiting, and Elara with it.",
-      'quest.schattenrat_finale.title': 'The Source',
+      'quest.schattenrat_finale.title': 'The Furnace',
       'quest.schattenrat_finale.description': "Descend to depth 30, to the Furnace beneath the city. Elara is already there. Afterwards Thom waits at the press.",
 
       // === Quest dialogues — English ===

@@ -129,7 +129,7 @@ Danach steht sie mit [E] im Raum, ihre Worte folgen als Gespräch, und der Auftr
 
 **Der Rückblick.** In der Ratskammer (Maulwurf) steht derselbe Wächter mit demselben Helmbusch neben Elara und Aldric. Ein kurzer Rückblick spielt die Rettung entsättigt noch einmal ab und hält an jeder Spur an: Messingringe um die zurückweichenden Wachen, bevor Elara da ist; ein Heranholen an den Wächter, dessen Busch als einzige Farbe rot wird, während er nickt; ihre Zeile mit dem Wort «Archivschmied» in Messing, darunter: «Du hattest ihr nie gesagt, wer Du bist.» Alte Spielstände, die die Rettung ohne Zwischensequenz erlebt haben, bekommen eine allgemeine Fassung ohne Helmbusch und Nicken (ihre Zeile ist dann die aus dem Gespräch: «Du. Der Archivschmied.»). Ein Stand ganz ohne Rettung bekommt keinen Rückblick, die Szene läuft wie bisher.
 
-**Akt 4 · Die Quelle.** Das Rathaus ist zu, oben bleibt Dir kein Ort. Elara ist zur Esse hinabgestiegen (Tiefe 30). Du folgst ihr, um die Esse zu zerstören. Harren folgt Dir ohne Amulett. Auf Tiefe 25 stellt sich Dir der Nachhall in den Weg, ein Echo aus tausend Stimmen, darunter Deine eigene.
+**Akt 4 · Die Esse.** Das Rathaus ist zu, oben bleibt Dir kein Ort. Elara ist zur Esse hinabgestiegen (Tiefe 30). Du folgst ihr, um die Esse zu zerstören. Harren folgt Dir ohne Amulett. Auf Tiefe 25 stellt sich Dir der Nachhall in den Weg, ein Echo aus tausend Stimmen, darunter Deine eigene.
 
 **Harrens Abstieg.** Harren hat keinen Schutz. Mit jeder Tiefe nimmt ihm der Nebel etwas: erst sein Amt, dann die Stadt, dann Deinen Namen. Unterwegs triffst Du ihn zwei, drei Mal, jedes Mal weniger er selbst. Unten ist nur noch eine einzige Erinnerung übrig: «Lene.»
 
@@ -179,7 +179,7 @@ Elara ist mit einem echten Amulett des Rats bis zur Esse gelangt. Sie empfängt 
 | Wer du warst (Branka) | Akt 3 | Splitter einer Akte, Nebel «nach Dir geschickt». | Splitter Deiner Phiole. Neuer Schluss: Sie haben Dich geleert, weil sie Dich brauchten. Branka warnt vor dem Preis. |
 | Der Bruch (Branka) | Akt 3 | Branka statt Elara versteckt Dich. | Branka bringt Dich in Elaras Versteck. |
 | Der Maulwurf (Mara) | Akt 4 | Gehört zum Ende von Akt 3. | Nach Akt 3 verschieben, Vorgänger bleiben. |
-| Die Quelle (Harren) | Akt 4 | Harren spricht den Abschluss, stirbt aber. Kein Vorgänger. | Auftraggeberin Branka, Vorgänger «Der Maulwurf». Abschluss von Thom. |
+| Die Esse (Harren) | Akt 4 | Harren spricht den Abschluss, stirbt aber. Kein Vorgänger. | Auftraggeberin Branka, Vorgänger «Der Maulwurf». Abschluss von Thom. |
 | Die Pamphlete (Thom) | Akt 4 | «Die Stadt ist aufgewacht» nimmt das Finale vorweg. | Abschwächen: Die unteren Gänge lesen mit, der Rat merkt es. |
 | Die letzte Wache (Mara) | Akt 4 | Aldric bekommt kein Ende. | Bei Welle 30 führt Mara Dich zu Aldric, leer vom Nebel. Du entscheidest, ob Du ihm sagst, wer er war. |
 
@@ -198,7 +198,7 @@ Je tiefer, desto dichter der Nebel, desto stärker, was darin lebt. Alle Bosse e
 
 Kettenmeister und Zeremonienmeister zeigen zwei Arten des Mitlaufens: aus Pflicht und aus Glauben.
 
-**Auftrag zum Nachhall: «Was der Rauch behält».** Auftraggeberin Mara, Art Boss, ab Tiefe 25, Lohn 220 Erfahrung. Nach «Der Maulwurf», vor «Die Quelle». Maras verhaftete Leute wurden geleert, ihre Erinnerungen stecken im Nachhall.
+**Auftrag zum Nachhall: «Was der Rauch behält».** Auftraggeberin Mara, Art Boss, ab Tiefe 25, Lohn 220 Erfahrung. Nach «Der Maulwurf», vor «Die Esse». Maras verhaftete Leute wurden geleert, ihre Erinnerungen stecken im Nachhall.
 
 - Angebot: «Die Leute, die sie mir genommen haben, sind nicht tot. Nicht ganz. Wer tief genug hinabsteigt, hört sie, auf Tiefe 25, alle durcheinander. Die Späher nennen es den Nachhall. Er steht zwischen Dir und der Esse. Geh hin, hör nicht zu lange zu und bring sie nach Hause.»
 - Abschluss: «Du hast sie gehen lassen. (Sie schweigt lange.) Hast Du einen Namen gehört, den Du kennst? (Eine der Stimmen war Deine eigene. Du sagst es ihr nicht.) Gib Thom die Namen, die Du lesen konntest. Dann geh. Die Esse wartet, und Elara mit ihr.»

@@ -17,7 +17,7 @@ const WAHL = (window.storyDialog && window.storyDialog.byQuest) || {};
 
 // Story v6.1: Prolog und vier Akte (Index 0 = Prolog · Der Dienst), Namen wie
 // in js/storySystem.js, die Nummer fuer den Spieler ist der Index (Stufe 1b).
-const ACTS = ['Prolog · Der Dienst', 'Akt 1 · Treuer Diener', 'Akt 2 · Das Doppelspiel', 'Akt 3 · Die Enttarnung', 'Akt 4 · Die Quelle'];
+const ACTS = ['Prolog · Der Dienst', 'Akt 1 · Treuer Diener', 'Akt 2 · Das Doppelspiel', 'Akt 3 · Die Enttarnung', 'Akt 4 · Die Esse'];
 const NPC = {
   aldric: 'Ratsherr Aldric', harren: 'Bürgermeister Harren', elara: 'Elara',
   mara: 'Späherin Mara', branka: 'Schmiedemeisterin Branka', thom: 'Setzer Thom',
@@ -187,7 +187,7 @@ out += '| Boss | Tiefe | Quest |\n|---|---|---|\n';
 out += '| Kettenmeister | 10 | Der Kettenmeister (Mara) |\n';
 out += '| Zeremonienmeister | 20 | Die Ritualkammer (Elara) |\n';
 out += '| Der Nachhall | 25 | Was der Rauch behält (Mara); flüstert aus dem Gespielten, wechselt die Gestalt (Hall, Schwarm, Chor), Namen gehen an Thoms Presse |\n';
-out += '| Elara, besessen | 30 | Die Quelle (Branka, Abgabe bei Thom) |\n';
+out += '| Elara, besessen | 30 | Die Esse (Branka, Abgabe bei Thom) |\n';
 out += '| Der Nachhall der Esse | 30, 60, … | kein Auftrag: steht dort, wenn die Quelle nicht läuft (ersetzt den Schattenrat) |\n\n';
 out += '---\n';
 

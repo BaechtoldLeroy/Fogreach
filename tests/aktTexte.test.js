@@ -51,9 +51,9 @@ test('Keine Saetze aus v3/v4 mehr in Titelkarten und NPC-Zeilen', () => {
   assert.deepStrictEqual(treffer, [], 'alte Texte');
 });
 
-test('Akt 4 heisst wie in der Bibel: Die Quelle', () => {
-  assert.strictEqual(dicts.de['story.act.bruch.name'], 'Die Quelle');
-  assert.strictEqual(dicts.en['story.act.bruch.name'], 'The Source');
+test('Akt 4 heisst Die Esse (seit b478, vorher Die Quelle)', () => {
+  assert.strictEqual(dicts.de['story.act.bruch.name'], 'Die Esse');
+  assert.strictEqual(dicts.en['story.act.bruch.name'], 'The Furnace');
 });
 
 test('Die Titelkarte von Akt 4 folgt auf den Maulwurf und verraet das Finale nicht (v6.1)', () => {
