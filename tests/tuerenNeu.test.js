@@ -24,8 +24,9 @@ async function bis(H, js, runden) {
 /**
  * Einen Raum mit Toren beider Richtungen betreten; Gegner weg, Spieler
  * unverwundbar. Je Richtung wird ein Tor samt ANLAUFSPUR gewaehlt
- * (window.__torTest_<richtung>): eine 44 px breite Spur quer durch das Tor,
- * 110 px zu jeder Seite frei von festen Koerpern ausser dem Tor selbst.
+ * (window.__torTest_<richtung>): eine Spur quer durch das Tor, so breit wie
+ * der Spielerkoerper (34 x 56) plus Rand, 110 px zu jeder Seite frei von
+ * festen Koerpern ausser dem Tor selbst.
  *
  * Der Raum ist zufaellig. Bis b459 lief der Test stur von der Tormitte los:
  * stand dort ein Kohlebecken, begann der Spieler IN ihm, die Trennung schob
@@ -49,12 +50,15 @@ function raumMitToren(H) {
       (sc.physics.world.staticBodies.entries || []).forEach(function (b) { if (b && b.enable) fest.push(b); });
       for (var i = 0; i < t.length; i++) {
         var d = t[i], L = waag ? d.displayWidth : d.displayHeight;
+        // Halbe Spurbreite: der Koerper ist 34 breit und 56 hoch, laeuft also
+        // waagrecht durch ein senkrechtes Tor mit seiner Hoehe voran.
+        var halb = waag ? 22 : 34;
         // [E] reicht 100 px weit: vom Startpunkt (70 vor dem Tor) hoechstens 48 seitlich.
-        for (var off = 0; off <= Math.min(L / 2 - 26, 48); off += 8) {
+        for (var off = 0; off <= Math.min(L / 2 - halb - 4, 48); off += 8) {
           for (var s = 1; s >= -1; s -= 2) {
             var lx = waag ? d.x + s * off : d.x, ly = waag ? d.y : d.y + s * off;
-            var rx = waag ? lx - 22 : lx - 110, ry = waag ? ly - 110 : ly - 22;
-            var rw = waag ? 44 : 220, rh = waag ? 220 : 44;
+            var rx = waag ? lx - halb : lx - 110, ry = waag ? ly - 110 : ly - halb;
+            var rw = waag ? 2 * halb : 220, rh = waag ? 220 : 2 * halb;
             var frei = fest.every(function (b) {
               if (b === d.body) return true;
               return b.right <= rx || b.x >= rx + rw || b.bottom <= ry || b.y >= ry + rh;
