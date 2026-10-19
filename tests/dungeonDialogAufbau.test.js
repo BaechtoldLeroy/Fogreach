@@ -108,3 +108,42 @@ test('Ueberspringen zeigt sofort alles', async () => {
   })()`);
   assert.strictEqual(text(), VOLL, 'nach dem Ueberspringen fehlt noch Text');
 });
+
+// Gemeldet: "eine Tasteneingabe soll zuerst dazu fuehren, dass der gesamte
+// Text angezeigt wird, nicht grad, dass der Dialog abgebrochen wird" (Maras
+// Kellerdialoge). Die erste Taste zeigt den Rest, erst die zweite bestaetigt.
+test('Erste Taste zeigt den ganzen Text, erst die zweite schliesst', async () => {
+  helferSetzen();
+  H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    window.__dlgWeiter = 0;
+    window.EventSystem.showEventChoiceDialog(sc, ${JSON.stringify(VOLL)}, [
+      { label: 'Weiter', callback: function () { window.__dlgWeiter++; } }
+    ]);
+  })()`);
+  assert.ok(text().length < VOLL.length, 'der Text steht schon ganz da, der Fall wird nicht geprueft');
+  const taste = () => H.run(`(function () {
+    window.game.scene.getScene('GameScene').input.keyboard.emit('keydown-SPACE');
+  })()`);
+  taste();
+  assert.strictEqual(text(), VOLL, 'die erste Taste hat den Text nicht vervollstaendigt');
+  assert.strictEqual(H.run('window.__dlgWeiter'), 0, 'die erste Taste hat den Dialog schon geschlossen');
+  taste();
+  assert.strictEqual(H.run('window.__dlgWeiter'), 1, 'die zweite Taste hat den Dialog nicht bestaetigt');
+});
+
+test('Bei einer Auswahl ueberspringt die Taste nur den Aufbau und waehlt nichts', async () => {
+  helferSetzen();
+  H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    window.__dlgWahl = 0;
+    window.EventSystem.showEventChoiceDialog(sc, ${JSON.stringify(VOLL)}, [
+      { label: 'A', callback: function () { window.__dlgWahl++; } },
+      { label: 'B', callback: function () { window.__dlgWahl++; } }
+    ]);
+    sc.input.keyboard.emit('keydown-SPACE');
+    sc.input.keyboard.emit('keydown-SPACE');
+  })()`);
+  assert.strictEqual(text(), VOLL, 'die Taste hat den Aufbau nicht uebersprungen');
+  assert.strictEqual(H.run('window.__dlgWahl'), 0, 'eine Taste hat eine Auswahl getroffen');
+});

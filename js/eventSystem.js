@@ -2882,9 +2882,16 @@
     // den Knopf treffen zu müssen. Mehrfach-Auswahlen bleiben BEWUSST
     // klickpflichtig: dort wäre eine Taste eine willkürlich getroffene
     // Story-/Belohnungsentscheidung.
-    if (choices.length === 1 && scene.input && scene.input.keyboard) {
-      var onlyChoice = choices[0];
+    //
+    // Laeuft der Wort-fuer-Wort-Aufbau noch, zeigt die erste Taste zuerst den
+    // ganzen Text (gemeldet: Maras Kellerdialoge brachen sonst mitten im Satz
+    // ab). Erst die naechste Taste bestaetigt. Bei Mehrfach-Auswahlen
+    // ueberspringt die Taste nur den Aufbau und waehlt nie etwas.
+    if (scene.input && scene.input.keyboard) {
+      var onlyChoice = (choices.length === 1) ? choices[0] : null;
       dismissKeyHandler = function () {
+        if (_aufbau && typeof _aufbau.ueberspringen === 'function' && _aufbau.ueberspringen()) return;
+        if (!onlyChoice) return;
         cleanup(); // hängt die Tasten selbst wieder ab
         if (typeof onlyChoice.callback === 'function') onlyChoice.callback();
       };
