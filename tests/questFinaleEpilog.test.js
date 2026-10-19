@@ -38,10 +38,10 @@ test('Die Namen auf den Gesuchen: wie viele zurueckkehren', () => {
   assert.ok(/Einige der Verschwundenen/.test(text({})));
 });
 
-test('Der Konvoi: der gerettete Mann kehrt zurueck, Maras Netz ist zerrissen', () => {
+test('Der Konvoi: wessen Phiole zerbrach, kehrt zurueck, Maras Netz ist zerrissen', () => {
   const t = text({ convoy_blade_drawn: true, convoy_blown: true, petitions_kept: true });
-  assert.ok(/Mann vom Konvoi/.test(t), 'der Mann vom Konvoi fehlt');
-  assert.ok(/Mara bleibt verschwunden/.test(t), 'Maras Fehlen wird nicht erzaehlt');
+  assert.ok(/Phiole stand, die am Konvoi zerbrach/.test(t), 'der Mensch aus der Phiole vom Konvoi fehlt');
+  assert.ok(/Danach sieht sie keiner mehr/.test(t), 'Maras Fehlen wird nicht erzaehlt');
   assert.ok(!/Mara verteilt/.test(t));
   assert.ok(/Mara verteilt/.test(text({ petitions_kept: true })), 'ohne Konvoi-Folgen hilft Mara');
 });

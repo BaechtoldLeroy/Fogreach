@@ -8,7 +8,7 @@ if (window.i18n) {
     'room.cleared.2': 'Der Raum atmet wieder.',
     'room.cleared.3': 'Boden gewonnen.',
     'room.cleared.4': 'Die Schatten weichen — vorerst.',
-    'room.cleared.5': 'Ihre Asche staubt im Kerzenlicht.',
+    'room.cleared.5': 'Ihr Rauch verweht im Kerzenlicht.',
     'room.cleared.6': 'Ein Raum mehr im Rücken der Stadt.',
     'room.cleared.7': 'Die Ketten werden leichter.',
     'room.objective_done': '✓ Ziel erfüllt!',
@@ -34,7 +34,7 @@ if (window.i18n) {
     'room.cleared.2': 'The room breathes again.',
     'room.cleared.3': 'Ground gained.',
     'room.cleared.4': 'The shadows recede — for now.',
-    'room.cleared.5': 'Their ashes drift in the candlelight.',
+    'room.cleared.5': 'Their smoke drifts away in the candlelight.',
     'room.cleared.6': 'Another room reclaimed for the city.',
     'room.cleared.7': 'The chains grow lighter.',
     'stairs.locked.objective': "This room's task is still open.",
@@ -184,12 +184,14 @@ function computeRunRoomCount() {
 // ---- Story Room Descriptions (German) ----
 const ROOM_DESCRIPTIONS = {
   'RathausArchive': 'Rathaus-Archiv \u2014 Verbotene Protokolle lagern hier...',
-  'RitualVault':    'Ritualkammer \u2014 Dämonische Energie pulsiert in der Luft...',
+  // Stufe 1b (Variante A): hier werden Menschen abgefuellt; der Atem des
+  // Daemons der Esse steigt bis hierher.
+  'RitualVault':    'Ritualkammer \u2014 Kreidekreis, Ketten, leere Phiolen. Der Atem des Dämons hängt in der Luft...',
   'PrisonDepths':   'Kerkertiefen \u2014 Schreie hallen durch die Gänge...',
   'CouncilChamber': 'Ratskammer \u2014 Der Thron des Kettenrats steht verlassen...',
   'ForgottenCrypt': 'Vergessene Krypta \u2014 Uralte Siegel leuchten schwach...',
   // #161: die Finalarena
-  'DieQuelle':      'Die Quelle \u2014 Hier beginnt der Nebel.',
+  'DieQuelle':      'Die Esse \u2014 Hier entsteht der Nebel.',
   'ElarasVersteck': 'Elaras Versteck \u2014 Hier findet Dich keiner.'
 };
 // #87: die deutschen Texte oben sind die Quelle; jedes Feld liefert danach
@@ -200,11 +202,11 @@ if (window.i18n && typeof window.i18n.binden === 'function') {
   });
   window.i18n.register('en', {
     'room.desc.RathausArchive': 'Town Hall Archive \u2014 Forbidden records are stored here...',
-    'room.desc.RitualVault':    'Ritual Chamber \u2014 Demonic energy pulses in the air...',
+    'room.desc.RitualVault':    'Ritual Chamber \u2014 Chalk circle, chains, empty vials. The demon\'s breath hangs in the air...',
     'room.desc.PrisonDepths':   'Dungeon Depths \u2014 Screams echo through the halls...',
     'room.desc.CouncilChamber': 'Council Chamber \u2014 The throne of the Chain Council stands abandoned...',
     'room.desc.ForgottenCrypt': 'Forgotten Crypt \u2014 Ancient seals glow faintly...',
-    'room.desc.DieQuelle':      'The Source \u2014 This is where the fog begins.',
+    'room.desc.DieQuelle':      'The Forge \u2014 This is where the fog is born.',
     'room.desc.ElarasVersteck': "Elara's Hideout \u2014 Nobody will find you here."
   });
 }

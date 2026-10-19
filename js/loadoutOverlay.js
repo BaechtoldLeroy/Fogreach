@@ -14,7 +14,7 @@
   if (window.i18n) {
     window.i18n.register('de', {
       'loadout.title': 'Fähigkeiten-Loadout',
-      'loadout.hint': 'Klicke auf einen Slot, dann auf eine erlernte Fähigkeit. ESC zum Schließen.',
+      'loadout.hint': 'Klicke auf einen Slot, dann auf eine erlernte Fähigkeit. ESC zum Schliessen.',
       'loadout.hint_touch': 'Tippe auf einen Slot, dann auf eine erlernte Fähigkeit.',
       'loadout.hint_slot': 'Wähle eine Fähigkeit für {slot}.',
       'loadout.pool_header': 'Fähigkeiten',
@@ -24,7 +24,7 @@
       'loadout.locked_tip': 'Noch nicht erlernt — schalte sie im Talentbaum frei.',
       'loadout.equipped_tip': 'Ausgerüstet auf {slot}',
       'loadout.empty_slot': 'Leer',
-      'loadout.close': 'Schließen'
+      'loadout.close': 'Schliessen'
     });
     window.i18n.register('en', {
       'loadout.title': 'Ability Loadout',

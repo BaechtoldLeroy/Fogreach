@@ -104,15 +104,15 @@ if (window.i18n) {
     'amulet.fx.lifesteal': 'Heilt 18% des Schadens',
     'amulet.fx.aura': 'Brennende Aura schadet Gegnern nahebei',
     'amulet.fx.tempo': 'Mehr Lauf- und Angriffstempo',
-    'amulet.fx.orbit': 'Rotierende Klingen umkreisen dich',
+    'amulet.fx.orbit': 'Rotierende Klingen umkreisen Dich',
     'amulet.fx.killburst': 'Getötete Gegner explodieren',
     'amulet.fx.dashstrike': 'Ausweichrolle phast durch und verletzt',
     'amulet.fx.momentum': 'Mehr Schaden je Kill (stapelt sich)',
     'amulet.fx.frost': 'Treffer frosten; Frost-Gegner zersplittern',
     'amulet.fx.glass': '+50% Schaden, −25% Max-LP',
-    'amulet.fx.revive': 'Überlebt den Tod 1× pro Run',
+    'amulet.fx.revive': 'Überlebt den Tod 1× pro Lauf',
     'amulet.fx.bloodpact': 'Fähigkeiten ohne Cooldown, kosten LP',
-    'shop.amulet.section': '— Amulette (run-spezifisch) —',
+    'shop.amulet.section': 'Amulette · Nachbildungen, halten einen Lauf',
     // Feature 059 (#42) WP05: localized amulet names (keyed by effect).
     'amulet.name.twin': 'Amulett der Zwillingsklinge',
     'amulet.name.chain': 'Kettenherz',
@@ -236,7 +236,7 @@ if (window.i18n) {
     'amulet.fx.glass': '+50% damage, -25% max HP',
     'amulet.fx.revive': 'Survive death once per run',
     'amulet.fx.bloodpact': 'Abilities cost HP, no cooldown',
-    'shop.amulet.section': '— Amulets (run-specific) —',
+    'shop.amulet.section': 'Amulets · replicas, last one run',
     // Feature 059 (#42) WP05: localized amulet names (keyed by effect).
     'amulet.name.twin': 'Twinblade Amulet',
     'amulet.name.chain': 'Chainheart',
@@ -674,13 +674,13 @@ if (window.i18n) {
     lifesteal: 'Heilt 18% des Schadens',
     aura: 'Brennende Aura schadet Gegnern nahebei',
     tempo: 'Mehr Lauf- und Angriffstempo',
-    orbit: 'Rotierende Klingen umkreisen dich',
+    orbit: 'Rotierende Klingen umkreisen Dich',
     killburst: 'Getötete Gegner explodieren',
     dashstrike: 'Ausweichrolle phast durch und verletzt',
     momentum: 'Mehr Schaden je Kill (stapelt sich)',
     frost: 'Treffer frosten; Frost-Gegner zersplittern',
     glass: '+50% Schaden, −25% Max-LP',
-    revive: 'Überlebt den Tod 1× pro Run',
+    revive: 'Überlebt den Tod 1× pro Lauf',
     bloodpact: 'Fähigkeiten ohne Cooldown, kosten LP'
   });
   function getAmuletEffectDesc(effect) {

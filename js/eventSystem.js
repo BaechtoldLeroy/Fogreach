@@ -9,8 +9,8 @@
       'event.treasure.toast_spawn': 'Etwas Verborgenes schimmert...',
       'event.treasure.object_label': 'Schatz',
       'event.treasure.choice_gold': 'Gold nehmen (+{amount})',
-      'event.treasure.choice_search': 'Gründlich durchsuchen (Item)',
-      'event.treasure.choice_ransack': 'Gründlich durchwühlen (seltenes Item — weckt {gegner} Elitewachen)',
+      'event.treasure.choice_search': 'Gründlich durchsuchen (Gegenstand)',
+      'event.treasure.choice_ransack': 'Gründlich durchwühlen (seltener Gegenstand, weckt {gegner} Elitewachen)',
       'event.treasure.choice_ignore': 'Ignorieren',
       'event.treasure.toast_ransack': 'Ein seltener Fund — aber der Lärm weckt {gegner} Elitewachen!',
       'event.treasure.toast_ransack_fragment': 'Zwischen dem Plunder liegt ein Wissensfragment.',
@@ -31,26 +31,26 @@
       'event.cursed.name': 'Verfluchte Truhe',
       'event.cursed.toast_spawn': 'Eine dunkle Aura umgibt etwas...',
       'event.cursed.object_label': 'Verfl. Truhe',
-      'event.cursed.choice_open': 'Öffnen (Risiko: -25% Max-LP für den Run, Belohnung: {amount} Gold + Item)',
+      'event.cursed.choice_open': 'Öffnen (Risiko: -25% Max-LP für diesen Lauf, Belohnung: {amount} Gold + Gegenstand)',
       'event.cursed.choice_safe': 'Vorsichtig öffnen (kein Risiko, weniger Beute)',
       'event.cursed.choice_leave': 'In Ruhe lassen',
-      'event.cursed.toast_curse': 'Fluch! -25% Max-LP bis Run-Ende, aber gute Beute!',
+      'event.cursed.toast_curse': 'Fluch! -25% Max-LP bis zum Ende des Laufs, aber gute Beute!',
       'event.cursed.toast_safe': '+{amount} Gold (sicher)',
       // Lore fragment
       'event.lore.name': 'Altes Schriftstück',
       'event.lore.toast_spawn': '📜 Ein altes Schriftstück glüht in der Nähe...',
       'event.lore.dialog_title': 'Altes Schriftstück',
-      'event.lore.dialog_hint': 'Klick, Leertaste oder ESC zum Schließen',
+      'event.lore.dialog_hint': 'Klick, Leertaste oder ESC zum Schliessen',
       'event.lore.text.1': '...die Schatten flüstern Namen, die niemand mehr aussprechen sollte...',
-      'event.lore.text.2': '...der Kettenrat schloss einen Pakt mit etwas Älterem als die Stadt...',
+      'event.lore.text.2': '...jeder im Rat siegelte seinen Pakt im Feuer der Esse, mit dem, was darin gebunden liegt...',
       'event.lore.text.3': '...wer das Siegel bricht, öffnet einen Pfad in beide Richtungen...',
       'event.lore.text.4': '...die Tiere wussten zuerst, dass etwas in den Tiefen wachte...',
       'event.lore.text.5': '...verbrannte Seiten, doch ein Wort bleibt: "Dämmerstein"...',
       'event.lore.text.6': '...wir gruben tiefer als jede Karte erlaubte. Möge man uns vergeben...',
       // Feature 051: Akt-1-themed fragments — political subtext anchors
-      'event.lore.text.fragment_lost_history': '...die Stadtchronik nennt 1411 als Gründungsjahr. Aber die Steine an den Mauern tragen Symbole, die niemand mehr lesen darf — und sie sind älter als die Stadt selbst behauptet zu sein...',
-      'event.lore.text.fragment_council_pact': '...drei Siegel, eine Unterschrift. Magistrat, Klerus, Garde — sie streiten in den Sälen, aber unter den Sälen treffen sie eine ältere Macht. Die Schriftrolle nennt sie nur "den, der die Erinnerung frisst"...',
-      'event.lore.text.fragment_personal_amnesia': '...mein Name steht in zwei Listen: einmal als Archivschmied, einmal als "zur Reinigung freigegeben". Der Unfall an der Forge war geplant. Was ich nicht mehr weiß, wollte jemand begraben sehen...',
+      'event.lore.text.fragment_lost_history': '...die Stadtchronik nennt 1411 als Gründungsjahr. Aber die Steine an den Mauern tragen Symbole, die niemand mehr lesen darf, und sie sind älter, als die Stadt selbst behauptet zu sein...',
+      'event.lore.text.fragment_council_pact': '...drei Siegel, eine Unterschrift. Magistrat, Klerus, Garde streiten in den Sälen, aber unter den Sälen siegeln sie ihren Pakt im Feuer der Esse. Was darin gebunden liegt, nennt die Schriftrolle nur "den, der die Erinnerung frisst"...',
+      'event.lore.text.fragment_personal_amnesia': '...mein Name steht in zwei Listen: einmal als Archivschmied, einmal als "zur Reinigung freigegeben". Der Unfall in der Archivschmiede war geplant. Was ich nicht mehr weiss, wollte jemand begraben sehen...',
       // Environmental hazard
       'event.hazard.name': 'Einsturzgefahr',
       'event.hazard.toast_spawn': '🪨 Vorsicht — Decke stürzt ein! AUSWEICHEN!',
@@ -135,19 +135,19 @@
       'event.fountain.toast_spawn': 'Ein leuchtender Brunnen erscheint...',
       'event.fountain.object_label': 'Brunnen',
       'event.fountain.choice_drink': 'Trinken',
-      'event.fountain.choice_offer': 'Blut geben (-25% Max-LP für den Run) — Segen',
+      'event.fountain.choice_offer': 'Blut geben (-25% Max-LP für diesen Lauf): Segen',
       'event.fountain.choice_offer_gold': 'Münzen opfern (-{kosten} Gold) — Beute',
       'event.fountain.choice_ignore': 'Ignorieren',
       'event.fountain.outcome.heal':       'Reines Wasser! Volle Heilung.',
-      'event.fountain.outcome.damage_buff':'Stärke! +25% Schaden bis Run-Ende.',
-      'event.fountain.outcome.speed_buff': 'Eile! +20% Lauftempo bis Run-Ende.',
-      'event.fountain.outcome.armor_buff': 'Schutz! +5% Rüstung bis Run-Ende.',
+      'event.fountain.outcome.damage_buff':'Stärke! +25% Schaden bis zum Ende des Laufs.',
+      'event.fountain.outcome.speed_buff': 'Eile! +20% Lauftempo bis zum Ende des Laufs.',
+      'event.fountain.outcome.armor_buff': 'Schutz! +5% Rüstung bis zum Ende des Laufs.',
       'event.fountain.outcome.loot':       'Etwas glitzert im Wasser...',
-      'event.fountain.outcome.maxhp_debuff':'Bitter! -20% Max-LP bis Run-Ende.',
-      'event.fountain.outcome.speed_debuff':'Schwer! -10% Lauftempo bis Run-Ende.',
-      'event.fountain.outcome.damage_debuff':'Schwach! -10% Schaden bis Run-Ende.',
+      'event.fountain.outcome.maxhp_debuff':'Bitter! -20% Max-LP bis zum Ende des Laufs.',
+      'event.fountain.outcome.speed_debuff':'Schwer! -10% Lauftempo bis zum Ende des Laufs.',
+      'event.fountain.outcome.damage_debuff':'Schwach! -10% Schaden bis zum Ende des Laufs.',
       'event.fountain.outcome.nothing':    'Nichts geschieht.',
-      'event.fountain.outcome.strong_buff':'Mächtige Gabe! +50% Schaden bis Run-Ende.',
+      'event.fountain.outcome.strong_buff':'Mächtige Gabe! +50% Schaden bis zum Ende des Laufs.',
       'event.fountain.outcome.rare_loot':  'Seltener Schatz!',
       'event.fountain.outcome.haste_buff': 'Das Wasser beschleunigt deine Hand: +25% Angriffstempo!',
       'event.fountain.outcome.potions':    'Zwei Fläschchen treiben an die Oberfläche.',
@@ -184,14 +184,14 @@
       'event.lore.dialog_title': 'Old Manuscript',
       'event.lore.dialog_hint': 'Click, Space or ESC to close',
       'event.lore.text.1': '...the shadows whisper names no one should speak anymore...',
-      'event.lore.text.2': '...the Chain Council made a pact with something older than the city...',
+      'event.lore.text.2': '...every councillor sealed a pact in the fire of the forge, with what lies bound inside it...',
       'event.lore.text.3': '...whoever breaks the seal opens a path in both directions...',
       'event.lore.text.4': '...the animals knew first that something waited in the depths...',
       'event.lore.text.5': '...burned pages, but one word remains: "Twilightstone"...',
       'event.lore.text.6': '...we dug deeper than any map allowed. May we be forgiven...',
-      'event.lore.text.fragment_lost_history': '...the city chronicle names 1411 as the founding year. But the stones in the walls carry symbols no one is allowed to read anymore — and they are older than the city itself claims to be...',
-      'event.lore.text.fragment_council_pact': '...three seals, one signature. Magistrate, Clergy, Guard — they quarrel in the halls, but beneath the halls they meet an older power. The scroll names it only as "the one who eats memory"...',
-      'event.lore.text.fragment_personal_amnesia': '...my name appears in two lists: once as Archivesmith, once as "cleared for purification". The Forge accident was planned. What I no longer remember, someone wanted buried...',
+      'event.lore.text.fragment_lost_history': '...the city chronicle names 1411 as the founding year. But the stones in the walls carry symbols no one is allowed to read anymore, and they are older than the city itself claims to be...',
+      'event.lore.text.fragment_council_pact': '...three seals, one signature. Magistrate, Clergy, Guard quarrel in the halls, but beneath the halls they seal their pact in the fire of the forge. What lies bound inside it, the scroll names only "the one who eats memory"...',
+      'event.lore.text.fragment_personal_amnesia': '...my name appears in two lists: once as Archivesmith, once as "cleared for purification". The accident at the Archive Forge was planned. What I no longer remember, someone wanted buried...',
       'event.hazard.name': 'Cave-in Risk',
       'event.hazard.toast_spawn': '🪨 Watch out — ceiling collapsing! DODGE!',
       'event.hazard.toast_hit': '🪨 Cave-in! Heavy hit!',
@@ -2270,6 +2270,27 @@
   // engen Raum, damit die letzte Stufe ueberhaupt greift.
   var LORE_ABSTAND_HART = 130;
 
+  /**
+   * Die Schriftstuecke, die in diesem Akt liegen koennen (Feature 051: drei
+   * politische Fragmente zwischen den alten). Stufe 1b: 'Zwei Listen' sagt,
+   * der Unfall in der Archivschmiede war geplant. Das darf erst ab der
+   * Enttarnung (Akt-Index 3) auftauchen, vorher naehme es die Wendung vorweg.
+   */
+  function lorePool(aktIndex) {
+    var keys = [
+      'event.lore.text.1',
+      'event.lore.text.2',
+      'event.lore.text.3',
+      'event.lore.text.4',
+      'event.lore.text.5',
+      'event.lore.text.6',
+      'event.lore.text.fragment_lost_history',
+      'event.lore.text.fragment_council_pact'
+    ];
+    if ((aktIndex | 0) >= 3) keys.push('event.lore.text.fragment_personal_amnesia');
+    return keys;
+  }
+
   function spawnLoreFragment(scene) {
     if (!scene || !scene.add || !scene.physics) return;
     cleanupLore();
@@ -2367,17 +2388,8 @@
     // chance as the existing flavor fragments — over the 1.5-2h Akt-1
     // playthrough the player will encounter ~3-5 fragment events, statistically
     // hitting at least one of these three.
-    var loreKeys = [
-      'event.lore.text.1',
-      'event.lore.text.2',
-      'event.lore.text.3',
-      'event.lore.text.4',
-      'event.lore.text.5',
-      'event.lore.text.6',
-      'event.lore.text.fragment_lost_history',
-      'event.lore.text.fragment_council_pact',
-      'event.lore.text.fragment_personal_amnesia'
-    ];
+    var loreKeys = lorePool(window.storySystem && typeof window.storySystem.getCurrentActIndex === 'function'
+      ? window.storySystem.getCurrentActIndex() : 0);
     var chosenKey = loreKeys[Math.floor(Math.random() * loreKeys.length)];
     var chosen = T(chosenKey);
     var loreTitel = SS ? SS.fragmentTitel(chosenKey) : '';
@@ -3017,6 +3029,7 @@
 
   window.EventSystem = {
     onRoomEnter: onRoomEnter,
+    lorePool: lorePool,
     reset: reset,
     registerEventType: registerEventType,
     showEventChoiceDialog: showEventChoiceDialog,

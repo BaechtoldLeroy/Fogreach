@@ -17,14 +17,15 @@ before(async () => {
 after(async () => { if (H) await H.shutdown(); });
 
 /** Epilog-Stand setzen und den Hub neu aufbauen. */
-async function epilog(flags) {
+async function epilog(flags, offen) {
   H.run(`(function () {
     var qs = window.questSystem;
     window.storySystem.advanceToAct(4);
     var st = qs.getQuestSaveData();
     // Im Epilog ist alles erledigt — sonst bietet Branka noch einen Auftrag an.
     st.quests = {};
-    Object.keys(qs.QUEST_DEFINITIONS).forEach(function (id) { st.quests[id] = { status: 'completed', objectives: [] }; });
+    var offen = ${JSON.stringify(offen || {})};
+    Object.keys(qs.QUEST_DEFINITIONS).forEach(function (id) { st.quests[id] = { status: offen[id] || 'completed', objectives: offen[id] ? null : [] }; });
     st.flags = ${JSON.stringify(Object.assign({ story_ending: true, harren_dead: true }, flags))};
     qs.loadQuestSaveData(st);
     window.game.scene.getScene('HubSceneV2').scene.restart({});
@@ -133,6 +134,21 @@ test('Mara fehlt im Epilog, wenn ihr Netz am Konvoi verbrannt ist', async () => 
   assert.strictEqual(maraSichtbar(), false, 'Mara steht trotz verbranntem Netz auf dem Platz');
   await epilog({ convoy_silent: true });
   assert.strictEqual(maraSichtbar(), true, 'Mara fehlt, obwohl ihr Netz steht');
+});
+
+test('Stufe 1b: mit verbranntem Netz fuehrt Mara Dich noch zu Aldric, erst danach fehlt sie', async () => {
+  // Wer zuerst bei Thom abgab, kam bis b459 an "Die letzte Wache" nicht mehr
+  // heran: Mara fehlte ab dem Epilog sofort, und Aldric bekam kein Ende.
+  await epilog({ convoy_blown: true, convoy_blade_drawn: true }, { mara_assault: 'available' });
+  assert.strictEqual(maraSichtbar(), true, 'Mara fehlt, bevor sie Dich zu Aldric gefuehrt hat');
+  const r = H.run(`(function () {
+    var sc = ${hub}, n = sc.npcs.filter(function (x) { return x.data.id === 'mara'; })[0];
+    var orig = sc._showDialoguePages, fang = null;
+    sc._showDialoguePages = function (d, t, p, mode, q) { if (!fang) fang = { mode: mode, quest: q ? q.id : null }; };
+    try { sc._dialogOpen = false; sc._showNpcDialogue(n.data); } finally { sc._showDialoguePages = orig; sc._dialogOpen = false; }
+    return fang;
+  })()`);
+  assert.deepStrictEqual([r.mode, r.quest], ['offer', 'mara_assault'], 'Mara bietet die letzte Wache nicht an: ' + JSON.stringify(r));
 });
 
 function zeilen(npcId) {

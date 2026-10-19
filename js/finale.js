@@ -253,16 +253,16 @@
       _konvoiSeite(scene, { text: text, wahlen: [{ label: _t('Weiter', 'Continue'), callback: function () {} }] });
     };
     _konvoiSeite(scene, { text: _t(
-      '(Am Karren zerren zwei Wachen einen Mann von der Ladefläche. Kein Verbrecher: ein Bürger, die Hände gebunden. Einer der Verschwundenen.)\n\n(Er sieht Dich an, als wüsste er, dass unter der Uniform keiner von ihnen steckt.)',
-      '(At the cart two guards drag a man off the bed. No criminal: a citizen, hands bound. One of the disappeared.)\n\n(He looks at you as if he knew there is none of them under that uniform.)'
+      '(Am Karren stemmen zwei Wachen eine Kiste von der Ladefläche. Darin, in Stroh gebettet, Phiolen, jede mit dem Wachs des Rats versiegelt. Auf einem Etikett steht ein Name, den Du kennst, und Du weisst nicht, woher.)\n\n(Der Kutscher sieht auf Deine Hand an der Klinge, als ahne er, dass unter der Uniform keiner von ihnen steckt.)',
+      '(At the cart two guards heave a crate off the bed. Inside, bedded in straw, vials, each sealed with the council\'s wax. One label bears a name you know, and you do not know from where.)\n\n(The driver looks at your hand on the blade, as if he sensed there is none of them under that uniform.)'
     ), wahlen: [
       {
         label: _t('Still bleiben', 'Stay silent'),
         callback: function () {
           _setzen('convoy_silent');
           ende(_t(
-            'Du bleibst im Schatten. Sie bringen ihn fort. Du hast gehört, was Du hören solltest, und Maras Weg ins Lagerhaus bleibt offen.',
-            'You stay in the shadows. They take him away. You heard what you came to hear, and Mara\'s way into the warehouse stays open.'
+            'Du bleibst im Schatten. Sie laden die Kiste auf und fahren hinab. Du hast gehört, was Du hören solltest, und Maras Weg ins Lagerhaus bleibt offen.',
+            'You stay in the shadows. They load the crate and drive down. You heard what you came to hear, and Mara\'s way into the warehouse stays open.'
           ));
         }
       },
@@ -276,8 +276,8 @@
             if (window.EspionageSystem && typeof window.EspionageSystem.enttarnen === 'function') window.EspionageSystem.enttarnen();
           } catch (e) {}
           ende(_t(
-            'Du ziehst. Der Mann rennt, und Du hältst die Wachen auf. Er entkommt. Deine Verkleidung ist dahin, und mit ihr Maras Netz: Morgen wissen sie, wer hier ein und aus ging.',
-            'You draw. The man runs, and you hold the guards back. He gets away. Your disguise is gone, and with it Mara\'s network: by tomorrow they will know who came and went here.'
+            'Du ziehst. Die Wachen weichen zurück, die Kiste kippt, Glas splittert im Stroh. Im Durcheinander kommst Du davon. Deine Verkleidung ist dahin, und mit ihr Maras Netz: Morgen wissen sie, wer hier ein und aus ging.',
+            'You draw. The guards fall back, the crate tips over, glass shatters in the straw. In the confusion you get away. Your disguise is gone, and with it Mara\'s network: by tomorrow they will know who came and went here.'
           ));
         }
       }
@@ -417,8 +417,13 @@
     } catch (e) {}
 
     _seiten(scene, nachKampfSeiten().map(function (text) { return { text: text }; }).concat([
-      { text: _t('MARA: (Sie kommt die letzten Stufen herab, den Bogen gesenkt.) Sie hat ihren Vater getötet. Mit eigener Hand, und sie wusste, was sie tut. Richte sie, Archivschmied.\n\n(Elaras Klinge liegt in Deiner Hand. Was tust Du?)',
-        'MARA: (She comes down the last steps, bow lowered.) She killed her father. With her own hand, and she knew what she was doing. Judge her, Archivesmith.\n\n(Elara\'s blade is in your hand. What do you do?)'),
+      // Stufe 1b: Ist Maras Netz am Konvoi verbrannt, ist sie nicht da (wie
+      // im Epilog, questFinale maraFort). Die Frage stellt sich trotzdem.
+      { text: _flag('convoy_blown')
+        ? _t('(Niemand kommt die Stufen herab. Maras Netz ist seit dem Konvoi zerrissen, keiner nimmt Dir die Entscheidung ab. Elara hat ihren Vater getötet, mit eigener Hand, und sie wusste, was sie tut.)\n\n(Elaras Klinge liegt in Deiner Hand. Was tust Du?)',
+          '(No one comes down the steps. Mara\'s network has been torn since the convoy; no one takes the decision from you. Elara killed her father, with her own hand, and she knew what she was doing.)\n\n(Elara\'s blade is in your hand. What do you do?)')
+        : _t('MARA: (Sie kommt die letzten Stufen herab, den Bogen gesenkt.) Sie hat ihren Vater getötet. Mit eigener Hand, und sie wusste, was sie tut. Richte sie, Archivschmied.\n\n(Elaras Klinge liegt in Deiner Hand. Was tust Du?)',
+          'MARA: (She comes down the last steps, bow lowered.) She killed her father. With her own hand, and she knew what she was doing. Judge her, Archivesmith.\n\n(Elara\'s blade is in your hand. What do you do?)'),
         auswahl: [
           {
             label: _t('Verschonen', 'Spare her'),

@@ -60,9 +60,9 @@
 
     // ------------------------------------------------------------------ AKT 2
     hub_buerger_a2: {
-      prompt: 'BUERGER: Wem soll ich glauben, dem Rat oder den Gerüchten? Wem gehörst Du?',
+      prompt: 'BÜRGER: Wem soll ich glauben, dem Rat oder den Gerüchten? Wem gehörst Du?',
       choices: [
-        { label: 'Keinem von beiden.', setFlags: ['truth_told'], response: 'BUERGER: (starrt Dich an) Das ist keine Antwort, die einem Vater hilft.' },
+        { label: 'Keinem von beiden.', setFlags: ['truth_told'], response: 'BÜRGER: (starrt Dich an) Das ist keine Antwort, die einem Vater hilft.' },
         { label: '(schweigen)', response: '(Du gehst weiter. Es gibt keine Antwort, die ihm hilft.)' }
       ]
     },
@@ -92,7 +92,7 @@
     mara_contact: {
       prompt: 'MARA: Du hast früher Fragen gestellt, Archivschmied.',
       choices: [
-        { label: 'Ich habe Fragen gestellt? Früher?', response: 'MARA: Und wie. Vielleicht hat der Nebel Dich deshalb geholt. Denk drüber nach.' }
+        { label: 'Ich habe Fragen gestellt? Früher?', response: 'MARA: Und wie. Vielleicht hat man Dich deshalb geleert. Denk drüber nach.' }
       ]
     },
     elara_meeting: {
@@ -110,19 +110,21 @@
       ]
     },
     // who_you_were: Branka hilft Dir, Dich zu erinnern -> Branka-Vertrauen.
+    // Stufe 1b: Bis b459 zwei Antworten mit demselben Flag, also eine Wahl,
+    // die keine war. Jetzt eine ehrliche: Du hast gerade erfahren, wer Du
+    // warst, und Branka steht neben Dir.
     who_you_were: {
-      prompt: 'BRANKA: Willst Du wissen, wer Du warst? Ganz? Auch das, was Dir nicht gefällt?',
+      prompt: 'BRANKA: Jetzt weisst Du, wer Du warst. Auch das, was Dir nicht gefällt.',
       choices: [
-        { label: 'Ja. Sag es mir.', setFlags: ['branka_ally'], response: 'BRANKA: Jemand, der nicht aufhören konnte zu fragen. Wie jetzt. Wir stehen zusammen, wenn es soweit ist.' },
-        { label: 'Später. Erst der Rat.', setFlags: ['branka_ally'], response: 'BRANKA: Auch recht. Aber ich vergesse nicht, dass Du gefragt hast.' }
+        { label: 'Dann weiss ich, wo ich stehe.', setFlags: ['branka_ally'], response: 'BRANKA: Jemand, der nicht aufhören konnte zu fragen. Wie jetzt. Wir stehen zusammen, wenn es so weit ist.' }
       ]
     },
     // thom_truth: Thom vertraut Dir die Presse an -> Thom-Vertrauen.
+    // Stufe 1b: ebenso eine Antwort statt zweier mit demselben Ausgang.
     thom_truth: {
       prompt: 'THOM: Ich drucke, was wahr ist. Stehst Du dahinter, wenn es eng wird?',
       choices: [
-        { label: 'Ich stehe dahinter.', setFlags: ['thom_ally'], response: 'THOM: Dann sind wir zwei. Das reicht, um anzufangen.' },
-        { label: 'Wahrheit hat einen Preis.', setFlags: ['thom_ally'], response: 'THOM: Den zahle ich. Gut, dass Du ihn kennst. Wir halten zusammen.' }
+        { label: 'Ich stehe dahinter. Auch wenn es etwas kostet.', setFlags: ['thom_ally'], response: 'THOM: Dann sind wir zwei. Den Preis zahlen wir zusammen. Das reicht, um anzufangen.' }
       ]
     },
 
@@ -246,7 +248,7 @@
 
     'storydialog.mara_contact.prompt': 'MARA: You used to ask questions, Archivesmith.',
     'storydialog.mara_contact.0.label': 'I asked questions? Before?',
-    'storydialog.mara_contact.0.response': 'MARA: Oh, you did. Maybe that is why the fog took you. Think about it.',
+    'storydialog.mara_contact.0.response': 'MARA: Oh, you did. Maybe that is why they emptied you. Think about it.',
 
     'storydialog.elara_meeting.prompt': 'ELARA: (puts a sheet in front of you) Read. And then tell me whom you still believe.',
     'storydialog.elara_meeting.0.label': 'Where did you get this?',
@@ -256,17 +258,13 @@
     'storydialog.elara_blade.0.label': 'In case of what?',
     'storydialog.elara_blade.0.response': 'ELARA: (hesitates) Of anything. You never know who will stand before you in the end.',
 
-    'storydialog.who_you_were.prompt': 'BRANKA: Do you want to know who you were? All of it? Even what you will not like?',
-    'storydialog.who_you_were.0.label': 'Yes. Tell me.',
+    'storydialog.who_you_were.prompt': 'BRANKA: Now you know who you were. Even the part you do not like.',
+    'storydialog.who_you_were.0.label': 'Then I know where I stand.',
     'storydialog.who_you_were.0.response': 'BRANKA: Someone who could not stop asking. Like now. We stand together when the time comes.',
-    'storydialog.who_you_were.1.label': 'Later. The council first.',
-    'storydialog.who_you_were.1.response': 'BRANKA: Fair enough. But I will not forget that you asked.',
 
     'storydialog.thom_truth.prompt': 'THOM: I print what is true. Will you stand behind it when things get tight?',
-    'storydialog.thom_truth.0.label': 'I stand behind it.',
-    'storydialog.thom_truth.0.response': 'THOM: Then there are two of us. That is enough to start.',
-    'storydialog.thom_truth.1.label': 'Truth has a price.',
-    'storydialog.thom_truth.1.response': 'THOM: I will pay it. Good that you know it. We stick together.',
+    'storydialog.thom_truth.0.label': 'I stand behind it. Even if it costs something.',
+    'storydialog.thom_truth.0.response': 'THOM: Then there are two of us. We pay the price together. That is enough to start.',
 
     'storydialog.schattenrat_finale.prompt': 'BRANKA: Go to the forge. And come back.',
     'storydialog.schattenrat_finale.0.label': 'And Elara?',

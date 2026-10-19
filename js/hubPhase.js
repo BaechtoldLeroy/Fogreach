@@ -153,6 +153,12 @@
         : [_t('THOM: Ich drucke weiter. Irgendwer muss.', 'THOM: I keep printing. Somebody has to.')];
     }
     if (npcId === 'mara') {
+      // Stufe 1b: Ist ihr Netz am Konvoi verbrannt, steht sie nur noch, bis sie
+      // Dich zu Aldric gefuehrt hat (HubSceneV2._epilogOhne).
+      if ((flags || {}).convoy_blown) {
+        return [_t('MARA: Mein Netz ist verbrannt. Eins bleibt mir noch: Aldric. Danach bin ich weg.',
+          'MARA: My network is burned. One thing is left for me: Aldric. After that, I am gone.')];
+      }
       var zeilen = st.allies.mara
         ? [_t('MARA: Mein Netz verteilt die Blätter. Jede Gasse, jede Tür.', 'MARA: My network hands out the sheets. Every alley, every door.')]
         : [_t('MARA: Ich habe die Liste noch. Einige kommen zurück. Nicht alle.', 'MARA: I still have the list. Some come back. Not all.')];

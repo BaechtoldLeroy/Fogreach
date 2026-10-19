@@ -44,6 +44,19 @@
   // Loslassen, auf das man warten koennte.
   var zeigerScharf = false;
 
+  // Stufe 1b: die beiden Beschriftungen waren nie registriert (immer deutsch,
+  // mit 'Dungeon' und Gedankenstrich).
+  if (window.i18n && typeof window.i18n.register === 'function') {
+    window.i18n.register('de', {
+      'stash.label.stash': 'In der Truhe: bleibt über Läufe hinweg liegen',
+      'stash.label.bag': 'Dein Gepäck: kommt mit in die Keller'
+    });
+    window.i18n.register('en', {
+      'stash.label.stash': 'In the stash: stays across runs',
+      'stash.label.bag': 'Your pack: comes along into the cellars'
+    });
+  }
+
   function _t(key, fallback) {
     try {
       if (window.i18n && typeof window.i18n.t === 'function') {
@@ -378,11 +391,11 @@
         stroke: '#2a1c00', strokeThickness: 4
       }).setOrigin(0.5));
     _halten(scene.add.text(geometrie.truhe.x, geometrie.truhe.y - 18,
-      _t('stash.label.stash', 'In der Truhe — bleibt über Läufe hinweg liegen'), {
+      _t('stash.label.stash', 'In der Truhe: bleibt über Läufe hinweg liegen'), {
         fontFamily: 'monospace', fontSize: '11px', color: '#9a94a8'
       }));
     _halten(scene.add.text(geometrie.inv.x, geometrie.inv.y - 18,
-      _t('stash.label.bag', 'Dein Gepäck — kommt mit in den Dungeon'), {
+      _t('stash.label.bag', 'Dein Gepäck: kommt mit in die Keller'), {
         fontFamily: 'monospace', fontSize: '11px', color: '#9a94a8'
       }));
     hinweis = _halten(scene.add.text(geometrie.panel.x + geometrie.panel.b / 2,

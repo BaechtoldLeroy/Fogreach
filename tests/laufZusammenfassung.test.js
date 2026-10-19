@@ -143,7 +143,7 @@ describe('Laufzusammenfassung im Messing-Stil', () => {
     oeffnen(H, VOLL, true);
     const t = run(H, `({ med: ${NAMEN('laufMedaillon')}.map(function (o) { return o.texture.key; }),
       titel: ${NAMEN('laufTitel')}[0].text, tod: ${NAMEN('laufTodTon')}.length })`);
-    assert.deepStrictEqual(t, { med: ['ui_symbol_tod'], titel: 'Im Dungeon gefallen', tod: 1 });
+    assert.deepStrictEqual(t, { med: ['ui_symbol_tod'], titel: 'In den Kellern gefallen', tod: 1 });
   });
 
   test('alle Werte richtig; Hochzaehlen endet bei der Zahl und laesst sich ueberspringen', () => {

@@ -24,7 +24,7 @@
     'knowledge.title':             'Wissensbaum',
     'knowledge.fragments':         'Fragmente: {count}',
     'knowledge.btn.respec':        'Zurücksetzen',
-    'knowledge.btn.close':         'Schließen',
+    'knowledge.btn.close':         'Schliessen',
     'knowledge.btn.to_keystones':  'Grundsätze',
     'knowledge.btn.to_nodes':      'Wissen',
     // Der Preis steht NUR noch im Hover — auf dem Knopf verbrauchte er

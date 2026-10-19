@@ -184,7 +184,7 @@ describe('Druckerei-Menue', () => {
       await oeffnen(H, { akt: 0, papier: 0, verdacht: 12, gold: 500 });
       const schlecht = texte(H).filter((t) => /[[\]]/.test(t.text) || /[^\x20-\x7E\näöüÄÖÜß]/.test(t.text));
       assert.deepStrictEqual(schlecht.map((t) => t.text), [], l);
-      const knoepfe = texte(H).filter((t) => /^(Schließen|Close|Bestechen|Bribe|Tauschen|Trade)$/.test(t.text)).length;
+      const knoepfe = texte(H).filter((t) => /^(Schliessen|Close|Bestechen|Bribe|Tauschen|Trade)$/.test(t.text)).length;
       assert.strictEqual(knoepfe, 3, l + ': Knopfbeschriftung');
       // Kosten als Pixel-Symbole, nicht als Text.
       assert.ok(H.run(`${PH}.children.list.filter(function (o) { return o.name === 'druckSymbol_gold' && o.type === 'Image'; }).length`) === 2);

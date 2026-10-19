@@ -21,6 +21,43 @@
   // erkennt, was zu ihm gehoert. Zwei Stellen mit derselben eingetippten Zahl
   // laufen beim ersten Verschieben auseinander, und der Kehraus wuerde still
   // nichts mehr finden.
+  // Stufe 1b: Die Affixe standen englisch im Namenszug ueber dem Gegner,
+  // auch in der deutschen Oberflaeche. displayName bleibt der englische
+  // Rueckfall, gezeigt wird elite.affix.<id>.
+  if (typeof window !== 'undefined' && window.i18n && typeof window.i18n.register === 'function') {
+    window.i18n.register('de', {
+      'elite.affix.fanatic': 'Fanatisch',
+      'elite.affix.lightning_enchanted': 'Blitzgeladen',
+      'elite.affix.cold_aura': 'Kälteaura',
+      'elite.affix.spectral_hit': 'Geisterhieb',
+      'elite.affix.multishot': 'Mehrfachschuss',
+      'elite.affix.vampiric': 'Blutsaugend',
+      'elite.affix.berserker': 'Berserker',
+      'elite.affix.extra_strong': 'Besonders stark',
+      'elite.affix.extra_fast': 'Besonders schnell',
+      'elite.affix.magic_resistant': 'Magieresistent'
+    });
+    window.i18n.register('en', {
+      'elite.affix.fanatic': 'Fanatic',
+      'elite.affix.lightning_enchanted': 'Lightning Enchanted',
+      'elite.affix.cold_aura': 'Cold Aura',
+      'elite.affix.spectral_hit': 'Spectral Hit',
+      'elite.affix.multishot': 'Multishot',
+      'elite.affix.vampiric': 'Vampiric',
+      'elite.affix.berserker': 'Berserker',
+      'elite.affix.extra_strong': 'Extra Strong',
+      'elite.affix.extra_fast': 'Extra Fast',
+      'elite.affix.magic_resistant': 'Magic Resistant'
+    });
+  }
+  function _affixName(d) {
+    try {
+      var v = window.i18n && window.i18n.t('elite.affix.' + d.id);
+      if (typeof v === 'string' && v && v.indexOf('[MISSING:') !== 0) return v;
+    } catch (e) {}
+    return d.displayName;
+  }
+
   const AURA_TIEFE = 38;
   const NAMENSZUG_TIEFE = 51;
   // Das Miniboss-Label setzt enemy.js (dort direkt 1003).
@@ -346,7 +383,7 @@
       if (typeof scene.add.text === 'function') {
         try {
           const baseTypeName = _enemyTypeName(enemy);
-          const affixText = picked.map((d) => d.displayName).join(' ');
+          const affixText = picked.map(_affixName).join(' ');
           // #95: Der Unique heisst jetzt Bannertraeger und bekommt einen
           // zweizeiligen Zug — Rang und Gegnertyp oben, Affixe klein darunter.
           // Vorher standen beide Stufen als eine orange Zeile da; mit drei

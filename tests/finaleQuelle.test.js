@@ -178,6 +178,21 @@ test('Nach dem Kampf: richten', () => {
   assert.strictEqual(flag('elara_spared'), false);
 });
 
+test('Nach dem Kampf: ist Maras Netz verbrannt, stellt sich die Frage ohne sie (Stufe 1b)', () => {
+  // Im Epilog heisst es dann, Mara sei seit dem Konvoi fort. Bis b459 kam sie
+  // trotzdem die Stufen herab und verlangte das Urteil.
+  stand(FINALE_AKTIV, { harren_dead: true, convoy_blown: true, convoy_blade_drawn: true });
+  elaraBesiegen();
+  klick(0);
+  klick(0);
+  const d = klick(0);
+  assert.ok(!/MARA:/.test(d.text), 'Mara verlangt das Urteil, obwohl sie fort ist: ' + d.text);
+  assert.ok(/Niemand kommt die Stufen herab/.test(d.text), d.text);
+  assert.strictEqual(JSON.stringify(d.wahlen), JSON.stringify(['Verschonen', 'Richten']));
+  klick(0);
+  assert.strictEqual(flag('elara_spared'), true);
+});
+
 // --- Der Konvoi (#158, Messing-Dialog seit b447) -----------------------------
 // Er folgt direkt auf die Abhoer-Szene und traegt deren Messing: Platte und
 // Knoepfe aus uiRahmen, alles mit scrollFactor 0 (sonst gehen Taps auf dem

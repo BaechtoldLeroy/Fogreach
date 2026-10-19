@@ -202,7 +202,7 @@ test('Ritualamulett: ein Kopfstueck, selten, mit festem Namen — und kein Laufa
   assert.strictEqual(a.key, 'RITUAL_AMULETT');
   assert.strictEqual(a.tier, 2);
   assert.strictEqual(a.iLevel, 20);
-  assert.strictEqual(a.displayName, 'Ritualamulett');
+  assert.strictEqual(a.displayName, 'Nebelamulett des Rats');
   assert.ok(W.LootSystem.PERSISTENT_EQUIP_SLOTS.includes(a.type), 'Platz wird nicht gespeichert');
   // Der Lauf-Abschluss raeumt Amulette ab — dieses Stueck muss bleiben.
   const ausr = { head: a };

@@ -29,7 +29,7 @@
       'printingHouse.ui.status.blocked_by_active': 'Anderes Edikt aktiv',
       'printingHouse.ui.btn.bribe': 'Bestechen',
       'printingHouse.ui.btn.tradegold': 'Tauschen',
-      'printingHouse.ui.btn.close': 'Schließen',
+      'printingHouse.ui.btn.close': 'Schliessen',
       'printingHouse.ui.sym.paper': 'Blatt',
       'printingHouse.ui.sym.suspicion': 'Verdacht',
       'printingHouse.ui.sym.gold': 'Gold'

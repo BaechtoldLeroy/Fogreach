@@ -356,9 +356,9 @@
       rewardTier: 'story',
       prerequisites: ['harren_daughter_investigation'],
       requiredAct: 1,
-      dialogueOffer: 'Du hast das Fragment gesehen, Archivschmied. Dann weisst du, dass die Tochter nicht aus eigenem Willen geflohen ist. Sie wurde von einer dunklen Hand geführt — die untere Kammern bersten vor solchen Schatten.\n\nReinige sie. Drei der Anführer dieser ketzerischen Präsenz lauern noch dort unten, tiefer als die ersten Gänge — steige bis Tiefe 3 hinab. Fälle sie im Namen der Ordnung. Die Seele der Tochter wird es dir danken — wenn das Licht sie wiederfindet.\n\nDie Reinigung ist eine geistliche Pflicht. Nimm sie an.',
+      dialogueOffer: 'Du hast das Fragment gesehen, Archivschmied. Dann weisst Du, dass die Tochter nicht aus eigenem Willen geflohen ist. Sie wurde von einer dunklen Hand geführt, die unteren Kammern bersten vor solchen Schatten.\n\nReinige sie. Drei der Anführer dieser ketzerischen Präsenz lauern noch dort unten, tiefer als die ersten Gänge. Steige bis Tiefe 3 hinab. Fälle sie im Namen der Ordnung. Die Seele der Tochter wird es Dir danken, wenn das Licht sie wiederfindet.\n\nDie Reinigung ist eine geistliche Pflicht. Nimm sie an.',
       dialogueProgress: 'Die Anführer lauern tief — erst ab Tiefe 3. Steige hinab, finde sie, fälle sie. Jede Ketzerei, die du beendest, öffnet einen weiteren Pfad zur Reinheit.',
-      dialogueComplete: 'Du hast die Ketzerei geschlagen. Die untere Kammern atmen wieder. Die Ordnung bleibt — durch dich. Der Klerus segnet deine Hand. Bring sie weiter dorthin, wo das Licht es verlangt.'
+      dialogueComplete: 'Du hast die Ketzerei geschlagen. Die unteren Kammern atmen wieder. Die Ordnung bleibt, durch Dich. Der Klerus segnet Deine Hand. Bring sie weiter dorthin, wo das Licht es verlangt.'
     },
     garde_patrol_expansion: {
       id: 'garde_patrol_expansion',
@@ -519,9 +519,10 @@
       ],
       rewards: { xp: 60, druckblaetter: 2 },
       rewardTier: 'story',
-      // Feature 062: Backbone-Default der Gesuche-Wahl. Die Szenen-Wahl
-      // (kept/surrendered) folgt mit dem Inszenierungs-Feature.
-      completionFlags: ['petitions_surrendered'],
+      // Stufe 1b: Kein Vorgabe-Flag mehr. Bis b459 setzte der Abschluss immer
+      // petitions_surrendered, auch wer die Gesuche heimlich behielt: beide
+      // Flags standen, und 'abgegeben oder nichts gewaehlt' liess sich nie
+      // unterscheiden. Die Wahl beim Abgeben (storyDialog) setzt genau eines.
       prerequisites: [],
       requiredAct: 2,
       dialogueOffer: 'Im Keller hortet Gesindel subversive Schriften gegen den Rat. Beschlagnahme sie — drei Bündel. Lies sie nicht. Bring sie.\n\nNimmst du den Auftrag an?',
@@ -623,7 +624,7 @@
     espionage_convoy: {
       id: 'espionage_convoy',
       title: 'Der Konvoi',
-      description: 'Beschatte verkleidet einen Council-Konvoi im Lagerhaus und höre ihn ab.',
+      description: 'Beschatte verkleidet einen Konvoi des Rats im Lagerhaus und höre ihn ab.',
       npcId: 'mara',
       type: 'observe',
       chain: 6,
@@ -643,7 +644,7 @@
     espionage_archive: {
       id: 'espionage_archive',
       title: 'Das versiegelte Archiv',
-      description: 'Infiltriere verkleidet das Council-Archiv (ab Tiefe 12), höre die Schreiber ab und birg den versiegelten Akt.',
+      description: 'Infiltriere verkleidet das Archiv des Rats (ab Tiefe 12), höre die Schreiber ab und birg den versiegelten Akt.',
       npcId: 'harren',
       type: 'observe',
       chain: 7,
@@ -666,7 +667,7 @@
     espionage_informant: {
       id: 'espionage_informant',
       title: 'Der Maulwurf',
-      description: 'Enttarne verkleidet einen Council-Maulwurf in den Reihen des Widerstands (ab Tiefe 23).',
+      description: 'Enttarne verkleidet einen Maulwurf des Rats in den Reihen des Widerstands (ab Tiefe 23).',
       npcId: 'mara',
       type: 'observe',
       chain: 8,
@@ -742,7 +743,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       objectives: [
         { type: 'boss_kill', target: 'zeremonienmeister', current: 0, required: 1 }
       ],
-      rewards: { xp: 150, items: [{ key: 'RITUAL_AMULETT', basis: 'HD_SCHLANGENMASKE', tier: 2, name: 'Ritualamulett', nameKey: 'quest.reward.RITUAL_AMULETT', iconKey: 'itHeadSchlangenmaske', signatur: { armor: 0.12 } }] },
+      // Stufe 1b (Story v6.1): eines der wenigen echten Nebelamulette des Rats.
+      rewards: { xp: 150, items: [{ key: 'RITUAL_AMULETT', basis: 'HD_SCHLANGENMASKE', tier: 2, name: 'Nebelamulett des Rats', nameKey: 'quest.reward.RITUAL_AMULETT', iconKey: 'itHeadSchlangenmaske', signatur: { armor: 0.12 } }] },
       rewardTier: 'boss',
       prerequisites: ['elara_meeting'],
       requiredAct: 3,
@@ -779,7 +781,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       id: 'mara_warning',
       // v6.1: umbenannt (vorher "Maras Warnung"), es ist ein Bosskampf.
       title: 'Der Kettenmeister',
-      description: 'Besiege den Kettenmeister-Boss, der die ersten echten Beweise bewacht.',
+      description: 'Besiege den Kettenmeister auf Tiefe 10, der den Weg zu den Siegelkammern des Rats bewacht.',
       npcId: 'mara',
       type: 'boss',
       chain: 2,
@@ -794,9 +796,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       requiredAct: 2,
       // Trigger -> Akt 3 (Die Enttarnung).
       advanceAct: 3,
-      dialogueOffer: 'Der Kettenmeister hält die Siegel auf Tiefe 10. Er fesselt, was er fangen will. Fäll ihn, dann haben wir den ersten harten Beweis.',
-      dialogueProgress: 'Der Kettenmeister lebt noch, auf Tiefe 10. Wenn er dich kettet, schlag die Kette, sonst hält er dich.',
-      dialogueComplete: 'Der Kettenmeister ist gefallen, die Beweise gesichert. Jetzt kann niemand mehr leugnen, dass der Rat Menschen verarbeitet.'
+      dialogueOffer: 'Auf Tiefe 10 hält der Kettenmeister den Weg. Früher war er Hauptmann der Garde, heute ist nur noch sein Befehl übrig. Er fesselt, wen er fangen will. Fäll ihn, dann sehen wir, was er bewacht.',
+      dialogueProgress: 'Der Kettenmeister lebt noch, auf Tiefe 10. Wenn er Dich kettet, schlag die Kette, sonst hält er Dich.',
+      dialogueComplete: 'Der Kettenmeister ist gefallen. Hinter ihm lagen Kammern voller Siegel. Der Rat versiegelt dort unten mehr als Akten, und jetzt haben wir den ersten Beweis dafür.'
     },
 
     // =======================================================
@@ -823,7 +825,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     thom_pamphlets: {
       id: 'thom_pamphlets',
       title: 'Die Pamphlete',
-      description: 'Schliesse 3 tiefe Dungeon-Durchläufe ab (ab Tiefe 22), um Flugblätter bis in die untersten Gänge zu verteilen.',
+      description: 'Schliesse 3 tiefe Läufe in die Keller ab (ab Tiefe 22), um Flugblätter bis in die untersten Gänge zu verteilen.',
       npcId: 'thom',
       type: 'dungeon_runs',
       chain: 2,
@@ -941,7 +943,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       prerequisites: ['espionage_informant', 'was_der_rauch_behaelt'],
       requiredAct: 4,
       // #157: Nicht mehr der Schattenrat — Elara ist zur Quelle hinabgestiegen.
-      dialogueOffer: 'Elara ist hinabgestiegen, zur Esse, auf Tiefe 30. Sie trägt ein echtes Amulett des Rats. Du hast nur Deine Hände. (Sie legt Dir den Hammer in die Hand.) Die reichen. Du bist der Einzige, der eine solche Bindung lösen kann.\n\nUnd noch etwas. Harren hat gefragt, wohin Du gehst. Ich habe es ihm nicht gesagt. Er wird es trotzdem herausfinden.',
+      dialogueOffer: 'Elara ist hinabgestiegen, zur Esse, auf Tiefe 30. Sie trägt ein echtes Amulett des Rats. Du hast nur Deine Hände. (Sie sieht auf Deinen Hammer.) Der reicht, und Deine Hände auch. Du bist der Einzige, der eine solche Bindung lösen kann.\n\nUnd noch etwas. Harren hat gefragt, wohin Du gehst. Ich habe es ihm nicht gesagt. Er wird es trotzdem herausfinden.',
       dialogueProgress: 'Die Esse liegt auf Tiefe 30. Je tiefer Du gehst, desto mehr will der Nebel von Dir. Halt fest, was Du bist.',
       dialogueComplete: '(Thom wischt sich die Hände am Kittel ab, als Du hereinkommst. Er fragt nicht, wie es unten war. Er sieht es Dir an.)\n\nDie Esse ist zerbrochen. Draussen bleiben die Leute auf der Strasse stehen und sagen Namen, die sie seit Jahren nicht mehr gesagt haben. (Er klopft auf die Presse.) Jetzt glauben sie, was sie lesen, weil sie es selbst wieder wissen. Die Platten liegen bereit.'
     },
@@ -1455,11 +1457,11 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.thom_truth.title': 'Forbidden Truths',
       'quest.thom_truth.description': "Find 5 print plates with the forbidden truths about the council (from depth 14).",
       'quest.mara_warning.title': "The Chain Master",
-      'quest.mara_warning.description': 'Defeat the Chainmaster boss who guards the first real evidence.',
+      'quest.mara_warning.description': 'Defeat the Chainmaster at depth 10, who guards the way to the council\'s seal chambers.',
       'quest.branka_weapons.title': 'Weapons for the Resistance',
       'quest.branka_weapons.description': 'Craft 3 items at the Archive Forge.',
       'quest.thom_pamphlets.title': 'The Pamphlets',
-      'quest.thom_pamphlets.description': 'Complete 3 deep dungeon runs (from depth 22) to spread the leaflets into the lowest passages.',
+      'quest.thom_pamphlets.description': 'Complete 3 deep runs into the cellars (from depth 22) to spread the leaflets into the lowest passages.',
       'quest.elara_blade.title': "Elara's Gift",
       'quest.elara_blade.description': "Elara has had a special blade forged for you.",
       'quest.mara_assault.title': "The Last Watch",
@@ -1580,9 +1582,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.thom_truth.dialogueProgress': "The print plates lie deep in the town hall cellar, from depth 14. Keep searching.",
       'quest.thom_truth.dialogueComplete': 'Fantastic! These plates contain proof the council wanted to destroy. The truth goes to print.',
 
-      'quest.mara_warning.dialogueOffer': "The Chainmaster holds the seals at depth 10. He binds whatever he wants to catch. Bring him down, and we have the first hard evidence.",
+      'quest.mara_warning.dialogueOffer': "At depth 10 the Chainmaster holds the way. He used to be a captain of the guard; now only his order is left. He binds whoever he wants to catch. Bring him down, and we will see what he guards.",
       'quest.mara_warning.dialogueProgress': "The Chainmaster still lives, at depth 10. If he chains you, strike the chain, or he holds you fast.",
-      'quest.mara_warning.dialogueComplete': "The Chainmaster has fallen, the evidence is secured. Now no one can deny that the council processes people.",
+      'quest.mara_warning.dialogueComplete': "The Chainmaster has fallen. Behind him lay chambers full of seals. The council seals more than files down there, and now we have the first proof of it.",
       'quest.branka_weapons.dialogueOffer': 'We need weapons. Not for the council — for US.\n\nCraft three items at the forge.',
       'quest.branka_weapons.dialogueProgress': 'The forge waits. Craft more items.',
       'quest.branka_weapons.dialogueComplete': 'Well forged. These weapons will make the difference.',
@@ -1601,7 +1603,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.mara_assault.dialogueProgressNext': "I found him, all the way down. Go down once more, I will lead you to him.",
       'quest.mara_assault.dialogueComplete': "He is empty. The man who had others emptied. (Mara stares into the flame of her lamp for a long time.) I thought I would be glad.\n\nThe chain guard is broken. The tunnels beneath the city belong to no one again. That is more than this city has had in a long time.",
 
-      'quest.schattenrat_finale.dialogueOffer': "Elara has gone down, to the forge, at depth 30. She wears a true amulet of the council. You only have your hands. (She puts the hammer into your hand.) They are enough. You are the only one who can loosen such a binding.\n\nAnd one more thing. Harren asked where you are going. I did not tell him. He will find out anyway.",
+      'quest.schattenrat_finale.dialogueOffer': "Elara has gone down, to the forge, at depth 30. She wears a true amulet of the council. You only have your hands. (She looks at your hammer.) That will do, and so will your hands. You are the only one who can loosen such a binding.\n\nAnd one more thing. Harren asked where you are going. I did not tell him. He will find out anyway.",
       'quest.schattenrat_finale.dialogueProgress': "The forge lies at depth 30. The deeper you go, the more the fog wants from you. Hold on to what you are.",
       'quest.schattenrat_finale.dialogueComplete': "(Thom wipes his hands on his smock as you come in. He does not ask what it was like down there. He can see it on you.)\n\nThe forge is broken. Outside, people stop in the street and say names they have not said in years. (He taps the press.) Now they believe what they read, because they know it again themselves. The plates are ready.",
 
@@ -1680,7 +1682,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       // === Quest reward strings ===
       'quest.reward.info.mara_contact': "Mara's network revealed",
       'quest.reward.ALDRIC_SCHWERT': 'Council Sword',
-      'quest.reward.RITUAL_AMULETT': 'Ritual Amulet',
+      'quest.reward.RITUAL_AMULETT': 'Council Fog Amulet',
       'quest.reward.ELARAS_KLINGE': "Elara's Blade",
       'quest.rarity.common': 'Common',
       'quest.rarity.rare': 'Rare',
@@ -1715,7 +1717,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'sidedialog.thom.q4_eyebrow':   'Thom blickt kurz auf, dann zurück zur Presse. »Patrouillen-Erweiterung. Der Edikt klingt vernünftig. Frag mal jemanden im Pavillon, was »vernünftig« diesen Monat bedeutet.«',
       'quest.reward.info.mara_contact': 'Maras Netzwerk enthüllt',
       'quest.reward.ALDRIC_SCHWERT': 'Ratsschwert',
-      'quest.reward.RITUAL_AMULETT': 'Ritualamulett',
+      'quest.reward.RITUAL_AMULETT': 'Nebelamulett des Rats',
       'quest.reward.ELARAS_KLINGE': 'Elaras Klinge',
       'quest.rarity.common': 'Gewöhnlich',
       'quest.rarity.rare': 'Selten',
@@ -2768,6 +2770,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     if (questState.bruch_confrontation && questState.bruch_confrontation.status === 'completed') {
       questFlags.enttarnt = true;
     }
+    // Stufe 1b: Altstaende tragen beide Gesuche-Flags (s. council_seizure);
+    // behalten war dann die echte Wahl.
+    if (questFlags.petitions_kept && questFlags.petitions_surrendered) delete questFlags.petitions_surrendered;
     _ratsAuftraegeBeenden();
     _notifyUpdate();
   }

@@ -260,7 +260,9 @@ function npcStand(npc) {
   test(npc + ': Auftrag annehmen (Leertaste), dann E bei Aldric und klicken -> Aldric', () => {
     // Je ein frischer Abschluss davor, damit das Angebot mehrseitig ist.
     npcStand(npc);
-    const angebot = H.run(`(window.questSystem.getAvailableQuests('${npc}')[0] || {}).id`);
+    // Seit Stufe 1b kommt ein Story-Auftrag vor einem Nebenauftrag.
+    const angebot = H.run(`(function () { var qs = window.questSystem, a = qs.getAvailableQuests('${npc}');
+      return (a.filter(function (q) { return qs.istStoryAuftrag(q); })[0] || a[0] || {}).id; })()`);
     assert.ok(angebot, npc + ' bietet nichts an');
     annehmenUndWeiter(npc, angebot, 'SPACE', () => {
       zuNpc('aldric');

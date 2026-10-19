@@ -63,7 +63,7 @@ if (window.i18n) {
     'hub.skills.type_active': 'Typ: Aktive Fähigkeit',
     'hub.skills.requires': 'Benötigt:',
     'hub.skills.respec': 'Zurücksetzen ({cost} Eisenbrocken)',
-    'hub.skills.close': 'Schließen',
+    'hub.skills.close': 'Schliessen',
     'hub.knowledge.learn': 'In Metall binden (K)',
     'hub.skills.shop': 'Schwarzmarkt (M)',
     'hub.skills.talents': 'Talente (T)',
@@ -1583,10 +1583,15 @@ class HubSceneV2 extends Phaser.Scene {
     return [].concat(npc.hiddenInPhase).indexOf(phase) >= 0;
   }
 
+  // Stufe 1b: Erst wenn sie Dich zu Aldric geführt hat ("Die letzte Wache").
+  // Bis b459 fehlte sie ab dem Epilog sofort; wer zuerst bei Thom abgab, kam
+  // an den Auftrag nicht mehr heran, und Aldric bekam kein Ende.
   _epilogOhne(npc) {
     if (!npc || npc.id !== 'mara' || this._hubPhase !== 'epilogue') return false;
     const qs = window.questSystem;
-    return !!(qs && typeof qs.hasFlag === 'function' && qs.hasFlag('convoy_blown'));
+    if (!(qs && typeof qs.hasFlag === 'function' && qs.hasFlag('convoy_blown'))) return false;
+    const erledigt = (typeof qs.getCompletedQuests === 'function') ? qs.getCompletedQuests('mara') : [];
+    return erledigt.some((q) => q && q.id === 'mara_assault');
   }
 
   // #161: Epilog — Buerger, die auf dem Platz aus Thoms Blaettern vorlesen.
@@ -1722,7 +1727,7 @@ class HubSceneV2 extends Phaser.Scene {
     // hoert bei der Abgabe, was Du gesehen hast — ab der Entscheidungsseite (2),
     // die Sitzung selbst hat der Spieler unten schon erlebt.
     if (questData && questData.id === 'council_collusion_reveal' && questMode === 'turnin') {
-      this._showCollusionReveal(npcData, questData, 2);
+      this._showCollusionReveal(npcData, questData, 0);
       return;
     }
     // Noch nicht bei der oeffentlichen Sitzung gewesen (z. B. abgebrochen):
@@ -4637,7 +4642,7 @@ class HubSceneV2 extends Phaser.Scene {
 
     const labels = (lang === 'en') ? {
       titleSuccess: 'Run Complete',
-      titleDeath: 'Fallen in the Dungeon',
+      titleDeath: 'Fallen in the Cellars',
       depth: 'Depth reached',
       depthWord: 'DEPTH',
       rooms: 'Rooms entered',
@@ -4646,13 +4651,13 @@ class HubSceneV2 extends Phaser.Scene {
       bosses: 'Bosses',
       xp: 'XP gained',
       gold: 'Gold gained',
-      fragments: 'Lore fragments',
+      fragments: 'Memory fragments',
       duration: 'Duration',
       durationWord: 'TIME',
       close: 'Continue'
     } : {
       titleSuccess: 'Lauf abgeschlossen',
-      titleDeath: 'Im Dungeon gefallen',
+      titleDeath: 'In den Kellern gefallen',
       depth: 'Tiefe erreicht',
       depthWord: 'TIEFE',
       rooms: 'Räume betreten',
@@ -4661,7 +4666,7 @@ class HubSceneV2 extends Phaser.Scene {
       bosses: 'Bosse',
       xp: 'XP gewonnen',
       gold: 'Gold gewonnen',
-      fragments: 'Lore-Fragmente',
+      fragments: 'Erinnerungsfragmente',
       duration: 'Dauer',
       durationWord: 'DAUER',
       close: 'Weiter'
@@ -5057,23 +5062,22 @@ class HubSceneV2 extends Phaser.Scene {
     const lang = (window.i18n && window.i18n.getLanguage && window.i18n.getLanguage()) || 'de';
     const isEN = (lang === 'en');
 
-    const page1 = isEN
-      ? 'Come with me. I must show you something I have suspected for years — but never could prove. You have worked for all three. Now you see them together.'
-      : 'Komm mit. Ich muss dir etwas zeigen, das ich seit Jahren ahne — aber niemals beweisen konnte. Du hast für alle drei gearbeitet. Jetzt siehst du sie zusammen.';
-
+    // Stufe 1b: Die Sitzung erlebt der Spieler unten selbst (#159), Harren
+    // hoert bei der Abgabe nur noch zu. Die frueheren Seiten "Komm mit" und
+    // die Beschreibung der Sitzung waren deshalb nie zu sehen und sind weg.
     const page2 = isEN
-      ? 'Behind the locked doors of the Rathauskeller hall they meet. Magistrate. Clergy. Guard. Three voices that never publicly agree in this city — and here, in the shadow of the wall candles, they speak as a single mouth. Pacts are confirmed. Names are struck. One of them: the mayor\'s daughter.'
-      : 'Hinter den verschlossenen Türen der Rathauskeller-Halle treffen sie sich. Magistrat. Klerus. Garde. Drei Stimmen, die in der Stadt nie öffentlich übereinstimmen — und hier, im Schatten der Wandkerzen, sprechen sie wie ein einziger Mund. Pakte werden bestätigt. Namen werden gestrichen. Eine davon: die Tochter des Bürgermeisters.';
+      ? 'Behind the locked doors of the Rathauskeller hall they met. Magistrate. Clergy. Guard. Three voices that never publicly agree in this city, and there, in the shadow of the wall candles, they spoke as a single mouth. Names were struck. One of them: the mayor\'s daughter.'
+      : 'Hinter den verschlossenen Türen der Rathauskeller-Halle trafen sie sich. Magistrat. Klerus. Garde. Drei Stimmen, die in der Stadt nie öffentlich übereinstimmen, und dort, im Schatten der Wandkerzen, sprachen sie wie ein einziger Mund. Namen wurden gestrichen. Einer davon: die Tochter des Bürgermeisters.';
 
     const page3Prompt = isEN
-      ? 'Will you turn away — or will you remember?'
-      : 'Wirst du dich umdrehen — oder dich erinnern?';
-    const choiceTurnAway = isEN ? 'Turn away — forget what I saw' : 'Umdrehen — vergessen, was ich gesehen habe';
-    const choiceRemember = isEN ? 'Remember — whatever it costs' : 'Erinnern — was auch immer das kostet';
+      ? 'Will you turn away, or will you remember?'
+      : 'Wirst Du Dich umdrehen, oder wirst Du Dich erinnern?';
+    const choiceTurnAway = isEN ? 'Turn away and forget what I saw' : 'Umdrehen und vergessen, was ich gesehen habe';
+    const choiceRemember = isEN ? 'Remember, whatever it costs' : 'Erinnern, was es auch kostet';
 
     const page4 = isEN
-      ? 'You walk back into the fog. What you heard cannot be unheard. The Chain Council is not three voices — it is one wearing three masks. And you? You have already worked for every mask.\n\nThe Double Game begins here — in the same city, beneath the same masks.'
-      : 'Du gehst hinaus in den Nebel. Was du gehört hast, lässt sich nicht ungehört machen. Der Kettenrat ist nicht drei Stimmen — er ist eine, die drei Masken trägt. Und du? Du hast bereits für jede Maske gearbeitet.\n\nHier beginnt das Doppelspiel — in derselben Stadt, unter denselben Masken.';
+      ? 'You walk back into the fog. What you heard cannot be unheard. The Chain Council is not three voices, it is one wearing three masks. And you? You have already worked for every mask.\n\nThe Double Game begins here, in the same city, beneath the same masks.'
+      : 'Du gehst hinaus in den Nebel. Was Du gehört hast, lässt sich nicht ungehört machen. Der Kettenrat ist nicht drei Stimmen, er ist eine, die drei Masken trägt. Und Du? Du hast bereits für jede Maske gearbeitet.\n\nHier beginnt das Doppelspiel, in derselben Stadt, unter denselben Masken.';
 
     // Build the page array. Pages 1-2 + 4 are narration (no choices —
     // Space/Enter advances). Page 3 has the binary flavor choice that
@@ -5118,8 +5122,6 @@ class HubSceneV2 extends Phaser.Scene {
     };
 
     const pages = [
-      { text: page1, choices: null },
-      { text: page2, choices: null },
       {
         text: page2 + '\n\n' + page3Prompt,
         choices: [
@@ -5137,7 +5139,7 @@ class HubSceneV2 extends Phaser.Scene {
     this._pendingQ6Finalize = finalize;
     this._pendingQ6Pages = pages;
 
-    // Standard: Seite 0. Nach der gespielten Sitzung startet der Reveal bei 1.
+    // Standard: Seite 0, die Entscheidung.
     this._showDialoguePages(npcData, npcData.name, pages, 'flavor', questData,
       (typeof startIndex === 'number' ? startIndex : 0));
   }
@@ -5194,9 +5196,12 @@ class HubSceneV2 extends Phaser.Scene {
     // beschreibt jetzt nur, was die Figur zu Beginn weiss: Nebelstadt, Rat aus
     // drei offen konkurrierenden Fraktionen, amnesischer Archivschmied, der
     // niedere Auftraege annimmt und in die Keller hinabsteigt (Auftakt-Quest).
+    // Stufe 1b: Der Unfall ist, was man Dir erzaehlt hat, nicht die Wahrheit
+    // (Story v6.1: Aldric hat Dich geleert); die Keller liegen unter dem
+    // Rathaus; die Fraktion heisst Magistrat.
     const body = isEN
-      ? "Fogreach — a city beneath an endless mist. The Chain Council keeps order: Clergy, Guard, and Administration — three factions openly vying for influence.\n\nYou were an Archivesmith, until an accident at the Forge tore your memory apart. What's left is your rank, a few tools — and the jobs no one else will take.\n\nToday you take what you're given, and descend into the cellars beneath the Archive-Forge."
-      : "Fogreach — eine Stadt unter ewigem Nebel. Der Kettenrat wacht über die Ordnung: Klerus, Garde und Verwaltung, drei Fraktionen, die offen um Einfluss ringen.\n\nDu warst Archivschmied, bis ein Unfall in der Schmiede deine Erinnerung zerriss. Geblieben sind dein Rang, ein paar Werkzeuge — und Aufträge, die sonst keiner will.\n\nHeute nimmst du, was man dir gibt, und steigst hinab in die Keller unter der Archivschmiede.";
+      ? "Fogreach, a city beneath an endless mist. The Chain Council keeps order: Magistrate, Clergy and Guard, three factions openly vying for influence.\n\nYou were an Archivesmith. They say an accident at the forge tore your memory apart. What is left is your rank, a few tools, and the jobs no one else will take.\n\nToday you take what you are given, and descend into the cellars beneath the town hall."
+      : "Fogreach, eine Stadt unter ewigem Nebel. Der Kettenrat wacht über die Ordnung: Magistrat, Klerus und Garde, drei Fraktionen, die offen um Einfluss ringen.\n\nDu warst Archivschmied. Ein Unfall in der Schmiede, heisst es, hat Deine Erinnerung zerrissen. Geblieben sind Dein Rang, ein paar Werkzeuge und Aufträge, die sonst keiner will.\n\nHeute nimmst Du, was man Dir gibt, und steigst hinab in die Keller unter dem Rathaus.";
     const close = isEN ? 'Continue' : 'Weiter';
     const gesehen = () => {
       try { (window.SlotStorage || localStorage).setItem('demonfall_seen_intro_splash', '1'); } catch (_) {}

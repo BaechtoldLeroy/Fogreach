@@ -18,7 +18,7 @@
       'endless.choice.tag.speed': 'TEMPO',
       'endless.death.title': 'GESTORBEN',
       'endless.death.depth': 'Tiefste Stufe: {depth}',
-      'endless.death.best': 'Bester Run: {best}',
+      'endless.death.best': 'Bester Lauf: {best}',
       'endless.death.btn_menu': 'Zum Hauptmenü',
       'endless.depth_label': 'Stufe {depth}',
 
@@ -56,9 +56,9 @@
       'endless.up.dodge.name': 'Ausweichen',
       'endless.up.dodge.desc': '+10% Chance, Schaden zu vermeiden',
 
-      'endless.up.spd_small.name': 'Flinke Füße',
+      'endless.up.spd_small.name': 'Flinke Füsse',
       'endless.up.spd_small.desc': '+15 Bewegungstempo',
-      'endless.up.spd_med.name': 'Flinke Füße II',
+      'endless.up.spd_med.name': 'Flinke Füsse II',
       'endless.up.spd_med.desc': '+25 Bewegungstempo',
       'endless.up.spd_large.name': 'Windläufer',
       'endless.up.spd_large.desc': '+40 Bewegungstempo',
@@ -71,7 +71,7 @@
       'endless.up.learn_dash.desc': 'Schneller Vorwärts-Dash (Slot belegt)',
       'endless.up.learn_dagger.name': 'Fähigkeit: Dolchwurf',
       'endless.up.learn_dagger.desc': 'Wirft Dolch in Blickrichtung (Slot belegt)',
-      'endless.up.learn_shield.name': 'Fähigkeit: Schildstoß',
+      'endless.up.learn_shield.name': 'Fähigkeit: Schildstoss',
       'endless.up.learn_shield.desc': 'Betäubt nahe Gegner (Slot belegt)',
       'endless.up.learn_heal.name': 'Fähigkeit: Heilwunde',
       'endless.up.learn_heal.desc': 'Heilt 5 LP (30s Cooldown, Slot belegt)'

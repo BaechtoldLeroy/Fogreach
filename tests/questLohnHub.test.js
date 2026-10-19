@@ -109,7 +109,7 @@ test('Ritualamulett: anlegbar am Kopf und bleibt nach dem Lauf', () => {
   assert.strictEqual(r.typ, 'head');
   assert.strictEqual(r.am, true, 'nicht angelegt');
   assert.strictEqual(r.bleibt, true, 'nach dem Lauf abgelegt');
-  assert.strictEqual(r.name, 'Ritualamulett');
+  assert.strictEqual(r.name, 'Nebelamulett des Rats');
 
   // Das Journal nennt, was die Abgabe brachte — uebersetzt, jede Art.
   const j = H.run(`(function () {
@@ -122,6 +122,6 @@ test('Ritualamulett: anlegbar am Kopf und bleibt nach dem Lauf', () => {
     window.i18n.setLanguage('de');
     return { de: de, en: e2 && e2.rewards };
   })()`);
-  assert.match(j.de || '', /^\+\d+ XP, Ritualamulett \(Selten\)$/);
-  assert.match(j.en || '', /^\+\d+ XP, Ritual Amulet \(Rare\)$/);
+  assert.match(j.de || '', /^\+\d+ XP, Nebelamulett des Rats \(Selten\)$/);
+  assert.match(j.en || '', /^\+\d+ XP, Council Fog Amulet \(Rare\)$/);
 });

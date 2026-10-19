@@ -2,7 +2,7 @@
 
 if (window.i18n) {
   window.i18n.register('de', {
-    'start.subtitle': 'Ein Dungeon-Crawler',
+    'start.subtitle': 'Ein Abstieg in die Keller von Fogreach',
     'start.btn.continue': 'FORTSETZEN',
     'start.hint.homescreen': 'Tipp für Vollbild: Teilen → „Zum Home-Bildschirm“',
     'start.btn.delete_save': 'Spielstand löschen',
@@ -22,7 +22,7 @@ if (window.i18n) {
   });
   window.i18n.register('en', {
 
-    'start.subtitle': 'A dungeon crawler',
+    'start.subtitle': 'A descent into the cellars of Fogreach',
     'start.btn.continue': 'CONTINUE',
     'start.hint.homescreen': 'Tip for fullscreen: Share → "Add to Home Screen"',
     'start.btn.delete_save': 'Delete save',

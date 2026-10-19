@@ -68,7 +68,7 @@ test('i18n: gebundene Story-Texte folgen der Sprache', () => {
   assert.match(r.en.flavor, /^The fog is gone from your eyes/);
   assert.strictEqual(r.de.boss, 'Kettenmeister');
   assert.strictEqual(r.en.boss, 'Chainmaster');
-  assert.match(r.en.raum, /^The Source/);
+  assert.match(r.en.raum, /^The Forge/);
   assert.strictEqual(r.en.quest, 'The Reckoning');
   // Gebundene Felder bleiben normale, serialisierbare Daten.
   assert.match(r.json, /"prompt":"ELARA: Du hast mir vertraut/);

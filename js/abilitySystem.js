@@ -242,7 +242,7 @@
     charge: {
       id: 'charge',
       name: 'Ansturm',
-      description: 'Linien-Sturm: dasht durch alle Gegner im Pfad und stoßt sie weg.',
+      description: 'Linien-Sturm: dasht durch alle Gegner im Pfad und stösst sie weg.',
       type: 'tap',
       icon: '➡',
       color: 0x66ccff,

@@ -12,7 +12,7 @@ if (window.i18n) {
     'inventory.inschrift.erkannt': '(Du kennst dieses Zeichen. Es stand auf den Siegeln der geheimen Sitzung.)',
     'inventory.material.fallback': 'Material',
     'inventory.label.rarity': 'Seltenheit',
-    'inventory.label.power': 'Item-Stärke',
+    'inventory.label.power': 'Stärke',
     'inventory.label.type': 'Typ',
     'inventory.type.weapon': 'Waffe',
     'inventory.type.offhand': 'Nebenhand',
@@ -36,18 +36,19 @@ if (window.i18n) {
     'inventory.ausbau.stufe': 'Stufe {n} von {max}  (+{pct}% auf alle Werte)',
     'inventory.attack.cooldown': '{name}: -{pct}% Cooldown',
     'inventory.attack.damage': '{name}: +{pct}% Schaden',
-    'inventory.unknown_item': 'Unbekanntes Item',
+    'inventory.unknown_item': 'Unbekannter Gegenstand',
     'inventory.title': 'Inventar',
-    'inventory.help': 'Klicke ein Item zum Ausrüsten / Entfernen',
+    'inventory.help': 'Klicke einen Gegenstand zum Ausrüsten / Entfernen',
     'inventory.btn.equip': 'Ausrüsten',
     'inventory.btn.drop': 'Entfernen',
     'inventory.btn.portal': 'Portal ({count})',
     'inventory.btn.stair': 'Treppe ({count})',
     'inventory.btn.stats': 'Charakterwerte',
-    // Feature 059 (#42) WP05: run-amulet slot styling.
-    'inv.amulet.badge': 'Nur dieser Run',
+    // Feature 059 (#42) WP05: run-amulet slot styling. Stufe 1b (Story v6.1):
+    // die Kellerfunde sind schwache Nachbildungen der Ratsamulette.
+    'inv.amulet.badge': 'Nachbildung',
     'inv.amulet.locked': 'Ab Tiefe 10',
-    'inv.amulet.run_hint': 'Gilt nur für diesen Run'
+    'inv.amulet.run_hint': 'Nachbildung · hält einen Lauf'
   });
   window.i18n.register('en', {
     'inventory.tier.common': 'Common',
@@ -90,9 +91,9 @@ if (window.i18n) {
     'inventory.btn.stair': 'Stairs ({count})',
     'inventory.btn.stats': 'Character Stats',
     // Feature 059 (#42) WP05: run-amulet slot styling.
-    'inv.amulet.badge': 'This run only',
+    'inv.amulet.badge': 'Replica',
     'inv.amulet.locked': 'From depth 10',
-    'inv.amulet.run_hint': 'Applies to this run only'
+    'inv.amulet.run_hint': 'Replica · lasts one run'
   });
 }
 const _INV_T = (key, params) => (window.i18n ? window.i18n.t(key, params) : key);
