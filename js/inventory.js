@@ -129,17 +129,6 @@ const getItemDisplayName = (it) => {
   }
   return it.displayName || it._baseName || it.name || 'Item';
 };
-const getItemLevel = (it) => {
-  if (!it) return 0;
-  if (typeof it.itemLevel === 'number') return it.itemLevel;
-  const compute = window.computeItemLevelFromStats;
-  if (typeof compute === 'function') {
-    const lvl = compute(it, window.DUNGEON_DEPTH || 1);
-    it.itemLevel = lvl;
-    return lvl;
-  }
-  return 1;
-};
 
 // #56 D1: EINE lesbare "Item-Stärke"-Zahl statt des verwirrenden "Item Level"
 // (Basis-Stats vs. Rarität konkurrierten). Reine ANZEIGE-Heuristik — greift NICHT
@@ -413,13 +402,6 @@ function setSlotHighlight(target, item) {
   target.__hasBaseHighlight = hasItem;
   target.__hoverTintApplied = false;
   target.__hoverTempHighlight = false;
-}
-
-function getEquippedLevelForType(type) {
-  if (!type || typeof equipment !== 'object' || !equipment) return 0;
-  const equippedItem = equipment[type];
-  if (!equippedItem) return 0;
-  return getItemLevel(equippedItem);
 }
 
 function isItemUpgrade(item) {

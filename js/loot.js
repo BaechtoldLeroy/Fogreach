@@ -795,6 +795,14 @@ function computeItemLevelFromStats(stats, depth) {
   return Math.max(1, Math.round(lvl));
 }
 
+// Haertere Werte heben die Gegenstandsstufe NICHT: sie bleibt die Wurfstufe
+// (LootSystem.gegenstandsstufe). Bis b478 rechneten die Wege unten itemLevel
+// hier aus den Werten neu, teils mit der Tiefe des Augenblicks.
+function _stufeSpiegeln(item) {
+  const LS = window.LootSystem;
+  if (LS && typeof LS.stufeNachtragen === 'function') LS.stufeNachtragen(item);
+}
+
 function scaleItemForDifficulty(item, depth) {
   if (!item) return item;
   const multiplier = getDifficultyMultiplierValue();
@@ -812,11 +820,7 @@ function scaleItemForDifficulty(item, depth) {
     item.move = Number((Math.round(scaledMove * 100) / 100).toFixed(2));
   }
 
-  item.itemLevel = computeItemLevelFromStats(
-    item,
-    Math.max(1, Math.round((depth || currentWave || 1) * multiplier))
-  );
-
+  _stufeSpiegeln(item);
   return item;
 }
 
@@ -832,7 +836,7 @@ function addBoostsToItem(item, boosts, depth) {
     const current = Number(item[statKey] || 0);
     item[statKey] = clampStat(statKey, current + addition);
   }
-  item.itemLevel = computeItemLevelFromStats(item, depth);
+  _stufeSpiegeln(item);
 }
 
 /**
@@ -927,9 +931,7 @@ function _applyDifficultyToRolledItem(item, depth) {
       item.baseStats[k] = item.baseStats[k] * mult;
     }
   });
-  if (typeof computeItemLevelFromStats === 'function') {
-    item.itemLevel = computeItemLevelFromStats(item, Math.max(1, Math.round(depth * mult)));
-  }
+  _stufeSpiegeln(item);
   return item;
 }
 

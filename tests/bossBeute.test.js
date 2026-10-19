@@ -78,8 +78,8 @@ test('Bossbeute ist NIE gewoehnlich — mindestens magisch', () => {
 
 test('Bossbeute wuerfelt drei Tiefen hoeher', () => {
   const r = serie({ isBoss: true }, 400);
-  // Auf Tiefe 10 also im Mittel 13. Etwas Spielraum, weil computeItemLevelFromStats
-  // das angezeigte itemLevel aus den Werten nachrechnet.
+  // Auf Tiefe 10 also im Mittel 13 (iLevel ist seit b478 die einzige Stufe;
+  // der Spielraum stammt aus der Zeit, als itemLevel nachgerechnet wurde).
   assert.ok(r.iLmittel >= 12.5 && r.iLmittel <= 13.5,
     'mittleres iLevel ' + r.iLmittel.toFixed(1) + ', erwartet rund 13');
 });

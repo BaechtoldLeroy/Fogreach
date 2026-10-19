@@ -2448,9 +2448,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       });
     }
     if (spec.elaraGift) it.elaraGift = true;
-    if (typeof window.computeItemLevelFromStats === 'function') {
-      it.itemLevel = window.computeItemLevelFromStats(it, iLevel);
-    }
+    // Die Signatur hebt Werte, nicht die Gegenstandsstufe: die bleibt die
+    // Stufe des Wurfs (rollItem setzt iLevel und itemLevel gleich).
     if (typeof LS.composeName === 'function') it.displayName = LS.composeName(it);
     return it;
   }

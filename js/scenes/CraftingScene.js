@@ -25,6 +25,9 @@ if (window.i18n) {
     'crafting.section.ausbau': 'Ausbau',
     'crafting.ausbau.keins': 'Wähle links ein Stück aus.',
     'crafting.ausbau.stufe': 'Stufe {n} von {max}',
+    'crafting.ausbau.kurz': 'Ausbau +{n}',
+    'crafting.gstufe': 'Gegenstandsstufe {n}',
+    'crafting.gstufe.kurz': 'Gst {n}',
     'crafting.ausbau.wirkung': 'Jede Stufe hebt alle Werte um {pct} %.',
     'crafting.ausbau.kosten': 'Nächste Stufe: {gold} Gold + {brocken} Eisenbrocken',
     'crafting.ausbau.gratis': 'Nächste Stufe: Branka übernimmt die Kosten.',
@@ -75,6 +78,9 @@ if (window.i18n) {
     'crafting.section.ausbau': 'Upgrade',
     'crafting.ausbau.keins': 'Pick an item on the left.',
     'crafting.ausbau.stufe': 'Level {n} of {max}',
+    'crafting.ausbau.kurz': 'Upgrade +{n}',
+    'crafting.gstufe': 'Item Level {n}',
+    'crafting.gstufe.kurz': 'iLvl {n}',
     'crafting.ausbau.wirkung': 'Each level raises all values by {pct}%.',
     'crafting.ausbau.kosten': 'Next level: {gold} gold + {brocken} Iron Chunks',
     'crafting.ausbau.gratis': 'Next level: Branka covers the cost.',
@@ -149,15 +155,13 @@ const _composeItemName = (item) => {
  * (LootSystem.affixAnteil rechnet mit ihr) — und damit, ob ein Fund das
  * Getragene wirklich schlaegt. Bis b242 stand sie in der Schmiede nirgends.
  *
- * Zwei Felder tragen sie: iLevel setzt rollItem, itemLevel schreibt die
- * Inventaranzeige nach. Beide koennen fehlen (Alt-Spielstaende), deshalb hier
- * an EINER Stelle abgefragt statt an dreien.
+ * Was sie ist, entscheidet LootSystem.gegenstandsstufe — hier wurde bis b478
+ * selbst zwischen iLevel und dem aus den Werten nachgerechneten itemLevel
+ * gewaehlt, und Altstuecke zeigten so ihr Wertegewicht statt ihrer Stufe.
  */
 const _itemStufe = (item) => {
-  if (!item) return 0;
-  const roh = Number.isFinite(Number(item.iLevel)) ? Number(item.iLevel)
-    : (Number.isFinite(Number(item.itemLevel)) ? Number(item.itemLevel) : 0);
-  return Math.max(0, Math.round(roh));
+  const LS = window.LootSystem;
+  return (LS && typeof LS.gegenstandsstufe === 'function') ? LS.gegenstandsstufe(item) : 0;
 };
 
 class CraftingScene extends Phaser.Scene {
@@ -734,7 +738,7 @@ this.massSalvageHint = this.add.text(rightX + rightW - 120, _massY - 24, '', {
     const usedIds = {};
     kept.forEach(function (a) { if (a && a.defId) usedIds[a.defId] = true; });
     if (kept.length < newTier && window.LootSystem && typeof window.LootSystem.rollAffixes === 'function') {
-      const iLevel = (typeof item.iLevel === 'number') ? item.iLevel : 1;
+      const iLevel = _itemStufe(item) || 1;
       let fresh = [];
       try {
         // Oversample so we can skip any affix the item already carries, then
@@ -784,9 +788,9 @@ this.massSalvageHint = this.add.text(rightX + rightW - 120, _massY - 24, '', {
     const LS = window.LootSystem;
     const teile = [_CRAFT_T(_CRAFT_TIER_KEYS[Math.max(0, Math.min(3, Number(item.tier) || 0))])];
     const stufe = (LS && typeof LS.ausbauStufe === 'function') ? LS.ausbauStufe(item) : 0;
-    if (stufe > 0) teile.push('Ausbau +' + stufe);
+    if (stufe > 0) teile.push(_CRAFT_T('crafting.ausbau.kurz', { n: stufe }));
     const gs = _itemStufe(item);
-    if (gs) teile.push('Gst ' + gs);
+    if (gs) teile.push(_CRAFT_T('crafting.gstufe.kurz', { n: gs }));
     return teile.join('  ·  ');
   }
 
@@ -834,7 +838,7 @@ this.massSalvageHint = this.add.text(rightX + rightW - 120, _massY - 24, '', {
     const gStufe = _itemStufe(item);
     this.werkbankStufe.setText(seltenheit + '   ' + this._stufenPunkte(stufe, max)
       + '  ' + _CRAFT_T('crafting.ausbau.stufe', { n: stufe, max: max })
-      + (gStufe ? '   ·   Gegenstandsstufe ' + gStufe : ''));
+      + (gStufe ? '   ·   ' + _CRAFT_T('crafting.gstufe', { n: gStufe }) : ''));
 
     // Name links, Zahl rechtsbuendig — untereinander liest man Zahlen
     // schneller als in einer Zeile mit Trennstrichen.

@@ -1150,8 +1150,7 @@ if (window.i18n) {
         // FUNDtiefe des Stuecks, nicht an der, auf der man gerade steht —
         // deshalb hier je Gegenstand und nicht spaeter aus der Summe.
         if (def.statKey === 'vitality') {
-          const _ilv = (item && typeof item.iLevel === 'number' && item.iLevel > 0)
-            ? item.iLevel : 1;
+          const _ilv = gegenstandsstufe(item) || 1;
           const _curV = _bonusCache.flat.vitality_hp || 0;
           _bonusCache.flat.vitality_hp = _curV + vitalitaetLebenspunkte(inst.value, _ilv);
         }
@@ -1333,6 +1332,52 @@ if (window.i18n) {
   }
 
   /**
+   * Die Gegenstandsstufe eines Stuecks: die Stufe, auf der rollItem es
+   * gewuerfelt hat (iLevel). 0, wenn das Stueck keine kennt.
+   *
+   * EINE Definition fuer jede Anzeige und jede Rechnung. Daneben stand bis
+   * b478 ein zweites Feld, itemLevel, das aus den WERTEN nachgerechnet wurde
+   * (Tiefe + gewichtete Basiswerte) — mal beim Wurf, mal mit der Tiefe des
+   * Augenblicks, nach dem Ausbau gar nicht mehr. Die Schmiede las mal das eine,
+   * mal das andere. itemLevel ist seitdem nur noch ein Spiegel von iLevel.
+   */
+  function gegenstandsstufe(item) {
+    if (!item) return 0;
+    var l = Number(item.iLevel);
+    return (isFinite(l) && l > 0) ? Math.round(l) : 0;
+  }
+
+  /**
+   * Gibt einem Altstueck ohne iLevel einmalig eine Stufe und zieht itemLevel
+   * auf iLevel nach. Aendert das Stueck an Ort und Stelle; Amulette und
+   * Stuecke mit gueltiger Stufe behalten sie.
+   *
+   * Die Stufe kommt aus dem Stueck selbst, nicht aus der Tiefe, auf der der
+   * Spielstand gerade geladen wird: ein altes itemLevel war Fundtiefe plus
+   * Wertegewicht (computeItemLevelFromStats) — zieht man das Gewicht wieder
+   * ab, bleibt genau die Fundtiefe. Bleibt dabei nichts uebrig, war die Zahl
+   * von Hand gesetzt (alte Questbelohnungen: Elaras Klinge 15) und gilt so.
+   */
+  function stufeNachtragen(item) {
+    if (!item || typeof item !== 'object') return item;
+    if (!gegenstandsstufe(item)) {
+      var alt = Number(item.itemLevel);
+      var stufe = 1;
+      if (isFinite(alt) && alt > 0) {
+        stufe = Math.round(alt);
+        var gewicht = (typeof window !== 'undefined') ? window.computeItemLevelFromStats : null;
+        if (typeof gewicht === 'function') {
+          var tiefe = stufe - (gewicht(item, 1) - 1);
+          if (tiefe >= 1) stufe = tiefe;
+        }
+      }
+      item.iLevel = stufe;
+    }
+    item.itemLevel = gegenstandsstufe(item);
+    return item;
+  }
+
+  /**
    * Seltenheits-Deckel der flachen Tiefen.
    *
    * Frueh im Spiel fielen vereinzelt gelbe und orange Stuecke, und danach war
@@ -1494,18 +1539,9 @@ if (window.i18n) {
       }
     }
 
-    // Unified item-level system (one formula for Normal + Schwierig). The
-    // displayed `itemLevel` is STAT-WEIGHTED (computeItemLevelFromStats, loot.js:
-    // depth + weighted base-stat sum), computed here at the single source so
-    // every spawn path (drops, reward chests, shop) is consistent. The Hard
-    // path (_applyDifficultyToRolledItem) re-applies the SAME formula after
-    // scaling stats by the difficulty multiplier, so both difficulties share
-    // one system instead of "Normal = raw depth, Hard = stat-based". `iLevel`
-    // stays the raw generation depth (affix iLevelMin gating + reroll cost).
-    if (typeof window !== 'undefined' && typeof window.computeItemLevelFromStats === 'function') {
-      item.itemLevel = window.computeItemLevelFromStats(item, iLevel);
-    }
-
+    // itemLevel bleibt hier gleich iLevel (s. gegenstandsstufe): bis b478
+    // wurde es an dieser Stelle aus den Werten nachgerechnet und lief der
+    // Wurfstufe davon.
     item.displayName = composeName(item);
     return item;
   }
@@ -2318,7 +2354,7 @@ if (window.i18n) {
     if (_matCount() < matCost) return false;
     if (!spendGold(expected)) return false;
     _spendMat(matCost);
-    const iLevel = (typeof item.iLevel === 'number' && item.iLevel > 0) ? item.iLevel : 1;
+    const iLevel = gegenstandsstufe(item) || 1;
     if (hasLock) {
       const locked = item.affixes[lockIndex];
       const out = [locked];
@@ -2338,6 +2374,20 @@ if (window.i18n) {
   function migrateSave(saveData) {
     if (!saveData) return saveData;
     const ver = (typeof saveData.saveVersion === 'number') ? saveData.saveVersion : 1;
+    // Gegenstandsstufe: bei JEDEM Laden, nicht nur fuer Altversionen —
+    // stufeNachtragen aendert nur, was noch nicht stimmt. Die Truhe gehoert
+    // dazu, sonst behielten eingelagerte Stuecke ihr altes itemLevel.
+    const _stufen = function (it) {
+      if (it && typeof it === 'object'
+          && (AUSRUESTUNGS_ARTEN.indexOf(it.type) >= 0 || it.type === 'accessory')) {
+        stufeNachtragen(it);
+      }
+    };
+    if (Array.isArray(saveData.inventory)) saveData.inventory.forEach(_stufen);
+    if (saveData.equipment && typeof saveData.equipment === 'object') {
+      Object.keys(saveData.equipment).forEach(function (k) { _stufen(saveData.equipment[k]); });
+    }
+    if (saveData.truhe && Array.isArray(saveData.truhe.faecher)) saveData.truhe.faecher.forEach(_stufen);
     if (ver >= 3) return saveData;
 
     // Gegenstaende, deren baseStats die Migration selbst aus den Oberwerten
@@ -2363,9 +2413,7 @@ if (window.i18n) {
       // Add new fields with defaults
       item.tier = 0;
       item.affixes = [];
-      if (typeof item.iLevel !== 'number') {
-        item.iLevel = (typeof item.itemLevel === 'number') ? item.itemLevel : 1;
-      }
+      stufeNachtragen(item);
       if (typeof item.requiredLevel !== 'number') item.requiredLevel = 1;
       if (!item.baseStats || typeof item.baseStats !== 'object') {
         const stats = {};
@@ -2435,6 +2483,8 @@ if (window.i18n) {
     // Feature 059 (#42): run-specific amulets — separate pool + roll path.
     AMULET_DEFS: AMULET_DEFS,
     rollAmulet: rollAmulet,
+    gegenstandsstufe: gegenstandsstufe,
+    stufeNachtragen: stufeNachtragen,
     PERSISTENT_EQUIP_SLOTS: PERSISTENT_EQUIP_SLOTS,
     AUSRUESTUNGS_ARTEN: AUSRUESTUNGS_ARTEN,
     clearRunAmulet: clearRunAmulet,

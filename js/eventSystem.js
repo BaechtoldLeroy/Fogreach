@@ -1396,11 +1396,10 @@
   /**
    * Wirft ein angelegtes Stueck um — auf die vorher ausgewuerfelte Seite.
    *
-   * Das iLevel bleibt das des Stuecks; die Tiefe dient nur als Ersatz fuer
-   * die angezeigte Gegenstandsstufe, wenn das Stueck keine eigene kennt.
+   * Das iLevel bleibt das des Stuecks — und damit seine Gegenstandsstufe.
    *
    * @param {string} slot
-   * @param {number} tiefe
+   * @param {number} tiefe  ungenutzt (frueher Ersatz-Stufe, s. b478)
    * @param {{besser:boolean, spanne:number}} [wurf] fuer Tests vorgegeben
    * @returns {{alt:number, neu:number, item:object, besser:boolean,
    *            spanne:number, ziel:number,
@@ -1447,9 +1446,10 @@
       var vorher = alt[stat], nachher = neu[stat];
       if (w.besser ? nachher < vorher : nachher > vorher) return verweigert;
     }
-    if (typeof window.computeItemLevelFromStats === 'function') {
-      try { neu.itemLevel = window.computeItemLevelFromStats(neu, alt.iLevel || tiefe || 1); } catch (e) {}
-    }
+    // Die Gegenstandsstufe wandert mit (werteSkaliert kopiert iLevel); der
+    // Stein aendert Zahlen, nicht die Stufe, auf der das Stueck gewuerfelt
+    // wurde. Bis b478 rechnete er itemLevel hier aus den neuen Werten nach;
+    // jetzt bleiben beide Felder, wie werteSkaliert sie kopiert hat.
 
     eq[slot] = neu;
     if (typeof recalcDerived === 'function') recalcDerived(0, 0);
