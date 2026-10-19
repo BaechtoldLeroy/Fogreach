@@ -76,9 +76,19 @@ test('In der Arena leuchtet die Quelle — und erlischt nach dem Kampf', () => {
   assert.strictEqual(r.da, true, 'die Quelle ist nicht zu sehen');
   assert.ok(/Die Esse/.test(r.text || ''), 'keine Beschriftung: ' + r.text);   // Stufe 1b: die Esse, nicht die Quelle
 
+  // Stufe 3: Nach dem Kampf brennt die Esse weiter, bis der letzte Schlag
+  // sie zerbricht (FinaleHandwerk.zerbrechen; der Weg dorthin steht in
+  // tests/finaleQuelle.test.js).
   H.run(`window.Finale.nachKampf(window.game.scene.getScene('GameScene'))`);
+  const glimmt = H.run(`(function () { var g = window.game.scene.getScene('GameScene')._quelleGlow; return !!(g && g.active); })()`);
+  assert.strictEqual(glimmt, true, 'die Esse erlischt schon vor dem letzten Schlag');
+  H.run(`window.FinaleHandwerk.zerbrechen(window.game.scene.getScene('GameScene'))`);
+  for (let i = 0; i < 200 && H.run(`(function () { var g = window.game.scene.getScene('GameScene')._quelleGlow; return !!(g && g.active); })()`); i++) H.step(2);
   const nachher = H.run(`(function () { var g = window.game.scene.getScene('GameScene')._quelleGlow; return !!(g && g.active); })()`);
-  assert.strictEqual(nachher, false, 'die Quelle leuchtet nach dem Kampf weiter');
+  assert.strictEqual(nachher, false, 'die Quelle leuchtet nach dem letzten Schlag weiter');
+  H.run(`(function () { var sc = window.game.scene.getScene('GameScene'); if (sc.__finaleLoesen) sc.__finaleLoesen.abbrechen(); sc.__finaleNachKampf = false; })()`);
+  // Die Klinge fliegt erst, dann steht der Dialog: abwarten, bevor er geschlossen wird.
+  for (let i = 0; i < 300 && !H.run('!!window.eventChoiceOpen'); i++) H.step(2);
   // Dialog schliessen
   H.run(`(function () {
     var sc = window.game.scene.getScene('GameScene');

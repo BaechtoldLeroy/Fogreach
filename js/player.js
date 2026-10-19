@@ -982,6 +982,9 @@ const ELARAS_KLINGE_GEGEN_ELARA = 1.5;
 
 function dealDamageToEnemy(scene, enemy, multiplier = 1, abilityKey = 'attack', opts = {}) {
   if (!enemy) return { damage: 0, isCrit: false };
+  // Stufe 3: Die besessene Elara steht schon im Raum, waehrend an der Esse
+  // noch gesprochen wird (Finale.vorKampf). Bis die Esse sie nimmt, trifft sie nichts.
+  if (enemy._unverwundbar) return { damage: 0, isCrit: false };
 
   // #65 Phase 2: Mini-Boss-Verzauberung 'resist'. Quelle klassifizieren:
   //   ranged  = Projektil (Flag vom Treffer-Ort, opts.ranged)
@@ -2220,7 +2223,7 @@ function handleEnemyHit(scene, enemy, options = {}) {
         // #158: Die Quelle zerbricht — Elara liegt am Boden, die letzte Wahl.
         if (enemy.bossType === 'elaraBesessen' && window.Finale
             && typeof window.Finale.nachKampf === 'function') {
-          try { window.Finale.nachKampf(scene); } catch (e) { /* defensiv */ }
+          try { window.Finale.nachKampf(scene, enemy); } catch (e) { /* defensiv */ }
         }
       }
     }

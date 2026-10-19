@@ -306,6 +306,10 @@ function checkWaveEnd(time) {
   // Boss wave ends when boss is gone
   if (bossActive) {
     if (!currentBoss || !currentBoss.active) {
+      // Stufe 3: Nach Elara laeuft das Finale an der Esse (Klinge, letzter
+      // Schlag, Urteil) mit laufender Uhr. Bis es durch ist, keine neue Welle.
+      if (window.Finale && typeof window.Finale.laeuftNachKampf === 'function'
+          && window.Finale.laeuftNachKampf(this)) return;
       bossActive = false;
       if (window.soundManager) window.soundManager.playMusic('dungeon_ambient');
       this.time.delayedCall(1000, () => startNextWave.call(this));

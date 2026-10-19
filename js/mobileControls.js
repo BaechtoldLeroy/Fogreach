@@ -377,6 +377,8 @@ if (window.i18n) {
       for (let i = 0; i < arr.length; i++) {
         const e = arr[i];
         if (!e || !e.active) continue;
+        // Unsichtbar heisst: noch nicht im Kampf (Elara an der Esse, Finale).
+        if (e.visible === false) continue;
         const dx = e.x - p.x, dy = e.y - p.y;
         if (dx * dx + dy * dy >= r2) continue;
         if (_lineBlockedByClosedDoor(scene, p.x, p.y, e.x, e.y)) continue; // hinter zu-Tür -> zaehlt nicht
@@ -439,9 +441,13 @@ if (window.i18n) {
       // Interaktion (Dialog/Tür/Loot), sonst Angriff. Genau EIN Pfad pro Tap,
       // entschieden nach dem zum Tap-Zeitpunkt gültigen Kontext.
       attack:   { onDown: function () {
-        if (hasPeacefulTarget(this)) { _interact(); }
+        if (hasPeacefulTarget(this)) {
+          _interact();
+          // Halte-Aktionen (die Esse im Finale) fragen, ob der Knopf noch liegt.
+          window.__MOBILE_INTERACT_HELD__ = true;
+        }
         else if (typeof attack === 'function') { attack.call(this); }
-      }, onUp: null },
+      }, onUp: function () { window.__MOBILE_INTERACT_HELD__ = false; } },
       potion:   { onDown: _usePotion, onUp: null },
       interact: { onDown: _interact,  onUp: null }, // Legacy-Handler (Zelle entfernt), harmlos
       roll:     { onDown: performRoll, onUp: null },

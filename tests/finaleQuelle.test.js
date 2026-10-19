@@ -2,14 +2,18 @@
 //
 // Story-Kern v6.1, Das Finale. Geprueft am laufenden Spiel, mit den echten
 // Dialogen (EventSystem.showEventChoiceDialog) und echten Knoepfen:
-//   * Vor dem Kampf: der erhobene Hammer, Elaras Satz, Harren ruft "Lene",
-//     sie stoesst ihn weg (harren_dead) BEVOR sie den Hammer nimmt und die
-//     Esse sie nimmt
-//   * Nach dem Kampf: der letzte Schlag als Handwerk, Mara verlangt das
-//     Urteil, verschonen oder richten (elara_spared/killed); das Ziel ist
-//     erfuellt, abgegeben wird bei Thom
+//   * Vor dem Kampf: der erhobene Hammer als Handwerk (Stufe 3: E halten an
+//     der Esse, mitten im Heben die Erkenntnis, loslassen), Elaras Satz,
+//     Harren ruft "Lene", sie stoesst ihn weg (harren_dead) BEVOR sie den
+//     Hammer nimmt und die Esse sie nimmt
+//   * Nach dem Kampf: ihre eigene Klinge, der letzte Schlag als Handwerk
+//     (dieselbe Halte-Aktion, andere Richtung), Mara verlangt das Urteil,
+//     verschonen oder richten (elara_spared/killed); das Ziel ist erfuellt,
+//     abgegeben wird bei Thom
 //   * Am Konvoi: still bleiben oder die Klinge ziehen    -> convoy_blown (#84),
 //     im Messing-Dialog nach der Abhoer-Szene, genau einmal (b447)
+// Die Halte-Aktion selbst (Handy, kurzer Druck, Slot 3) steht in
+// tests/finaleHandwerk.test.js.
 
 const { test, before, after, beforeEach } = require('node:test');
 const assert = require('node:assert');
@@ -44,15 +48,21 @@ before(async () => {
 });
 after(async () => { if (H) await H.shutdown(); });
 
+const GSC = "window.game.scene.getScene('GameScene')";
+
 beforeEach(() => {
+  esseHalten(false);
   L.clearEnemies();
   L.healPlayer();
   L.setDepth(30, 30);
-  // Offene Dialoge vom Fall davor schliessen.
+  // Offene Dialoge und Halte-Aktionen vom Fall davor schliessen.
   for (let i = 0; i < 20 && H.run('!!window.eventChoiceOpen'); i++) {
     H.run("(function () { var d = window.game.scene.getScene('GameScene').__konvoiDialog; if (d) d.zu(); else window.__klick(0); })()");
     H.step(2);
   }
+  H.run(`(function () { var sc = ${GSC};
+    ['__finaleHammer', '__finaleLoesen'].forEach(function (k) { if (sc[k]) { sc[k].abbrechen(); sc[k] = null; } });
+    sc.__finaleNachKampf = false; sc.__esseOrt = null; })()`);
   H.run('window.__dialogLog.length = 0');
 });
 
@@ -66,17 +76,50 @@ function stand(quests, flags) {
 }
 const FINALE_AKTIV = { schattenrat_finale: { status: 'active', objectives: [{ type: 'boss_kill', target: 'schattenrat', current: 0, required: 1 }] } };
 
-/** Klickt Knopf n im offenen Dialog; gibt den Text des naechsten zurueck. */
+const letzter = () => H.run(`(function () { var l = window.__dialogLog; return l.length ? l[l.length - 1] : null; })()`);
+/** Taktet, bis ein neuer Dialog offen ist (Seiten mit Figurenspiel davor brauchen Zeit). */
+function naechsterDialog(vorher) {
+  for (let i = 0; i < 900; i++) {
+    if (H.run('window.__dialogLog.length') > vorher && H.run('!!window.eventChoiceOpen')) return letzter();
+    H.step(2);
+  }
+  return null;
+}
+/** Klickt Knopf n im offenen Dialog; gibt den naechsten Dialog zurueck (oder null). */
 function klick(n) {
   H.step(2);
+  const zahl = H.run('window.__dialogLog.length');
   const ok = H.run(`window.__klick(${n || 0})`);
   assert.ok(ok, 'kein Knopf zum Klicken');
   H.step(2);
-  return H.run(`(function () { var l = window.__dialogLog; return l.length ? l[l.length - 1] : null; })()`);
+  return naechsterDialog(zahl);
+}
+/** Klickt und erwartet KEINEN weiteren Dialog (die Halte-Aktion kommt). */
+function klickOhneFolge(n) {
+  H.step(2);
+  assert.ok(H.run(`window.__klick(${n || 0})`), 'kein Knopf zum Klicken');
+  H.step(4);
 }
 const flag = (n) => H.run(`window.questSystem.hasFlag('${n}')`);
+function esseHalten(an) {
+  H.run(`(function () { var k = ${GSC}.input.keyboard.addKey('E', false); k.isDown = ${!!an}; })()`);
+}
+function zurEsse(feld) {
+  H.run(`(function () { var h = ${GSC}.${feld || '__finaleHammer'};
+    player.setPosition(h.x, h.y + 20); player.body.reset(player.x, player.y); })()`);
+  H.step(2);
+}
+const halt = (feld) => H.run(`(function () { var h = ${GSC}.${feld || '__finaleHammer'};
+  return h ? { phase: h.phase, f: h.fortschritt } : null; })()`);
+/** E halten, bis die Halte-Aktion `phase` erreicht. */
+function haltenBis(phase, feld) {
+  esseHalten(true);
+  let h = halt(feld);
+  for (let i = 0; i < 600 && h && h.phase !== phase; i++) { H.step(1); h = halt(feld); }
+  return h;
+}
 
-test('Vor dem Kampf: der erhobene Hammer, Harren, dann nimmt die Esse sie (v6.1)', () => {
+test('Vor dem Kampf: der erhobene Hammer als Handwerk, Harren, dann nimmt die Esse sie (v6.1, Stufe 3)', () => {
   stand(FINALE_AKTIV, {});
   const b = L.spawnBoss();
   assert.strictEqual(b.type, 'elaraBesessen');
@@ -84,34 +127,70 @@ test('Vor dem Kampf: der erhobene Hammer, Harren, dann nimmt die Esse sie (v6.1)
   const erste = H.run('window.__dialogLog[0]');
   assert.ok(erste && /löse die Bindung/.test(erste.text), 'die Szene an der Esse startet nicht: ' + JSON.stringify(erste));
   assert.strictEqual(H.run('!!window.eventChoiceOpen'), true, 'das Spiel laeuft waehrend der Szene weiter');
-  const genommen = () => H.run(`!!window.game.scene.getScene('GameScene').__quelleNahmSie`);
+  // Bis die Esse sie nimmt, ist die besessene Elara nicht im Raum.
+  const boss = () => H.run(`(function () { var b = enemies.getChildren().filter(function (x) { return x && x.isBoss; })[0];
+    return b ? { sichtbar: b.visible, koerper: !!(b.body && b.body.enable), unverwundbar: !!b._unverwundbar, kampf: !!b._elaraKampf } : null; })()`);
+  assert.strictEqual(JSON.stringify(boss()), JSON.stringify({ sichtbar: false, koerper: false, unverwundbar: true, kampf: false }));
+  const genommen = () => H.run(`!!${GSC}.__quelleNahmSie`);
 
-  let d = klick(0);
-  assert.ok(/Du setzt den Hammer an die Bindung/.test(d.text), d.text);
-  d = klick(0);
-  assert.ok(/Du hältst inne/.test(d.text) && /Erneuern/.test(d.text), 'der erhobene Hammer fehlt: ' + d.text);
+  // Seite 1 ist Handwerk: kein Dialog, sondern die Halte-Aktion an der Esse.
+  klickOhneFolge(0);
+  assert.strictEqual(H.run('!!window.eventChoiceOpen'), false, 'nach dem Empfang steht noch ein Dialog');
+  // Noch nicht gehoben: je nach Abstand zur Esse hingehen oder bereit.
+  assert.ok(['hingehen', 'bereit'].indexOf(halt().phase) >= 0 && halt().f === 0, JSON.stringify(halt()));
+  zurEsse();
+  let h = haltenBis('erkannt');
+  assert.strictEqual(h.phase, 'erkannt', 'die Erkenntnis kommt nicht: ' + JSON.stringify(h));
+  assert.ok(Math.abs(h.f - H.run('window.FinaleHandwerk.ERKENNEN_BEI')) < 1e-9, 'der Hammer steigt ueber die Erkenntnis hinaus');
+  assert.strictEqual(H.run('!!window.eventChoiceOpen'), false, 'mitten im Heben steht ein Dialog');
+  // Der Moment: Puls, der Satz, die Bindung zeigt rot in die Glut.
+  const moment = H.run(`(function () { var sc = ${GSC};
+    return { puls: !!sc.children.getByName('esseErkenntnisPuls'),
+      satz: (sc.children.getByName('esseErkenntnisSatz') || {}).text || null,
+      hinweis: (sc.children.getByName('esseHinweis') || {}).text || null }; })()`);
+  assert.ok(moment.puls, 'kein Puls');
+  assert.strictEqual(moment.satz, 'Das ist kein Lösen. Das ist Erneuern.');
+  assert.strictEqual(moment.hinweis, 'Lass los');
+  // Weiter halten bringt nichts: erst das Loslassen fuehrt weiter.
+  H.step(120);
+  assert.strictEqual(halt().phase, 'erkannt');
+  assert.strictEqual(H.run('window.__dialogLog.length'), 1, 'ein Dialog kommt, ohne dass losgelassen wurde');
+  esseHalten(false);
+  let d = naechsterDialog(1);
+  assert.ok(d && /Du hältst inne/.test(d.text) && /Erneuern/.test(d.text), 'der erhobene Hammer fehlt: ' + JSON.stringify(d));
   d = klick(0);
   assert.ok(/Alles haben wir vorausgesehen\. Nur nicht, dass Du es merkst\./.test(d.text), d.text);
   d = klick(0);
   assert.ok(/Nur Deine Hände/.test(d.text), 'sie spricht den Plan nicht aus: ' + d.text);
   d = klick(0);
   assert.ok(/HARREN: Lene\./.test(d.text), 'Harren kommt nicht');
+  const harren = () => H.run(`(function () { var o = ${GSC}.children.getByName('finaleHarren'); return o ? { winkel: Math.round(o.angle) } : null; })()`);
+  assert.ok(harren(), 'Harren steht nicht als Figur an der Esse');
   d = klick(0);
   assert.ok(/stösst sie ihn weg/.test(d.text) && /bewusst/.test(d.text), d.text);
   // Ihr Punkt ohne Rueckkehr liegt VOR der Besessenheit.
   assert.strictEqual(genommen(), false, 'die Esse nimmt sie schon, bevor sie ihn wegstoesst');
   assert.strictEqual(flag('harren_dead'), false, 'Harren stirbt schon, bevor man es gelesen hat');
+  assert.ok(Math.abs(harren().winkel) >= 80, 'Harren liegt nicht: ' + JSON.stringify(harren()));
+  assert.strictEqual(H.run(`!!${GSC}.children.getByName('finaleHammer')`), false, 'sie hat den Hammer schon vor dem Stoss');
   d = klick(0);
   assert.strictEqual(flag('harren_dead'), true, 'harren_dead nicht gesetzt');
   assert.ok(/reisst Dir den Hammer/.test(d.text), 'sie nimmt den Hammer nicht: ' + d.text);
+  assert.strictEqual(H.run(`!!${GSC}.children.getByName('finaleHammer')`), true, 'der Hammer wechselt nicht sichtbar zu ihr');
   assert.strictEqual(genommen(), false, 'die Esse nimmt sie, bevor sie es selbst versucht');
   d = klick(0);
   assert.ok(/keine Archivschmiedin/.test(d.text) && /schmiedet die Esse sie/.test(d.text), d.text);
   // #89: Der Moment ist inszeniert (Blitz, Stoss), nicht nur eine Textseite.
   assert.strictEqual(genommen(), true, 'die Besessenheit ist nur eine Textseite');
   assert.deepStrictEqual(Array.from(d.wahlen), ['Kämpfen']);
-  klick(0);
+  assert.strictEqual(boss().sichtbar, false, 'der Boss steht schon vor "Kämpfen"');
+  H.step(2);
+  H.run('window.__klick(0)');
+  H.step(4);
   assert.strictEqual(H.run('!!window.eventChoiceOpen'), false, 'der Kampf beginnt nicht');
+  assert.strictEqual(JSON.stringify(boss()), JSON.stringify({ sichtbar: true, koerper: true, unverwundbar: false, kampf: true }),
+    'aus der Elara an der Esse wird nicht der Boss');
+  assert.strictEqual(H.run(`!!${GSC}.children.getByName('finaleElara')`), false, 'die Buehnen-Elara bleibt stehen');
 });
 
 test('Wer Harren schon hat sterben sehen, kommt direkt zum Kampf', () => {
@@ -120,6 +199,8 @@ test('Wer Harren schon hat sterben sehen, kommt direkt zum Kampf', () => {
   H.step(2);
   const log = H.run('window.__dialogLog.map(function (d) { return d.text; })');
   assert.ok(!log.some((t) => /löse die Bindung/.test(t)), 'die Szene spielt ein zweites Mal');
+  assert.strictEqual(H.run(`!!enemies.getChildren().filter(function (x) { return x && x.isBoss; })[0]._elaraKampf`), true,
+    'ohne Buehne beginnt der Kampf nicht');
 });
 
 function elaraBesiegen() {
@@ -131,17 +212,33 @@ function elaraBesiegen() {
     b.hp = 0;
     handleEnemyHit(sc, b, {});
   })()`);
-  H.step(2);
+  return naechsterDialog(0);
+}
+/** Der letzte Schlag: zur Esse, halten, bis sie zerbrochen ist, dann die naechste Seite. */
+function letzterSchlag() {
+  const zahl = H.run('window.__dialogLog.length');
+  zurEsse('__finaleLoesen');
+  const h = haltenBis('fertig', '__finaleLoesen');
+  esseHalten(false);
+  assert.ok(!h || h.phase === 'fertig', 'die Bindung loest sich nicht: ' + JSON.stringify(h));
+  return naechsterDialog(zahl);
 }
 
-test('Nach dem Kampf: der letzte Schlag, Mara verlangt das Urteil, verschonen (v6.1)', () => {
+test('Nach dem Kampf: ihre Klinge, der letzte Schlag als Handwerk, Mara verlangt das Urteil, verschonen (v6.1)', () => {
   stand(FINALE_AKTIV, { harren_dead: true, elara_trust: true });
-  elaraBesiegen();
-  let d = H.run('window.__dialogLog[window.__dialogLog.length - 1]');
+  let d = elaraBesiegen();
   assert.ok(d && /Ihre eigene Klinge/.test(d.text), 'keine Szene nach dem Kampf: ' + JSON.stringify(d));
-  d = klick(0);
-  // Der letzte Schlag ist Handwerk: die Bindung in die andere Richtung.
+  assert.strictEqual(flag('elara_besiegt'), true, 'der Sieg ist nicht gemerkt (Rueckkehr an die Esse)');
+  klickOhneFolge(0);
+  // Der letzte Schlag ist Handwerk: erst die Halte-Aktion, dann zerbricht die Esse.
+  const los = halt('__finaleLoesen');
+  assert.ok(los && ['hingehen', 'bereit'].indexOf(los.phase) >= 0 && los.f === 0, 'keine Halte-Aktion fuer den letzten Schlag: ' + JSON.stringify(los));
+  assert.strictEqual(H.run(`!!${GSC}.__esseZerbrochen`), false);
+  d = letzterSchlag();
+  assert.strictEqual(H.run(`!!${GSC}.__esseZerbrochen`), true, 'die Esse zerbricht nicht');
   assert.ok(/in die andere Richtung/.test(d.text) && /kein neuer Rauch/.test(d.text), d.text);
+  d = klick(0);
+  assert.ok(/fällt zurück in die Tiefe/.test(d.text) && /gibt er frei/.test(d.text), 'der Daemon faellt nicht: ' + d.text);
   d = klick(0);
   assert.ok(/Bis zum letzten Schlag/.test(d.text), 'ihre letzten Worte kennen das Vertrauen nicht: ' + d.text);
   d = klick(0);
@@ -150,30 +247,37 @@ test('Nach dem Kampf: der letzte Schlag, Mara verlangt das Urteil, verschonen (v
   klick(0);
   assert.strictEqual(flag('elara_spared'), true);
   assert.strictEqual(flag('elara_killed'), false);
-  klick(0);
+  H.step(2);
+  H.run('window.__klick(0)');
+  H.step(2);
   // v6.1: Abgegeben wird oben bei Thom. Unten ist nur das Ziel erfuellt.
   const q = H.run(`(function () { var qs = window.questSystem;
     return { status: (qs.getQuestSaveData().quests.schattenrat_finale || {}).status,
       bereit: qs.isQuestReadyToComplete('schattenrat_finale'),
       thom: qs.getActiveQuestsAt('thom').map(function (x) { return x.id; }),
       branka: qs.getActiveQuestsAt('branka').map(function (x) { return x.id; }),
-      wartet: _elaraWartet() }; })()`);
+      wartet: _elaraWartet(), nachKampf: window.Finale.laeuftNachKampf(${GSC}) }; })()`);
   assert.strictEqual(q.status, 'active', 'die Quelle ist schon unten abgeschlossen');
   assert.strictEqual(q.bereit, true, 'das Ziel der Quelle ist nach dem Sieg nicht erfuellt');
   assert.ok(Array.from(q.thom).indexOf('schattenrat_finale') >= 0, 'Thom nimmt die Quelle nicht ab');
   assert.ok(Array.from(q.branka).indexOf('schattenrat_finale') < 0, 'Branka will sie noch einmal abnehmen');
   assert.strictEqual(q.wartet, false, 'Elara wartet nach dem entschiedenen Kampf erneut auf Tiefe 30');
+  assert.strictEqual(q.nachKampf, false, 'das Finale sperrt nach dem Urteil weiter die Wellen');
 });
 
 test('Nach dem Kampf: richten', () => {
   stand(FINALE_AKTIV, { harren_dead: true, zeichen_bemerkt: true });
   elaraBesiegen();
+  klickOhneFolge(0);
+  letzterSchlag();
   klick(0);
-  let d = klick(0);
+  const d = klick(0);
   assert.ok(/nie ganz getraut/.test(d.text));
   assert.ok(/Das Zeichen/.test(d.text), 'wer das Zeichen erkannt hat, dem sagt sie es');
   klick(0);
-  klick(1);
+  H.step(2);
+  H.run('window.__klick(1)');
+  H.step(2);
   assert.strictEqual(flag('elara_killed'), true);
   assert.strictEqual(flag('elara_spared'), false);
 });
@@ -183,14 +287,50 @@ test('Nach dem Kampf: ist Maras Netz verbrannt, stellt sich die Frage ohne sie (
   // trotzdem die Stufen herab und verlangte das Urteil.
   stand(FINALE_AKTIV, { harren_dead: true, convoy_blown: true, convoy_blade_drawn: true });
   elaraBesiegen();
+  klickOhneFolge(0);
+  letzterSchlag();
   klick(0);
   klick(0);
   const d = klick(0);
   assert.ok(!/MARA:/.test(d.text), 'Mara verlangt das Urteil, obwohl sie fort ist: ' + d.text);
   assert.ok(/Niemand kommt die Stufen herab/.test(d.text), d.text);
   assert.strictEqual(JSON.stringify(d.wahlen), JSON.stringify(['Verschonen', 'Richten']));
-  klick(0);
+  H.step(2);
+  H.run('window.__klick(0)');
+  H.step(2);
   assert.strictEqual(flag('elara_spared'), true);
+});
+
+test('Wer nach dem Sieg geht, findet Elara an der Esse wieder, ohne zweiten Kampf (Spielstand)', () => {
+  // Der Sieg ist gemerkt (elara_besiegt), das Urteil fehlt: so steht es in
+  // einem Spielstand, der waehrend des letzten Schlags verlassen wurde.
+  stand(FINALE_AKTIV, { harren_dead: true, elara_besiegt: true });
+  assert.strictEqual(H.run('_elaraWartet()'), true, 'ohne Urteil wartet die Esse nicht mehr');
+  L.spawnBoss();
+  const d = naechsterDialog(0);
+  assert.ok(d && /liegt noch dort, wo sie fiel/.test(d.text), JSON.stringify(d));
+  assert.strictEqual(H.run(`enemies.getChildren().filter(function (x) { return x && x.active && x.isBoss; }).length`), 0,
+    'sie steht ein zweites Mal als Boss da');
+  klickOhneFolge(0);
+  const n = letzterSchlag();
+  assert.ok(n && /in die andere Richtung/.test(n.text), 'der letzte Schlag fehlt: ' + JSON.stringify(n));
+});
+
+test('Waehrend des letzten Schlags kommt keine neue Welle in die Arena', () => {
+  stand(FINALE_AKTIV, { harren_dead: true });
+  L.spawnBoss();
+  H.run(`(function () {
+    var sc = ${GSC}; var b = enemies.getChildren().filter(function (x) { return x && x.isBoss; })[0];
+    bossActive = true; currentBoss = b; b.hp = 0; handleEnemyHit(sc, b, {});
+  })()`);
+  naechsterDialog(0);
+  klickOhneFolge(0);
+  // Die Uhr laeuft (kein Dialog): checkWaveEnd haette nach 1 s die naechste Welle gestartet.
+  H.step(240);
+  const r = H.run(`({ gegner: enemies.countActive(true), nachKampf: window.Finale.laeuftNachKampf(${GSC}), bossWelle: bossActive })`);
+  assert.strictEqual(r.nachKampf, true);
+  assert.strictEqual(r.gegner, 0, 'eine neue Welle stoert das Handwerk an der Esse');
+  assert.strictEqual(r.bossWelle, true, 'die Bosswelle ist vorbei, bevor das Finale durch ist');
 });
 
 // --- Der Konvoi (#158, Messing-Dialog seit b447) -----------------------------
