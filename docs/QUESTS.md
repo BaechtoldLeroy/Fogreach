@@ -1,6 +1,6 @@
 # Quest-Übersicht — Fogreach
 
-_Quest-Daten automatisch generiert aus_ `js/questSystem.js` _(QUEST_DEFINITIONS) — 51 Quests._  
+_Quest-Daten automatisch generiert aus_ `js/questSystem.js` _(QUEST_DEFINITIONS) — 52 Quests._  
 _Neu erzeugen:_ `node tools/genQuestDoc.js`
 
 ---
@@ -107,14 +107,15 @@ Aus dem Abgleich mit der Story-Bibel v4 (Stand b246). Keine davon ist ein Fehler
 
 ## Boss-Leiter ↔ Quest-Leiter
 
-Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
+Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall dazwischen auf Tiefe 25, solange sein Auftrag läuft:
 
 | Boss | Tiefe | Quest |
 |---|---|---|
 | Kettenmeister | 10 | Der Kettenmeister (Mara) |
 | Zeremonienmeister | 20 | Die Ritualkammer (Elara) |
-| _Nachhall (Stufe 2)_ | 25 | _Was der Rauch behält (Mara), noch nicht im Spiel_ |
+| Der Nachhall | 25 | Was der Rauch behält (Mara); flüstert aus dem Gespielten, wechselt die Gestalt (Hall, Schwarm, Chor), Namen gehen an Thoms Presse |
 | Elara, besessen | 30 | Die Quelle (Branka, Abgabe bei Thom) |
+| Der Nachhall der Esse | 30, 60, … | kein Auftrag: steht dort, wenn die Quelle nicht läuft (ersetzt den Schattenrat) |
 
 ---
 
@@ -1322,6 +1323,29 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 
 # Akt-Index 4 — Die Quelle
 
+## Was der Rauch behält
+
+`was_der_rauch_behaelt` · **NPC:** Mara vom Untergrund · **Kette:** 1 · **Fortschritt erst ab Tiefe 25**
+
+> Steig auf Tiefe 25 hinab und stell Dich dem Nachhall, dem Echo aus tausend Stimmen. Bring Maras Leute nach Hause.
+
+- **Ziel:** `boss_kill` → `nachhall` ×1
+- **Vorbedingung:** Der Maulwurf
+- **Belohnung:** mind. 220 XP (bzw. 100 % des Stufenbedarfs, Boss)
+
+**Angebot**
+
+> Die Leute, die sie mir genommen haben, sind nicht tot. Nicht ganz. Wer tief genug hinabsteigt, hört sie, auf Tiefe 25, alle durcheinander. Die Späher nennen es den Nachhall. Er steht zwischen Dir und der Esse. Geh hin, hör nicht zu lange zu und bring sie nach Hause.
+
+**Unterwegs**
+
+> Der Nachhall wartet auf Tiefe 25. Wenn er flüstert, hör nicht hin. Schlag zu.
+
+**Abschluss**
+
+> Du hast sie gehen lassen. (Sie schweigt lange.) Hast Du einen Namen gehört, den Du kennst? (Eine der Stimmen war Deine eigene. Du sagst es ihr nicht.) Gib Thom die Namen, die Du lesen konntest. Dann geh. Die Esse wartet, und Elara mit ihr.
+
+
 ## Die Pamphlete
 
 `thom_pamphlets` · **NPC:** Setzer Thom · **Kette:** 2 · **Fortschritt erst ab Tiefe 22**
@@ -1356,7 +1380,7 @@ Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):
 > Steig auf Tiefe 30 hinab, zur Esse unter der Stadt. Elara ist schon dort. Danach wartet Thom an der Presse.
 
 - **Ziel:** `boss_kill` → `schattenrat` ×1
-- **Vorbedingung:** Der Maulwurf
+- **Vorbedingung:** Der Maulwurf **+** Was der Rauch behält
 - **Belohnung:** mind. 250 XP (bzw. 150 % des Stufenbedarfs, Finale) · **Ausrüstungsstück** (selten, auf Spielerstufe gewürfelt)
 
 **Angebot**

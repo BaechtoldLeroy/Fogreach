@@ -65,7 +65,9 @@ Unbekannte Namen werden benannt statt verschluckt:
 |---|---|
 | Kettenmeister | `kettenmeister`, `ketten`, `chainMaster`, `1` |
 | Zeremonienmeister | `zeremonienmeister`, `zeremonie`, `ceremonyMaster`, `2` |
-| Schattenrat | `schattenrat`, `schatten`, `shadowCouncillor`, `3` |
+| Der Nachhall der Esse (ersetzt den Schattenrat) | `esse`, `nachhallEsse`, `3` (alt: `schattenrat`) |
+| Elara, besessen | `elara`, `besessen`, `quelle`, `elaraBesessen` |
+| Der Nachhall | `nachhall`, `echo`, `hall`, `25` |
 
 ```
 ?dungeon=1&boss=kettenmeister&beat=1
@@ -113,9 +115,16 @@ zeigt die Szene IMMER, auch wenn sie im Spielstand schon gesehen ist:
 ```
 ?debug=1&dungeon=1&boss=kettenmeister
 ?debug=1&dungeon=1&boss=zeremonienmeister
-?debug=1&dungeon=1&boss=schattenrat
+?debug=1&dungeon=1&boss=esse
 ?debug=1&dungeon=1&boss=elara
+?debug=1&dungeon=1&boss=nachhall
 ```
+
+Der Nachhall (Tiefe 25, Stufe 2) fluestert aus dem Spielstand: wer ihn mit
+eigener Stimme hoeren will, schliesst vorher "Wer du warst" ab (oder setzt
+`self_remembered`). Seine Gestalt folgt den LP-Phasen (66 % / 33 %); zum
+Ansehen in der Konsole `currentBoss.hp = currentBoss.maxHp * 0.6` bzw. `0.3`.
+Im regulaeren Spiel erscheint er nur, solange "Was der Rauch behält" laeuft.
 
 Bei Elara laeuft zuerst das Finale an der Quelle (sofern noch nicht gesehen),
 die Zwischenszene folgt danach.

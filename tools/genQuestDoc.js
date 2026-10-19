@@ -176,12 +176,13 @@ out += '**Eine Unstimmigkeit in der Reihenfolge.** Die Keller-Patrouille trägt 
   + ' Reihenfolge im Hub stellt damit den Auftraggeber vor seine eigene Voraussetzung.\n\n';
 
 out += '## Boss-Leiter ↔ Quest-Leiter\n\n';
-out += 'Bosse spawnen nur an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2):\n\n';
+out += 'Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall dazwischen auf Tiefe 25, solange sein Auftrag läuft:\n\n';
 out += '| Boss | Tiefe | Quest |\n|---|---|---|\n';
 out += '| Kettenmeister | 10 | Der Kettenmeister (Mara) |\n';
 out += '| Zeremonienmeister | 20 | Die Ritualkammer (Elara) |\n';
-out += '| _Nachhall (Stufe 2)_ | 25 | _Was der Rauch behält (Mara), noch nicht im Spiel_ |\n';
-out += '| Elara, besessen | 30 | Die Quelle (Branka, Abgabe bei Thom) |\n\n';
+out += '| Der Nachhall | 25 | Was der Rauch behält (Mara); flüstert aus dem Gespielten, wechselt die Gestalt (Hall, Schwarm, Chor), Namen gehen an Thoms Presse |\n';
+out += '| Elara, besessen | 30 | Die Quelle (Branka, Abgabe bei Thom) |\n';
+out += '| Der Nachhall der Esse | 30, 60, … | kein Auftrag: steht dort, wenn die Quelle nicht läuft (ersetzt den Schattenrat) |\n\n';
 out += '---\n';
 
 const byAct = {};
