@@ -4709,6 +4709,28 @@ function handlePlayerProjectileEnemyOverlap(projectile, enemy) {
   }
 }
 
+// Aufstieg- und Krit-Texte in beiden Sprachen. Unit-Tests laden player.js ohne
+// i18n: dann bleibt es beim Deutschen.
+if (typeof window !== 'undefined' && window.i18n) {
+  window.i18n.register('de', {
+    'player.stufe': 'STUFE {n}',
+    'player.talentpunkt': '+1 Talentpunkt',
+    'player.krit': 'KRIT {n}',
+    'player.stufeToast': 'Stufe {n} erreicht!  +1 Talentpunkt — Taste [T]'
+  });
+  window.i18n.register('en', {
+    'player.stufe': 'LEVEL {n}',
+    'player.talentpunkt': '+1 Talent Point',
+    'player.krit': 'CRIT {n}',
+    'player.stufeToast': 'Level {n} reached!  +1 Talent Point — key [T]'
+  });
+}
+function _spielerText(key, deutsch, n) {
+  var i = typeof window !== 'undefined' && window.i18n;
+  var s = (i && i.has(key)) ? i.t(key) : deutsch;
+  return String(s).split('{n}').join(String(n));
+}
+
 // #50/#48: Aufgewerteter Level-Up-Effekt — Gold-Burst am Spieler: Kamera-Flash,
 // expandierender Goldring, Lichtstrahlen, aufsteigende Sparkles, "STUFE X"-Text
 // + "+1 Talentpunkt". Rein visuell, defensiv.
@@ -4746,8 +4768,8 @@ function _levelUpFx(scene, level) {
       else scene.time.delayedCall(900, () => { try { s.destroy(); } catch (e) {} });
     }
     // "STUFE X" + Talentpunkt-Untertitel steigen auf
-    const txt = scene.add.text(cx, cy - 30, 'STUFE ' + level, { fontFamily: 'serif', fontSize: '30px', color: '#ffd166', fontStyle: 'bold', stroke: '#5a3d00', strokeThickness: 4 }).setOrigin(0.5).setDepth(75);
-    const sub = scene.add.text(cx, cy - 4, '+1 Talentpunkt', { fontFamily: 'monospace', fontSize: '13px', color: '#fff3c0', fontStyle: 'bold' }).setOrigin(0.5).setDepth(75);
+    const txt = scene.add.text(cx, cy - 30, _spielerText('player.stufe', 'STUFE {n}', level), { fontFamily: 'serif', fontSize: '30px', color: '#ffd166', fontStyle: 'bold', stroke: '#5a3d00', strokeThickness: 4 }).setOrigin(0.5).setDepth(75);
+    const sub = scene.add.text(cx, cy - 4, _spielerText('player.talentpunkt', '+1 Talentpunkt'), { fontFamily: 'monospace', fontSize: '13px', color: '#fff3c0', fontStyle: 'bold' }).setOrigin(0.5).setDepth(75);
     if (T) {
       txt.setScale(0.4); T.add({ targets: txt, scale: 1, duration: 240, ease: 'Back.easeOut' });
       T.add({ targets: [txt, sub], y: '-=46', alpha: 0, duration: 1100, delay: 250, ease: 'Sine.easeOut', onComplete: () => { try { txt.destroy(); sub.destroy(); } catch (e) {} } });
@@ -4769,7 +4791,7 @@ function zeigeKritText(scene, x, y, schaden) {
   try {
     if (!scene || !scene.add || !scene.add.text) return;
     var streuung = (Math.random() - 0.5) * 26;
-    var txt = scene.add.text(x + streuung, y - 26, 'KRIT ' + Math.round(schaden), {
+    var txt = scene.add.text(x + streuung, y - 26, _spielerText('player.krit', 'KRIT {n}', Math.round(schaden)), {
       fontFamily: 'serif', fontSize: '22px', color: '#ffd166',
       fontStyle: 'bold', stroke: '#4a2a00', strokeThickness: 4
     }).setOrigin(0.5).setDepth(76);
@@ -4858,7 +4880,7 @@ function addXP(amount = 1) {
     if (scene) {
       try { _levelUpFx(scene, playerLevel); } catch (e) {}
       if (window.EventSystem && typeof window.EventSystem.showToast === 'function') {
-        try { window.EventSystem.showToast(scene, 'Stufe ' + playerLevel + ' erreicht!  +1 Talentpunkt — Taste [T]', 'level_up'); } catch (e) {}
+        try { window.EventSystem.showToast(scene, _spielerText('player.stufeToast', 'Stufe {n} erreicht!  +1 Talentpunkt — Taste [T]', playerLevel), 'level_up'); } catch (e) {}
       }
     }
   }

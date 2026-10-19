@@ -582,6 +582,12 @@
   function hilfeWeg() { domWeg(_hilfe); _hilfe = null; }
 
   /** Eine kurze Meldung (DOM, 3 s) — statt eines Fehlers. */
+  // Trailertexte in der aktiven Sprache (ein englischer Trailer zeigt Englisch).
+  function _sprache(de, en) {
+    var i = window.i18n;
+    return (i && typeof i.getLanguage === 'function' && i.getLanguage() === 'en') ? en : de;
+  }
+
   function meldung(text) {
     try { console.warn('[Trailer] ' + text); } catch (e) {}
     var d = domElement(HINWEIS_STIL, text);
@@ -1283,7 +1289,7 @@
         behalten(hub, function () {
           hub._dialogOpen = true;
           hub._showDialoguePages({ id: 'trailer_aldric', name: name }, name,
-            [{ text: 'Der Rat hat Arbeit für Dich, Archivschmied.', choices: null }], 'flavor', null, 0);
+            [{ text: _sprache('Der Rat hat Arbeit für Dich, Archivschmied.', 'The council has work for you, Archivesmith.'), choices: null }], 'flavor', null, 0);
         });
         // Die Bedienzeile ("ESC: schliessen") gehoert nicht ins Bild.
         var hinweis = window.i18n ? window.i18n.t('hub.dialog.hint.close') : 'ESC';
@@ -1686,7 +1692,8 @@
     var quelle = (cv && typeof window.MediaRecorder === 'function') ? aufnahmeQuelle(cv) : null;
     if (!quelle || typeof quelle.canvas.captureStream !== 'function') {
       if (quelle) quelle.loesen();
-      meldung('Aufnahme hier nicht möglich (Browser ohne MediaRecorder/captureStream).');
+      meldung(_sprache('Aufnahme hier nicht möglich (Browser ohne MediaRecorder/captureStream).',
+        'Recording not possible here (browser without MediaRecorder/captureStream).'));
       return false;
     }
     A.quelle = quelle;
@@ -1703,7 +1710,7 @@
     } catch (e) {
       tonLoesen();
       quelleLoesen();
-      meldung('Aufnahme konnte nicht starten: ' + ((e && e.message) || e));
+      meldung(_sprache('Aufnahme konnte nicht starten: ', 'Recording could not start: ') + ((e && e.message) || e));
       return false;
     }
     A.teile = [];
@@ -1720,7 +1727,8 @@
       borderRadius: '50%', background: '#e01818', boxShadow: '0 0 6px #ff3030',
       zIndex: '10001', pointerEvents: 'none'
     });
-    if (!A.mitTon) meldung('Aufnahme läuft — ohne Ton (Spielton nicht abgreifbar).');
+    if (!A.mitTon) meldung(_sprache('Aufnahme läuft, ohne Ton (Spielton nicht abgreifbar).',
+      'Recording, without sound (game audio not capturable).'));
     return true;
   }
 

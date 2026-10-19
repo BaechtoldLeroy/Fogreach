@@ -4,6 +4,8 @@
 if (window.i18n) {
   window.i18n.register('de', {
     'inventory.tier.common': 'Gewöhnlich',
+    'inventory.ausgeruestet': 'Ausgerüstet',
+    'inventory.voll': 'Kein Platz im Inventar',
     'inventory.tier.magic': 'Magisch',
     'inventory.tier.rare': 'Selten',
     'inventory.tier.legendary': 'Legendär',
@@ -53,6 +55,8 @@ if (window.i18n) {
   });
   window.i18n.register('en', {
     'inventory.tier.common': 'Common',
+    'inventory.ausgeruestet': 'Equipped',
+    'inventory.voll': 'No room in the inventory',
     'inventory.tier.magic': 'Magic',
     'inventory.tier.rare': 'Rare',
     'inventory.tier.legendary': 'Legendary',
@@ -864,7 +868,7 @@ function initInventoryUI() {
 
     if (compare && compare !== it) {
       const compareBox = ensureCompareTooltip();
-      if (applyTooltipContent(compareBox, compare, 'Ausgerüstet')) {
+      if (applyTooltipContent(compareBox, compare, _INV_T('inventory.ausgeruestet'))) {
         // Place the compare box beside the main tooltip on whichever side has
         // room. Inventory slots sit on the RIGHT of the screen, so the right
         // side usually doesn't fit — without this, positionTooltipBox's
@@ -2416,7 +2420,7 @@ function equipSelectedItem() {
         try {
           const _sz = invUI && invUI._scene;
           if (_sz && typeof window.showEventToast === "function") {
-            window.showEventToast(_sz, "Kein Platz im Inventar");
+            window.showEventToast(_sz, _INV_T('inventory.voll'));
           }
         } catch (e2) { /* Hinweis darf den Tausch nie brechen */ }
         return;

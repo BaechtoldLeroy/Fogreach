@@ -205,7 +205,8 @@
     // --- Aufforderung zu bestaetigen ---------------------------------------
     var mobil = !!(typeof window !== 'undefined' && window.isMobile);
     var hinweisTxt = scene.add.text(cx, h - balkenH - 26,
-      mobil ? 'Tippen, um den Kampf zu beginnen' : '[Leertaste] — Kampf beginnen', {
+      mobil ? _t('bossIntro.hinweis.mobil', 'Tippen, um den Kampf zu beginnen')
+            : _t('bossIntro.hinweis.taste', '[Leertaste] — Kampf beginnen'), {
         fontSize: '14px', fontFamily: 'monospace', color: '#c8c0b0',
         stroke: '#000000', strokeThickness: 3, align: 'center'
       }).setOrigin(0.5).setDepth(1101).setScrollFactor(0).setAlpha(0);
@@ -260,6 +261,22 @@
     });
 
     return true;
+  }
+
+  // Die Unit-Tests laden dieses Modul ohne i18n: dann bleibt es beim Deutschen.
+  if (typeof window !== 'undefined' && window.i18n) {
+    window.i18n.register('de', {
+      'bossIntro.hinweis.mobil': 'Tippen, um den Kampf zu beginnen',
+      'bossIntro.hinweis.taste': '[Leertaste] — Kampf beginnen'
+    });
+    window.i18n.register('en', {
+      'bossIntro.hinweis.mobil': 'Tap to begin the fight',
+      'bossIntro.hinweis.taste': '[Space] — Begin the fight'
+    });
+  }
+  function _t(key, deutsch) {
+    var i = typeof window !== 'undefined' && window.i18n;
+    return (i && i.has(key)) ? i.t(key) : deutsch;
   }
 
   var BossIntro = {

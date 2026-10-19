@@ -17,6 +17,7 @@ function _ersterSchliffGratis() {
 if (window.i18n) {
   window.i18n.register('de', {
     'crafting.title': 'ARCHIVSCHMIEDE',
+    'crafting.inv.leer': '(keine Ausrüstung)',
     'crafting.materials.counter': 'Eisenbrocken: {count}',
     'crafting.materials.gold': 'Gold: {count}',
     'crafting.section.enhance': 'Ausrüstung verbessern',
@@ -66,6 +67,7 @@ if (window.i18n) {
   });
   window.i18n.register('en', {
     'crafting.title': 'ARCHIVE FORGE',
+    'crafting.inv.leer': '(no equipment)',
     'crafting.materials.counter': 'Iron Chunks: {count}',
     'crafting.materials.gold': 'Gold: {count}',
     'crafting.section.enhance': 'Enhance Equipment',
@@ -313,7 +315,7 @@ class CraftingScene extends Phaser.Scene {
     this.invEmptyText = this.add.text(
       leftX + slotW / 2,
       this.invListY + (this.invRowH * this.invMaxRows) / 2,
-      '(keine Equipment-Items)', {
+      _CRAFT_T('crafting.inv.leer'), {
         fontFamily: 'monospace', fontSize: '10px', color: COL_DISABLED
       }
     ).setOrigin(0.5).setDepth(10);

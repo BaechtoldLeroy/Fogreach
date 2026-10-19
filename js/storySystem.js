@@ -370,7 +370,14 @@
       'story.journal.akt_prolog': 'Prolog · {name}',
       'story.journal.akt_n': 'Akt {n} von {total}: {name}',
       'story.journal.entfallen': 'Entfallene Aufgaben:',
-      'story.journal.rat_keine_auftraege': 'Der Rat gibt Dir keine Aufträge mehr.'
+      'story.journal.rat_keine_auftraege': 'Der Rat gibt Dir keine Aufträge mehr.',
+      'story.journal.titel': 'Tagebuch',
+      'story.journal.statistik': 'Höchste Welle: {welle}  |  Gegner besiegt: {kills}  |  Räume: {raeume}  |  Wellen: {wellen}',
+      'story.journal.aktiv': 'Aktive Aufgaben:',
+      'story.journal.keine_aktiv': 'Keine aktiven Aufgaben',
+      'story.journal.erledigt': 'Abgeschlossene Aufgaben:',
+      'story.journal.keine_erledigt': 'Keine abgeschlossenen Aufgaben',
+      'story.journal.schliessen': 'J / ESC: schliessen'
     });
     window.i18n.register('en', {
       'story.akt.prolog': 'Prologue',
@@ -378,7 +385,14 @@
       'story.journal.akt_prolog': 'Prologue · {name}',
       'story.journal.akt_n': 'Act {n} of {total}: {name}',
       'story.journal.entfallen': 'Dropped tasks:',
-      'story.journal.rat_keine_auftraege': 'The council gives you no more assignments.'
+      'story.journal.rat_keine_auftraege': 'The council gives you no more assignments.',
+      'story.journal.titel': 'Journal',
+      'story.journal.statistik': 'Highest wave: {welle}  |  Enemies defeated: {kills}  |  Rooms: {raeume}  |  Waves: {wellen}',
+      'story.journal.aktiv': 'Active tasks:',
+      'story.journal.keine_aktiv': 'No active tasks',
+      'story.journal.erledigt': 'Completed tasks:',
+      'story.journal.keine_erledigt': 'No completed tasks',
+      'story.journal.schliessen': 'J / ESC: close'
     });
   }
   var AKT_ANZAHL = STORY_ACTS.length - 1;   // nummerierte Akte nach dem Prolog
@@ -931,7 +945,7 @@
     var leftX = -panelW / 2 + pad;
 
     // Titel bleibt fest oben stehen (scrollt nicht mit).
-    var title = scene.add.text(0, -panelH / 2 + pad, 'Tagebuch', {
+    var title = scene.add.text(0, -panelH / 2 + pad, _i18nLookup('story.journal.titel', 'Tagebuch'), {
       fontFamily: 'serif',
       fontSize: 26,
       color: '#ffd700'
@@ -968,10 +982,11 @@
     y += narrative.height + 14;
 
     // Stats bar
-    var statsStr = 'H\u00f6chste Welle: ' + data.highestWave
-      + '  |  Gegner besiegt: ' + data.totalKills
-      + '  |  R\u00e4ume: ' + data.totalRoomsCleared
-      + '  |  Wellen: ' + data.totalWavesSurvived;
+    var statsStr = _einsetzen(_i18nLookup('story.journal.statistik',
+      'Höchste Welle: {welle}  |  Gegner besiegt: {kills}  |  Räume: {raeume}  |  Wellen: {wellen}'), {
+      welle: data.highestWave, kills: data.totalKills,
+      raeume: data.totalRoomsCleared, wellen: data.totalWavesSurvived
+    });
     var statsText = scene.add.text(leftX, y, statsStr, {
       fontFamily: 'monospace',
       fontSize: 12,
@@ -988,7 +1003,7 @@
     y += 10;
 
     // Active quests with progress bars
-    var activeHeader = scene.add.text(leftX, y, 'Aktive Aufgaben:', {
+    var activeHeader = scene.add.text(leftX, y, _i18nLookup('story.journal.aktiv', 'Aktive Aufgaben:'), {
       fontFamily: 'serif',
       fontSize: 16,
       color: '#88bbff'
@@ -997,7 +1012,7 @@
     y += activeHeader.height + 6;
 
     if (data.activeQuests.length === 0) {
-      var noActive = scene.add.text(leftX + 12, y, 'Keine aktiven Aufgaben', {
+      var noActive = scene.add.text(leftX + 12, y, _i18nLookup('story.journal.keine_aktiv', 'Keine aktiven Aufgaben'), {
         fontFamily: 'monospace',
         fontSize: 13,
         color: '#666666'
@@ -1043,7 +1058,7 @@
     y += 6;
 
     // Completed quests with rewards
-    var completedHeader = scene.add.text(leftX, y, 'Abgeschlossene Aufgaben:', {
+    var completedHeader = scene.add.text(leftX, y, _i18nLookup('story.journal.erledigt', 'Abgeschlossene Aufgaben:'), {
       fontFamily: 'serif',
       fontSize: 16,
       color: '#88ff88'
@@ -1052,7 +1067,7 @@
     y += completedHeader.height + 6;
 
     if (data.completedQuests.length === 0) {
-      var noCompleted = scene.add.text(leftX + 12, y, 'Keine abgeschlossenen Aufgaben', {
+      var noCompleted = scene.add.text(leftX + 12, y, _i18nLookup('story.journal.keine_erledigt', 'Keine abgeschlossenen Aufgaben'), {
         fontFamily: 'monospace',
         fontSize: 13,
         color: '#666666'
@@ -1117,7 +1132,7 @@
     var contentH = y;
 
     // Schliess-Hinweis bleibt fest unten stehen (scrollt nicht mit).
-    var hint = scene.add.text(0, panelH / 2 - pad, 'J / ESC: schliessen', {
+    var hint = scene.add.text(0, panelH / 2 - pad, _i18nLookup('story.journal.schliessen', 'J / ESC: schliessen'), {
       fontFamily: 'monospace',
       fontSize: 14,
       color: '#888888'

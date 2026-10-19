@@ -322,8 +322,14 @@
       if (typeof d.description === 'string') _autoDe['ability.' + id + '.description'] = d.description;
     });
     window.i18n.register('de', _autoDe);
+    window.i18n.register('de', {
+      'ability.erlernt.titel': 'NEUE FÄHIGKEIT ERLERNT',
+      'ability.erlernt.weiter': '[Leertaste / Klick] fortfahren  -  [K] Loadout'
+    });
 
     window.i18n.register('en', {
+      'ability.erlernt.titel': 'NEW ABILITY LEARNED',
+      'ability.erlernt.weiter': '[Space / Click] continue  -  [K] Loadout',
       // 060 Strang WUT
       'ability.whirlwind.name': 'Whirlwind',
       'ability.whirlwind.description': 'Whirl through enemies for ~1s — move freely while spinning, hitting everything in range repeatedly.',
@@ -621,7 +627,7 @@
       container.add(bg);
 
       // Header
-      const header = scene.add.text(0, -panelH / 2 + 14, 'NEUE F\u00C4HIGKEIT ERLERNT', {
+      const header = scene.add.text(0, -panelH / 2 + 14, (window.i18n ? window.i18n.t('ability.erlernt.titel') : 'NEUE FÄHIGKEIT ERLERNT'), {
         fontFamily: 'serif',
         fontSize: 14,
         color: '#ffd166',
@@ -663,7 +669,7 @@
       container.add(descText);
 
       // Footer hint — now also tells the player how to dismiss the panel
-      const footer = scene.add.text(0, panelH / 2 - 14, '[Leertaste / Klick] fortfahren  -  [K] Loadout', {
+      const footer = scene.add.text(0, panelH / 2 - 14, (window.i18n ? window.i18n.t('ability.erlernt.weiter') : '[Leertaste / Klick] fortfahren  -  [K] Loadout'), {
         fontFamily: 'monospace',
         fontSize: 11,
         color: '#88aaff',

@@ -1,8 +1,10 @@
 // mobileControls.js — Single entry point for mobile control UI.
 
-if (window.i18n) {
-  window.i18n.register('de', { 'mobile.close': 'Schliessen' });
-  window.i18n.register('en', { 'mobile.close': 'Close' });
+// Laedt VOR i18n.js: ein register() hier liefe still ins Leere. Darum fragt
+// _mobilText die Sprache erst zur Laufzeit ab.
+function _mobilText(de, en) {
+  var i = window.i18n;
+  return (i && typeof i.getLanguage === 'function' && i.getLanguage() === 'en') ? en : de;
 }
 
 //
@@ -691,7 +693,7 @@ if (window.i18n) {
     elements.push(overlay);
 
     // Title
-    var title = scene.add.text(cx, cy - 100, 'Skill Auswahl', {
+    var title = scene.add.text(cx, cy - 100, _mobilText('Fähigkeit wählen', 'Choose ability'), {
       fontSize: '20px', fill: '#ffd166', fontFamily: 'serif', fontStyle: 'bold'
     }).setOrigin(0.5).setScrollFactor(0).setDepth(4501);
     elements.push(title);
@@ -734,7 +736,7 @@ if (window.i18n) {
     var closeBg = scene.add.rectangle(cx, cy + 110, 120, 32, 0x3a3a3a)
       .setStrokeStyle(2, 0xd4a543).setScrollFactor(0).setDepth(4502)
       .setInteractive({ useHandCursor: true });
-    var closeText = scene.add.text(cx, cy + 110, (window.i18n ? window.i18n.t('mobile.close') : 'Schliessen'), {
+    var closeText = scene.add.text(cx, cy + 110, _mobilText('Schliessen', 'Close'), {
       fontSize: '13px', fill: '#f1e9d8', fontFamily: 'monospace'
     }).setOrigin(0.5).setScrollFactor(0).setDepth(4503);
     elements.push(closeBg);

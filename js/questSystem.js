@@ -51,8 +51,8 @@
       // Aldric als kuehlen Rat-Aufseher, der den alten Dich kannte, und
       // schatten das Erinnerungs-Thema vor, ohne die Verschwoerung zu spoilern.
       dialogueIntro: [
-        'Der Archivschmied. Man sagte mir, du seist wieder auf den Beinen.\n\nErinnerst du dich an mich? … Nein. Natürlich nicht.',
-        'Wir kannten uns, du und ich. Du hast Akten gesiegelt, an die niemand mehr rühren sollte — ordentliche, verlässliche Arbeit.\n\nVon dieser Verlässlichkeit hätte ich gern wieder etwas.'
+        'Der Archivschmied. Man sagte mir, Du seist wieder auf den Beinen.\n\nErinnerst Du Dich an mich? … Nein. Natürlich nicht.',
+        'Wir kannten uns, Du und ich. Du hast Akten gesiegelt, an die niemand mehr rühren sollte: ordentliche, verlässliche Arbeit.\n\nVon dieser Verlässlichkeit hätte ich gern wieder etwas.'
       ],
       dialogueOffer: 'Unten in den Kellern hat sich Ungeziefer eingenistet. Wilde Tiere, sagen die Wachen. Räum sie aus — zehn Stück, dann reden wir weiter.\n\nWillst du diese Aufgabe übernehmen?',
       dialogueProgress: 'Die Keller sind noch nicht sicher. Kämpfe weiter.',
@@ -1434,6 +1434,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.toast.completed': 'Objective complete: {title}',
       // Akt 0 — Aldric warmup (tutorial extension)
       'quest.aldric_cleanup.title': 'Cellar Cleanup',
+      'quest.aldric_cleanup.dialogueIntro.0': 'The Archivesmith. I was told you were back on your feet.\n\nDo you remember me? … No. Of course not.',
+      'quest.aldric_cleanup.dialogueIntro.1': 'We knew each other, you and I. You sealed files no one was ever supposed to touch again: orderly, reliable work.\n\nI would like a little of that reliability again.',
       'quest.aldric_cleanup.description': 'Defeat 10 enemies in the cellars beneath the Archive Forge.',
       'quest.aldric_patrol.title': 'Cellar Patrol',
       'quest.aldric_patrol.description': 'Clear 3 rooms in the cellars to secure all corridors.',
@@ -1751,6 +1753,12 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
           });
         } catch (e) { /* swallow */ }
       });
+      // Die Auftakt-Seiten (Liste) folgen der Sprache wie die Felder oben.
+      if (Array.isArray(q.dialogueIntro)) {
+        q.dialogueIntro.forEach(function (_, i) {
+          window.i18n.binden(q.dialogueIntro, i, 'quest.' + id + '.dialogueIntro.' + i);
+        });
+      }
       // Reward item names + rarity labels: same pattern (only first item used
       // by HubSceneV2 reward UI, but iterate all for correctness).
       if (q.rewards && Array.isArray(q.rewards.items)) {

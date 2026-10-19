@@ -49,11 +49,23 @@
   if (window.i18n && typeof window.i18n.register === 'function') {
     window.i18n.register('de', {
       'stash.label.stash': 'In der Truhe: bleibt über Läufe hinweg liegen',
-      'stash.label.bag': 'Dein Gepäck: kommt mit in die Keller'
+      'stash.label.bag': 'Dein Gepäck: kommt mit in die Keller',
+      'stash.title': 'Truhe',
+      'stash.full': 'Die Truhe ist voll.',
+      'stash.rejected': 'Das gehört nicht in die Truhe. Material hat seinen eigenen Vorrat.',
+      'stash.inv_full': 'Kein Platz im Inventar.',
+      'stash.hint': 'Ziehen zum Umlegen  ·  E oder Esc schliesst',
+      'stash.hint_touch': 'Ziehen zum Umlegen  ·  ✕ oder daneben tippen schliesst'
     });
     window.i18n.register('en', {
       'stash.label.stash': 'In the stash: stays across runs',
-      'stash.label.bag': 'Your pack: comes along into the cellars'
+      'stash.label.bag': 'Your pack: comes along into the cellars',
+      'stash.title': 'Stash',
+      'stash.full': 'The stash is full.',
+      'stash.rejected': 'That does not belong in the stash. Materials have their own supply.',
+      'stash.inv_full': 'No room in the inventory.',
+      'stash.hint': 'Drag to move  ·  E or Esc closes',
+      'stash.hint_touch': 'Drag to move  ·  ✕ or tap outside closes'
     });
   }
 
@@ -333,7 +345,7 @@
     var text;
     if (art === 'truhe.voll') text = _t('stash.full', 'Die Truhe ist voll.');
     else if (art === 'nicht.erlaubt') {
-      text = _t('stash.rejected', 'Das gehört nicht in die Truhe — Material hat seinen eigenen Vorrat.');
+      text = _t('stash.rejected', 'Das gehört nicht in die Truhe. Material hat seinen eigenen Vorrat.');
     } else text = _t('stash.inv_full', 'Kein Platz im Inventar.');
     hinweis.setText(text);
     if (scene.time && scene.time.delayedCall) {

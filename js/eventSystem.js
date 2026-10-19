@@ -26,6 +26,8 @@
       'event.ambush.looter_nothing': 'Er greift dir in den Beutel — und findet nichts. Trotzdem: hinterher!',
       // Wandering merchant
       'event.merchant.name': 'Wandernder Händler',
+      'event.merchant.prompt': '[E] Handel',
+      'event.ambush.banner': 'HINTERHALT!',
       'event.merchant.toast_spawn': '🛒 Ein wandernder Händler ist erschienen!',
       // Cursed chest
       'event.cursed.name': 'Verfluchte Truhe',
@@ -170,6 +172,8 @@
       'event.ambush.looter_stole': 'He cuts your purse — {gold} gold! After him!',
       'event.ambush.looter_nothing': 'He cuts your purse — and finds nothing. After him anyway!',
       'event.merchant.name': 'Wandering Merchant',
+      'event.merchant.prompt': '[E] Trade',
+      'event.ambush.banner': 'AMBUSH!',
       'event.merchant.toast_spawn': '🛒 A wandering merchant has appeared!',
       'event.cursed.name': 'Cursed Chest',
       'event.cursed.toast_spawn': 'A dark aura surrounds something...',
@@ -2098,7 +2102,7 @@
 
     // Interaction prompt (floating text above merchant)
     var scaledH = 120;
-    var prompt = scene.add.text(cx, cy - scaledH / 2 - 10, '[E] Handel', {
+    var prompt = scene.add.text(cx, cy - scaledH / 2 - 10, T('event.merchant.prompt'), {
       fontSize: '14px', fill: '#ffdd44', fontFamily: 'monospace',
       stroke: '#000', strokeThickness: 2, align: 'center'
     }).setOrigin(0.5).setDepth(151);
@@ -2562,7 +2566,7 @@
     var ch = cam ? cam.height : 600;
 
     // Big dramatic warning
-    var warn = scene.add.text(cw / 2, ch / 2 - 50, 'HINTERHALT!', {
+    var warn = scene.add.text(cw / 2, ch / 2 - 50, T('event.ambush.banner'), {
       fontSize: '64px', fill: '#ff3333', fontFamily: 'serif', fontStyle: 'bold',
       stroke: '#000', strokeThickness: 6
     }).setOrigin(0.5).setScrollFactor(0).setDepth(2000).setAlpha(0);
