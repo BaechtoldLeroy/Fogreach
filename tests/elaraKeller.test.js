@@ -21,7 +21,7 @@ beforeEach(() => {
     window._playerInvincible = true;
     enemies.getChildren().slice().forEach(function (e) { try { e.destroy(); } catch (x) {} });
     // Saubere Ausgangslage: keine Flaggen, keine laufende Quest, kein Dialog.
-    ['elaraMet', 'elara_rettung_gesehen'].forEach(function (f) {
+    ['elaraMet', 'elara_rettung_gesehen', 'rettung_inszeniert'].forEach(function (f) {
       if (typeof questSystem.setFlag === 'function') questSystem.setFlag(f, false);
     });
     sc.children.list.filter(function (o) { return o.texture && o.texture.key === 'elara_right0'; })
@@ -53,16 +53,35 @@ const elaraDa = () => H.run(`(function () {
 const dialoge = () => H.run('(window.__dlg || []).map(function (d) { return d.text; })');
 const flagge = (f) => H.run(`!!questSystem.hasFlag('${f}')`);
 
+/**
+ * v6.1: Die Rettung ist eine Zwischensequenz (js/rettungsSzene.js). Taktet
+ * sie bis zu Elaras Zeile, winkt weiter und wartet, bis sie abgebaut ist.
+ * Erst dann steht Elara mit [E] im Raum und ihr Dialog laeuft.
+ */
+function abspielen() {
+  for (let i = 0; i < 900; i++) {
+    const ph = H.run(`(function () {
+      var z = window.game.scene.getScene('GameScene').__rettungsSzene;
+      return z ? z.phase : 'keine';
+    })()`);
+    if (ph === 'fertig' || ph === 'keine') return ph;
+    if (ph === 'rede') H.run(`window.game.scene.getScene('GameScene').__rettungsSzene.weiter(); 1`);
+    H.step(2);
+  }
+  return 'haengt';
+}
+
 test('Die Rettung stellt sie vor — und nimmt noch keinen Auftrag an', () => {
   H.run(`(function () {
     var sc = window.game.scene.getScene('GameScene');
     _elaraRettet(sc);
   })()`);
+  assert.strictEqual(abspielen(), 'fertig', 'die Zwischensequenz endet nicht');
   const s = elaraDa();
   assert.ok(s, 'ihr Sprite steht nicht im Raum');
   const texte = dialoge();
   assert.ok(texte.length > 0, 'gar kein Dialog');
-  assert.ok(/Nebel quillt|Fog seeps/.test(texte[0]), 'die Rettung wird nicht gezeigt: ' + texte[0]);
+  assert.ok(/Du lebst|You are alive/.test(texte[0]), 'die Rettung wird nicht gezeigt: ' + texte[0]);
   assert.ok(!texte.some((t) => /Archivschmied|Archivesmith/.test(t)),
     'der Auftrag kam ohne [E]: ' + texte.join(' | '));
   assert.strictEqual(flagge('elaraMet'), false, 'elaraMet wurde schon gesetzt');
@@ -73,6 +92,7 @@ test('Die Rettung stellt sie vor — und nimmt noch keinen Auftrag an', () => {
 
 test('Erst [E] bei ihr bringt den Auftrag', () => {
   H.run(`(function () { _elaraRettet(window.game.scene.getScene('GameScene')); })()`);
+  abspielen();
   const s = elaraDa();
   assert.ok(s, 'ihr Sprite steht nicht im Raum');
   // Dialoge der Rettung wegklicken, dann zu ihr gehen und [E].
@@ -135,7 +155,7 @@ test('Sie tritt dort hervor, wo die Kettenwache stand', () => {
   // Gemessen ueber acht Raeume stand sie 202-687 px vom Spieler entfernt
   // (Median 345) und bis zu 553 px von der naechsten Wache — am anderen
   // Raumende also. Das liest sich nicht als Rettung.
-  const r = H.run(`(function () {
+  const r0 = H.run(`(function () {
     var sc = window.game.scene.getScene('GameScene');
     var qs = window.questSystem;
     var st = qs.getQuestSaveData(); st.quests = {}; st.flags = {};
@@ -151,8 +171,16 @@ test('Sie tritt dort hervor, wo die Kettenwache stand', () => {
     var wachen = enemies.getChildren().filter(function (e) { return e && e.active && e._hinterhalt; })
       .map(function (e) { return { x: e.x, y: e.y }; });
     if (!wachen.length) return { fehler: 'keine Wachen gesetzt' };
-    var px = player.x, py = player.y;
+    window.__probe = { wachen: wachen, px: player.x, py: player.y };
     _elaraRettet(sc);
+    return {};
+  })()`);
+  assert.ok(!r0.fehler, r0.fehler);
+  // Sie tritt in der Zwischensequenz hervor; als Figur mit [E] bleibt sie danach.
+  abspielen();
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var wachen = window.__probe.wachen, px = window.__probe.px, py = window.__probe.py;
     var el = sc.children.list.filter(function (o) {
       return o && o.active && o.texture && o.texture.key === 'elara_right0';
     })[0];
@@ -181,7 +209,7 @@ test('Ist der Ringplatz einer Wache verbaut, rueckt sie auf dem Ring zur Seite',
   // Ringpunkt einer Wache unerreichbar, zog sie an einen beliebigen Punkt im
   // Raum — und Elara stellte sich neben eine Wache, die gar nicht da war.
   // Hier erzwungen: rund um JEDEN Ringwinkel ist alles unerreichbar.
-  const r = H.run(`(function () {
+  const r0 = H.run(`(function () {
     var sc = window.game.scene.getScene('GameScene');
     var qs = window.questSystem;
     var st = qs.getQuestSaveData(); st.quests = {}; st.flags = {};
@@ -211,20 +239,28 @@ test('Ist der Ringplatz einer Wache verbaut, rueckt sie auf dem Ring zur Seite',
       var wachen = enemies.getChildren().filter(function (e) { return e && e.active && e._hinterhalt; })
         .map(function (e) { return { x: e.x, y: e.y, frei: !gesperrt(e.x, e.y) }; });
       if (!wachen.length) return { fehler: 'keine Wachen gesetzt' };
+      window.__probe = { wachen: wachen, px: px, py: py };
       _elaraRettet(sc);
-      var el = sc.children.list.filter(function (o) {
-        return o && o.active && o.texture && o.texture.key === 'elara_right0';
-      })[0];
-      if (!el) return { fehler: 'Elara ist nicht erschienen' };
-      return {
-        wachenAmSpieler: wachen.map(function (w) { return Math.round(Math.hypot(w.x - px, w.y - py)); }),
-        aufGesperrtem: wachen.filter(function (w) { return !w.frei; }).length,
-        zurWache: Math.round(Math.min.apply(null, wachen.map(function (w) {
-          return Math.hypot(w.x - el.x, w.y - el.y);
-        }))),
-        ring: HINTERHALT_RING_PX
-      };
+      return {};
     } finally { sc.isPointAccessible = echt; }
+  })()`);
+  assert.ok(!r0.fehler, r0.fehler);
+  abspielen();
+  const r = H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
+    var wachen = window.__probe.wachen, px = window.__probe.px, py = window.__probe.py;
+    var el = sc.children.list.filter(function (o) {
+      return o && o.active && o.texture && o.texture.key === 'elara_right0';
+    })[0];
+    if (!el) return { fehler: 'Elara ist nicht erschienen' };
+    return {
+      wachenAmSpieler: wachen.map(function (w) { return Math.round(Math.hypot(w.x - px, w.y - py)); }),
+      aufGesperrtem: wachen.filter(function (w) { return !w.frei; }).length,
+      zurWache: Math.round(Math.min.apply(null, wachen.map(function (w) {
+        return Math.hypot(w.x - el.x, w.y - el.y);
+      }))),
+      ring: HINTERHALT_RING_PX
+    };
   })()`);
   assert.ok(!r.fehler, r.fehler);
   assert.strictEqual(r.aufGesperrtem, 0, r.aufGesperrtem + ' Wachen stehen auf gesperrtem Boden');
@@ -249,6 +285,7 @@ const treppen = () => H.run(`(function () {
 
 test('Solange sie wartet, bleibt die Treppe zu', () => {
   H.run(`(function () { _elaraRettet(window.game.scene.getScene('GameScene')); })()`);
+  abspielen();
   // Der Nebel raeumt den Raum, die Welle gilt danach als erledigt — genau da
   // wollte die Treppe bisher aufgehen, noch bevor man sie erreicht hatte.
   H.run(`(function () {
@@ -266,6 +303,10 @@ test('Nach dem Gespraech gibt sie den Weg frei', () => {
   H.run(`(function () {
     var sc = window.game.scene.getScene('GameScene');
     _elaraRettet(sc);
+  })()`);
+  abspielen();
+  H.run(`(function () {
+    var sc = window.game.scene.getScene('GameScene');
     rooms[currentRoomId].cleared = true;
     lockStairs(sc, false);
   })()`);
@@ -432,6 +473,7 @@ test('Die Wachen bringen den Spieler in Not, toeten ihn aber nicht — dann rett
   assert.ok(gerettet(), 'Elara kam nicht');
   assert.ok(min >= 1, 'der Spieler sank auf ' + min + ' LP');
   assert.ok(seit < 20000, 'die Wachen brauchten ' + seit + ' ms bis zur Not');
+  assert.strictEqual(abspielen(), 'fertig', 'die Zwischensequenz endet nicht');
   H.run('window.eventChoiceOpen = false; 1');
   H.step(60);
   const rest = H.run('enemies.getChildren().filter(function (e) { return e && e.active && e._hinterhalt; }).length');
@@ -445,5 +487,6 @@ test('Sind die Wachen doch fort, rettet Elara sofort statt im leeren Raum zu war
   H.run('_hinterhalt.gegner.forEach(function (g) { try { g.destroy(); } catch (x) {} }); 1');
   for (let i = 0; i < 30 && !gerettet(); i++) H.step(1);
   assert.ok(gerettet(), 'ohne Wachen kam keine Rettung (nach 30 Bildern)');
+  abspielen();
   assert.ok(elaraDa(), 'Elara steht nicht im Raum');
 });

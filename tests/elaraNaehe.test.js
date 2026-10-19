@@ -57,7 +57,26 @@ before(async () => {
 });
 after(async () => { if (H) await H.shutdown(); });
 
+/**
+ * v6.1: Die Rettung ist eine Zwischensequenz (js/rettungsSzene.js). Laeuft
+ * eine, wird sie bis zu Elaras Zeile getaktet und weitergewinkt; danach
+ * folgt ihr Dialog wie bisher.
+ */
+function rettungAbspielen() {
+  for (let i = 0; i < 900; i++) {
+    const ph = H.run(`(function () {
+      var z = window.game.scene.getScene('GameScene').__rettungsSzene;
+      return z ? z.phase : 'keine';
+    })()`);
+    if (ph === 'fertig' || ph === 'keine') return ph;
+    if (ph === 'rede') H.run(`window.game.scene.getScene('GameScene').__rettungsSzene.weiter(); 1`);
+    H.step(2);
+  }
+  return 'haengt';
+}
+
 function stand(quests, flags, akt) {
+  rettungAbspielen();
   H.run(`(function () {
     var qs = window.questSystem;
     window.storySystem.advanceToAct(${akt});
@@ -117,14 +136,17 @@ test('Der Hinterhalt: ab Raum 3 stellt die Kettenwache den Spieler, Elara rettet
   // 100-ms-Takt, fuenf Frames sind 83 ms und treffen ihn nur manchmal.
   let a = null;
   for (let i = 0; i < 120; i++) {
-    a = H.run(`({ offen: !!window.eventChoiceOpen, text: window.__dialogText(),
+    a = H.run(`({ szene: !!window.game.scene.getScene('GameScene').__rettungsSzene,
       rettung: window.questSystem.hasFlag('elara_rettung_gesehen') })`);
-    if (a.offen) break;
+    if (a.szene) break;
     H.step(1);
   }
-  assert.strictEqual(a.offen, true, 'in Not kam keine Rettung');
+  assert.strictEqual(a.szene, true, 'in Not kam keine Rettung');
   assert.strictEqual(a.rettung, true);
-  assert.ok(/Kettenwache/.test(a.text), 'die Rettung erzaehlt nicht vom Hinterhalt: ' + a.text);
+  // Die Zwischensequenz zeigt die Wachen; danach spricht sie im Dialog.
+  assert.strictEqual(rettungAbspielen(), 'fertig', 'die Zwischensequenz endet nicht');
+  const text = H.run('window.__dialogText()');
+  assert.ok(/Du lebst/.test(text), 'nach der Rettung spricht sie nicht: ' + text);
 
   // Nach der Rettung ist der Hinterhalt vorbei und mit ihm sein Schutz. Mit
   // 3 LP genuegt dann ein Brand-Tick oder ein Nachzuegler, und der Tod
@@ -195,6 +217,7 @@ test('Wer gut ausweicht, wird spaetestens nach 30 Sekunden gerettet', () => {
   const frueh = H.run(`!!window.questSystem.hasFlag('elara_rettung_gesehen')`);
   H.step(400);                                    // ueber 30 s
   const spaet = H.run(`({ rettung: !!window.questSystem.hasFlag('elara_rettung_gesehen'), offen: !!window.eventChoiceOpen })`);
+  rettungAbspielen();
   H.run('window._playerInvincible = false; window.__durchklicken();');
   assert.strictEqual(frueh, false, 'die Rettung kam schon vor 30 s, ohne dass der Spieler in Not war');
   assert.strictEqual(spaet.rettung, true, 'nach 30 s kam keine Rettung');

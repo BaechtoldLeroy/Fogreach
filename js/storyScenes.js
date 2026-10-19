@@ -523,14 +523,53 @@
   // --- #155 Der Maulwurf: Elara mit Aldric --------------------------------------
   // Der Verrat. #156: das Zeichen an ihrem Ring — dasselbe wie auf den Siegeln
   // der geheimen Sitzung und auf dem Buendel, das der Spieler ihr gebracht hat.
+  // v6.1: Neben den beiden steht der Kettenwaechter aus dem Keller, und ein
+  // Rueckblick spielt Elaras Rettung noch einmal ab, diesmal mit dem Blick
+  // auf das, was gespielt war (js/rettungsSzene.js). Alte Spielstaende ohne
+  // die inszenierte Rettung bekommen die allgemeine Fassung, ein Stand ganz
+  // ohne Rettung gar keinen Rueckblick.
+  function _maulwurfWaechter(art) {
+    if (art === 'voll') return _t('(An der Tür, neben den beiden, ein Kettenwächter. Auf seinem Helm ein roter Helmbusch. Du kennst ihn. Aus dem Keller.)', '(By the door, beside the two of them, a chain guard. On his helmet a red plume. You know him. From the cellar.)');
+    if (art === 'allgemein') return _t('(An der Tür, neben den beiden, ein Kettenwächter. Er sieht Dich an, als würde er Dich kennen. Aus dem Keller?)', '(By the door, beside the two of them, a chain guard. He looks at you as if he knew you. From the cellar?)');
+    return null;
+  }
+
   function playMaulwurfEnthuellung(scene, onDone) {
-    _szeneSpielen(scene, [
+    var RS = window.RettungsSzene;
+    var art = (RS && typeof RS.rueckblickArt === 'function') ? RS.rueckblickArt() : null;
+    var vorn = [
       _t('(Du bist dem gefalteten Zettel gefolgt. Durch die Kanäle, hinauf ins Rathaus, in die Ratskammer. Es ist Nacht.)', '(You followed the folded note. Through the canals, up into the town hall, into the council chamber. It is night.)'),
-      _t('(Aldric steht am Tisch. Ihm gegenüber, ohne Kapuze: Elara.)', '(Aldric stands at the table. Across from him, hood down: Elara.)'),
+      _t('(Aldric steht am Tisch. Ihm gegenüber, ohne Kapuze: Elara.)', '(Aldric stands at the table. Across from him, hood down: Elara.)')
+    ];
+    var waechter = _maulwurfWaechter(art);
+    if (waechter && RS && typeof RS.rueckblick === 'function') {
+      vorn.push(waechter);
+      _szeneSpielen(scene, vorn, null, function () {
+        RS.rueckblick(scene, art, function () { _maulwurfRest(scene, onDone); });
+      }, true, _nachtKulisse);
+      return;
+    }
+    _szeneSpielen(scene, vorn.concat(_maulwurfZeilen()), 'maulwurf_reveal', onDone, true, _nachtKulisse);
+  }
+
+  // Die Ratskammer bei Nacht: dunkel hinter dem Text, damit der Platz nicht
+  // durchscheint (die Szene spielt nicht im Hub, sondern in der Kammer).
+  function _nachtKulisse(scene) {
+    var cam = scene.cameras.main;
+    return [scene.add.rectangle(cam.width / 2, cam.height / 2, cam.width, cam.height, 0x050407, 0.86)
+      .setScrollFactor(0).setDepth(1548)];
+  }
+
+  function _maulwurfRest(scene, onDone) {
+    _szeneSpielen(scene, _maulwurfZeilen(), 'maulwurf_reveal', onDone, true, _nachtKulisse);
+  }
+
+  function _maulwurfZeilen() {
+    return [
       _t('ALDRIC: Er vertraut Dir. Gut. Sorg dafür, dass er hinabsteigt.', 'ALDRIC: He trusts you. Good. Make sure he goes down.'),
       _t('ELARA: Er wird gehen. Er hat niemanden mehr ausser mir.', 'ELARA: He will go. He has no one left but me.'),
       _t('(Als sie den Zettel übergibt, fällt Licht auf ihre Hand. Ein Ring: drei Ketten, ineinander verschlungen. Dasselbe Zeichen wie auf den Siegeln der geheimen Sitzung. Wie auf dem Bündel, das Du ihr gebracht hast.)', '(As she hands over the note, light falls on her hand. A ring: three chains, intertwined. The same sign as on the seals of the secret session. As on the bundle you brought her.)')
-    ], 'maulwurf_reveal', onDone, true);
+    ];
   }
 
   window.storyScenes = {

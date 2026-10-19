@@ -3485,8 +3485,37 @@ function _maybeStartEspionage(scene, templateName, builtMeta) {
   }
 }
 
+/**
+ * Debug ?rettung=1 — der Hinterhalt mit Elaras Rettung gleich im ersten Raum.
+ * ?rettung=sofort ueberspringt den Kampf: die Zwischensequenz beginnt 1,5 s
+ * nachdem die Wachen stehen. Stellt den Stand her, den die Rettung braucht
+ * (Harrens erster Auftrag erledigt, Elara noch nicht getroffen). Einmal pro
+ * Seitenaufruf.
+ */
+var _debugRettungGespielt = false;
+function _debugRettung(scene, roomId) {
+  try {
+    var G = window.DebugGate;
+    if (!G || _debugRettungGespielt) return false;
+    var v = G.flagge('rettung');
+    if (v === null) return false;
+    _debugRettungGespielt = true;
+    var qs = window.questSystem;
+    var st = qs.getQuestSaveData();
+    st.quests = st.quests || {};
+    st.flags = st.flags || {};
+    st.quests.harren_daughter_investigation = { status: 'completed', objectives: [] };
+    ['elaraMet', 'elara_rettung_gesehen', 'rettung_inszeniert'].forEach(function (f) { st.flags[f] = false; });
+    qs.loadQuestSaveData(st);
+    _hinterhaltStarten(scene, roomId);
+    if (_hinterhalt && String(v).toLowerCase() === 'sofort') _hinterhalt.sofort = true;
+    return true;
+  } catch (e) { return false; }
+}
+
 function _maybeFireElaraCellarEncounter(scene, roomId) {
   if (!scene || !window.questSystem || !window.EventSystem) return;
+  if (_debugRettung(scene, roomId)) return;
   if (typeof roomId !== 'number' || roomId < 2) return;
   const qs = window.questSystem;
   if (typeof qs.hasFlag !== 'function') return;
@@ -3636,10 +3665,19 @@ var ELARA_NACH_ABGABE = {
 };
 
 var ELARA_SZENEN = {
-  rettung: { flag: 'elara_rettung_gesehen', seiten: function () { return [
-    { text: _elaraT(
-        '(Nebel quillt aus den Fugen. Die Kettenwache weicht zurück, als hätte etwas sie gerufen, und löst sich im Grau auf. Aus dem Dunkel tritt eine junge Frau, die Kapuze tief im Gesicht.)\n\n"Du lebst. Gut. Du hast gelesen, was Du nicht lesen solltest — und der Rat vergisst so etwas nicht. Noch ein Atemzug, und Du wärst einer von denen, an die sich keiner erinnert."',
-        '(Fog seeps from the cracks. The chain guard falls back as if something called it, and dissolves into the grey. A young woman steps out of the dark, hood pulled low.)\n\n"You are alive. Good. You read what you were not supposed to read — and the council does not forget such things. One more breath and you would have been one of those nobody remembers."'),
+  // v6.1: Nach der Zwischensequenz (rettung_inszeniert) hat man Nebel,
+  // Rueckzug und Auftritt gesehen; die Seite traegt dann nur noch ihre Worte.
+  rettung: { flag: 'elara_rettung_gesehen', seiten: function () {
+    var inszeniert = _versteckFlag('rettung_inszeniert');
+    var rede = _elaraT(
+      '"Du lebst. Gut. Du hast gelesen, was Du nicht lesen solltest, und der Rat vergisst so etwas nicht. Noch ein Atemzug, und Du wärst einer von denen, an die sich keiner erinnert."',
+      '"You are alive. Good. You read what you were not supposed to read, and the council does not forget such things. One more breath and you would have been one of those nobody remembers."');
+    return [
+    { text: (inszeniert ? _elaraT(
+        '(Die Wachen sind fort. Sie hilft Dir nicht auf, sie wartet, bis Du stehst.)\n\n',
+        '(The guards are gone. She does not help you up, she waits until you stand.)\n\n') : _elaraT(
+        '(Nebel quillt aus den Fugen. Die Kettenwache weicht zurück, als hätte etwas sie gerufen, und löst sich im Grau auf. Aus dem Dunkel tritt eine junge Frau, die Kapuze tief im Gesicht.)\n\n',
+        '(Fog seeps from the cracks. The chain guard falls back as if something called it, and dissolves into the grey. A young woman steps out of the dark, hood pulled low.)\n\n')) + rede,
       wahlen: [
         { label: _elaraT('Wie hast Du das gemacht?', 'How did you do that?'),
           antwort: _elaraT('"Der Nebel gehorcht dem, der ihn kennt. Frag nicht weiter."', '"The fog obeys those who know it. Don\'t ask further."') },
@@ -4557,6 +4595,11 @@ function _hinterhaltGegnerSetzen(scene, h) {
     if (typeof g.baseDamage === 'number') g.baseDamage = g.damage;
     g._hinterhalt = true;
     _hinterhaltWacheSchuetzen(g, h);
+    // Einer traegt den roten Helmbusch: er nickt Elara spaeter zu, und man
+    // trifft ihn in der Ratskammer wieder (js/rettungsSzene.js).
+    if (!h.gegner.length && window.RettungsSzene) {
+      try { window.RettungsSzene.markieren(scene, g); } catch (e) {}
+    }
     h.gegner.push(g);
   }
   try {
@@ -4602,7 +4645,9 @@ function _hinterhaltStarten(scene, roomId) {
     var max = (typeof playerMaxHealth === 'number' && playerMaxHealth > 0) ? playerMaxHealth : 0;
     var lp = (typeof playerHealth === 'number') ? playerHealth : max;
     var inNot = max > 0 && lp / max < ELARA_RETTUNG_ANTEIL;
-    if (inNot || !stehen || h.seit >= HINTERHALT_SPAETESTENS_MS) {
+    // ?rettung=sofort (Debug): nach anderthalb Sekunden, ohne Kampf.
+    var spaetestens = h.sofort ? 1500 : HINTERHALT_SPAETESTENS_MS;
+    if (inNot || !stehen || h.seit >= spaetestens) {
       _hinterhaltAbbrechen();
       _elaraRettet(scene);
     }
@@ -4617,7 +4662,8 @@ function _hinterhaltStarten(scene, roomId) {
  * vertrieben (HINTERHALT_RING_PX) — steht sie dann am anderen Raumende, liest
  * sich das nicht als Rettung.
  *
- * Gewaehlt wird die dem Spieler NAECHSTE Wache: so steht sie im Blickfeld.
+ * Gewaehlt wird der Waechter mit dem Helmbusch (rettungsSzene.js), sonst
+ * die dem Spieler NAECHSTE Wache: so steht sie im Blickfeld.
  * Der Platz liegt im selben Abstand zum Spieler wie diese Wache, leicht zur
  * Seite versetzt, damit sie nicht genau auf ihrem Feld klebt. Meist ist das
  * der Ring; in engen Raeumen weicht die Wache nach innen aus, und Elara mit.
@@ -4632,7 +4678,10 @@ function _elaraRettungsPlatz(scene) {
   var wachen = enemies.getChildren().filter(function (e) { return e && e.active && e._hinterhalt; });
   if (!wachen.length) return null;
   var px = player.x, py = player.y;
+  // Der Waechter mit dem Helmbusch zuerst: sie tritt neben ihm hervor, damit
+  // sein Nicken in ihre Richtung geht.
   wachen.sort(function (a, b) {
+    if (!!a._rettungsZeichen !== !!b._rettungsZeichen) return a._rettungsZeichen ? -1 : 1;
     return Math.hypot(a.x - px, a.y - py) - Math.hypot(b.x - px, b.y - py);
   });
   var versatz = [0.25, -0.25, 0.5, -0.5, 0, 0.9, -0.9];
@@ -4654,18 +4703,51 @@ function _elaraRettungsPlatz(scene) {
 }
 
 function _elaraRettet(scene) {
-  var px = (typeof player !== 'undefined' && player) ? player.x : 0;
-  var py = (typeof player !== 'undefined' && player) ? player.y : 0;
   // VOR dem Ausblenden: danach sind die Wachen weg und ihr Platz mit ihnen.
   var _rettungsPlatz = _elaraRettungsPlatz(scene);
+  // v6.1: Die Rettung als Zwischensequenz (js/rettungsSzene.js). Die Wachen
+  // weichen, bevor sie zuschlaegt, einer nickt ihr zu, und sie nennt Dich
+  // beim Handwerk. Danach steht sie wie bisher mit [E] im Raum, und ihre
+  // Worte folgen als Dialog. Ohne das Modul bleibt es beim alten Ablauf.
+  var RS = window.RettungsSzene;
+  if (RS && typeof RS.spielen === 'function') {
+    var wachen = (typeof enemies !== 'undefined' && enemies && enemies.getChildren)
+      ? enemies.getChildren().filter(function (e) { return e && e.active && e._hinterhalt; }) : [];
+    var laeuft = false;
+    try {
+      laeuft = RS.spielen(scene, {
+        wachen: wachen,
+        platz: _rettungsPlatz,
+        vertreiben: function () { _hinterhaltVertreiben(scene); }
+      }, function () {
+        _spawnElaraSprite(scene, 1, _rettungsPlatz);
+        _begegnungSpielen(scene, ELARA_SZENEN.rettung.seiten());
+      });
+    } catch (e) { laeuft = false; }
+    if (laeuft) return;
+  }
+  var px = (typeof player !== 'undefined' && player) ? player.x : 0;
+  var py = (typeof player !== 'undefined' && player) ? player.y : 0;
   // Nebel, der sich vom Spieler aus durch den ganzen Raum ausbreitet.
   try {
     var ring = scene.add.circle(px, py, 20, 0x8866cc, 0.35).setDepth(90);
     scene.tweens.add({ targets: ring, scale: 30, alpha: 0, duration: 900,
       onComplete: function () { try { ring.destroy(); } catch (e) {} } });
   } catch (e) {}
-  // Der ganze Raum loest sich auf. Kein Loot: sie wurden vertrieben, nicht
-  // erschlagen (hp bleibt > 0).
+  _hinterhaltVertreiben(scene);
+  _spawnElaraSprite(scene, 1, _rettungsPlatz);
+  // Zweigeteilt wie ein Hub-Gespraech: Der Nebel vertreibt den Hinterhalt und
+  // sie stellt sich vor — mehr nicht. Ihr Auftrag kommt erst, wenn man zu ihr
+  // geht und [E] drueckt. Vorher lief beides in einem Zug ab, und man stand
+  // mit einer angenommenen Quest da, ohne sie ueberhaupt erreicht zu haben.
+  _elaraSzene(scene, 'rettung');
+}
+
+/**
+ * Der ganze Raum loest sich im Nebel auf. Kein Loot: die Wachen wurden
+ * vertrieben, nicht erschlagen (hp bleibt > 0).
+ */
+function _hinterhaltVertreiben(scene) {
   if (typeof enemies !== 'undefined' && enemies && enemies.children) {
     enemies.getChildren().slice().forEach(function (e) {
       if (!e || !e.active || e.isBoss) return;
@@ -4677,12 +4759,6 @@ function _elaraRettet(scene) {
       } catch (x) { try { e.destroy(); } catch (y) {} }
     });
   }
-  _spawnElaraSprite(scene, 1, _rettungsPlatz);
-  // Zweigeteilt wie ein Hub-Gespraech: Der Nebel vertreibt den Hinterhalt und
-  // sie stellt sich vor — mehr nicht. Ihr Auftrag kommt erst, wenn man zu ihr
-  // geht und [E] drueckt. Vorher lief beides in einem Zug ab, und man stand
-  // mit einer angenommenen Quest da, ohne sie ueberhaupt erreicht zu haben.
-  _elaraSzene(scene, 'rettung');
 }
 
 // Spawn Elara as an interactive [E]-prompt sprite in the current room.
