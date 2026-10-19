@@ -345,6 +345,44 @@
     var v = window.i18n.t(key);
     return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : fallback;
   }
+
+  // ---- Aktzaehlung fuer den Spieler (Stufe 1b, Story v6.1) ----
+  // Intern bleiben die Akte Indizes 0-4. Der Spieler sieht "Prolog" (Index 0,
+  // ohne Nummer) und dann "Akt 1" bis "Akt 4": die Nummer IST der Index. Eine
+  // Stelle fuer Titelkarte, Journal und Druckerei.
+  if (window.i18n) {
+    window.i18n.register('de', {
+      'story.akt.prolog': 'Prolog',
+      'story.akt.n': 'Akt {n}',
+      'story.journal.akt_prolog': 'Prolog · {name}',
+      'story.journal.akt_n': 'Akt {n} von {total}: {name}'
+    });
+    window.i18n.register('en', {
+      'story.akt.prolog': 'Prologue',
+      'story.akt.n': 'Act {n}',
+      'story.journal.akt_prolog': 'Prologue · {name}',
+      'story.journal.akt_n': 'Act {n} of {total}: {name}'
+    });
+  }
+  var AKT_ANZAHL = STORY_ACTS.length - 1;   // nummerierte Akte nach dem Prolog
+  function _einsetzen(s, werte) {
+    return String(s).replace(/\{(\w+)\}/g, function (m, k) { return (werte[k] != null) ? werte[k] : m; });
+  }
+  /** Nummer, die der Spieler sieht: 0 = Prolog (ohne Nummer), sonst 1-4. */
+  function aktNummer(index) { return Math.max(0, index | 0); }
+  /** "Prolog" bzw. "Akt N" fuer einen STORY_ACTS-Index. */
+  function aktLabel(index) {
+    var n = aktNummer(index);
+    if (n === 0) return _i18nLookup('story.akt.prolog', 'Prolog');
+    return _einsetzen(_i18nLookup('story.akt.n', 'Akt {n}'), { n: n });
+  }
+  /** Die Zeile im Journal: "Prolog · Der Dienst" bzw. "Akt 2 von 4: Das Doppelspiel". */
+  function aktZeile(index, name) {
+    var n = aktNummer(index);
+    if (n === 0) return _einsetzen(_i18nLookup('story.journal.akt_prolog', 'Prolog · {name}'), { name: name });
+    return _einsetzen(_i18nLookup('story.journal.akt_n', 'Akt {n} von {total}: {name}'),
+      { n: n, total: AKT_ANZAHL, name: name });
+  }
   function getActNarrative(actId) {
     return _i18nLookup('story.act.' + actId + '.narrative', ACT_NARRATIVES[actId] || '');
   }
@@ -426,9 +464,9 @@
   }
 
   /**
-   * Akt 1 ("Der Dienst") ist der Startakt — in ihn steigt man nie auf, also
+   * Der Prolog ("Der Dienst") ist der Startakt, in ihn steigt man nie auf, also
    * gab es fuer ihn nie eine Karte. Der Hub zeigt den Einfuehrungstext eines
-   * neuen Spiels deshalb ALS Karte von Akt 1 (eine Karte, nicht zwei
+   * neuen Spiels deshalb ALS Karte des Prologs (eine Karte, nicht zwei
    * hintereinander). Liefert das Ereignis und merkt den Akt als gesehen, oder
    * null, wenn man schon weiter ist bzw. sie schon kam.
    */
@@ -439,7 +477,8 @@
     return {
       actId: start.id,
       actName: _i18nLookup('story.act.' + start.id + '.name', start.name),
-      actNumber: 1,
+      actNumber: aktNummer(0),
+      actLabel: aktLabel(0),
       narrative: text || getActNarrative(start.id)
     };
   }
@@ -507,7 +546,8 @@
       return {
         actId: actId,
         actName: act ? act.name : actId,
-        actNumber: act ? STORY_ACTS.indexOf(act) + 1 : 0,
+        actNumber: act ? aktNummer(STORY_ACTS.indexOf(act)) : null,
+        actLabel: act ? aktLabel(STORY_ACTS.indexOf(act)) : null,
         narrative: getActNarrative(actId)
       };
     }
@@ -588,13 +628,15 @@
     }
 
     return {
-      actNumber: storyState.currentActIndex + 1,
+      actNumber: aktNummer(storyState.currentActIndex),
+      actLabel: aktLabel(storyState.currentActIndex),
+      actLine: aktZeile(storyState.currentActIndex, act.name),
       actName: act.name,
       actNarrative: getActNarrative(act.id),
       highestWave: storyState.highestWave,
       completedQuests: completedQuests,
       activeQuests: activeQuests,
-      totalActs: STORY_ACTS.length,
+      totalActs: AKT_ANZAHL,
       totalKills: storyState.totalKills || 0,
       totalRoomsCleared: storyState.totalRoomsCleared || 0,
       totalWavesSurvived: storyState.totalWavesSurvived || 0
@@ -676,8 +718,9 @@
     // Nur Akt-Übergänge tragen eine Nummer ("Akt N"). Der Epilog
     // (actNumber null) läuft ohne Label — früher stand hier "Meilenstein",
     // was seit dem Wegfall der Wave-Meilensteine irreführend war.
-    if (eventData.actNumber) {
-      var actLabel = scene.add.text(0, -80, 'Akt ' + eventData.actNumber, {
+    var _label = eventData.actLabel || (eventData.actNumber ? aktLabel(eventData.actNumber) : null);
+    if (_label) {
+      var actLabel = scene.add.text(0, -80, _label, {
         fontFamily: 'serif',
         fontSize: 22,
         color: '#a89878'
@@ -799,7 +842,8 @@
     return {
       actId: act.id,
       actName: act.name,
-      actNumber: STORY_ACTS.indexOf(act) + 1,
+      actNumber: aktNummer(STORY_ACTS.indexOf(act)),
+      actLabel: aktLabel(STORY_ACTS.indexOf(act)),
       narrative: getActNarrative(act.id)
     };
   }
@@ -869,7 +913,7 @@
 
     // Current act
     var actInfo = scene.add.text(leftX, y,
-      'Akt ' + data.actNumber + ' von ' + data.totalActs + ': ' + data.actName, {
+      data.actLine, {
       fontFamily: 'serif',
       fontSize: 18,
       color: '#f1e9d8'
@@ -1097,6 +1141,10 @@
     consumePendingEvent: consumePendingEvent,
     startaktEreignis: startaktEreignis,
     getNpcDialogue: getNpcDialogue,
+    aktNummer: aktNummer,
+    aktLabel: aktLabel,
+    aktZeile: aktZeile,
+    AKT_ANZAHL: AKT_ANZAHL,
     getJournalData: getJournalData,
     getStorySaveData: getStorySaveData,
     loadStorySaveData: loadStorySaveData,

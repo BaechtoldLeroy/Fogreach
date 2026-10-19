@@ -1,13 +1,13 @@
 /* =====================================================================
  * aktwechsel.js — Aktwechsel als kurze Zwischenszene statt Text-Splash
  * ---------------------------------------------------------------------
- * Jeder Aktwechsel (und der Einfuehrungstext = Karte von Akt 1) laeuft
+ * Jeder Aktwechsel (und der Einfuehrungstext = Karte des Prologs) laeuft
  * als diese Szene. Fehlt das Bild eines Akts, zeigt
  * storySystem.showStoryOverlay die alte Titelkarte.
  *
  * Aufbau: ein Pixel-Tableau je Akt (PixelLab, assets/sprites/aktwechsel/)
  * mit langsamem Schwenk/Zoom und treibendem Nebel, oben eine
- * Messing-Plakette "Akt N" + Aktname, unten eine Messing-Platte, auf der
+ * Messing-Plakette "Prolog" bzw. "Akt N" + Aktname, unten eine Messing-Platte, auf der
  * der Text Stueck fuer Stueck erscheint. Weiter per Leertaste/Enter/Klick/
  * Tippen, ESC oder "Ueberspringen" schliesst sofort.
  *
@@ -231,8 +231,11 @@
     // ---- Plakette oben: "Akt N" und der Aktname ----
     var plY = 16;
     var aktLabel = null;
-    if (eventData.actNumber) {
-      aktLabel = scene.add.text(w / 2, 0, _t('aktwechsel.akt', { n: eventData.actNumber }, 'Akt ' + eventData.actNumber), {
+    // Stufe 1b: "Prolog" ohne Nummer, dann "Akt 1" bis "Akt 4" (storySystem.aktLabel).
+    var _label = eventData.actLabel
+      || (eventData.actNumber ? _t('aktwechsel.akt', { n: eventData.actNumber }, 'Akt ' + eventData.actNumber) : null);
+    if (_label) {
+      aktLabel = scene.add.text(w / 2, 0, _label, {
         fontFamily: 'serif', fontSize: 16, color: '#d4a543', fontStyle: 'bold'
       }).setOrigin(0.5, 0);
       aktLabel.setName('aktwechselAkt');
@@ -385,7 +388,7 @@
 
   /**
    * Debug-Abkuerzung: ?aktprobe=N zeigt beim Hub-Eintritt einmal pro Laden
-   * die Karte von Akt N (1-5) bzw. den Epilog (6 / "epilog"). Laeuft durch
+   * die Karte zum Index N-1 (1 = Prolog, 2-5 = Akt 1-4) bzw. den Epilog (6 / "epilog"). Laeuft durch
    * showStoryOverlay (fehlt das Bild: die alte Karte). Der Spielstand
    * bleibt unberuehrt.
    */

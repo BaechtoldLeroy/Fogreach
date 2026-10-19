@@ -76,7 +76,7 @@ test('Die Warteschlange ueberlebt Speichern und Laden', () => {
   assert.strictEqual(r, 'treuer_diener,erste_risse,wahrheit');
 });
 
-test('Neues Spiel: der Einfuehrungstext erscheint als Karte von Akt 1', () => {
+test('Neues Spiel: der Einfuehrungstext erscheint als Karte des Prologs', () => {
   kartenAufzeichnen();
   const r = H.run(`(function () {
     var ss = window.storySystem, sc = ${hub};
@@ -89,7 +89,7 @@ test('Neues Spiel: der Einfuehrungstext erscheint als Karte von Akt 1', () => {
     return aufgezeichnet.join(',') + '|' + ss.startaktEreignis('x');
   })()`);
   // Akt 1, Nummer 1, mit dem Einfuehrungstext; danach ist sie verbraucht.
-  assert.strictEqual(r, 'auftrag:1:true|null', r);
+  assert.strictEqual(r, 'auftrag:0:true|null', r);   // Nummer 0: der Prolog
 });
 
 test('Wer schon weiter ist, bekommt keine Akt-1-Karte, sondern den alten Text', () => {

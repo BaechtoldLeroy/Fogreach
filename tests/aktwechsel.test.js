@@ -81,7 +81,7 @@ describe('neues Spiel: Einfuehrungstext als Szene von Akt 1', () => {
         uhr: window.__GAME_PAUSE.since, physik: ${HUB}.physics.world.isPaused }; })()`);
     assert.strictEqual(r.alle, true, 'nicht alle Tableaus geladen');
     assert.strictEqual(r.bild, 'aktwechsel_auftrag');
-    assert.strictEqual(r.akt, 'Akt 1');
+    assert.strictEqual(r.akt, 'Prolog', 'die Einfuehrung ist der Prolog, ohne Nummer');
     assert.strictEqual(r.titel, r.name);
     assert.strictEqual(r.offen, false, 'die Einfuehrung sperrt den Hub (_dialogOpen)');
     assert.strictEqual(r.uhr, null, 'die Einfuehrung haelt die Spieluhr an');
@@ -149,7 +149,7 @@ describe('Zwischenszene', () => {
     for (let i = 0; i < 5; i++) {
       const [id, name] = akte[i].split('|');
       if (i === 0) {
-        // Akt 1 ist der Startzustand — kein Aufstieg dorthin; die Karte per Probe.
+        // Der Prolog ist der Startzustand, kein Aufstieg dorthin; die Karte per Probe.
         H.run(`${HUB}._dialogOpen = true`);
         oeffnen(H, `window.storySystem.probeEreignis('1')`);
       } else {
@@ -163,7 +163,7 @@ describe('Zwischenszene', () => {
       })()`);
       assert.ok(r, 'Akt ' + (i + 1) + ': keine Zwischenszene');
       assert.strictEqual(r.bild, 'aktwechsel_' + id);
-      assert.strictEqual(r.akt, 'Akt ' + (i + 1), 'falsche Nummer');
+      assert.strictEqual(r.akt, i === 0 ? 'Prolog' : 'Akt ' + i, 'falsche Nummer');
       assert.strictEqual(r.titel, name);
       assert.strictEqual(r.offen, true, 'der Hub haelt die Szene nicht fuer offen');
       assert.strictEqual(r.uhr, true, 'die Spieluhr laeuft waehrend der Szene');
@@ -291,7 +291,7 @@ describe('Zwischenszene', () => {
       weiter: ${TEIL('aktwechselWeiter')}.text,
       skip: ${C}.list.filter(function (o) { return o.type === 'Text' && o.text === 'Skip'; }).length })`);
     H.run(`window.__ov.ueberspringen(); window.i18n.setLanguage('de')`);
-    assert.strictEqual(r.akt, 'Act 3');
+    assert.strictEqual(r.akt, 'Act 2');
     assert.strictEqual(r.titel, 'The Double Game');
     assert.strictEqual(r.weiter, 'Continue');
     assert.strictEqual(r.skip, 1);
@@ -334,10 +334,10 @@ describe('?aktprobe=N', () => {
   before(async () => { H = await hub('?autostart=1&debug=1&aktprobe=3'); });
   after(async () => { if (H) await H.shutdown(); });
 
-  test('zeigt Akt 3 beim Hub-Eintritt, Spielstand unberuehrt', () => {
+  test('zeigt die Karte zu Index 2 (Akt 2) beim Hub-Eintritt, Spielstand unberuehrt', () => {
     const r = H.run(`(function () { var a = ${TEIL('aktwechselAkt')};
       return { akt: a ? a.text : null, index: window.storySystem.getCurrentActIndex(), offen: ${HUB}._dialogOpen }; })()`);
-    assert.strictEqual(r.akt, 'Akt 3');
+    assert.strictEqual(r.akt, 'Akt 2');
     assert.strictEqual(r.index, 0, 'die Probe hat den Akt verstellt');
     assert.strictEqual(r.offen, true);
     H.run(`${HUB}.input.keyboard.emit('keydown-ESC')`);

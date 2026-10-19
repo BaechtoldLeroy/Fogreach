@@ -19,16 +19,28 @@ function frisch(aktIndex) {
   return globalThis.window.PrintingHouse;
 }
 
-test('Der Splashscreen zaehlt ab 1 — das ist die Zaehlung fuer den Spieler', () => {
-  const src = fs.readFileSync('js/storySystem.js', 'utf8');
-  assert.ok(/actNumber:\s*storyState\.currentActIndex \+ 1/.test(src),
-    'die Uebersicht zaehlt nicht mehr ab 1');
-  assert.ok(/actNumber:\s*act \? STORY_ACTS\.indexOf\(act\) \+ 1/.test(src),
-    'der Aktwechsel zaehlt nicht mehr ab 1');
+test('Die Titelkarte zaehlt: Prolog ohne Nummer, dann Akt 1 bis 4 (Stufe 1b)', () => {
+  // Story v6.1: Der Dienst ist der Prolog, danach vier Akte. Intern bleiben
+  // die Indizes 0-4, die Nummer fuer den Spieler IST der Index.
+  resetStore();
+  globalThis.window.i18n = undefined;
+  delete globalThis.window.storySystem;
+  loadGameModule('js/storySystem.js');
+  const S = globalThis.window.storySystem;
+  assert.deepStrictEqual([0, 1, 2, 3, 4].map((i) => S.aktNummer(i)), [0, 1, 2, 3, 4]);
+  assert.deepStrictEqual([0, 1, 2, 3, 4].map((i) => S.aktLabel(i)), ['Prolog', 'Akt 1', 'Akt 2', 'Akt 3', 'Akt 4']);
+  assert.strictEqual(S.AKT_ANZAHL, 4);
+  S.resetToAct0();
+  S.advanceToAct(2);
+  const karte = S.consumePendingEvent();
+  assert.deepStrictEqual([karte.actNumber, karte.actLabel], [2, 'Akt 2']);
+  S.resetToAct0();
+  const start = S.startaktEreignis('Text');
+  assert.deepStrictEqual([start.actNumber, start.actLabel], [0, 'Prolog']);
 });
 
 test('Die Druckerei nennt dieselbe Zahl wie der Splashscreen', () => {
-  // requireAct 2 ist der Index von "Das Doppelspiel" — fuer den Spieler Akt 3.
+  // requireAct 2 ist der Index von "Das Doppelspiel" — fuer den Spieler Akt 2.
   const ph = frisch(0);
   const stark = ph.getEdictCatalog().filter((e) => e.tier === 'strong')[0];
   assert.ok(stark, 'keine starke Stufe im Katalog');
@@ -37,8 +49,8 @@ test('Die Druckerei nennt dieselbe Zahl wie der Splashscreen', () => {
   const r = ph.publishEdict(stark.id);
   assert.strictEqual(r.success, false, 'die gesperrte Stufe liess sich drucken');
   assert.strictEqual(r.reasonKey, 'locked', 'kein erkennbarer Sperr-Grund');
-  assert.strictEqual(r.req, 3,
-    'die Druckerei nennt Akt ' + r.req + ', der Splashscreen nennt denselben Akt 3');
+  assert.strictEqual(r.req, 2,
+    'die Druckerei nennt Akt ' + r.req + ', die Titelkarte nennt denselben Akt 2');
 });
 
 test('Der Sperr-Grund kommt uebersetzbar, nicht als Entwicklersatz', () => {
@@ -70,6 +82,6 @@ test('Keine Oberflaeche zeigt requireAct mehr roh', () => {
     'der Hub zeigt den Index wieder roh');
   const druckerei = fs.readFileSync('js/scenes/PrintingHouseScene.js', 'utf8');
   assert.ok(!/req: e\.requireAct\b/.test(druckerei), 'die Druckerei zeigt den Index roh');
-  assert.ok(/\(e\.requireAct \| 0\) \+ 1/.test(druckerei),
+  assert.ok(/_aktNummer\(e\.requireAct\)/.test(druckerei),
     'in der Druckerei fehlt die Umrechnung auf die Spieler-Zaehlung');
 });

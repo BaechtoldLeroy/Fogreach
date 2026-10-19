@@ -14,11 +14,12 @@
     window.i18n.register('de', {
       'printingHouse.ui.title': 'Druckerei',
       'printingHouse.ui.paper': 'Druckblätter',
-      'printingHouse.ui.suspicion': 'Council-Verdacht',
+      'printingHouse.ui.suspicion': 'Verdacht des Rats',
       'printingHouse.ui.state.alert': 'wachsam',
       'printingHouse.ui.state.hunt': 'Jagd',
-      'printingHouse.ui.suspicion_hint': 'Ab 10: mehr Elite-Gegner im Dungeon.\nAb 20: Aldric verweigert neue Aufträge.\nSinkt um 1 je Lauf ohne Edikt. Bestechen: -5 für 100 Gold.',
+      'printingHouse.ui.suspicion_hint': 'Ab 10: mehr Elite-Gegner im Keller.\nAb 20: Aldric verweigert neue Nebenaufträge.\nSinkt um 1 je Lauf ohne Edikt. Bestechen: -5 für 100 Gold.',
       'printingHouse.ui.act': 'Akt',
+      'printingHouse.ui.act_prolog': 'Prolog',
       'printingHouse.ui.active_edict': 'Aktives Edikt',
       'printingHouse.ui.no_active': 'Kein Edikt aktiv',
       'printingHouse.ui.status.locked': 'Ab Akt {req}',
@@ -39,8 +40,9 @@
       'printingHouse.ui.suspicion': 'Council suspicion',
       'printingHouse.ui.state.alert': 'alert',
       'printingHouse.ui.state.hunt': 'hunt',
-      'printingHouse.ui.suspicion_hint': 'From 10: more elite enemies in the dungeon.\nFrom 20: Aldric refuses new assignments.\nDrops by 1 per run without an edict. Bribe: -5 for 100 gold.',
+      'printingHouse.ui.suspicion_hint': 'From 10: more elite enemies in the cellars.\nFrom 20: Aldric refuses new side assignments.\nDrops by 1 per run without an edict. Bribe: -5 for 100 gold.',
       'printingHouse.ui.act': 'Act',
+      'printingHouse.ui.act_prolog': 'Prologue',
       'printingHouse.ui.active_edict': 'Active edict',
       'printingHouse.ui.no_active': 'No edict active',
       'printingHouse.ui.status.locked': 'From act {req}',
@@ -58,6 +60,9 @@
   }
 
   const T = (k, p) => (window.i18n ? window.i18n.t(k, p) : k);
+  // Aktnummer wie auf der Titelkarte (Prolog = 0, dann Akt 1-4).
+  const _aktNummer = (i) => ((window.storySystem && typeof window.storySystem.aktNummer === 'function')
+    ? window.storySystem.aktNummer(i) : (i | 0));
 
   // Pixel-Symbole (tools/druckSymboleBauen.js baut den Streifen in dieser Reihenfolge).
   const DRUCK_SYMBOLE = ['papier', 'verdacht', 'gold', 'schloss'];
@@ -248,7 +253,7 @@
       const paper = ph.getDruckblaetter();
       const suspicion = ph.getSuspicion();
       const active = ph.getActivePublication();
-      // Akt wie der Splashscreen: Index + 1 (tests/aktnummern*.test.js).
+      // Akt wie die Titelkarte: Prolog, dann 1-4 (storySystem.aktNummer).
       const aktIdx = (window.storySystem && typeof window.storySystem.getCurrentActIndex === 'function')
         ? window.storySystem.getCurrentActIndex() | 0 : 0;
       const gap = 10;
@@ -292,7 +297,8 @@
         const cx = zellen[1], b = bw[1];
         this._plakette(cx, y, b, h);
         label(cx, T('printingHouse.ui.act'), b);
-        const v = this._text(cx + 10, wertY, String(aktIdx + 1), {
+        const aktNr = _aktNummer(aktIdx);
+        const v = this._text(cx + 10, wertY, aktNr === 0 ? T('printingHouse.ui.act_prolog') : String(aktNr), {
           fontFamily: 'serif', fontSize: '20px', color: '#ffd166', fontStyle: 'bold'
         }).setOrigin(0, 0.5);
         v.setName('druckWertAkt');
@@ -547,13 +553,13 @@
       vV.setName('druckKostenVerdacht');
       const kostenEnde = vV.x + vV.width;
 
-      // Zustand rechts unten (gesperrt mit Schloss und Aktnummer = Index + 1)
+      // Zustand rechts unten (gesperrt mit Schloss und Aktnummer wie auf der Titelkarte)
       const zText = {
         druckbar: T('printingHouse.ui.status.available'),
         papier: T('printingHouse.ui.status.unaffordable'),
         aktiv: T('printingHouse.ui.status.active'),
         blockiert: T('printingHouse.ui.status.blocked_by_active'),
-        gesperrt: T('printingHouse.ui.status.locked', { req: (e.requireAct | 0) + 1 }).replace('{req}', (e.requireAct | 0) + 1)
+        gesperrt: T('printingHouse.ui.status.locked', { req: _aktNummer(e.requireAct) }).replace('{req}', _aktNummer(e.requireAct))
       }[zustand];
       const zT = this._text(x + w - innen, ky, zText, {
         fontSize: '13px', color: farben.zustand, fontStyle: 'bold'

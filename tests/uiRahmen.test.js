@@ -188,11 +188,17 @@ describe('Messing-Stil ohne Flagge', () => {
     H.step(3);
     const r = H.run(`(function () {
       var c = window.game.scene.getScene('HubSceneV2').children.list.filter(function (o) { return o.type === 'Container' && o.depth === 6001; }).pop();   // das zuletzt geoeffnete (darunter evtl. die Akt-1-Karte)
+      var texte = [];
+      (function s(o) { if (!o) return; if (o.type === 'Text') texte.push(String(o.text)); (o.list || []).forEach(s); })(c);
       return { platte: c.list.filter(function (o) { return o.type === 'Image' && o.texture.key === 'ui_rahmen'; }).length,
-               graphics: c.list.filter(function (o) { return o.type === 'Graphics'; }).length };
+               graphics: c.list.filter(function (o) { return o.type === 'Graphics'; }).length,
+               akt: window.storySystem.getCurrentActIndex(), texte: texte };
     })()`);
     assert.strictEqual(r.platte, 9);
     assert.strictEqual(r.graphics, 0);
+    // Stufe 1b: der Prolog ohne Nummer, nicht mehr "Akt 1 von 5".
+    assert.strictEqual(r.akt, 0, 'der Fall misst nicht den Prolog');
+    assert.ok(Array.from(r.texte).includes('Prolog · Der Dienst'), 'Aktzeile im Journal: ' + Array.from(r.texte).slice(0, 3).join(' | '));
     H.run(`window.game.scene.getScene('HubSceneV2').children.list.filter(function (o) { return o.depth >= 6000 && o.depth < 6100; }).forEach(function (o) { o.destroy(); })`);
     H.run('window.resumeGameClock && window.resumeGameClock()');
     H.step(2);

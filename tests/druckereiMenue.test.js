@@ -88,8 +88,9 @@ describe('Druckerei-Menue', () => {
     assert.strictEqual(H.run(`${PH}._druck.karten[0].hit.input.enabled`), false, 'ausgeblendete Karte bleibt klickbar');
   });
 
-  test('gesperrte Edikte: gedimmte Karte mit Grund, Aktnummer = Index + 1 (DE und EN)', async () => {
-    for (const [l, wort] of [['de', 'Ab Akt '], ['en', 'From act ']]) {
+  test('gesperrte Edikte: gedimmte Karte mit Grund, Aktnummer wie die Titelkarte (DE und EN)', async () => {
+    // Stufe 1b: Prolog ohne Nummer, dann Akt 1-4; die Nummer ist der Index.
+    for (const [l, wort, prolog] of [['de', 'Ab Akt ', 'Prolog'], ['en', 'From act ', 'Prologue']]) {
       sprache(H, l);
       await oeffnen(H, { akt: 0, papier: 5 });
       const k = H.run(`${PH}._druck.karten.map(function (k) { return [k.id, k.zustand, k.sperrText]; })`);
@@ -97,22 +98,22 @@ describe('Druckerei-Menue', () => {
       kat.forEach((e, i) => {
         if (e.requireAct > 0) {
           assert.strictEqual(k[i][1], 'gesperrt', e.id + ' nicht gesperrt');
-          assert.strictEqual(k[i][2], wort + (e.requireAct + 1), e.id + ': falscher Sperrgrund');
+          assert.strictEqual(k[i][2], wort + e.requireAct, e.id + ': falscher Sperrgrund');
         } else {
           assert.strictEqual(k[i][1], 'druckbar', e.id);
         }
       });
-      // Die Akt-Plakette zaehlt wie der Splashscreen (Index 0 = Akt 1), nicht roh.
-      assert.strictEqual(texte(H).filter((t) => t.name === 'druckWertAkt').map((t) => t.text).join(), '1');
+      // Die Akt-Plakette zaehlt wie die Titelkarte: Index 0 ist der Prolog.
+      assert.strictEqual(texte(H).filter((t) => t.name === 'druckWertAkt').map((t) => t.text).join(), prolog);
       const sichtbar = texte(H).filter((t) => t.name === 'druckZustand').map((t) => t.text);
-      assert.ok(sichtbar.includes(wort + '3') && sichtbar.includes(wort + '4'), 'Sperrgrund steht nicht auf den Karten: ' + sichtbar.join('|'));
+      assert.ok(sichtbar.includes(wort + '2') && sichtbar.includes(wort + '3'), 'Sperrgrund steht nicht auf den Karten: ' + sichtbar.join('|'));
       // Ein Tipp auf eine gesperrte Karte druckt nicht, er nennt den Grund.
       H.run(`window.__druckAufrufe = 0; window.__echtPub = window.PrintingHouse.publishEdict;
         window.PrintingHouse.publishEdict = function () { window.__druckAufrufe++; return window.__echtPub.apply(this, arguments); };
         ${PH}._waehle(9);
         window.PrintingHouse.publishEdict = window.__echtPub;`);
       assert.strictEqual(H.run('window.__druckAufrufe'), 0);
-      assert.ok(H.run(`${PH}.children.list.some(function (o) { return o.name === 'druckToast' && o.text === '${wort}4'; })`), 'kein Hinweis beim Tipp');
+      assert.ok(H.run(`${PH}.children.list.some(function (o) { return o.name === 'druckToast' && o.text === '${wort}3'; })`), 'kein Hinweis beim Tipp');
     }
     sprache(H, 'de');
   });

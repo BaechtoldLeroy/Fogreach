@@ -339,6 +339,13 @@
     } catch (_) { return 0; }
   }
 
+  /** Die Aktnummer, die der Spieler sieht (storySystem.aktNummer; Prolog = 0). */
+  function _aktNummer(index) {
+    var s = primitives.storySystem || (typeof window !== 'undefined' ? window.storySystem : null);
+    if (s && typeof s.aktNummer === 'function') return s.aktNummer(index);
+    return index | 0;
+  }
+
   // Returns a frozen-by-convention list of edict descriptors enriched with
   // isUnlocked (the tier's story act has been reached — the dialog UI greys
   // the others out).
@@ -379,7 +386,8 @@
       return {
         success: false,
         reasonKey: 'locked',
-        req: (def.requireAct | 0) + 1,
+        // Nummer wie auf der Titelkarte: Prolog = 0, dann Akt 1-4 = Index.
+        req: _aktNummer(def.requireAct),
         reason: 'tier locked: requires story act >= ' + def.requireAct
       };
     }
