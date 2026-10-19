@@ -3296,8 +3296,10 @@ const BOSS_DEFINITIONS = {
     baseDamage: 6,
     // 1.6 auf den Rahmen = 127 px sichtbar; dieselbe Groesse, jetzt gemessen.
     scale: 1.33,
-    // #162: der Folterknecht der Garde.
-    loreIntro: 'Der Folterknecht der Garde. Der Kettenmeister fesselt, was der Rat verschwinden lässt. Hinter ihm liegen die ersten Siegel — der erste harte Beweis.',
+    // Stufe 1b (Story v6.1): Hauptmann der Garde, aus Pflicht hinabgeschickt,
+    // um den Weg zu bewachen. Als das Amulett nachliess, hat ihn der Nebel
+    // geleert. Geblieben ist sein Befehl.
+    loreIntro: 'Einst Hauptmann der Garde, aus Pflicht hinabgeschickt, um den Weg zu bewachen. Als sein Amulett nachliess, hat ihn der Nebel geleert. Geblieben ist nur sein Befehl: Niemand passiert.',
     attacks: ['chainWhip', 'chainPull', 'groundChains'],
     attackCooldown: 2900,
   },
@@ -3311,8 +3313,10 @@ const BOSS_DEFINITIONS = {
     baseDamage: 9,
     // 1.7 auf den Rahmen = 127 px sichtbar; dieselbe Groesse, jetzt gemessen.
     scale: 1.32,
-    // #162: der oberste Ritualist des Klerus. Seine Auslöschung ist das Vorspiel auf Elara.
-    loreIntro: 'Der oberste Ritualist des Klerus. Der Zeremonienmeister nährt die Quelle mit dem, was die Stadt vergisst — jedes Siegel, das er zieht, kettet sie fester.',
+    // Stufe 1b (Story v6.1): Priester, der die Rituale aus Ueberzeugung
+    // leitete und freiwillig unten blieb. Nur das Ritual ist uebrig; er haelt
+    // die Kammer am Schacht zur Esse. Seine Ausloeschung ist das Vorspiel auf Elara.
+    loreIntro: 'Er leitete die Rituale des Klerus aus Überzeugung und blieb freiwillig unten, weil er glaubte, dem Vergessen zu dienen. Von ihm ist nur das Ritual übrig. Er hält die Kammer am Schacht zur Esse und füttert sie mit dem, was die Stadt vergisst.',
     attacks: ['ritualCircle', 'summonMinions', 'darkBlast'],
     attackCooldown: 4000,
   },
@@ -3387,9 +3391,9 @@ if (window.i18n && typeof window.i18n.binden === 'function') {
   });
   window.i18n.register('en', {
     'boss.chainMaster.name': 'Chainmaster',
-    'boss.chainMaster.lore': "The Guard's torturer. The Chainmaster binds whatever the council makes disappear. Behind him lie the first seals — the first hard evidence.",
+    'boss.chainMaster.lore': 'Once a captain of the guard, sent down out of duty to watch the way. When his amulet faded, the fog emptied him. All that is left is his order: no one passes.',
     'boss.ceremonyMaster.name': 'Master of Ceremonies',
-    'boss.ceremonyMaster.lore': "The Clergy's highest ritualist. The Master of Ceremonies feeds the source with what the city forgets — every seal he draws chains it tighter.",
+    'boss.ceremonyMaster.lore': 'He led the clergy\'s rituals out of conviction and stayed below of his own free will, believing he served forgetting. Only the ritual is left of him. He holds the chamber at the shaft to the forge and feeds it what the city forgets.',
     'boss.nachhallEsse.name': 'The Echo of the Forge',
     'boss.nachhallEsse.lore': 'Deep down, where the forge burned, the echo is loudest. What it burned finds no rest and looks for a shape.',
     'boss.elaraBesessen.name': 'Elara, possessed',
@@ -3614,11 +3618,11 @@ function _bossIntroLore(def) {
   if (_istInszenierteBegegnung(def)) {
     var en = !!(window.i18n && typeof window.i18n.getLanguage === 'function' && window.i18n.getLanguage() === 'en');
     return en
-      ? 'The seals Mara warned about. The Chainmaster binds whatever the council '
-        + 'makes disappear — strike the chains, or you become a name on his lists yourself.'
-      : 'Die Siegel, vor denen Mara warnte. Der Kettenmeister fesselt, '
-        + 'was der Rat verschwinden lässt — schlag die Ketten, sonst wirst Du '
-        + 'selbst zu einem Namen auf seinen Listen.';
+      ? 'The one Mara warned you about. Once a captain of the guard, sent down to watch '
+        + 'the way. The fog emptied him; his order remains. Strike the chains, or he holds you here.'
+      : 'Der, vor dem Mara Dich gewarnt hat. Einst Hauptmann der Garde, hinabgeschickt, '
+        + 'um den Weg zu bewachen. Der Nebel hat ihn geleert, sein Befehl ist geblieben. '
+        + 'Schlag die Ketten, sonst hält er Dich hier fest.';
   }
   return def.loreIntro;
 }
