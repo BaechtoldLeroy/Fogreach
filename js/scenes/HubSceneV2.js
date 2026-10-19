@@ -1236,15 +1236,34 @@ class HubSceneV2 extends Phaser.Scene {
    * Arbeit), '!' (Auftrag verfuegbar) oder null. Fuer NPC und Anschlagtafel
    * dieselbe Regel.
    */
+  _istStoryAuftrag(q) {
+    const qs = window.questSystem;
+    return !!(qs && typeof qs.istStoryAuftrag === 'function' && qs.istStoryAuftrag(q));
+  }
+
+  /**
+   * Was diese Figur JETZT anbieten darf. Aldric verweigert nach dem Bruch
+   * alles (Feature 064, Phase 'broken'). Steht der Verdacht der Druckerei auf
+   * active_hunt, verweigert er nur noch Nebenauftraege: seine Story-Auftraege
+   * (Beschlagnahme, Ueberwachung, die verseuchte Kammer) liegen vor dem
+   * Bruch, und ohne sie kaeme die Geschichte nicht weiter.
+   */
+  _angeboteFuer(npcId) {
+    const qs = window.questSystem;
+    if (!qs || typeof qs.getAvailableQuests !== 'function') return [];
+    const alle = qs.getAvailableQuests(npcId) || [];
+    if (npcId !== 'aldric') return alle;
+    if (window.HubPhase && window.HubPhase.aldricBlocksQuests(this._hubPhase)) return [];
+    const jagd = !!(window.PrintingHouse && typeof window.PrintingHouse.getRetaliationTier === 'function'
+      && window.PrintingHouse.getRetaliationTier() === 'active_hunt');
+    return jagd ? alle.filter((q) => this._istStoryAuftrag(q)) : alle;
+  }
+
   _questZeichen(npcId) {
     const qs = window.questSystem;
     if (!qs) return null;
-    // Check for available quests for this NPC
-    const available = qs.getAvailableQuests ? qs.getAvailableQuests(npcId) : [];
-    // Feature 064: nach dem Bruch bietet Aldric keine Quests mehr an — auch
-    // kein "!"-Indikator.
-    const aldricBlocked = (npcId === 'aldric' && window.HubPhase
-      && window.HubPhase.aldricBlocksQuests(this._hubPhase));
+    // Was die Figur anbieten darf (Aldric nach dem Bruch: nichts, auch kein "!").
+    const available = this._angeboteFuer(npcId);
     // Check for active quests for this NPC
     // v6.1: Ein fertiger Auftrag zeigt sein "?" bei dem, der ihn abnimmt
     // (turnInNpcId, Die Quelle -> Thom), nicht beim Geber.
@@ -1252,11 +1271,13 @@ class HubSceneV2 extends Phaser.Scene {
       : (qs.getActiveQuests ? qs.getActiveQuests().filter(q => q.npcId === npcId) : []);
     const readyToComplete = active.filter(q => qs.isQuestReadyToComplete && qs.isQuestReadyToComplete(q.id));
     const inProgress = active.filter(q => !qs.isQuestReadyToComplete || !qs.isQuestReadyToComplete(q.id));
-    // Quest abgeschlossen → "?" zur Abgabe (höchste Prio). In Arbeit → "…"
-    // (Vorrang vor "!" — sonst bleibt "!" wenn der NPC weitere Quests anbietet).
+    // Quest abgeschlossen → "?" zur Abgabe (höchste Prio). Ein neuer
+    // Story-Auftrag → "!" auch neben einem laufenden (dieselbe Reihenfolge wie
+    // im Gespraech). Sonst in Arbeit → "…" vor einem neuen Nebenauftrag.
     if (readyToComplete.length > 0) return '?';
+    if (available.some((q) => this._istStoryAuftrag(q))) return '!';
     if (inProgress.length > 0) return '…';
-    if (available.length > 0 && !aldricBlocked) return '!';
+    if (available.length > 0) return '!';
     return null;
   }
 
@@ -1657,35 +1678,27 @@ class HubSceneV2 extends Phaser.Scene {
     let questData = null;
 
     if (qs && npcId) {
-      // Check if there is an active quest ready to turn in
+      // Reihenfolge: Abgabe, dann ein neuer STORY-Auftrag, dann der Stand
+      // des laufenden, dann ein neuer Nebenauftrag. Bis b459 bot eine Figur
+      // mit laufendem Auftrag gar nichts Neues an: lief bei Branka "Wer Du
+      // warst", kamen "Der Bruch" und "Die Quelle" nicht, und die Geschichte
+      // stand, bis man den optionalen Auftrag erledigt hatte.
       const activeForNpc = qs.getActiveQuestsAt ? qs.getActiveQuestsAt(npcId) : qs.getActiveQuests(npcId);
       const readyToTurnIn = activeForNpc.find(q => qs.isQuestReadyToComplete(q.id));
+      const angebote = this._angeboteFuer(npcId);
+      const storyAngebot = angebote.find((q) => this._istStoryAuftrag(q));
       if (readyToTurnIn) {
         questMode = 'turnin';
         questData = readyToTurnIn;
+      } else if (storyAngebot) {
+        questMode = 'offer';
+        questData = storyAngebot;
       } else if (activeForNpc.length > 0) {
         questMode = 'progress';
         questData = activeForNpc[0];
-      } else {
-        const available = qs.getAvailableQuests(npcId);
-        // Printing-House: when Council suspicion is at active_hunt, Aldric
-        // refuses to hand out new quests (existing turn-ins / progress are
-        // still allowed so the player isn't soft-locked).
-        let aldricRefuses = false;
-        if (npcId === 'aldric' && window.PrintingHouse
-            && typeof window.PrintingHouse.getRetaliationTier === 'function') {
-          aldricRefuses = window.PrintingHouse.getRetaliationTier() === 'active_hunt';
-        }
-        // Feature 064: nach dem Bruch (Phase 'broken') ist Aldric enttarnt und
-        // kein Questgeber mehr.
-        if (npcId === 'aldric' && window.HubPhase
-            && window.HubPhase.aldricBlocksQuests(this._hubPhase)) {
-          aldricRefuses = true;
-        }
-        if (available.length > 0 && !aldricRefuses) {
-          questMode = 'offer';
-          questData = available[0];
-        }
+      } else if (angebote.length > 0) {
+        questMode = 'offer';
+        questData = angebote[0];
       }
     }
 

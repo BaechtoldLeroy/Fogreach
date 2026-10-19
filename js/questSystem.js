@@ -1936,6 +1936,19 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     });
   }
 
+  /**
+   * Gehoert der Auftrag zur Geschichte? Massgeblich ist sein Gewicht
+   * (rewardTier): story, boss und finale tragen die Handlung, 'neben' sind
+   * Einfuehrungen, Aushaenge und Gefaelligkeiten. Story-Auftraege bietet eine
+   * Figur immer zuerst an, auch wenn bei ihr gerade ein Nebenauftrag laeuft.
+   */
+  function istStoryAuftrag(questOrId) {
+    var def = (typeof questOrId === 'string') ? QUEST_DEFINITIONS[questOrId]
+      : (questOrId && QUEST_DEFINITIONS[questOrId.id]) || questOrId;
+    var tier = def && def.rewardTier;
+    return tier === 'story' || tier === 'boss' || tier === 'finale';
+  }
+
   /** Bei wem ein Auftrag abgegeben wird (v6.1: turnInNpcId, sonst der Geber). */
   function abgabeNpc(questOrId) {
     var def = (typeof questOrId === 'string') ? QUEST_DEFINITIONS[questOrId]
@@ -2841,6 +2854,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     getAvailableQuests: getAvailableQuests,
     getActiveQuests: getActiveQuests,
     getActiveQuestsAt: getActiveQuestsAt,
+    istStoryAuftrag: istStoryAuftrag,
     abgabeNpc: abgabeNpc,
     getCompletedQuests: getCompletedQuests,
     acceptQuest: acceptQuest,
