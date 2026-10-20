@@ -240,6 +240,24 @@ ueberspringt nur ESC oder der Knopf, und auch dann erst bis zu Elaras Zeile.
 ?debug=1&autostart=1&rueckblick=voll
 ```
 
+### Das Wiedersehen (Ende Akt 2)
+
+Die Zwischenszene, in der Harren seine Tochter wiedersieht (js/wiedersehenSzene.js,
+drei Tableaus aus `assets/sprites/wiedersehen/`, Text Wort fuer Wort). Im Spiel
+spielt sie einmal, wenn man in Akt 3 mit Harren spricht und `elara_ist_lene`
+noch fehlt.
+
+| Flagge | Wirkung |
+|---|---|
+| `?wiedersehen=1` | spielt die Szene beim Betreten des Hubs noch einmal, danach Harrens Frage. Setzt weder Akt noch Flagge. |
+
+Erste Taste oder Klick zeigt den Satz ganz, die naechste blaettert weiter,
+ESC oder "Überspringen" beendet die Szene.
+
+```
+?debug=1&autostart=1&wiedersehen=1
+```
+
 
 ### Die sechs Sondergegner (#12)
 

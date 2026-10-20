@@ -109,7 +109,10 @@ test('Die Szenen erzaehlen, was sie sollen', () => {
   const t = H.run(`(function () {
     var sc = window.game.scene.getScene('HubSceneV2');
     var TW = window.DialogTypewriter, echt = TW.anTextobjekt, aus = {};
-    ['playWiedersehen', 'playNachtNachDemBruch', 'playMaulwurfEnthuellung'].forEach(function (n) {
+    // Das Wiedersehen ist seit b485 eine Zwischenszene mit eigenen Seiten
+    // (tests/wiedersehenSzene.test.js); hier nur ihr Text.
+    aus.playWiedersehen = window.WiedersehenSzene.seiten().map(function (s) { return s.text; }).join(' ');
+    ['playNachtNachDemBruch', 'playMaulwurfEnthuellung'].forEach(function (n) {
       var gesehen = '';
       TW.anTextobjekt = function (s, textObj, voll) { gesehen = String(voll); return echt.apply(this, arguments); };
       // Die Nacht ist seit b484 eine Zwischenszene mit Bildern

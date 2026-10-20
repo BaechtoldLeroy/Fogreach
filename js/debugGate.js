@@ -94,7 +94,8 @@
     'trailer', 'einstellung',  // Trailer-Modus (js/trailerModus.js)
     'quer',             // Trailer im Querformat 960x480 statt hochkant (trailer=1&quer=1)
     'aktprobe',         // Akt-Zwischenszene ansehen: aktprobe=1..6 | epilog
-    'bruchnacht'        // Zwischenszene "Die Nacht nach dem Bruch" ansehen
+    'bruchnacht',       // Zwischenszene "Die Nacht nach dem Bruch" ansehen
+    'wiedersehen'       // Zwischenszene «Das Wiedersehen» im Hub ansehen: wiedersehen=1
   ];
 
   /**

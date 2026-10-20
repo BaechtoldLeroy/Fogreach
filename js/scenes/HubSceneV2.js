@@ -763,6 +763,7 @@ class HubSceneV2 extends Phaser.Scene {
     // #166/#167 Debug-Vorschau: ?sitzung=oeffentlich|geheim spielt die Szene sofort.
     if (window.SitzungsBuehne) window.SitzungsBuehne.vorschau(this);
     if (window.RettungsSzene) window.RettungsSzene.vorschau(this);
+    if (window.WiedersehenSzene) window.WiedersehenSzene.vorschau(this);
   }
 
   createPrompt() {

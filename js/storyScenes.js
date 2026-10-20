@@ -512,7 +512,18 @@
   // --- #155 Das Wiedersehen (Ende Akt 2) -------------------------------------
   // Hier erfaehrt der Spieler, wer Elara ist. Das Licht im Fenster hat sie ihm
   // im Dungeon beschrieben ("jemand, der jeden Abend auf mich wartet").
+  // Seit b485 eine Zwischenszene mit drei Tableaus (js/wiedersehenSzene.js),
+  // danach Harrens Frage. Ohne das Modul die fruehere Textfassung.
   function playWiedersehen(scene, onDone) {
+    var WS = window.WiedersehenSzene;
+    if (WS && typeof WS.spielen === 'function') {
+      WS.spielen(scene, function () {
+        _choiceOrDone(scene, 'wiedersehen', function () {
+          if (typeof onDone === 'function') onDone();
+        });
+      });
+      return;
+    }
     _szeneSpielen(scene, [
       _t('(Spät am Abend. Im Fenster des Bürgermeisters brennt ein Licht, wie jeden Abend.)', '(Late in the evening. A light burns in the mayor\'s window, as it does every evening.)'),
       _t('(Eine Gestalt in der Gasse. Die Kapuze fällt. Es ist Elara.)', '(A figure in the alley. The hood falls. It is Elara.)'),
