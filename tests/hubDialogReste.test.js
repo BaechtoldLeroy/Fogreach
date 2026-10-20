@@ -229,12 +229,15 @@ test('Die Story-Auswahl bei Mara erscheint nach dem Klick nicht noch einmal', ()
   for (let i = 0; i < 6 && !panelOffen(); i++) taste('E');
   assert.ok(panelOffen(), 'keine Auswahl bei mara_contact');
   const vorher = seiten().length;
+  // Die Auswahlseite ist die zuletzt gezeigte (ihr Index haengt davon ab, auf
+  // wie viele Seiten der Angebotstext passt, seit b477 werden lange geteilt).
+  const auswahlSeite = Number(seiten()[vorher - 1].split('#')[1]);
   wahl(0);
   const neu = seiten().slice(vorher);
   assert.strictEqual(panelOffen(), false, 'die Auswahl steht nach dem Klick wieder da: ' + neu.join(' '));
-  // Die Antwortzeile wird hinter der Auswahlseite eingeschoben (#3). Ein
-  // liegengebliebener Hoerer zeigte stattdessen das Angebot (#1) erneut.
-  assert.deepStrictEqual(neu, ['mara#3'], 'nach der Wahl kam nicht die Antwortseite: ' + neu.join(' '));
+  // Die Antwortzeile wird hinter der Auswahlseite eingeschoben. Ein
+  // liegengebliebener Hoerer zeigte stattdessen das Angebot erneut.
+  assert.deepStrictEqual(Array.from(neu), ['mara#' + (auswahlSeite + 1)], 'nach der Wahl kam nicht die Antwortseite: ' + neu.join(' '));
   H.run(`${hub}._closeDialog(null)`);
 });
 

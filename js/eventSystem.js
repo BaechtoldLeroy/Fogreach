@@ -5,6 +5,8 @@
   if (window.i18n) {
     window.i18n.register('de', {
       // Treasure cache
+      // Zu lange Ereignistexte blaettern (DialogSeiten)
+      'event.dialog.weiter': 'Weiter',
       'event.treasure.name': 'Versteckter Schatz',
       'event.treasure.toast_spawn': 'Etwas Verborgenes schimmert...',
       'event.treasure.object_label': 'Schatz',
@@ -155,6 +157,7 @@
       'event.fountain.outcome.potions':    'Zwei Fläschchen treiben an die Oberfläche.',
     });
     window.i18n.register('en', {
+      'event.dialog.weiter': 'Continue',
       'event.treasure.name': 'Hidden Treasure',
       'event.treasure.toast_spawn': 'Something hidden glimmers...',
       'event.treasure.object_label': 'Treasure',
@@ -2758,8 +2761,8 @@
   // die hinteren — und das ist genau einmal passiert (siehe unten).
   var MAX_WAHLEN = 6;
 
-  function showEventChoiceDialog(scene, title, choices) {
-    if (!scene || !scene.add || !choices || !choices.length) return;
+  // Zeichnet EINE Seite. showEventChoiceDialog (unten) teilt zu lange Texte vorher.
+  function showEventChoiceDialogEinzeln(scene, title, choices) {
     var cam = scene.cameras && scene.cameras.main;
     var camW = cam ? cam.width : 960;
     var camH = cam ? cam.height : 480;
@@ -2787,11 +2790,8 @@
     });
 
     // Title
-    var titleText = scene.add.text(cx, cy - 60, title, {
-      fontSize: '20px', fill: '#ffd166', fontFamily: 'serif', fontStyle: 'bold',
-      stroke: '#000000', strokeThickness: 3, align: 'center',
-      wordWrap: { width: camW - 100 }
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(2501);
+    var titleText = scene.add.text(cx, cy - 60, title, _textStil(camW))
+      .setOrigin(0.5).setScrollFactor(0).setDepth(2501);
     elements.push(titleText);
     var _titelBreite = titleText.width; // #189: vor dem Wort-fuer-Wort-Aufbau
 
@@ -2862,11 +2862,8 @@
     var BTN_GAP = 10;
     var cursorY = _buttonsTop; // top edge of next button — unter dem Titel-Text
     for (var i = 0; i < choices.length && i < MAX_WAHLEN; i++) {
-      var btnText = scene.add.text(0, 0, choices[i].label, {
-        fontSize: '14px', fill: '#f1e9d8', fontFamily: 'monospace',
-        align: 'center',
-        wordWrap: { width: BTN_W - BTN_PAD_X * 2 }
-      }).setOrigin(0.5).setScrollFactor(0).setDepth(2503);
+      var btnText = scene.add.text(0, 0, choices[i].label, _knopfStil(BTN_W))
+        .setOrigin(0.5).setScrollFactor(0).setDepth(2503);
       var btnH = Math.max(34, btnText.height + BTN_PAD_Y * 2);
       var by = cursorY + btnH / 2;
       var btnBg = scene.add.rectangle(cx, by, BTN_W, btnH, 0x2a2a2a)
@@ -2926,6 +2923,75 @@
     return {
       laeuft: function () { return !!(_aufbau && _aufbau.laeuft()); },
       ueberspringen: function () { return !!(_aufbau && _aufbau.ueberspringen()); }
+    };
+  }
+
+  // Stil des Dialogtextes und der Knoepfe — Zeichnen und Einpassen teilen ihn.
+  function _textStil(camW) {
+    return {
+      fontSize: '20px', fill: '#ffd166', fontFamily: 'serif', fontStyle: 'bold',
+      stroke: '#000000', strokeThickness: 3, align: 'center',
+      wordWrap: { width: camW - 100 }
+    };
+  }
+  function _knopfStil(btnW) {
+    return { fontSize: '14px', fill: '#f1e9d8', fontFamily: 'monospace', align: 'center',
+      wordWrap: { width: btnW - 32 } };
+  }
+
+  /**
+   * Passt der Text samt Knopfreihe ins Bild? Sonst auf Seiten verteilen
+   * (DialogSeiten: Absaetze, dann Saetze). Gemessen wird gegen die Knoepfe
+   * der letzten Seite UND den einen "Weiter"-Knopf der vorderen.
+   * @returns {string[]} die Seitentexte; einer, wenn alles passt
+   */
+  function _ereignisSeiten(scene, title, choices) {
+    var DS = window.DialogSeiten;
+    var text = String(title || '');
+    if (!DS || typeof DS.teilen !== 'function' || !text) return [text];
+    var cam = scene.cameras && scene.cameras.main;
+    var camW = cam ? cam.width : 960;
+    var camH = cam ? cam.height : 480;
+    var btnW = Math.min(520, camW - 40);
+    var mess = scene.add.text(0, 0, '', _knopfStil(btnW)).setVisible(false);
+    var block = function (labels) {
+      var h = 0;
+      for (var i = 0; i < labels.length && i < MAX_WAHLEN; i++) {
+        mess.setText(String(labels[i] || ''));
+        h += Math.max(34, mess.height + 16) + 10;
+      }
+      return h;
+    };
+    var knoepfe = Math.max(block(choices.map(function (c) { return c.label; })),
+      block([T('event.dialog.weiter') + '  9/9']));
+    mess.destroy();
+    // Oben 20 Abstand, Platte 22 ueber dem Text und unter den Knoepfen.
+    var frei = camH - 64 - 16 - knoepfe;
+    var tm = scene.add.text(0, 0, '', _textStil(camW)).setVisible(false);
+    var seiten = DS.teilen(text, function (t) { tm.setText(t); return tm.height <= frei; });
+    tm.destroy();
+    return seiten.map(function (s) { return s.text; });
+  }
+
+  function showEventChoiceDialog(scene, title, choices) {
+    if (!scene || !scene.add || !choices || !choices.length) return;
+    var seiten = _ereignisSeiten(scene, title, choices);
+    if (seiten.length < 2) return showEventChoiceDialogEinzeln(scene, title, choices);
+    // Gemeldet: ein langer Text lief aus dem Bild. Die vorderen Seiten haben
+    // nur "Weiter" (Taste: erst den Text zu Ende, dann weiter), die Wahlen
+    // stehen allein auf der letzten — eine Taste waehlt dort nie.
+    var aktuell = null;
+    var zeigen = function (i) {
+      if (i === seiten.length - 1) { aktuell = showEventChoiceDialogEinzeln(scene, seiten[i], choices); return; }
+      aktuell = showEventChoiceDialogEinzeln(scene, seiten[i], [{
+        label: T('event.dialog.weiter') + '  ' + (i + 1) + '/' + seiten.length,
+        callback: function () { zeigen(i + 1); }
+      }]);
+    };
+    zeigen(0);
+    return {
+      laeuft: function () { return !!(aktuell && aktuell.laeuft()); },
+      ueberspringen: function () { return !!(aktuell && aktuell.ueberspringen()); }
     };
   }
 

@@ -2081,14 +2081,18 @@ class HubSceneV2 extends Phaser.Scene {
 
     const qs = window.questSystem;
     const npcId = npcData.id;
+    // Zu lange Seiten werden hier, vor dem Zeichnen, in mehrere geteilt —
+    // im selben Array, damit Seitenzahl und Weiterblaettern sie mitzaehlen.
+    this._dialogSeitenEinpassen(npcData, titleStr, pages, questMode, pageIndex);
     const page = pages[pageIndex];
     if (!page) {
       this._dialogOpen = false;
       return;
     }
 
-    // Skip info pages unless explicitly navigated to
-    if (page._isInfoPage && !page._showExplicitly) {
+    // Skip info pages unless explicitly navigated to (die Fortsetzung einer
+    // geteilten Info-Seite gehoert zu ihr und wird mit ihr gezeigt).
+    if (page._isInfoPage && !page._showExplicitly && !page._fortsetzung) {
       // This page is only shown via "Mehr erfahren" choice
       this._dialogOpen = false;
       return;
@@ -2151,57 +2155,34 @@ class HubSceneV2 extends Phaser.Scene {
 
     const container = this.add.container(cx, cy).setDepth(1500).setScrollFactor(0);
     container.setName('npcDialogContainer');
-    const panelWidth = 540;
-    const pad = 24;
-    const innerWidth = panelWidth - pad * 2;
+    const M = this._dialogMasse();
+    const panelWidth = M.panelWidth;
+    const pad = M.pad;
+    const innerWidth = M.innerWidth;
 
-    const header = this.add.text(0, 0, titleStr, {
-      fontFamily: 'serif',
-      fontSize: 22,
-      color: '#f1e9d8'
-    }).setWordWrapWidth(innerWidth).setVisible(false);
+    const header = this.add.text(0, 0, titleStr, M.kopfStil).setWordWrapWidth(M.kopfBreite).setVisible(false);
 
-    const bodyText = this.add.text(0, 0, page.text, {
-      fontFamily: 'monospace',
-      fontSize: 16,
-      color: '#d8d2c3',
-      wordWrap: { width: innerWidth },
-      lineSpacing: 4
-    }).setVisible(false);
+    const bodyText = this.add.text(0, 0, page.text, M.textStil).setVisible(false);
 
     const headerHeight = header.height;
-    const bodyHeight = bodyText.height;
-    const hintHeight = 24;
+    // Sichtbare Hoehe des Textes. Nur eine Seite, die selbst nach dem Teilen
+    // zu lang ist (ein einzelner Riesensatz), zeigt weniger und rollt.
+    const textRaum = this._dialogTextRaum(headerHeight, npcData, page, questMode);
+    const rollt = bodyText.height > textRaum + 1;
+    const bodyHeight = rollt ? Math.max(40, textRaum) : bodyText.height;
+    const hintHeight = M.hinweisHoehe;
     const hasChoices = page.choices && page.choices.length > 0;
-    const choiceHeight = hasChoices ? (page.choices.length * 40 + 10) : 0;
-    const hasNextPage = !hasChoices && pageIndex < pages.length - 1 && !pages[pageIndex + 1]._isInfoPage;
-    // Maras Dienste — Schwarzmarkt und Talente (der Wissensbaum liegt seit
-    // Stufe 1b bei Branka, s. isBrankaFlavor). Sie haengen
-    // NICHT an ihrem Auftragsstand: bis hierher stand hier zusaetzlich
-    // questMode === 'flavor', und sobald sie irgendeine Quest hatte, waren
-    // alle drei weg. Ihr eigener Einfuehrungsauftrag ("kauf mir etwas ab")
-    // sperrte damit genau den Laden, den er verlangt.
-    //
-    // Zwei echte Bedingungen. Erstens der Platz: eine Seite mit Auswahl
-    // (annehmen/ablehnen) braucht ihn fuer die Auswahlknoepfe.
-    //
-    // Zweitens die ABGABE. Dort lag der Fehler in der anderen Richtung: die
-    // Seite sagt 'Aufgabe abgeschlossen!', der Abgabeknopf liegt aber erst auf
-    // der naechsten Seite — und darunter standen drei Knoepfe, die alle vom
-    // Abschluss WEGFUEHREN. Ein Klick darauf schliesst den Dialog, die Quest
-    // bleibt 'active', die Belohnung ist nicht abgeholt. Gemeldet als 'die
-    // Quest wurde nicht abgeschlossen'.
-    const isMaraFlavor = npcData.id === 'mara' && !hasChoices && questMode !== 'turnin';
-    // Stufe 1b (Story v6.1): Der Wissensbaum ist Dein Handwerk. Fragmente
-    // bindest Du in der Archivschmiede in Metall, darum liegt er bei Branka
-    // und nicht mehr bei Mara. Dieselben zwei Bedingungen wie oben.
-    const isBrankaFlavor = npcData.id === 'branka' && !hasChoices && questMode !== 'turnin';
-    // Knoepfe auf +0 / +38, jeder rund 26 hoch. Mara hat zwei (Schwarzmarkt,
-    // Talente), Branka einen (Wissensbaum). Zu knapp, und der letzte Knopf
-    // schiebt sich ueber den ESC-Hinweis, sobald eine Zeile mehr im Text steht.
-    const maraBtnHeight = isMaraFlavor ? 70 : (isBrankaFlavor ? 32 : 0);
-    const extraBtnHeight = hasChoices ? choiceHeight : maraBtnHeight;
-    const panelHeight = Math.min(440, Math.max(180, Math.ceil(pad + headerHeight + 12 + bodyHeight + extraBtnHeight + pad + hintHeight + 10)));
+    const nextPage = pages[pageIndex + 1];
+    const hasNextPage = !hasChoices && pageIndex < pages.length - 1
+      && (!nextPage._isInfoPage || !!nextPage._fortsetzung);
+    const dienste = this._dialogDienste(npcData, page, questMode);
+    const isMaraFlavor = dienste.mara;
+    const isBrankaFlavor = dienste.branka;
+    // Der Kasten waechst mit dem Text, bleibt aber ganz im Bild — zu lange
+    // Seiten hat _dialogSeitenEinpassen schon geteilt. Bis b476 durfte er 440
+    // hoch werden, um 300 zentriert: unten ragte er 40 px aus dem Bild.
+    const panelHeight = Math.min(M.maxPanel, Math.max(180, Math.ceil(pad + headerHeight + 12 + bodyHeight + dienste.hoehe + pad + hintHeight + 10)));
+    container.setY(Math.max(M.rand + panelHeight / 2, Math.min(cy, cam.height - M.rand - panelHeight / 2)));
 
     // Messing-Oberflaeche (#182): Messing-Platte statt des
     // gezeichneten Kastens, Messingknoepfe statt Farbkaesten. Die Platte
@@ -2229,14 +2210,24 @@ class HubSceneV2 extends Phaser.Scene {
     bodyText.setPosition(-panelWidth / 2 + pad, header.y + headerHeight + 12).setVisible(true);
     container.add(header);
     container.add(bodyText);
+    if (rollt) {
+      // Vermessen wird am vollen Text, also VOR dem Wortaufbau.
+      const abmelden = this._textRollbar(container, bodyText, {
+        links: -panelWidth / 2, oben: bodyText.y, breite: panelWidth, hoehe: bodyHeight,
+        leisteX: panelWidth / 2 - pad / 2
+      });
+      if (abmelden) container.once('destroy', abmelden);
+    }
 
     // #139: Erst JETZT wortweise aufbauen — die Panelhoehe oben ist bereits aus
     // dem vollen Text gerechnet, der Kasten waechst also nicht mit.
     this._dialogTextAufbauen(bodyText, page.text, titleStr);
 
-    // Page indicator for multi-page dialogues
-    const totalVisiblePages = pages.filter(p => !p._isInfoPage).length;
-    const visiblePageIndex = pages.slice(0, pageIndex + 1).filter(p => !p._isInfoPage).length;
+    // Page indicator for multi-page dialogues. Die Seiten einer geteilten
+    // Info-Seite zaehlen fuer sich ("1/2" unter "Mehr erfahren").
+    const gleicheArt = (p) => !p._isInfoPage === !page._isInfoPage;
+    const totalVisiblePages = pages.filter(gleicheArt).length;
+    const visiblePageIndex = pages.slice(0, pageIndex + 1).filter(gleicheArt).length;
     if (totalVisiblePages > 1 && !hasChoices) {
       const pageIndicator = this.add.text(panelWidth / 2 - pad, -panelHeight / 2 + pad, visiblePageIndex + '/' + totalVisiblePages, {
         fontFamily: 'monospace',
@@ -2545,6 +2536,199 @@ class HubSceneV2 extends Phaser.Scene {
         }
       });
     }
+  }
+
+  /** Masse und Schriften des NPC-Dialogkastens — Zeichnen und Einpassen teilen sie. */
+  _dialogMasse() {
+    const cam = this.cameras.main;
+    const panelWidth = 540;
+    const pad = 24;
+    const rand = 8;   // Abstand zum Bildrand
+    return {
+      panelWidth: panelWidth,
+      pad: pad,
+      innerWidth: panelWidth - pad * 2,
+      // Der Titel laesst rechts Platz fuer die Seitenzahl ("2/4"); ein langer
+      // Titel lief sonst in sie hinein.
+      kopfBreite: panelWidth - pad * 2 - 44,
+      rand: rand,
+      // Hoechstens 400 hoch und immer ganz im Bild. Was laenger waere, wird
+      // auf Seiten verteilt — ein fast bildhoher Kasten liest sich schlecht.
+      maxPanel: Math.min(400, cam.height - rand * 2),
+      hinweisHoehe: 24,
+      kopfStil: { fontFamily: 'serif', fontSize: 22, color: '#f1e9d8' },
+      textStil: {
+        fontFamily: 'monospace', fontSize: 16, color: '#d8d2c3',
+        wordWrap: { width: panelWidth - pad * 2 }, lineSpacing: 4
+      }
+    };
+  }
+
+  /** Wie hoch darf der Seitentext sein, damit der Kasten ganz ins Bild passt? */
+  _dialogTextRaum(kopfHoehe, npcData, page, questMode) {
+    const M = this._dialogMasse();
+    const knoepfe = this._dialogDienste(npcData, page, questMode).hoehe;
+    return M.maxPanel - (M.pad + kopfHoehe + 12 + knoepfe + M.pad + M.hinweisHoehe + 10);
+  }
+
+  /**
+   * Teilt jede Seite ab abIndex, deren Text nicht in den Kasten passt
+   * (DialogSeiten: an Absaetzen, dann an Saetzen). Die Teile ersetzen die
+   * Seite IM Array: Seitenzahl, "Weiter" und die Seitenindizes der Aufrufer
+   * (pageIndex + 1) sehen sie wie gewoehnliche Seiten. Auswahlen, Abgabe und
+   * die uebrigen Eigenschaften der Seite stehen nur auf dem LETZTEN Teil.
+   *
+   * Erst ab abIndex: davor liegende Seiten sind schon gezeigt worden, und
+   * ihr Teilen verschoebe den Index, den der Aufrufer gerade meint.
+   */
+  _dialogSeitenEinpassen(npcData, titleStr, pages, questMode, abIndex) {
+    const DS = window.DialogSeiten;
+    if (!DS || typeof DS.teilen !== 'function' || !Array.isArray(pages)) return;
+    const M = this._dialogMasse();
+    let mess = null;
+    let kopfHoehe = 0;
+    for (let i = Math.max(0, abIndex || 0); i < pages.length; i++) {
+      const p = pages[i];
+      // Auswahlseiten (storyDialog) zeichnet DialogChoice selbst.
+      if (!p || p._eingepasst || p._choiceConfig || typeof p.text !== 'string' || !p.text) continue;
+      if (!mess) {
+        mess = this.add.text(0, 0, '', M.textStil).setVisible(false);
+        const kopf = this.add.text(0, 0, titleStr, M.kopfStil).setWordWrapWidth(M.kopfBreite).setVisible(false);
+        kopfHoehe = kopf.height;
+        kopf.destroy();
+      }
+      // Die vorderen Teile haben keine Auswahl, dafuer womoeglich Maras oder
+      // Brankas Dienst-Knoepfe: der knappere Platz gilt fuer alle Teile.
+      const frei = Math.min(
+        this._dialogTextRaum(kopfHoehe, npcData, p, questMode),
+        this._dialogTextRaum(kopfHoehe, npcData, { choices: null }, questMode));
+      const teile = DS.teilen(p.text, (t) => { mess.setText(t); return mess.height <= frei; });
+      p._eingepasst = true;
+      if (teile.length === 1 && !teile[0].scrollen) continue;
+      const letzter = teile.length - 1;
+      const neu = teile.map((t, k) => {
+        const basis = (k === letzter) ? Object.assign({}, p)
+          : { choices: null, _isInfoPage: p._isInfoPage, _showExplicitly: p._showExplicitly };
+        return Object.assign(basis, { text: t.text, _eingepasst: true, _fortsetzung: k > 0 });
+      });
+      pages.splice(i, 1, ...neu);
+      i += neu.length - 1;
+    }
+    if (mess) mess.destroy();
+  }
+
+  /**
+   * Macht einen Textbereich rollbar: Maske, Leiste, Mausrad, Ziehen/Wischen.
+   * Nur fuer Texte, die selbst geteilt nicht passen (und den Startbildschirm-
+   * Splash). Positionen lokal zum Container, der schon an seinem Platz steht.
+   *
+   * @param {object} b  { links, oben, breite, hoehe, leisteX }
+   * @returns {function|null} Abmelden (mehrfach aufrufbar); null, wenn der
+   *   Text ohnehin passt
+   */
+  _textRollbar(container, textObj, b) {
+    const overflow = textObj.height - b.hoehe;
+    if (overflow <= 6) return null;
+    // Maske in Bildschirmkoordinaten. scrollFactor 0 wie der Container, damit
+    // der Hub-Kamera-Scroll die Box nicht verzieht.
+    const maskG = this.make.graphics();
+    maskG.setScrollFactor(0);
+    maskG.fillStyle(0xffffff, 1);
+    maskG.fillRect(container.x + b.links, container.y + b.oben, b.breite, b.hoehe);
+    textObj.setMask(maskG.createGeometryMask());
+
+    const maxY = b.oben;                  // ganz oben
+    const minY = b.oben - overflow - 6;   // ganz unten (kleiner Puffer)
+    let scrollY = maxY;
+    const clampY = (v) => Phaser.Math.Clamp(v, minY, maxY);
+
+    const track = this.add.rectangle(b.leisteX, b.oben + b.hoehe / 2, 4, b.hoehe, 0xffffff, 0.10).setOrigin(0.5);
+    container.add(track);
+    const thumbH = Math.max(28, b.hoehe * (b.hoehe / textObj.height));
+    const thumb = this.add.rectangle(b.leisteX, b.oben + thumbH / 2, 6, thumbH, 0xaa8844, 0.9).setOrigin(0.5);
+    container.add(thumb);
+
+    const rollen = () => {
+      textObj.y = scrollY;
+      const t = (maxY - scrollY) / (maxY - minY);  // 0..1
+      thumb.y = b.oben + thumbH / 2 + t * (b.hoehe - thumbH);
+    };
+    rollen();
+
+    const wheelHandler = (pointer, over, dx, dy) => {
+      scrollY = clampY(scrollY - dy * 0.5);
+      rollen();
+    };
+    this.input.on('wheel', wheelHandler);
+
+    // Wisch-/Drag-Scroll ueber dem Textbereich (Mobile). Der Druck darauf
+    // geht nicht an die Szene weiter — sonst blaetterte Ziehen die Seite um.
+    const dragZone = this.add.zone(b.links + b.breite / 2, b.oben + b.hoehe / 2, b.breite, b.hoehe)
+      .setOrigin(0.5).setInteractive();
+    container.add(dragZone);
+    let dragging = false, dragStartPY = 0, dragStartScroll = 0;
+    const onDown = (p, x, y, ev) => {
+      if (ev && typeof ev.stopPropagation === 'function') ev.stopPropagation();
+      dragging = true; dragStartPY = p.y; dragStartScroll = scrollY;
+    };
+    const onMove = (p) => {
+      if (!dragging) return;
+      scrollY = clampY(dragStartScroll + (p.y - dragStartPY));
+      rollen();
+    };
+    const onUp = () => { dragging = false; };
+    dragZone.on('pointerdown', onDown);
+    this.input.on('pointermove', onMove);
+    this.input.on('pointerup', onUp);
+    this.input.on('pointerupoutside', onUp);
+
+    let abgemeldet = false;
+    return () => {
+      if (abgemeldet) return;
+      abgemeldet = true;
+      this.input.off('wheel', wheelHandler);
+      this.input.off('pointermove', onMove);
+      this.input.off('pointerup', onUp);
+      this.input.off('pointerupoutside', onUp);
+      try { maskG.destroy(); } catch (_) {}
+    };
+  }
+
+  /**
+   * Welche Dienst-Knoepfe stehen unter dieser Seite, und wie viel Platz
+   * brauchen sie samt Auswahlknoepfen? Die eine Stelle fuer Zeichnen und
+   * Einpassen (_dialogSeitenEinpassen) — sonst teilte das Einpassen mit
+   * anderem Platz, als die Seite dann hat.
+   * @returns {{mara:boolean, branka:boolean, hoehe:number}}
+   */
+  _dialogDienste(npcData, page, questMode) {
+    const hasChoices = !!(page && page.choices && page.choices.length > 0);
+    // Maras Dienste — Schwarzmarkt und Talente (der Wissensbaum liegt seit
+    // Stufe 1b bei Branka, s. isBrankaFlavor). Sie haengen
+    // NICHT an ihrem Auftragsstand: bis hierher stand hier zusaetzlich
+    // questMode === 'flavor', und sobald sie irgendeine Quest hatte, waren
+    // alle drei weg. Ihr eigener Einfuehrungsauftrag ("kauf mir etwas ab")
+    // sperrte damit genau den Laden, den er verlangt.
+    //
+    // Zwei echte Bedingungen. Erstens der Platz: eine Seite mit Auswahl
+    // (annehmen/ablehnen) braucht ihn fuer die Auswahlknoepfe.
+    //
+    // Zweitens die ABGABE. Dort lag der Fehler in der anderen Richtung: die
+    // Seite sagt 'Aufgabe abgeschlossen!', der Abgabeknopf liegt aber erst auf
+    // der naechsten Seite — und darunter standen drei Knoepfe, die alle vom
+    // Abschluss WEGFUEHREN. Ein Klick darauf schliesst den Dialog, die Quest
+    // bleibt 'active', die Belohnung ist nicht abgeholt. Gemeldet als 'die
+    // Quest wurde nicht abgeschlossen'.
+    const mara = npcData.id === 'mara' && !hasChoices && questMode !== 'turnin';
+    // Stufe 1b (Story v6.1): Der Wissensbaum ist Dein Handwerk. Fragmente
+    // bindest Du in der Archivschmiede in Metall, darum liegt er bei Branka
+    // und nicht mehr bei Mara. Dieselben zwei Bedingungen wie oben.
+    const branka = npcData.id === 'branka' && !hasChoices && questMode !== 'turnin';
+    // Knoepfe auf +0 / +38, jeder rund 26 hoch. Mara hat zwei (Schwarzmarkt,
+    // Talente), Branka einen (Wissensbaum). Zu knapp, und der letzte Knopf
+    // schiebt sich ueber den ESC-Hinweis, sobald eine Zeile mehr im Text steht.
+    if (hasChoices) return { mara: false, branka: false, hoehe: page.choices.length * 40 + 10 };
+    return { mara, branka, hoehe: mara ? 70 : (branka ? 32 : 0) };
   }
 
   _handleDialogueChoice(action, npcData, titleStr, pages, questMode, questData, pageIndex, keyClosers) {
@@ -5284,68 +5468,11 @@ class HubSceneV2 extends Phaser.Scene {
     }).setOrigin(0.5, 0);
     container.add(bodyText);
 
-    let detachScroll = null;
-    const overflow = bodyText.height - viewportH;
-    if (overflow > 6) {
-      // Maske auf den Sichtbereich in Bildschirmkoordinaten. scrollFactor 0
-      // wie der Container, damit der Hub-Kamera-Scroll die Box nicht verzieht.
-      const maskG = this.make.graphics();
-      maskG.setScrollFactor(0);
-      maskG.fillStyle(0xffffff, 1);
-      maskG.fillRect(cw / 2 - panelW / 2, ch / 2 + bodyTop, panelW, viewportH);
-      bodyText.setMask(maskG.createGeometryMask());
-
-      const maxY = bodyTop;                 // ganz oben
-      const minY = bodyTop - overflow - 6;  // ganz unten (kleiner Puffer)
-      let scrollY = maxY;
-      const clampY = (v) => Phaser.Math.Clamp(v, minY, maxY);
-
-      // Scrollbar-Spur + Griff am rechten Panel-Rand.
-      const barX = panelW / 2 - 16;
-      const track = this.add.rectangle(barX, bodyTop + viewportH / 2, 4, viewportH, 0xffffff, 0.10).setOrigin(0.5);
-      container.add(track);
-      const thumbH = Math.max(28, viewportH * (viewportH / bodyText.height));
-      const thumb = this.add.rectangle(barX, bodyTop + thumbH / 2, 6, thumbH, 0xaa8844, 0.9).setOrigin(0.5);
-      container.add(thumb);
-
-      const applyScroll = () => {
-        bodyText.y = scrollY;
-        const t = (maxY - scrollY) / (maxY - minY);  // 0..1
-        thumb.y = bodyTop + thumbH / 2 + t * (viewportH - thumbH);
-      };
-      applyScroll();
-
-      const wheelHandler = (pointer, over, dx, dy) => {
-        scrollY = clampY(scrollY - dy * 0.5);
-        applyScroll();
-      };
-      this.input.on('wheel', wheelHandler);
-
-      // Wisch-/Drag-Scroll ueber dem Textbereich (Mobile).
-      const dragZone = this.add.zone(0, bodyTop + viewportH / 2, panelW, viewportH)
-        .setOrigin(0.5).setInteractive();
-      container.add(dragZone);
-      let dragging = false, dragStartPY = 0, dragStartScroll = 0;
-      const onDown = (p) => { dragging = true; dragStartPY = p.y; dragStartScroll = scrollY; };
-      const onMove = (p) => {
-        if (!dragging) return;
-        scrollY = clampY(dragStartScroll + (p.y - dragStartPY));
-        applyScroll();
-      };
-      const onUp = () => { dragging = false; };
-      dragZone.on('pointerdown', onDown);
-      this.input.on('pointermove', onMove);
-      this.input.on('pointerup', onUp);
-      this.input.on('pointerupoutside', onUp);
-
-      detachScroll = () => {
-        this.input.off('wheel', wheelHandler);
-        this.input.off('pointermove', onMove);
-        this.input.off('pointerup', onUp);
-        this.input.off('pointerupoutside', onUp);
-        try { maskG.destroy(); } catch (_) {}
-      };
-    }
+    // Gleicher Rollbereich wie eine ueberlange Dialogseite (_textRollbar).
+    const detachScroll = this._textRollbar(container, bodyText, {
+      links: -panelW / 2, oben: bodyTop, breite: panelW, hoehe: viewportH,
+      leisteX: panelW / 2 - 16
+    });
 
     const closeBtn = this.add.text(0, panelH / 2 - 36, closeLabel, {
       fontFamily: 'monospace', fontSize: 18, color: '#ffffff',
