@@ -1269,6 +1269,64 @@ class HubSceneV2 extends Phaser.Scene {
     return jagd ? alle.filter((q) => this._istStoryAuftrag(q)) : alle;
   }
 
+  /**
+   * Womit ein Gespraech mit dieser Figur JETZT beginnt: Abgabe, dann ein neuer
+   * STORY-Auftrag, dann der Stand des laufenden, dann ein neuer Nebenauftrag.
+   * Bis b459 bot eine Figur mit laufendem Auftrag gar nichts Neues an: lief
+   * bei Branka "Wer Du warst", kamen "Der Bruch" und "Die Quelle" nicht, und
+   * die Geschichte stand, bis man den optionalen Auftrag erledigt hatte.
+   */
+  _gespraechsLage(npcId) {
+    const qs = window.questSystem;
+    if (!qs || !npcId) return { questMode: 'flavor', questData: null };
+    const activeForNpc = qs.getActiveQuestsAt ? qs.getActiveQuestsAt(npcId) : qs.getActiveQuests(npcId);
+    const readyToTurnIn = activeForNpc.find(q => qs.isQuestReadyToComplete(q.id));
+    if (readyToTurnIn) return { questMode: 'turnin', questData: readyToTurnIn };
+    const angebote = this._angeboteFuer(npcId);
+    const storyAngebot = angebote.find((q) => this._istStoryAuftrag(q));
+    if (storyAngebot) return { questMode: 'offer', questData: storyAngebot };
+    if (activeForNpc.length > 0) return { questMode: 'progress', questData: activeForNpc[0] };
+    if (angebote.length > 0) return { questMode: 'offer', questData: angebote[0] };
+    return { questMode: 'flavor', questData: null };
+  }
+
+  // Szenen, die ein Gespraech ausloest (statt des normalen Dialogs). Jede
+  // Bedingung steht genau hier: _showNpcDialogue spielt die Szene danach, und
+  // _questZeichen setzt danach das "!" — sonst wuesste niemand, dass er
+  // hingehen soll.
+
+  // #159: Noch nicht bei der oeffentlichen Sitzung gewesen (z. B. abgebrochen):
+  // Harren schickt Dich hin.
+  _oeffentlicheSitzungFaellig(lage) {
+    const q = lage && lage.questData;
+    return !!(q && q.id === 'council_collusion_reveal' && lage.questMode === 'progress'
+      && !this._oeffentlicheSitzungGesehen());
+  }
+
+  // #155: Das Wiedersehen, Ende Akt 2: beim ersten Gespraech mit Harren in Akt 3.
+  _wiedersehenFaellig(npcId) {
+    if (npcId !== 'harren') return false;
+    if (!window.storyScenes || typeof window.storyScenes.playWiedersehen !== 'function') return false;
+    const qs = window.questSystem;
+    const akt = (window.storySystem && typeof window.storySystem.getCurrentActIndex === 'function')
+      ? window.storySystem.getCurrentActIndex() : 0;
+    return akt >= 3 && !(qs && typeof qs.hasFlag === 'function' && qs.hasFlag('elara_ist_lene'));
+  }
+
+  // Feature 063 WP05: Die Abrechnung (the_reckoning) ist das Finale.
+  _abrechnungFaellig(lage) {
+    const q = lage && lage.questData;
+    return !!(q && q.id === 'the_reckoning'
+      && (lage.questMode === 'offer' || lage.questMode === 'turnin' || lage.questMode === 'progress'));
+  }
+
+  /** Steht beim Ansprechen dieser Figur eine Szene an? */
+  _szeneFaellig(npcId, lage) {
+    lage = lage || this._gespraechsLage(npcId);
+    return this._oeffentlicheSitzungFaellig(lage) || this._wiedersehenFaellig(npcId)
+      || this._abrechnungFaellig(lage);
+  }
+
   _questZeichen(npcId) {
     const qs = window.questSystem;
     if (!qs) return null;
@@ -1285,6 +1343,9 @@ class HubSceneV2 extends Phaser.Scene {
     // Story-Auftrag → "!" auch neben einem laufenden (dieselbe Reihenfolge wie
     // im Gespraech). Sonst in Arbeit → "…" vor einem neuen Nebenauftrag.
     if (readyToComplete.length > 0) return '?';
+    // Eine Szene, die das Gespraech ausloest (das Wiedersehen bei Harren), ist
+    // der naechste Schritt der Geschichte — wie ein Auftrag.
+    if (this._szeneFaellig(npcId)) return '!';
     if (available.some((q) => this._istStoryAuftrag(q))) return '!';
     if (inProgress.length > 0) return '…';
     if (available.length > 0) return '!';
@@ -1698,33 +1759,9 @@ class HubSceneV2 extends Phaser.Scene {
     const npcId = npcData.id;
 
     // Determine quest context for this NPC
-    let questMode = 'flavor'; // flavor | offer | progress | turnin
-    let questData = null;
-
-    if (qs && npcId) {
-      // Reihenfolge: Abgabe, dann ein neuer STORY-Auftrag, dann der Stand
-      // des laufenden, dann ein neuer Nebenauftrag. Bis b459 bot eine Figur
-      // mit laufendem Auftrag gar nichts Neues an: lief bei Branka "Wer Du
-      // warst", kamen "Der Bruch" und "Die Quelle" nicht, und die Geschichte
-      // stand, bis man den optionalen Auftrag erledigt hatte.
-      const activeForNpc = qs.getActiveQuestsAt ? qs.getActiveQuestsAt(npcId) : qs.getActiveQuests(npcId);
-      const readyToTurnIn = activeForNpc.find(q => qs.isQuestReadyToComplete(q.id));
-      const angebote = this._angeboteFuer(npcId);
-      const storyAngebot = angebote.find((q) => this._istStoryAuftrag(q));
-      if (readyToTurnIn) {
-        questMode = 'turnin';
-        questData = readyToTurnIn;
-      } else if (storyAngebot) {
-        questMode = 'offer';
-        questData = storyAngebot;
-      } else if (activeForNpc.length > 0) {
-        questMode = 'progress';
-        questData = activeForNpc[0];
-      } else if (angebote.length > 0) {
-        questMode = 'offer';
-        questData = angebote[0];
-      }
-    }
+    const lage = this._gespraechsLage(npcId);
+    const questMode = lage.questMode; // flavor | offer | progress | turnin
+    const questData = lage.questData;
 
     // Feature 050 FR-07: Q6 climax-scene routing. When the player has
     // council_collusion_reveal available (offered) OR in-progress
@@ -1740,8 +1777,7 @@ class HubSceneV2 extends Phaser.Scene {
     }
     // Noch nicht bei der oeffentlichen Sitzung gewesen (z. B. abgebrochen):
     // Harren schickt Dich hin.
-    if (questData && questData.id === 'council_collusion_reveal' && questMode === 'progress'
-        && !this._oeffentlicheSitzungGesehen()) {
+    if (this._oeffentlicheSitzungFaellig(lage)) {
       this._oeffentlicheSitzungSpielen();
       return;
     }
@@ -1753,9 +1789,6 @@ class HubSceneV2 extends Phaser.Scene {
     // erneut an. (Das fruehere Elara-Lager ist jetzt die Werkstatt-Szene im
     // Dungeon, nach "Elaras Geheimnis".)
     const _qsSz = window.questSystem;
-    const _aktSz = (window.storySystem && typeof window.storySystem.getCurrentActIndex === 'function')
-      ? window.storySystem.getCurrentActIndex() : 0;
-    const _flagSz = (f) => !!(_qsSz && typeof _qsSz.hasFlag === 'function' && _qsSz.hasFlag(f));
     const _szeneSz = (flag, name) => {
       if (_qsSz && typeof _qsSz.setFlag === 'function') _qsSz.setFlag(flag);
       const selfSz = this;
@@ -1763,8 +1796,7 @@ class HubSceneV2 extends Phaser.Scene {
     };
     if (window.storyScenes) {
       // Das Wiedersehen: Ende Akt 2, beim ersten Gespraech mit Harren in Akt 3.
-      if (npcId === 'harren' && _aktSz >= 3 && !_flagSz('elara_ist_lene')
-          && typeof window.storyScenes.playWiedersehen === 'function') {
+      if (this._wiedersehenFaellig(npcId)) {
         _szeneSz('elara_ist_lene', 'playWiedersehen');
         return;
       }
@@ -1796,8 +1828,7 @@ class HubSceneV2 extends Phaser.Scene {
     // Feature 063 WP05: the_reckoning ist das Finale. Statt des Standard-Dialogs
     // die inszenierte Abrechnung (Vatermord + Druck + der aus computeFinaleState
     // berechnete Ausgang) spielen; danach completeQuest (schaltet story_ending).
-    if (questData && questData.id === 'the_reckoning'
-        && (questMode === 'offer' || questMode === 'turnin' || questMode === 'progress')) {
+    if (this._abrechnungFaellig(lage)) {
       this._showReckoningFinale(npcData, questData);
       return;
     }
