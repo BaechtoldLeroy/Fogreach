@@ -112,8 +112,13 @@ test('Die Szenen erzaehlen, was sie sollen', () => {
     ['playWiedersehen', 'playNachtNachDemBruch', 'playMaulwurfEnthuellung'].forEach(function (n) {
       var gesehen = '';
       TW.anTextobjekt = function (s, textObj, voll) { gesehen = String(voll); return echt.apply(this, arguments); };
-      try { window.__echt[n](sc, function () {}); } finally { TW.anTextobjekt = echt; }
+      // Die Nacht ist seit b484 eine Zwischenszene mit Bildern
+      // (tests/bruchNachtSzene.test.js). Hier: ihre Zeilen und die Textfassung.
+      var BN = window.BruchNachtSzene;
+      if (n === 'playNachtNachDemBruch') window.BruchNachtSzene = null;
+      try { window.__echt[n](sc, function () {}); } finally { TW.anTextobjekt = echt; window.BruchNachtSzene = BN; }
       aus[n] = gesehen;
+      if (n === 'playNachtNachDemBruch') aus.bruchNachtSzene = BN.schritte().map(function (s) { return s.text || ''; }).join(' ');
       sc.children.list.filter(function (o) { return o.depth >= 1550 && o.depth < 1560; })
         .forEach(function (o) { try { o.destroy(); } catch (e) {} });
     });
@@ -122,6 +127,8 @@ test('Die Szenen erzaehlen, was sie sollen', () => {
   assert.ok(/Lene/.test(t.playWiedersehen) && /Elara/.test(t.playWiedersehen) && /Vater/.test(t.playWiedersehen),
     'das Wiedersehen verbindet Lene und Elara nicht: ' + t.playWiedersehen);
   assert.ok(/Versteck/.test(t.playNachtNachDemBruch), 'die Nacht spielt nicht im Versteck: ' + t.playNachtNachDemBruch);
+  assert.ok(/Versteck/.test(t.bruchNachtSzene) && /Branka/i.test(t.bruchNachtSzene),
+    'die Zwischenszene der Nacht spielt nicht im Versteck: ' + t.bruchNachtSzene);
   assert.ok(/Aldric/.test(t.playMaulwurfEnthuellung) && /drei Ketten/.test(t.playMaulwurfEnthuellung),
     'die Enthuellung zeigt nicht Elara mit Aldric und das Zeichen: ' + t.playMaulwurfEnthuellung);
 });

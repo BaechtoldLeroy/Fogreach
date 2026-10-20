@@ -524,8 +524,17 @@
   }
 
   // --- #155 Die Nacht nach dem Bruch ------------------------------------------
-  // Das tiefste Vertrauen, direkt vor dem Verrat.
+  // Das tiefste Vertrauen, direkt vor dem Verrat. Seit b484 eine
+  // Zwischenszene mit drei Tableaus (js/bruchNachtSzene.js); die Textfassung
+  // unten bleibt der Rueckfall ohne Bilder.
   function playNachtNachDemBruch(scene, onDone) {
+    var BN = window.BruchNachtSzene;
+    var text = function () { _nachtNachDemBruchText(scene, onDone); };
+    if (BN && typeof BN.spielen === 'function' && BN.spielen(scene, onDone, text)) return;
+    text();
+  }
+
+  function _nachtNachDemBruchText(scene, onDone) {
     _szeneSpielen(scene, [
       // v6.1: Branka hat Dich hergebracht (bruch_confrontation).
       _t('(Die Nacht nach dem Bruch. Aldrics Wachen durchkämmen die Gassen. Branka hat Dich bis an den Spalt in der Kellerwand gebracht. Dahinter, in ihrem Versteck, wartet Elara.)', '(The night after the break. Aldric\'s guards comb the alleys. Branka has brought you as far as the crack in the cellar wall. Behind it, in her hideout, Elara is waiting.)'),

@@ -600,6 +600,10 @@ class HubSceneV2 extends Phaser.Scene {
     if (!this._dialogOpen && window.Aktwechsel) {
       this._dialogOpen = window.Aktwechsel.probe(this, () => { this._dialogOpen = false; });
     }
+    // Debug ?bruchnacht=1: die Nacht nach dem Bruch ansehen (einmal pro Laden).
+    if (!this._dialogOpen && window.BruchNachtSzene) {
+      this._dialogOpen = window.BruchNachtSzene.probe(this, () => { this._dialogOpen = false; });
+    }
 
     if (this.player) {
       this.cameras.main.startFollow(this.player, true, 0.1, 0.1);

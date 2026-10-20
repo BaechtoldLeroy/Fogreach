@@ -118,6 +118,12 @@ test('Dritter Besuch: die Nacht nach dem Bruch', () => {
   assert.strictEqual(r.besuch, 'bruch_nacht');
   H.run(`window._versteckSzeneSpielen(window.game.scene.getScene('GameScene'), 'bruch_nacht')`);
   assert.strictEqual(H.run(`window.questSystem.hasFlag('bruch_nacht_gesehen')`), true);
+  // Seit b484 eine Zwischenszene (tests/bruchNachtSzene.test.js): sie haelt die
+  // Spieluhr an, also fuer die folgenden Faelle wieder schliessen. Sind ihre
+  // Bilder noch nicht geladen, kommt sie erst danach.
+  for (let i = 0; i < 300 && !H.run(`!!window.game.scene.getScene('GameScene').__bruchNacht`); i++) H.step(3);
+  H.run(`(function () { var z = window.game.scene.getScene('GameScene').__bruchNacht; if (z) z.ueberspringen(); })()`);
+  assert.strictEqual(H.run(`window.game.scene.getScene('GameScene').time.paused`), false, 'die Spieluhr steht nach der Nacht');
   assert.strictEqual(H.run(`window.versteckBesuchFaellig()`), null, 'danach ist noch ein Besuch faellig');
 });
 

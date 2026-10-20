@@ -4212,6 +4212,10 @@ function _versteckBetreten(scene, w, h) {
   else _versteckZeichnen(scene, w, h);
   var besuch = versteckBesuchFaellig();
   scene._versteckBesuch = besuch;
+  // Die Tableaus der Nacht schon beim Betreten holen, nicht erst beim Gespraech.
+  if (besuch === 'bruch_nacht' && window.BruchNachtSzene && scene.load) {
+    try { window.BruchNachtSzene.vorladen(scene); } catch (e) {}
+  }
   if (!besuch || !window.EventSystem || typeof window.EventSystem.spawnEventObject !== 'function') return;
   var opts = { figurHoehe: ELARA_FIGUR_HOEHE };
   if (neu) opts.spawnAt = VERSTECK_ELARA_PLATZ;

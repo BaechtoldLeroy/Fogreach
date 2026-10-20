@@ -208,6 +208,18 @@ zweites Mal.
 
 `leer` ruehrt den Queststand NICHT an.
 
+Die Nacht nach dem Bruch ist seit b484 eine Zwischenszene mit drei Tableaus
+(js/bruchNachtSzene.js, Bilder in assets/sprites/bruchnacht/). Nur ansehen,
+ohne den Dungeon und ohne den Spielstand anzufassen:
+
+| Flagge | Wirkung |
+|---|---|
+| `?bruchnacht=1` | spielt die Szene beim Hub-Eintritt (einmal pro Laden), setzt keine Flagge |
+
+```
+?debug=1&bruchnacht=1
+```
+
 ### Elaras Rettung und der Rueckblick (Story-Kern v6.1)
 
 | Flagge | Wirkung |
