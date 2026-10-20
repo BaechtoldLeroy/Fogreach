@@ -1163,9 +1163,6 @@ function enterRoom(scene, roomId) {
     window.__isFinalDungeonRoom = (roomId === (_tR - 1));
   }
 
-  // ?sonder= setzt die Sondergegner in den fertigen Raum.
-  try { _debugSondergegnerSetzen(scene); } catch (e) {}
-
   // #161: Elaras Versteck ist ein ruhiger Raum — keine Ereignisse, keine
   // Zufallsbegegnung, keine Welle (siehe unten). Nur sie und die Szene.
   var _versteckRaum = (templateName === VERSTECK_RAUM);
@@ -1712,6 +1709,12 @@ function enterRoom(scene, roomId) {
         'The chambers are guarded. Council cellar wardens, and their lookouts.'), 'quest');
     } catch (e) {}
   }
+  // ?sonder= setzt die Sondergegner erst HIER in den Raum: er muss fertig
+  // stehen (begehbare Flaeche, Weltgrenzen, Tiefe). Gleich nach dem Bau
+  // pruefte spawnEnemy noch gegen die Flaeche des VORRAUMS — der Beschwoerer
+  // landete in Folgeraeumen meist in einer Wand, und weil ?sonder= die Welle
+  // abschaltet, stand der Raum fuer den Spieler leer.
+  try { _debugSondergegnerSetzen(scene); } catch (e) {}
   // ?sonder= will die sechs ANSEHEN. Die normale Welle dazu bedeutet auf
   // Tiefe 12 den sicheren Tod, bevor man den ersten Ruf gehoert hat.
   if (!_espionageRoom && !_versteckRaum && !_flucht && !_debugSonderAn()
