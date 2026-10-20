@@ -3503,6 +3503,13 @@ function _maybeStartEspionage(scene, templateName, builtMeta) {
         blockedTiles[(o.x || 0) + ',' + (o.y || 0)] = true;
       }
     });
+    // Feste Koerper, die die Sicht nicht verdecken, den Weg aber schon.
+    var wegHindernisse = {};
+    (tpl.objects || []).forEach(function (o) {
+      if (o && /^(crate|barrel|chest|statue)/.test(String(o.type))) {
+        wegHindernisse[Math.floor(o.x || 0) + ',' + Math.floor(o.y || 0)] = true;
+      }
+    });
     var blockedAt = function (wx, wy) {
       var tx = Math.floor((wx - ox) / T), ty = Math.floor((wy - oy) / T);
       if (ty < 0 || ty >= wallRows.length) return true;
@@ -3530,7 +3537,10 @@ function _maybeStartEspionage(scene, templateName, builtMeta) {
       observeZones: (esp.observe || []).map(function (o) { return toWorld(o, false); }),
       actors: actors,
       seed: (_seedFlagge != null && !isNaN(Number(_seedFlagge))) ? Number(_seedFlagge) : Math.floor(Math.random() * 1e9),
-      blockedAt: blockedAt
+      blockedAt: blockedAt,
+      // Raster fuer die Wegsuche der Melder: zusaetzlich zu blockedAt die
+      // Kisten/Faesser/Statuen, an denen sie sonst haengenblieben.
+      nav: { x: ox, y: oy, tile: T, cols: (wallRows[0] || '').length, rows: wallRows.length, fest: wegHindernisse }
     });
     window.EspionageSystem.setDisguise(true); // Auto-Verkleidung bei Mission-Start
     // Nachteskorte: der Transport faehrt durch den Raum, die Stationen oeffnen sich mit ihm.

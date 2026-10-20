@@ -66,7 +66,7 @@
   var UNDISGUISED_MULT = 1.6;       // ohne Verkleidung bemerken sie Dich schneller
   var WATCHER_ALARM = 0.5;          // Ruf eines Schreibers/Dieners: Verdacht +0.5
   var WATCHER_COOLDOWN = 5;         // s Ruhe nach einem Ruf
-  var INFORMER_MAX_RUN = 7;         // s: so lange rennt der Spitzel, dann ruft er
+  var INFORMER_MAX_RUN = 7;         // s: Sicherung, falls die Wegsuche keinen Weg findet: dann ruft er
   var INFORMER_REPORT_R = 40;       // so nah muss er an die Wache
   var INFORMER_COOLDOWN = 8;        // s nach einer Meldung
   var BOTE_ALARM = 0.35;            // Meldung des Ratsboten: Verdacht +0.35, Wache wachsam
@@ -87,6 +87,7 @@
       observeZones: [], guards: [], cover: [], actors: [],
       barks: [], noises: [],
       blockedAt: null,                // (wx,wy)=>bool: Wand/Hindernis-Test für Wachen
+      raster: null,                   // Kachelraster fuer die Wegsuche der Melder
       seed: 0,
       _acc: 0
     };
@@ -258,6 +259,144 @@
     var step = Math.min(speed * dt, dist);
     _moveGuard(ent, ent.x + (dx / dist) * step, ent.y + (dy / dist) * step);
     ent._facing = Math.atan2(dy, dx);
+    return false;
+  }
+
+  // --- Wegsuche der Melder ------------------------------------------------
+  // Ratsbote und Spitzel rannten in gerader Linie zur Wache und blieben an
+  // Waenden und Kisten haengen. Jetzt: A* auf dem Kachelraster des Raums
+  // (Waende + feste Hindernisse), Wegpunkte geglaettet, neu gerechnet, wenn
+  // die Wache weiterzieht. Ohne Raster (Tests ohne Raum) geht es wie frueher
+  // geradeaus.
+  var WEG_NEU_S = 0.6;              // s: so oft wird der Weg neu gerechnet
+  var WEG_ABSTAND = 10;             // px: Seitenabstand zur Wand beim Glaetten
+
+  // nav: {x, y, tile, cols, rows, fest:{'tx,ty':true}} -> begehbar[] je Kachel.
+  function _baueRaster(nav, blockedAt) {
+    if (!nav || !(nav.tile > 0) || !(nav.cols > 0) || !(nav.rows > 0)) return null;
+    var T = nav.tile, frei = new Array(nav.cols * nav.rows);
+    for (var ty = 0; ty < nav.rows; ty++) {
+      for (var tx = 0; tx < nav.cols; tx++) {
+        var zu = (nav.fest && nav.fest[tx + ',' + ty])
+          || (blockedAt && blockedAt(nav.x + (tx + 0.5) * T, nav.y + (ty + 0.5) * T));
+        frei[ty * nav.cols + tx] = !zu;
+      }
+    }
+    return { x: nav.x, y: nav.y, T: T, cols: nav.cols, rows: nav.rows, frei: frei };
+  }
+
+  function _rFrei(R, tx, ty) {
+    return tx >= 0 && ty >= 0 && tx < R.cols && ty < R.rows && R.frei[ty * R.cols + tx];
+  }
+  function _rKachel(R, x, y) { return { x: Math.floor((x - R.x) / R.T), y: Math.floor((y - R.y) / R.T) }; }
+
+  // Naechste freie Kachel (Breitensuche), falls Start/Ziel in einer Wand liegt.
+  function _naechsteFrei(R, k) {
+    if (_rFrei(R, k.x, k.y)) return k;
+    var seen = {}, q = [k]; seen[k.x + ',' + k.y] = true;
+    for (var i = 0; i < q.length && i < 400; i++) {
+      var c = q[i], n = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+      for (var j = 0; j < 4; j++) {
+        var nx = c.x + n[j][0], ny = c.y + n[j][1], key = nx + ',' + ny;
+        if (seen[key] || nx < -1 || ny < -1 || nx > R.cols || ny > R.rows) continue;
+        seen[key] = true;
+        if (_rFrei(R, nx, ny)) return { x: nx, y: ny };
+        q.push({ x: nx, y: ny });
+      }
+    }
+    return null;
+  }
+
+  // Ist die Strecke frei, auch mit Seitenabstand (damit der Melder nicht an
+  // Ecken schrammt)?
+  function _streckeFrei(R, x0, y0, x1, y1) {
+    var dx = x1 - x0, dy = y1 - y0, d = Math.sqrt(dx * dx + dy * dy);
+    if (d < 1) return true;
+    var nx = -dy / d * WEG_ABSTAND, ny = dx / d * WEG_ABSTAND;
+    var n = Math.ceil(d / 6);
+    for (var i = 0; i <= n; i++) {
+      var t = i / n, x = x0 + dx * t, y = y0 + dy * t;
+      for (var s = -1; s <= 1; s++) {
+        var k = _rKachel(R, x + nx * s, y + ny * s);
+        if (!_rFrei(R, k.x, k.y)) return false;
+      }
+    }
+    return true;
+  }
+
+  // A* (8 Richtungen, keine Ecken abschneiden). Liefert Weltpunkte bis zum
+  // Ziel, geglaettet; null, wenn es keinen Weg gibt.
+  function _sucheWeg(R, sx, sy, zx, zy) {
+    var s = _naechsteFrei(R, _rKachel(R, sx, sy)), z = _naechsteFrei(R, _rKachel(R, zx, zy));
+    if (!s || !z) return null;
+    var C = R.cols, si = s.y * C + s.x, zi = z.y * C + z.x;
+    var g = {}, von = {}, zu = {}, offen = [si];
+    g[si] = 0;
+    var h = function (i) {
+      var ax = Math.abs(i % C - z.x), ay = Math.abs(Math.floor(i / C) - z.y);
+      return Math.max(ax, ay) + 0.414 * Math.min(ax, ay);
+    };
+    var f = {}; f[si] = h(si);
+    var gefunden = si === zi;
+    while (offen.length && !gefunden) {
+      var bi = 0;
+      for (var k = 1; k < offen.length; k++) if (f[offen[k]] < f[offen[bi]]) bi = k;
+      var c = offen[bi]; offen.splice(bi, 1);
+      if (c === zi) { gefunden = true; break; }
+      zu[c] = true;
+      var cx = c % C, cy = Math.floor(c / C);
+      for (var ox = -1; ox <= 1; ox++) {
+        for (var oy = -1; oy <= 1; oy++) {
+          if (!ox && !oy) continue;
+          var nx = cx + ox, ny = cy + oy;
+          if (!_rFrei(R, nx, ny)) continue;
+          if (ox && oy && (!_rFrei(R, cx + ox, cy) || !_rFrei(R, cx, cy + oy))) continue;
+          var ni = ny * C + nx;
+          if (zu[ni]) continue;
+          var ng = g[c] + (ox && oy ? 1.414 : 1);
+          if (g[ni] !== undefined && ng >= g[ni]) continue;
+          if (g[ni] === undefined) offen.push(ni);
+          g[ni] = ng; f[ni] = ng + h(ni); von[ni] = c;
+        }
+      }
+    }
+    if (!gefunden) return null;
+    var kette = [];
+    for (var i = zi; i !== undefined; i = von[i]) {
+      kette.unshift({ x: R.x + (i % C + 0.5) * R.T, y: R.y + (Math.floor(i / C) + 0.5) * R.T });
+      if (i === si) break;
+    }
+    kette.push({ x: zx, y: zy });
+    // Glaetten: von jedem Punkt aus der weiteste, der frei erreichbar ist.
+    var weg = [], von0 = { x: sx, y: sy }, j = 0;
+    while (j < kette.length) {
+      var weit = j;
+      for (var m = kette.length - 1; m > j; m--) {
+        if (_streckeFrei(R, von0.x, von0.y, kette[m].x, kette[m].y)) { weit = m; break; }
+      }
+      weg.push(kette[weit]);
+      von0 = kette[weit];
+      j = weit + 1;
+    }
+    return weg;
+  }
+
+  // Ein Stueck Weg Richtung Ziel (tx,ty), um Hindernisse herum.
+  function _laufeZu(ent, tx, ty, speed, dt) {
+    var R = state.raster;
+    if (!R || _streckeFrei(R, ent.x, ent.y, tx, ty)) { ent._weg = null; return _walkTo(ent, tx, ty, speed, dt); }
+    ent._wegT = (ent._wegT || 0) - dt;
+    var w = ent._weg;
+    var gewandert = w && w.zx !== undefined && Math.abs(w.zx - tx) + Math.abs(w.zy - ty) > R.T;
+    if (!w || !w.punkte.length || ent._wegT <= 0 || gewandert) {
+      var p = _sucheWeg(R, ent.x, ent.y, tx, ty);
+      ent._weg = w = p ? { punkte: p, zx: tx, zy: ty } : null;
+      ent._wegT = WEG_NEU_S;
+      if (!w) return _walkTo(ent, tx, ty, speed, dt);
+    }
+    var ziel = w.punkte[0];
+    if (w.punkte.length === 1) { ziel.x = tx; ziel.y = ty; }   // letzter Punkt folgt der Wache
+    if (_walkTo(ent, ziel.x, ziel.y, speed, dt)) w.punkte.shift();
     return false;
   }
 
@@ -535,7 +674,7 @@
       if (a._state === 'report') {
         if (!a._target || a._target.knocked) a._target = _nearestGuard(a.x, a.y);
         a._runT += dt;
-        if (a._target) _walkTo(a, a._target.x, a._target.y, T.runSpeed, dt);
+        if (a._target) _laufeZu(a, a._target.x, a._target.y, T.runSpeed, dt);
         var gd = a._target ? Math.sqrt((a._target.x - a.x) * (a._target.x - a.x) + (a._target.y - a.y) * (a._target.y - a.y)) : 0;
         // Leise abfangen: wer ihn auf dem Weg erwischt, haelt ihm den Mund zu.
         if (p) {
@@ -599,7 +738,7 @@
         }
         if (a._notice >= 1) {
           if (T.informer) {
-            a._state = 'report'; a._runT = 0; a._target = _nearestGuard(a.x, a.y);
+            a._state = 'report'; a._runT = 0; a._weg = null; a._target = _nearestGuard(a.x, a.y);
             _bark(a, 'erkannt');
           } else {
             _watcherCalls(a, p, scene);
@@ -669,6 +808,7 @@
       }
       if (config.cover && config.cover.length) state.cover = config.cover.slice();
       if (typeof config.blockedAt === 'function') state.blockedAt = config.blockedAt;
+      state.raster = _baueRaster(config.nav, state.blockedAt);
       // actors:[{type, count, spots:[{x,y,facing}] | routes:[[{x,y},..]]}]: welche
       // Kandidaten zum Zug kommen, entscheidet seed (reproduzierbar).
       state.seed = (typeof config.seed === 'number') ? config.seed : Math.floor(Math.random() * 1e9);
