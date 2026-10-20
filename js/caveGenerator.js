@@ -217,16 +217,6 @@
     return deck;
   }
 
-  // Komponente, in der der Koerper auf Kachel (x, y) stehen kann; sonst -1.
-  function komponenteBei(comp, w, x, y) {
-    var kand = [[x, y], [x - 1, y], [x, y - 1], [x - 1, y - 1]];
-    for (var i = 0; i < 4; i++) {
-      var id = comp[kand[i][1] * w + kand[i][0]];
-      if (id >= 0) return id;
-    }
-    return -1;
-  }
-
   // Billigster Weg (am wenigsten Wand) von der Hauptkomponente zu einem der
   // Zielbloecke; die Waende der Bloecke auf dem Weg werden Boden. Der Weg
   // folgt so dem vorhandenen engen Durchgang und weitet ihn nur auf.
@@ -361,13 +351,16 @@
     return ecken;
   }
 
+  // ── Ziel-Schutz ───────────────────────────────────────────────────────────
+  // Props und Truhen stehen, wo der Generator sie wuerfelt — auch in Gaengen.
+  // Abgeschnittene Bodenflecken sind erlaubt (Hoehlen sollen voll wirken).
+  // Nur eines darf nicht passieren: ein Objekt versperrt den EINZIGEN Weg zu
+  // einem Eingang, einer Treppe oder einer Truhe. Dann (und nur dann) zieht
+  // es um; die Menge bleibt.
+
   // Wie viel Platz ein festes Objekt dem Koerper nimmt. Statue (48x64) und
-  // grosse Saeule (48x48) ragen 16 bzw. 8 px in die Kacheln darueber und
-  // darunter — ein 2 Kacheln hoher Spalt daneben ist fuer den 56 px hohen
-  // Koerper dann zu (Statue) oder ohne jede Luft (Saeule). Sie sperren darum
-  // ihre Kachel samt der Nachbarn oben und unten. Der Altar (64x40, nur in
-  // BSP-Hallen) ragt 16 px nach links und rechts; zwei Altaere uebereinander
-  // lassen dazwischen nur 24 px — er sperrt die Nachbarn links und rechts.
+  // grosse Saeule (48x48) ragen in die Kacheln darueber und darunter, der
+  // Altar (64x40) in die links und rechts.
   var HOHE_OBJEKTE = { statue_knight: 1, pillar_large: 1 };
   var BREITE_OBJEKTE = { altar: 1 };
   function sperrKacheln(o) {
@@ -377,88 +370,65 @@
     return t;
   }
 
-  // Prueft, ob feste Objekte (Props, Truhen) dem Koerper einen Weg abschneiden.
-  // Vergleich gegen die Hoehle ohne Objekte: jede Bodenkachel, die dort
-  // erreichbar war und nicht selbst unter einem Objekt liegt, muss es bleiben.
-  function koerperPruefer(g, start) {
+  // Komponente, in der der Koerper auf Kachel (x, y) stehen kann; sonst -1.
+  function komponenteBei(comp, w, x, y) {
+    var kand = [[x, y], [x - 1, y], [x, y - 1], [x - 1, y - 1]];
+    for (var i = 0; i < 4; i++) {
+      var id = comp[kand[i][1] * w + kand[i][0]];
+      if (id >= 0) return id;
+    }
+    return -1;
+  }
+
+  // sperrt(objekte, truhen): true, wenn ein Eingang oder eine Truhe, die der
+  // Koerper ohne Objekte erreicht, mit ihnen nicht mehr erreichbar ist.
+  // Erreicht heisst: der Koerper steht auf dem Ziel oder direkt daneben.
+  function zielPruefer(g, start, eingaenge) {
     var h = g.length, w = g[0].length;
     var k0 = blockKomponenten(freieBloecke(g, null), w, h);
     var id0 = komponenteBei(k0.comp, w, start.x, start.y);
     var deck0 = id0 >= 0 ? abdeckung(k0.comp, id0, w, h) : null;
-    return function verlust(objekte) {
-      if (!deck0) return [];
+    var erreicht = function (deck, z) {
+      return [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]].some(function (d) {
+        var x = z.x + d[0], y = z.y + d[1];
+        return x >= 0 && y >= 0 && x < w && y < h && deck[y * w + x] === 1;
+      });
+    };
+    return function sperrt(objekte, truhen) {
+      if (!deck0) return false;
+      var ziele = (eingaenge || []).concat(truhen).filter(function (z) { return erreicht(deck0, z); });
+      if (!ziele.length) return false;
       var gesperrt = new Uint8Array(w * h);
-      objekte.forEach(function (o) {
+      var sperre = function (o) {
         sperrKacheln(o).forEach(function (t) {
           if (t[0] >= 0 && t[1] >= 0 && t[0] < w && t[1] < h) gesperrt[t[1] * w + t[0]] = 1;
         });
-      });
+      };
+      objekte.forEach(sperre);
+      // Ein Objekt auf (oder ueber) der Truhe begraebt sie.
+      if (truhen.some(function (t) { return gesperrt[t.y * w + t.x]; })) return true;
+      truhen.forEach(sperre);
       var k = blockKomponenten(freieBloecke(g, gesperrt), w, h);
       var id = komponenteBei(k.comp, w, start.x, start.y);
       var deck = id >= 0 ? abdeckung(k.comp, id, w, h) : new Uint8Array(w * h);
-      var weg = [];
-      for (var i = 0; i < w * h; i++) {
-        if (deck0[i] && !gesperrt[i] && !deck[i]) weg.push({ x: i % w, y: Math.floor(i / w) });
-      }
-      weg.deck = deck;
-      weg.breite = w;
-      return weg;
+      return ziele.some(function (z) { return !erreicht(deck, z); });
     };
   }
 
-  // Setzt Objekte um, bis keines mehr einen Weg abschneidet oder einen
-  // 1-Kachel-Spalt zur Wand laesst. Schuldig ist, wer am Rand des Verlusts
-  // steht: hoechstens 2 Kacheln von einer verlorenen UND von einer noch
-  // erreichbaren Kachel — Objekte mitten im abgeschnittenen Bereich sind
-  // unschuldig. Schuldige ziehen auf einen Ersatzplatz (ersatz(), z. B. die
-  // naechste freie Bodenkachel) und werden dort erneut geprueft; gibt es
-  // keinen, fallen sie weg. So bleibt die Prop-Dichte, nur die Lage aendert sich.
-  // Ohne ersatz (BSP) faellt je Runde nur EIN Schuldiger weg: von zwei Altaeren,
-  // die zusammen einen Zwickel bilden, reicht es, einen zu nehmen.
-  function ohneEngstellen(objekte, verlust, ersatz) {
-    var rest = objekte.slice();
-    var runden = ersatz ? 12 : 12 + objekte.length;
-    for (var runde = 0; runde < runden && rest.length; runde++) {
-      var weg = verlust(rest);
-      if (!weg.length) return rest;
-      var deck = weg.deck, breite = weg.breite;
-      var nahAn = function (t, liste) {
-        return liste.some(function (v) { return Math.abs(v.x - t[0]) <= 2 && Math.abs(v.y - t[1]) <= 2; });
-      };
-      var randErreicht = function (t) {
-        for (var dy = -2; dy <= 2; dy++) {
-          for (var dx = -2; dx <= 2; dx++) {
-            var x = t[0] + dx, y = t[1] + dy;
-            if (x >= 0 && y >= 0 && x < breite && deck[y * breite + x]) return true;
-          }
-        }
-        return false;
-      };
-      var schuldig = rest.filter(function (o) {
-        return sperrKacheln(o).some(function (t) { return nahAn(t, weg) && randErreicht(t); });
-      });
-      if (!schuldig.length) {
-        // Niemand am Rand (sollte nicht vorkommen): das naechste Objekt nehmen.
-        var bester = rest[0], bestD = Infinity;
-        rest.forEach(function (o) {
-          weg.forEach(function (v) {
-            var dd = Math.abs(v.x - o.x) + Math.abs(v.y - o.y);
-            if (dd < bestD) { bestD = dd; bester = o; }
-          });
-        });
-        schuldig = [bester];
+  // Setzt die Objekte der Reihe nach. Wer mit den schon gesetzten ein Ziel
+  // absperrt, nimmt den naechsten Ersatzplatz (ersatz(o, versuch, index));
+  // erst wenn 8 Plaetze nicht gehen, entfaellt es.
+  function stelleFrei(liste, sperrt, ersatz) {
+    var ok = [];
+    liste.forEach(function (o, i) {
+      var kand = o;
+      for (var v = 0; v < 8 && kand; v++) {
+        if (!sperrt(ok.concat([kand]))) { ok.push(kand); return; }
+        var p = ersatz(o, v, i);
+        kand = p ? Object.assign({}, o, { x: p.x, y: p.y }) : null;
       }
-      if (!ersatz) schuldig = schuldig.slice(0, 1);
-      rest = rest.filter(function (o) { return schuldig.indexOf(o) < 0; });
-      // In den letzten Runden nicht mehr umsetzen, nur noch entfernen.
-      if (ersatz && runde < 8) {
-        schuldig.forEach(function (o) {
-          var p = ersatz();
-          if (p) rest.push(Object.assign({}, o, { x: p.x, y: p.y }));
-        });
-      }
-    }
-    return verlust(rest).length ? [] : rest;
+    });
+    return ok;
   }
 
   // BFS from (sx, sy) over floor tiles. Returns a 2D distance array (Infinity
@@ -775,19 +745,22 @@
     //    (count of floor tiles in a 5×5 neighborhood). Falls back to the
     //    region seed if no good spot is found.
     var spawn = pickOpenestTile(g, mask, rng) || anyFloor(g, mask) || region.seed;
-    var verlust = koerperPruefer(g, spawn);
 
     // 6) Loot — BFS-farthest floor tile from spawn, plus one mid-distance.
-    //    Truhen sind feste Hindernisse: eine Truhe, die einen Gang verstopft,
-    //    weicht auf eine andere Kachel derselben Entfernung aus.
     var farMap = bfsDistance(g, spawn.x, spawn.y);
+    var farPick = findFarthest(g, mask, farMap.dist);
+    var midPick = findFarthest(g, mask, farMap.dist, 0.5);
     var loot = [];
-    var farPick = pickLootTile(g, mask, farMap.dist, undefined, loot, verlust);
     if (farPick) loot.push({ x: farPick.x, y: farPick.y, type: rng() < 0.5 ? 'chest_medium' : 'chest_small', locked: rng() < 0.3 });
-    var midPick = pickLootTile(g, mask, farMap.dist, 0.5, loot, verlust);
     if (midPick && (midPick.x !== farPick?.x || midPick.y !== farPick?.y)) {
       loot.push({ x: midPick.x, y: midPick.y, type: 'chest_small' });
     }
+    // Eine Truhe, die den einzigen Weg zum Eingang oder zur anderen Truhe
+    // verstopft, nimmt eine andere Kachel derselben Entfernung.
+    var sperrt = zielPruefer(g, spawn, entrances);
+    loot = stelleFrei(loot, function (ls) { return sperrt([], ls); }, function (l, v, i) {
+      return findFarthest(g, mask, farMap.dist, i === 0 ? undefined : 0.5);
+    });
 
     // 7) Decorations + breakable props. Lower density than BSP chambers — caves
     //    feel emptier and rely on geometry for interest.
@@ -818,22 +791,21 @@
       used.add(keyOf(pos2));
       objects.push({ type: rng() < 0.5 ? 'barrel' : 'crate', x: pos2.x, y: pos2.y, breakable: true });
     }
-    // Kein Prop darf einen Gang unter Koerperbreite druecken — auch kein
-    // zerbrechliches: Kisten sind Physik-Hindernisse wie Saeulen. Die Truhen
-    // stehen schon und zaehlen mit, weichen aber nicht.
-    objects = ohneEngstellen(objects, function (objs) { return verlust(objs.concat(loot)); }, function () {
-      while (floorTiles.length) {
-        var p = floorTiles.pop();
-        if (p && !used.has(keyOf(p))) { used.add(keyOf(p)); return p; }
-      }
-      return null;
-    });
     for (var d1 = 0; d1 < decorCount && floorTiles.length; d1++) {
       var pos3 = floorTiles.pop();
       if (!pos3 || used.has(keyOf(pos3))) continue;
       used.add(keyOf(pos3));
       decorations.push({ type: propPool[Math.floor(rng() * propPool.length)], x: pos3.x, y: pos3.y });
     }
+    // Ziel-Schutz: nur wer einen Eingang oder eine Truhe absperrt, zieht auf
+    // eine noch freie Bodenkachel um.
+    objects = stelleFrei(objects, function (objs) { return sperrt(objs, loot); }, function () {
+      while (floorTiles.length) {
+        var p = floorTiles.pop();
+        if (p && !used.has(keyOf(p))) { used.add(keyOf(p)); return p; }
+      }
+      return null;
+    });
 
     // 8) Enemy clusters — 4-8 packs, distributed by BFS distance buckets so we
     //    don't pile everyone at the spawn.
@@ -926,38 +898,27 @@
     return null;
   }
 
-  // Truhenplatz: weitester (bzw. mittlerer) Boden ab Spawn, aber nur dort, wo die Truhe (zusammen mit
-  // den schon gesetzten) keinen Weg fuer den Koerper verstopft.
-  function pickLootTile(g, mask, dist, ratio, schon, verlust) {
+  function findFarthest(g, mask, dist, ratio) {
     var h = g.length, w = g[0].length;
     var maxD = 0;
     for (var y = 1; y < h - 1; y++) {
       for (var x = 1; x < w - 1; x++) {
+        if (!mask[y][x]) continue;
         var d = dist[y][x];
-        if (mask[y][x] && Number.isFinite(d) && d > maxD) maxD = d;
+        if (Number.isFinite(d) && d > maxD) maxD = d;
       }
     }
     var target = ratio ? Math.floor(maxD * ratio) : maxD;
-    // Erst das Band um die Zielentfernung, dann schrittweise breiter.
-    for (var band = 1; band <= 8; band *= 2) {
-      var hits = [];
-      for (var y2 = 1; y2 < h - 1; y2++) {
-        for (var x2 = 1; x2 < w - 1; x2++) {
-          var d2 = dist[y2][x2];
-          if (mask[y2][x2] && Number.isFinite(d2) && Math.abs(d2 - target) <= band) hits.push({ x: x2, y: y2 });
-        }
-      }
-      // Math.random wie bisher: der Truhenplatz variiert je Lauf.
-      for (var i = hits.length - 1; i > 0; i--) {
-        var j = Math.floor(Math.random() * (i + 1));
-        var t = hits[i]; hits[i] = hits[j]; hits[j] = t;
-      }
-      for (var k = 0; k < hits.length && k < 40; k++) {
-        var probe = schon.concat([{ x: hits[k].x, y: hits[k].y, type: 'chest_small' }]);
-        if (!verlust(probe).length) return hits[k];
+    var hits = [];
+    for (var y2 = 1; y2 < h - 1; y2++) {
+      for (var x2 = 1; x2 < w - 1; x2++) {
+        if (!mask[y2][x2]) continue;
+        var d2 = dist[y2][x2];
+        if (Number.isFinite(d2) && d2 >= target - 1 && d2 <= target + 1) hits.push({ x: x2, y: y2 });
       }
     }
-    return null;
+    if (!hits.length) return null;
+    return hits[Math.floor(Math.random() * hits.length)];
   }
 
   function collectFloor(g, mask, spawn, entrances, loot) {
@@ -1015,9 +976,10 @@
   window.CaveGenerator = {
     generate: generate,
     mulberry32: mulberry32,
-    // Fuer Tests: Koerper-Erreichbarkeit (2x2-Bloecke) und die Engstellen-Reparatur.
+    // Fuer Tests und den BSP-Generator: Engstellen-Reparatur (2x2-Koerperbloecke)
+    // und der Ziel-Schutz fuer Props/Truhen.
     sichereKoerperDurchgaenge: sichereKoerperDurchgaenge,
-    koerperPruefer: koerperPruefer,
-    ohneEngstellen: ohneEngstellen
+    zielPruefer: zielPruefer,
+    stelleFrei: stelleFrei
   };
 })();

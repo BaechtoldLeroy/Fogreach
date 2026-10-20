@@ -9,6 +9,13 @@
 // Die Pruefung hier ist unabhaengig vom Generator: ein echter Koerper-Flood-
 // Fill in Pixeln (Waende 32er-Kacheln, Props mit Texturmass auf der
 // Kachelmitte), nicht das 2x2-Blockmodell, das der Generator selbst benutzt.
+//
+// Props: b485 hatte zusaetzlich jedes Prop entfernt/versetzt, das irgendeinen
+// Bodenfleck abschnitt — ~15 % weniger Props, "leere Hoehlen". Seitdem gilt
+// nur noch der Ziel-Schutz: ein Prop/eine Truhe darf den einzigen Weg zu
+// Eingang, Treppe oder Truhe nicht versperren (dann zieht es um, die Menge
+// bleibt). Bodenflecken hinter Props sind erlaubt, nur die Waende muessen
+// ueberall Koerperbreite lassen.
 
 const { test } = require('node:test');
 const assert = require('node:assert');
@@ -94,6 +101,12 @@ function koerperFlut(tpl) {
   }
   const erreicht = new Uint8Array(CW * CH);
   const mitte = new Uint8Array(W * H), nah = new Uint8Array(W * H);
+  // Truhen: Abstand zum Truhenrechteck (breite Truhen ragen in die Nachbarkacheln).
+  const truhen = (tpl.spawns.loot || []).map((l) => {
+    const m = MASSE[l.type] || [32, 32], cx = l.x * T + T / 2, cy = l.y * T + T / 2;
+    return { x0: cx - m[0] / 2, y0: cy - m[1] / 2, x1: cx + m[0] / 2, y1: cy + m[1] / 2 };
+  });
+  const truheNah = new Uint8Array(truhen.length);
   if (start >= 0) {
     const q = [start]; erreicht[start] = 1;
     for (let h = 0; h < q.length; h++) {
@@ -116,6 +129,9 @@ function koerperFlut(tpl) {
           if (tx >= 0 && ty >= 0 && tx < W && ty < H) nah[ty * W + tx] = 1;
         }
       }
+      truhen.forEach((r, ti) => {
+        if (r.x0 < x0 + BW + 8 && r.x1 > x0 - 8 && r.y0 < y0 + BH + 8 && r.y1 > y0 - 8) truheNah[ti] = 1;
+      });
     }
   }
   const objKachel = new Set(objekte.map((o) => o.y * W + o.x));
@@ -132,7 +148,7 @@ function koerperFlut(tpl) {
       }
     }
   }
-  return { W, H, punkt, mitte, nah };
+  return { W, H, punkt, mitte, nah, truheNah };
 }
 
 // Was der Punkt erreicht, der Koerper aber nicht: Ziele (Eingaenge, Truhen)
@@ -145,9 +161,9 @@ function befund(tpl) {
   (tpl.entrances || []).forEach((e) => {
     if (f.punkt[e.y * W + e.x] && !f.nah[e.y * W + e.x]) ziele.push(`Eingang ${e.dir} (${e.x},${e.y})`);
   });
-  (tpl.spawns.loot || []).forEach((l) => {
+  (tpl.spawns.loot || []).forEach((l, ti) => {
     const p = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => f.punkt[(l.y + b) * W + l.x + a]);
-    if (p && !f.nah[l.y * W + l.x]) ziele.push(`Truhe (${l.x},${l.y})`);
+    if (p && !f.truheNah[ti]) ziele.push(`Truhe (${l.x},${l.y})`);
   });
   const weg = new Set();
   for (let i = 0; i < f.punkt.length; i++) if (f.punkt[i] && !f.mitte[i]) weg.add(i);
@@ -168,16 +184,22 @@ function befund(tpl) {
 // Groessen wie roomManager sie wuerfelt (small/medium/large, Mobile-Deckel).
 const GROESSEN = [[56, 48], [63, 54], [74, 64], [85, 76], [100, 90], [116, 107], [60, 52], [70, 60]];
 
-test('Hoehlen: Eingaenge, Truhen und Boden sind fuer den Koerper erreichbar (Seed-Sweep)', () => {
+// Ziele (Eingaenge, Treppen, Truhen) mit allen Props; Bodenflecken nur fuer
+// die nackte Geometrie — hinter einem Prop darf Boden liegen, hinter einer
+// zu engen Wand nicht.
+function pruefeRaum(tpl) {
+  const leer = Object.assign({}, tpl, { objects: [], spawns: Object.assign({}, tpl.spawns, { loot: [] }) });
+  return befund(tpl).ziele.concat(befund(leer).flecken.map((f) => 'Wand: ' + f));
+}
+
+test('Hoehlen: Eingaenge und Truhen trotz Props, aller Boden fuer den Koerper erreichbar (Seed-Sweep)', () => {
   const fehler = [];
   for (let n = 0; n < 48; n++) {
     const seed = 7001 + n * 104729;
     const [w, h] = GROESSEN[n % GROESSEN.length];
     const tpl = hoehle({ width: w, height: h, seed, depth: 1 + (n % 30) });
-    const b = befund(tpl);
-    if (b.ziele.length || b.flecken.length) {
-      fehler.push(`seed ${seed} ${w}x${h} ${tpl.theme.id}: ${b.ziele.concat(b.flecken).join('; ')}`);
-    }
+    const p = pruefeRaum(tpl);
+    if (p.length) fehler.push(`seed ${seed} ${w}x${h} ${tpl.theme.id}: ${p.join('; ')}`);
   }
   assert.deepStrictEqual(fehler, [], 'punkt-, aber nicht koerper-erreichbar:\n' + fehler.join('\n'));
 });
@@ -186,17 +208,15 @@ test('Hoehlen: Eingaenge, Truhen und Boden sind fuer den Koerper erreichbar (See
 // 1 Raum mit Tuer-Stummel, der die Nachbarkammer nur mit 1 Kachel beruehrt
 // (seed 1236364, fast der ganze Raum hinter dem Spalt), mit Props 6 Raeume
 // mit abgeschnittener Truhe/Treppe und 91 mit Bodenflecken hinter Props.
-test('BSP-Kammern: Treppen, Truhen und Boden sind fuer den Koerper erreichbar (Seed-Sweep)', () => {
+test('BSP-Kammern: Treppen und Truhen trotz Props, aller Boden fuer den Koerper erreichbar (Seed-Sweep)', () => {
   const fehler = [];
   const seeds = [1236364];
   for (let n = 0; n < 23; n++) seeds.push(9001 + n * 7919);
   seeds.forEach((seed, n) => {
     const [w, h] = n === 0 ? [100, 90] : GROESSEN[n % GROESSEN.length];
     const tpl = hoehle({ width: w, height: h, seed }, PR);
-    const b = befund(tpl);
-    if (b.ziele.length || b.flecken.length) {
-      fehler.push(`seed ${seed} ${w}x${h} ${tpl.theme.id}: ${b.ziele.concat(b.flecken).join('; ')}`);
-    }
+    const p = pruefeRaum(tpl);
+    if (p.length) fehler.push(`seed ${seed} ${w}x${h} ${tpl.theme.id}: ${p.join('; ')}`);
   });
   assert.deepStrictEqual(fehler, [], 'punkt-, aber nicht koerper-erreichbar:\n' + fehler.join('\n'));
 });
@@ -270,41 +290,86 @@ test('Hoehlen: Mini-Tasche hinter 1-Kachel-Spalt wird Wand statt Scheingang', ()
   assert.strictEqual(t[2][4], '.', 'Kammer angetastet:\n' + t.join('\n'));
 });
 
-test('Hoehlen: Saeule im 2er-Gang fliegt raus, Saeule im offenen Raum bleibt', () => {
-  const g = gitter([
-    '################',
-    '#......#########',
-    '#......#########',
-    '#..............#',
-    '#..............#',
-    '#......####....#',
-    '#......####....#',
-    '################'
-  ]);
-  const verlust = CG.koerperPruefer(g, { x: 2, y: 2 });
+// Zwei Kammern, verbunden durch einen 2 Kacheln breiten Gang (Zeilen 3/4).
+const ZWEI_KAMMERN = [
+  '################',
+  '#......#########',
+  '#......#########',
+  '#..............#',
+  '#..............#',
+  '#......####....#',
+  '#......####....#',
+  '################'
+];
+
+test('Ziel-Schutz: Saeule, die den einzigen Weg zum Eingang versperrt, zieht um (Menge bleibt)', () => {
+  const g = gitter(ZWEI_KAMMERN);
+  const sperrt = CG.zielPruefer(g, { x: 2, y: 2 }, [{ x: 14, y: 6 }]);
   const imGang = { type: 'pillar_small', x: 9, y: 3 };
   const imRaum = { type: 'pillar_small', x: 3, y: 3 };
-  assert.ok(verlust([imGang]).length > 0, 'Saeule im Gang sollte den Koerper aussperren');
-  const rest = CG.ohneEngstellen([imGang, imRaum], verlust);
-  assert.deepStrictEqual(rest, [imRaum]);
+  assert.ok(sperrt([imGang], []), 'Saeule im Gang sollte den Eingang absperren');
+  assert.ok(!sperrt([imRaum], []), 'Saeule im offenen Raum sperrt nichts');
+  const rest = CG.stelleFrei([imGang, imRaum], (objs) => sperrt(objs, []), () => ({ x: 4, y: 5 }));
+  assert.deepStrictEqual(rest, [{ type: 'pillar_small', x: 4, y: 5 }, imRaum], 'Saeule nicht umgezogen');
 });
 
-test('BSP-Kammern: zwei versetzte Altaere uebereinander (24 px Luft) — einer faellt weg', () => {
-  const g = gitter([
-    '############',
-    '#..........#',
-    '#..........#',
-    '#..........#',
-    '#..........#',
-    '#..........#',
-    '#..........#',
-    '#..........#',
-    '#..........#',
-    '############'
-  ]);
-  const verlust = CG.koerperPruefer(g, { x: 9, y: 8 });
-  const oben = { type: 'altar', x: 5, y: 3 }, unten = { type: 'altar', x: 6, y: 5 };
-  // Altar 64x40: zwischen beiden bleiben 24 px, darin steht kein 56 px hoher Koerper.
-  assert.ok(verlust([oben, unten]).length > 0, 'Zwickel zwischen den Altaeren nicht erkannt');
-  assert.strictEqual(CG.ohneEngstellen([oben, unten], verlust).length, 1);
+test('Ziel-Schutz: Saeule, die nur Boden ohne Ziel abschneidet, bleibt stehen', () => {
+  // Gleicher Gang, aber hinter ihm liegt weder Eingang noch Truhe — vor b485
+  // stand die Saeule hier, b485 hatte sie entfernt ("leere Hoehlen").
+  const g = gitter(ZWEI_KAMMERN);
+  const sperrt = CG.zielPruefer(g, { x: 2, y: 2 }, [{ x: 1, y: 5 }]);
+  const imGang = { type: 'pillar_small', x: 9, y: 3 };
+  assert.ok(!sperrt([imGang], []));
+  const rest = CG.stelleFrei([imGang], (objs) => sperrt(objs, []), () => assert.fail('kein Umzug erwartet'));
+  assert.deepStrictEqual(rest, [imGang]);
+});
+
+test('Ziel-Schutz: Truhe hinter dem Gang zaehlt als Ziel, Statue auf der Truhe begraebt sie', () => {
+  const g = gitter(ZWEI_KAMMERN);
+  const sperrt = CG.zielPruefer(g, { x: 2, y: 2 }, []);
+  const truhe = { type: 'chest_small', x: 13, y: 5 };
+  assert.ok(sperrt([{ type: 'crate', x: 9, y: 4 }], [truhe]), 'Kiste im Gang sperrt die Truhe ab');
+  assert.ok(!sperrt([{ type: 'crate', x: 3, y: 4 }], [truhe]));
+  assert.ok(sperrt([{ type: 'statue_knight', x: 13, y: 5 }], [truhe]), 'Statue auf der Truhe');
+  assert.ok(sperrt([{ type: 'pillar_large', x: 13, y: 6 }], [truhe]), 'grosse Saeule ragt in die Truhe');
+});
+
+// Prop-Menge: Vor b485 (gleiche Seeds/Groessen wie unten, Math.random fest)
+// standen in 40 Hoehlen 3191 Objekte (Saeulen/Kisten/Faesser) und 80 Truhen,
+// in 40 BSP-Raeumen 2315 Objekte und 100 Truhen. b485 kam auf 2832 / 80 und
+// 1714 / 86. Die Hoehlen-Geometrie ist seit b485 minimal kleiner (zugemauerte
+// Zipfel), darum dort 3 % Spielraum.
+function propMenge(gen) {
+  let objekte = 0, truhen = 0;
+  for (let n = 0; n < 40; n++) {
+    const seed = 5003 + n * 7717;
+    const [w, h] = GROESSEN[n % GROESSEN.length];
+    const tpl = hoehle({ width: w, height: h, seed, depth: 1 + (n % 30) }, gen);
+    objekte += tpl.objects.length;
+    truhen += tpl.spawns.loot.length;
+  }
+  return { objekte, truhen };
+}
+
+test('Prop-Menge: Hoehlen haben wieder so viele Props und Truhen wie vor b485', () => {
+  const m = propMenge(CG);
+  assert.ok(m.objekte >= Math.floor(3191 * 0.97), `nur ${m.objekte} Objekte (vor b485: 3191, b485: 2832)`);
+  assert.strictEqual(m.truhen, 80);
+});
+
+test('Prop-Menge: BSP-Kammern haben wieder so viele Props und Truhen wie vor b485', () => {
+  const m = propMenge(PR);
+  assert.ok(m.objekte >= 2315, `nur ${m.objekte} Objekte (vor b485: 2315, b485: 1714)`);
+  assert.ok(m.truhen >= 100, `nur ${m.truhen} Truhen (vor b485: 100, b485: 86)`);
+});
+
+test('Prop-Menge: der Ziel-Schutz entfernt in BSP-Kammern nichts, er versetzt nur', () => {
+  // Ohne Ziel-Schutz generiert (Pruefer meldet nie eine Sperre) muss dieselbe
+  // Menge herauskommen.
+  const echt = propMenge(PR);
+  const alt = CG.zielPruefer;
+  CG.zielPruefer = () => () => false;
+  let ohne;
+  try { ohne = propMenge(PR); } finally { CG.zielPruefer = alt; }
+  assert.deepStrictEqual(echt, ohne);
 });

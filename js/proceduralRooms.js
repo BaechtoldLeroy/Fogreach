@@ -860,16 +860,29 @@
       }
     });
 
-    // 16) Feste Objekte und Truhen duerfen keinen Weg unter Koerperbreite
-    //     druecken (z. B. Kiste 1 Kachel vor der Wand). Erst die Truhen (eine,
-    //     die mit den vorigen einen Weg abschneidet, entfaellt), dann die
-    //     Objekte: wer am Rand des abgeschnittenen Bereichs steht, faellt weg.
+    // 16) Ziel-Schutz: Truhen und Objekte bleiben, wo sie gewuerfelt wurden —
+    //     ausser eines versperrt den einzigen Weg zu einer Treppe oder Truhe.
+    //     Dann rueckt es auf den naechsten freien Platz in der Naehe.
     if (KG) {
-      var verlust = KG.koerperPruefer(grid, playerSpawn);
-      loot = loot.reduce(function (ok, l) {
-        return verlust(ok.concat([l])).length ? ok : ok.concat([l]);
-      }, []);
-      objects = KG.ohneEngstellen(objects, function (objs) { return verlust(objs.concat(loot)); });
+      var sperrt = KG.zielPruefer(grid, playerSpawn, entrances);
+      var belegt = {};
+      loot.concat(objects).forEach(function (o) { belegt[o.x + '|' + o.y] = 1; });
+      var daneben = function (o, v) {
+        var n = 0;
+        for (var r = 1; r <= 4; r++) {
+          for (var dy = -r; dy <= r; dy++) {
+            for (var dx = -r; dx <= r; dx++) {
+              if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+              var x = o.x + dx, y = o.y + dy;
+              if (!grid[y] || grid[y][x] !== '.' || belegt[x + '|' + y] || isDoorwayOrAdjacent(x, y)) continue;
+              if (n++ === v) return { x: x, y: y };
+            }
+          }
+        }
+        return null;
+      };
+      loot = KG.stelleFrei(loot, function (ls) { return sperrt([], ls); }, daneben);
+      objects = KG.stelleFrei(objects, function (objs) { return sperrt(objs, loot); }, daneben);
     }
 
     return {
