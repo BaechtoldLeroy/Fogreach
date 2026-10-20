@@ -1525,6 +1525,12 @@
       });
       if (!boss) return;
       boss.__trailer = true;
+      // Seit b476 stellt spawnBoss den ganzen Koerper frei (mindestens 160 px
+      // weg, naechster freier Platz) und schob ihn so oft neben oder unter den
+      // Spieler. Fuer das Bild gilt der Wunsch: frei, aber UEBER dem Spieler.
+      if (typeof window.bossFreiStellen === 'function') {
+        try { window.bossFreiStellen(gs, boss, { x: platz.spieler.x, y: platz.spieler.y - 230 }, 0); } catch (e) {}
+      }
       // Ohne Taste: Plakette nach ~0,8 s, die Rede ab ~1,1 s; nach der ersten
       // Seite geht die Szene aus, der Hammer faellt ab 2,6 s.
       var plakette = function () {
