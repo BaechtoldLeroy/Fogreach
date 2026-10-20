@@ -481,6 +481,12 @@
     var frei = function (px, py) { return !scene.isPointAccessible || scene.isPointAccessible(px, py); };
     var r = HARREN_RAND;
     if (!frei(x, y) || !frei(x - r, y - r) || !frei(x + r, y - r) || !frei(x - r, y + r) || !frei(x + r, y + r)) return false;
+    // Nicht auf dem Sockel der Esse (ihr Koerper, FinaleHandwerk.esseAufstellen).
+    var k = scene._esseKoerper;
+    if (k && k.active && k.getBounds) {
+      var kb = k.getBounds();
+      if (x > kb.left - r && x < kb.right + r && y > kb.top - r && y < kb.bottom + r) return false;
+    }
     return _treppenFrei(scene, x, y, r);
   }
   /** Der erste gute Fleck aus den Kandidaten, sonst einer nahe der Esse. */
@@ -629,6 +635,7 @@
       try { window.soundManager.stopMusic(); } catch (e) {}
     }
     scene.__quelleNahmSie = true;
+    if (window.FinaleHandwerk && window.FinaleHandwerk.esseZustand) window.FinaleHandwerk.esseZustand(scene, 'flackern');
   }
 
   // --- Tiefe 30: nach dem Kampf ------------------------------------------------
@@ -819,6 +826,7 @@
   // verschwindet ohne Kampf und ohne zweite Beute.
   function _wiederAnDerEsse(scene, boss) {
     _nachKampfBeginnt(scene);
+    if (window.FinaleHandwerk && window.FinaleHandwerk.esseZustand) window.FinaleHandwerk.esseZustand(scene, 'flackern');
     var e = _esse(scene);
     if (boss && boss.active) { try { boss.destroy(); } catch (x) {} }
     var b = { esse: e, mh: _menschHoehe() };

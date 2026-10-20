@@ -44,6 +44,9 @@
   function ort(scene) {
     var g = scene && scene._quelleGlow;
     if (g && g.active) return { x: g.x, y: g.y };
+    // Die Glut ist erloschen, das Bild der zerbrochenen Esse steht noch.
+    var bild = scene && scene._esseBild;
+    if (bild && bild.active) return { x: bild.x, y: bild.y - ESSE_SOCKEL };
     if (scene && scene.__esseOrt) return scene.__esseOrt;
     var p = _spieler() || { x: 400, y: 300 };
     var b = scene && scene.physics && scene.physics.world && scene.physics.world.bounds;
@@ -309,6 +312,8 @@
     }
     var kam = scene.cameras && scene.cameras.main;
     if (kam) { try { kam.shake(700, 0.012); kam.flash(400, 255, 230, 200); } catch (x) {} }
+    // Im Blitz reisst sie: das Bild zeigt ab jetzt die kalte, gespaltene Esse.
+    esseZustand(scene, 'zerbrochen');
 
     // Risse durch die Bindung.
     var risse = scene.add.graphics().setDepth(TIEFE + 2).setPosition(e.x, e.y).setName('esseRisse');
@@ -380,9 +385,91 @@
     return teile;
   }
 
+  // ---------------------------------------------------------------------
+  // Die Esse als Bild (PixelLab, assets/finale/esse_*.png, Rohbilder unter
+  // tools/rohbilder/esse/). Drei Zustaende: intakt (glimmt), flackern
+  // (Finale und Kampf, der Daemon zieht), zerbrochen (nach dem letzten
+  // Schlag). Fehlt das Bild, bleibt es beim gezeichneten Leuchten.
+  // ---------------------------------------------------------------------
+  var ESSE_BILDER = { intakt: 'esse_intakt', flackern: 'esse_flackern', zerbrochen: 'esse_zerbrochen' };
+  // Wo das Bild auf dem Ort der Esse steht: Bildpunkt (68, 112) ist die Mitte
+  // der Sockelunterkante, sie liegt ESSE_SOCKEL px unter dem Ort. So bleiben
+  // Ort, [E]-Reichweite und Bindung, wo sie waren.
+  var ESSE_ANKER = { x: 68 / 128, y: 112 / 128 };
+  var ESSE_SOCKEL = 8;
+  // Der Koerper ist nur der Sockel (Bildpunkte 30..106 x 84..112), nicht der
+  // Schornstein: hinter dem Schacht kann man vorbeigehen.
+  var ESSE_KOERPER = { w: 76, h: 28 };
+  // Das Flackern: festes Muster statt Zufall (1 = auflodern, 0 = Glimmen).
+  var FLACKER_MUSTER = [1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1];
+  var FLACKER_MS = 110;
+
+  function bilderVorladen(scene) {
+    if (!scene || !scene.load || !scene.textures) return;
+    Object.keys(ESSE_BILDER).forEach(function (z) {
+      var key = ESSE_BILDER[z];
+      if (!scene.textures.exists(key)) scene.load.image(key, 'assets/finale/' + key + '.png');
+    });
+  }
+
+  /** Stellt die Esse als Bild samt Sockelkoerper auf; null, wenn das Bild fehlt. */
+  function esseAufstellen(scene, x, y, zustand) {
+    if (!scene || !scene.add || !scene.textures || !scene.textures.exists(ESSE_BILDER.intakt)) return null;
+    var T = window.WELT_TIEFEN || {};
+    var bild = scene.add.image(x, y + ESSE_SOCKEL, ESSE_BILDER.intakt).setOrigin(ESSE_ANKER.x, ESSE_ANKER.y)
+      .setDepth((T.BODENDEKO_MAX || 30) + 0.8).setName('esseBild');
+    bild.setData('esseZustand', 'intakt');
+    bild.once('destroy', function () { if (bild._flackern) { bild._flackern.remove(false); bild._flackern = null; } });
+    scene._esseBild = bild;
+    // Steht der Spieler hinter dem Schacht, kommt die Esse vor ihn.
+    if (typeof window.sortiereZumSpieler === 'function') window.sortiereZumSpieler(scene, bild);
+    if (typeof obstacles !== 'undefined' && obstacles && typeof obstacles.create === 'function') {
+      var k = obstacles.create(x, y + ESSE_SOCKEL - ESSE_KOERPER.h / 2, '__WHITE');
+      k.setVisible(false).setDisplaySize(ESSE_KOERPER.w, ESSE_KOERPER.h).setName('esseKoerper');
+      if (typeof k.refreshBody === 'function') k.refreshBody();
+      obstacles.__steerRects = null;
+      scene._esseKoerper = k;
+    }
+    if (zustand && zustand !== 'intakt') esseZustand(scene, zustand);
+    return bild;
+  }
+
+  /** Wechselt das Bild der Esse; ohne Bild (Ersatzdarstellung) geschieht nichts. */
+  function esseZustand(scene, zustand) {
+    var bild = scene && scene._esseBild;
+    if (!bild || !bild.scene || !ESSE_BILDER[zustand]) return false;
+    if (bild.getData('esseZustand') === zustand) return true;
+    if (bild._flackern) { bild._flackern.remove(false); bild._flackern = null; }
+    bild.setData('esseZustand', zustand);
+    var key = ESSE_BILDER[zustand];
+    if (!scene.textures.exists(key)) key = ESSE_BILDER.intakt;
+    bild.setTexture(key);
+    var glut = scene._quelleGlow;
+    if (zustand === 'flackern') {
+      if (scene.time && scene.textures.exists(ESSE_BILDER.flackern)) {
+        var i = 0;
+        bild._flackern = scene.time.addEvent({ delay: FLACKER_MS, loop: true, callback: function () {
+          if (!bild.scene) return;
+          i = (i + 1) % FLACKER_MUSTER.length;
+          bild.setTexture(FLACKER_MUSTER[i] ? ESSE_BILDER.flackern : ESSE_BILDER.intakt);
+        } });
+      }
+      // Der Schein unter der Esse zuckt mit: schnell, nur in der Helligkeit
+      // (die Groesse gehoert dem Aufflammen, Finale._quelleNimmtSie).
+      if (glut && glut.active && scene.tweens) {
+        scene.tweens.killTweensOf(glut);
+        glut.setScale(1);
+        scene.tweens.add({ targets: glut, alpha: { from: 0.55, to: 1 }, duration: 170, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      }
+    }
+    return true;
+  }
+
   window.FinaleHandwerk = {
     REICHWEITE: REICHWEITE, DAUER_MS: DAUER_MS, ERKENNEN_BEI: ERKENNEN_BEI, ZERBRECHEN_MS: ZERBRECHEN_MS,
     ort: ort, halten: halten, zerbrechen: zerbrechen, haeltGedrueckt: haeltGedrueckt,
-    hammerTextur: hammerTextur, tonSchnitt: tonSchnitt
+    hammerTextur: hammerTextur, tonSchnitt: tonSchnitt,
+    ESSE_BILDER: ESSE_BILDER, ESSE_KOERPER: ESSE_KOERPER, ESSE_SOCKEL: ESSE_SOCKEL, FLACKER_MUSTER: FLACKER_MUSTER, FLACKER_MS: FLACKER_MS,
+    bilderVorladen: bilderVorladen, esseAufstellen: esseAufstellen, esseZustand: esseZustand
   };
 })();

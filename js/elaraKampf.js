@@ -158,6 +158,8 @@
       werDuWarst: werDuWarstGebunden(flags)
     };
     k.kapazitaet = kapazitaet(k.zurueck);
+    // Solange sie kaempft, lodert die Esse hinter ihr.
+    if (window.FinaleHandwerk && window.FinaleHandwerk.esseZustand) window.FinaleHandwerk.esseZustand(scene, 'flackern');
 
     // Besessen: violett, der Nebel quillt um sie.
     if (typeof boss.setTint === 'function') boss.setTint(0xc4a8ff);

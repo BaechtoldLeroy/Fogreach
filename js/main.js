@@ -976,6 +976,10 @@ function preload() {
   if (!this.textures.exists('spaeherin')) {
     this.load.image('spaeherin', 'assets/sprites/spaeherin.png');
   }
+  // Die Esse im Finale, in drei Zustaenden (finaleHandwerk.js).
+  if (window.FinaleHandwerk && typeof window.FinaleHandwerk.bilderVorladen === 'function') {
+    try { window.FinaleHandwerk.bilderVorladen(this); } catch (e) { /* nicht fatal */ }
+  }
   // #192: Elaras eingerichtete Kammer — die Requisiten.
   if (typeof window.versteckBilderVorladen === 'function') {
     try { window.versteckBilderVorladen(this); } catch (e) { /* nicht fatal */ }

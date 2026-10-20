@@ -232,12 +232,29 @@ if (typeof window !== 'undefined') window.gebietsName = gebietsName;
 // der Finalarena. Erlischt, wenn Elara besiegt ist (Finale.nachKampf).
 function _quelleZeichnen(scene, x, y) {
   if (!scene || !scene.add) return null;
-  var g = scene.add.graphics().setDepth(31);   // ueber der Bodendeko, unter den Props
-  g.fillStyle(0x3a2a55, 0.55); g.fillCircle(0, 0, 118);
-  g.fillStyle(0x6a4aa0, 0.35); g.fillCircle(0, 0, 82);
-  g.fillStyle(0xaa88ee, 0.45); g.fillCircle(0, 0, 48);
-  g.fillStyle(0xe8dcff, 0.7);  g.fillCircle(0, 0, 20);
+  // Die Esse als Bild (FinaleHandwerk.esseAufstellen); nach Urteil oder Ende
+  // steht sie zerbrochen. Ohne Bild bleibt der Lichtschacht von frueher.
+  var FH = window.FinaleHandwerk;
+  var qs = window.questSystem;
+  var vorbei = !!(qs && typeof qs.hasFlag === 'function' && (qs.hasFlag('elara_spared') || qs.hasFlag('elara_killed')));
+  var bild = (FH && typeof FH.esseAufstellen === 'function') ? FH.esseAufstellen(scene, x, y, vorbei ? 'zerbrochen' : 'intakt') : null;
+  var g = scene.add.graphics();
+  if (bild) {
+    // Roter Schein auf dem Boden, unter dem Bild; ueber ihm liegen Glut und Bindung (31, 32).
+    g.setDepth(30.5);
+    g.fillStyle(0x5a1a10, 0.35); g.fillEllipse(0, 0, 250, 150);
+    g.fillStyle(0xa0301a, 0.3);  g.fillEllipse(0, 0, 170, 100);
+    g.fillStyle(0xff6a2a, 0.25); g.fillEllipse(0, 0, 90, 54);
+  } else {
+    g.setDepth(31);   // ueber der Bodendeko, unter den Props
+    g.fillStyle(0x3a2a55, 0.55); g.fillCircle(0, 0, 118);
+    g.fillStyle(0x6a4aa0, 0.35); g.fillCircle(0, 0, 82);
+    g.fillStyle(0xaa88ee, 0.45); g.fillCircle(0, 0, 48);
+    g.fillStyle(0xe8dcff, 0.7);  g.fillCircle(0, 0, 20);
+  }
   g.setPosition(x, y);
+  // Zerbrochen glimmt nichts mehr.
+  if (bild && vorbei) { g.destroy(); return null; }
   if (scene.tweens) {
     scene.tweens.add({ targets: g, alpha: { from: 0.65, to: 1 }, scale: { from: 0.96, to: 1.04 },
       duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
@@ -3962,7 +3979,7 @@ function _versteckZeichnen(scene, w, h) {
 }
 
 /**
- * Raeumt die Story-Deko ab — Elaras Kammer, das Leuchten der Quelle.
+ * Raeumt die Story-Deko ab — Elaras Kammer, das Leuchten der Quelle, die Esse.
  *
  * Beides sind lose scene.add.graphics(); sie haengen an keiner Gruppe, die
  * enterRoom leert, und niemand hat sie je zerstoert. Elaras Einrichtung stand
@@ -3970,7 +3987,7 @@ function _versteckZeichnen(scene, w, h) {
  */
 function _storyDekoAbraeumen(scene) {
   if (!scene) return;
-  ['_versteckDeko', '_quelleGlow'].forEach(function (feld) {
+  ['_versteckDeko', '_quelleGlow', '_esseBild', '_esseKoerper'].forEach(function (feld) {
     var d = scene[feld];
     if (!d) return;
     (Array.isArray(d) ? d : [d]).forEach(function (o) {
