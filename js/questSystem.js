@@ -1992,7 +1992,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       QUEST_FIELDS.forEach(function (field) {
         // Optionales Feld: ohne Text kein Getter, sonst warnte jeder Lesezugriff
         // (getActiveQuests kopiert alle Felder) ueber einen fehlenden Key.
-        if (field === 'dialogueProgressNext' && typeof q[field] !== 'string') return;
+        if ((field === 'dialogueProgressNext' || field === 'abgabeHinweis') && typeof q[field] !== 'string') return;
         var key = 'quest.' + id + '.' + field;
         var fallback = q[field];
         try {
