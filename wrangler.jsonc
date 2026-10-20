@@ -6,8 +6,6 @@
 // worker/ ist der Code fuer /api/feedback (Tester-Rueckmeldungen als
 // GitHub-Issues). Er wird von wrangler gebuendelt, nicht als Datei
 // ausgeliefert. Einrichtung (Secret, Repo, KV): docs/feedback.md.
-// Die KV-Bindung FEEDBACK_BILDER steht bewusst NICHT hier, solange ihre ID
-// fehlt (sonst scheitert jeder Deploy); Anleitung in docs/feedback.md.
 {
   "name": "fogreach",
   "compatibility_date": "2026-10-01",
@@ -18,5 +16,9 @@
     "run_worker_first": ["/api/*"]
   },
   // Variablen aus dem Dashboard (GITHUB_REPO) bei jedem Deploy behalten.
-  "keep_vars": true
+  "keep_vars": true,
+  // KV fuer die Screenshots der Rueckmeldungen.
+  "kv_namespaces": [
+    { "binding": "FEEDBACK_BILDER", "id": "039d370ea76d40e6afe2835da5fb6837" }
+  ]
 }
