@@ -22,9 +22,15 @@ before(async () => {
   H.run(`(function () {
     window._playerInvincible = true;
     var sc = ${GSC};
+    // Die Seiten des Finales sind Sprechblasen (b498): bis zur letzten tippen, dann waehlen.
     window.__knopf = function () {
-      var k = sc.children.list.filter(function (o) { return o.type === 'Rectangle' && o.depth === 2502 && o.input && o.input.enabled && o.active; })[0];
-      if (!k) return false; k.emit('pointerdown'); return true;
+      var d = sc.__finaleBlase;
+      if (!d) return false;
+      for (var k = 0; k < 60 && d.schritt() < d.schritte.length - 1; k++) d.fang.emit('pointerdown');
+      if (d.knoepfe.length) { d.knoepfe[0].emit('pointerdown'); return true; }
+      d.fang.emit('pointerdown');
+      if (sc.__finaleBlase === d) d.fang.emit('pointerdown');
+      return true;
     };
   })()`);
 });

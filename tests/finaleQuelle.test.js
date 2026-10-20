@@ -1,7 +1,7 @@
 // tests/finaleQuelle.test.js — das Finale an der Quelle und der Konvoi (#158).
 //
 // Story-Kern v6.1, Das Finale. Geprueft am laufenden Spiel, mit den echten
-// Dialogen (EventSystem.showEventChoiceDialog) und echten Knoepfen:
+// Seiten (seit b498 Sprechblasen, FinaleBlasen.zeigen) und echten Knoepfen:
 //   * Vor dem Kampf: der erhobene Hammer als Handwerk (Stufe 3: E halten an
 //     der Esse, mitten im Heben die Erkenntnis, loslassen), Elaras Satz,
 //     Harren ruft "Lene", sie stoesst ihn weg (harren_dead) BEVOR sie den
@@ -25,23 +25,31 @@ let L = null;
 before(async () => {
   H = await launchDungeon({ depth: 30 });
   L = H.lab;
+  // Seit b498 laufen die Seiten als Sprechblasen (FinaleBlasen.zeigen). Eine
+  // Seite kann mehrere Blasen haben: __klick tippt bis zur letzten durch (echte
+  // Taps auf die Flaeche) und dann auf Knopf n, bei einer Wahl ohne Knopf noch
+  // einmal auf die Flaeche.
   H.run(`(function () {
     var sc = window.game.scene.getScene('GameScene');
     window.__dialogLog = [];
-    var echt = window.EventSystem.showEventChoiceDialog;
-    window.EventSystem.showEventChoiceDialog = function (s, titel, wahlen) {
+    var echt = window.FinaleBlasen.zeigen;
+    window.FinaleBlasen.zeigen = function (s, titel, wahlen) {
       window.__dialogLog.push({ text: String(titel || ''), wahlen: (wahlen || []).map(function (w) { return w.label; }) });
       return echt.apply(this, arguments);
     };
-    window.__knoepfe = function () {
-      return sc.children.list.filter(function (o) {
-        return o.type === 'Rectangle' && o.depth === 2502 && o.input && o.input.enabled && o.active;
-      });
-    };
     window.__klick = function (n) {
-      var k = window.__knoepfe()[n || 0];
-      if (!k) return false;
-      k.emit('pointerdown');
+      var d = sc.__finaleBlase;
+      if (!d) return false;
+      for (var k = 0; k < 60 && d.schritt() < d.schritte.length - 1; k++) d.fang.emit('pointerdown');
+      if (d.knoepfe.length) {
+        var b = d.knoepfe[n || 0];
+        if (!b) return false;
+        b.emit('pointerdown');
+        return true;
+      }
+      if (n) return false;
+      d.fang.emit('pointerdown');
+      if (sc.__finaleBlase === d) d.fang.emit('pointerdown');
       return true;
     };
   })()`);

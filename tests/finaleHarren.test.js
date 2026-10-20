@@ -66,8 +66,9 @@ describe('Der ganze Weg durch die Szene (?finale=harren)', () => {
   after(async () => { if (H) await H.shutdown(); });
 
   test('Er kommt herein, wird gestossen und liegt frei, nicht an der Treppe', () => {
-    const klick = () => H.run(`(function () { var k = ${GSC}.children.list.filter(function (o) { return o.type === 'Rectangle' && o.depth === 2502 && o.input && o.input.enabled && o.active; })[0]; if (!k) return false; k.emit('pointerdown'); return true; })()`);
-    const text = () => H.run(`(function () { var t = ${GSC}.children.list.filter(function (o) { return o.type === 'Text' && o.depth === 2501; })[0]; return t ? t.text : ''; })()`);
+    // Die Seiten des Finales sind Sprechblasen (b498).
+    const klick = () => H.lab.blaseTippen(0);
+    const text = () => H.run(`(function () { var d = ${GSC}.__finaleBlase; return d ? d.text : ''; })()`);
     // Seiten durchklicken, bis Elara den Hammer nimmt (dann liegt Harren schon).
     let n = 0;
     for (let i = 0; i < 3000 && n < 12; i++) {

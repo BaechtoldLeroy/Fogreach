@@ -225,6 +225,30 @@ function attachLab(h) {
       })()`);
     },
 
+    /**
+     * Eine Seite des Finales (Sprechblasen, FinaleBlasen) weitertippen: bis zur
+     * letzten Blase echte Taps auf die Flaeche, dann Knopf n; gibt es keinen
+     * Knopf (nur "Weiter"), noch einmal auf die Flaeche. false: keine Seite offen.
+     */
+    blaseTippen(n) {
+      return h.run(`(function () {
+        var sc = window.game.scene.getScene('${SCENE}');
+        var d = sc && sc.__finaleBlase;
+        if (!d) return false;
+        for (var k = 0; k < 60 && d.schritt() < d.schritte.length - 1; k++) d.fang.emit('pointerdown');
+        if (d.knoepfe.length) {
+          var b = d.knoepfe[${n | 0}];
+          if (!b) return false;
+          b.emit('pointerdown');
+          return true;
+        }
+        if (${n | 0}) return false;
+        d.fang.emit('pointerdown');
+        if (sc.__finaleBlase === d) d.fang.emit('pointerdown');
+        return true;
+      })()`);
+    },
+
     /** Unverwundbarkeit/Ausweichen abschalten, damit Schaden messbar ankommt. */
     makePlayerVulnerable() {
       h.run(`(function () {

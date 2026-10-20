@@ -27,7 +27,8 @@
 //                              (HubSceneV2, questFinale).
 //
 // Die Dialoge halten die Spieluhr an, der Kampf wartet also, solange gelesen
-// wird. Vor- und Nachkampf laufen ueber EventSystem.showEventChoiceDialog; der
+// wird. Vor- und Nachkampf laufen seit b498 als Sprechblasen ueber den Figuren
+// und Untertitel unten (FinaleBlasen, js/finaleBlasen.js); der
 // Konvoi hat seit b447 einen eigenen Messing-Dialog (er folgt direkt auf die
 // Abhoer-Szene und soll aussehen wie sie).
 (function () {
@@ -50,14 +51,35 @@
     if (qs && typeof qs.setFlag === 'function') qs.setFlag(name, true);
   }
   function _dialogDa() {
-    return !!(window.EventSystem && typeof window.EventSystem.showEventChoiceDialog === 'function');
+    return !!((window.FinaleBlasen && typeof window.FinaleBlasen.zeigen === 'function')
+      || (window.EventSystem && typeof window.EventSystem.showEventChoiceDialog === 'function'));
+  }
+  // Wer spricht, steht wo: die Figuren der Buehne (b), Mara, der Spieler.
+  function _figuren(scene, b) {
+    return function (sprecher) {
+      var n = String(sprecher || '').toUpperCase();
+      var nach = function (name) { return scene.children && scene.children.getByName(name); };
+      if (n === 'ELARA') return (b && b.elara && b.elara.scene) ? b.elara : (nach('finaleElara') || nach('finaleElaraFall'));
+      if (n === 'HARREN') return (b && b.harren && b.harren.scene) ? b.harren : nach('finaleHarren');
+      if (n === 'MARA') return nach('finaleMara') || (scene.__maraFigur && scene.__maraFigur.scene ? scene.__maraFigur : null);
+      if (n === 'DU' || n === 'YOU' || n === 'ARCHIVSCHMIED' || n === 'ARCHIVESMITH') return _spieler();
+      return null;
+    };
+  }
+  // Seit b498 Sprechblasen ueber den Figuren statt der Messing-Platte
+  // (FinaleBlasen); der Ereignis-Dialog bleibt nur der Rueckfall.
+  function _dialog(scene, text, knoepfe, b) {
+    if (window.FinaleBlasen && typeof window.FinaleBlasen.zeigen === 'function') {
+      return window.FinaleBlasen.zeigen(scene, text, knoepfe, { figur: _figuren(scene, b) });
+    }
+    return window.EventSystem.showEventChoiceDialog(scene, text, knoepfe);
   }
 
   /**
    * Spielt Seiten nacheinander. Jede Seite: { text, weiter?, auswahl? }.
    * `auswahl` ist eine Liste { label, callback } — die letzte Seite entscheidet.
    */
-  function _seiten(scene, seiten, amEnde) {
+  function _seiten(scene, seiten, amEnde, b) {
     var i = 0;
     function zeige() {
       var s = seiten[i];
@@ -70,7 +92,7 @@
         label: s.weiter || _t('Weiter', 'Continue'),
         callback: function () { if (typeof s.danach === 'function') s.danach(); i++; zeige(); }
       }];
-      window.EventSystem.showEventChoiceDialog(scene, s.text, knoepfe);
+      _dialog(scene, s.text, knoepfe, b);
     }
     zeige();
   }
@@ -355,9 +377,12 @@
   function _esse(scene) {
     return (window.FinaleHandwerk && window.FinaleHandwerk.ort(scene)) || { x: 400, y: 300 };
   }
+  // Hinweise an der Esse: eine schmale Zeile unten statt des Messing-Toasts.
   function _toast(scene, de, en) {
     try {
-      if (window.EventSystem && typeof window.EventSystem.showEventToast === 'function') {
+      if (window.FinaleBlasen && typeof window.FinaleBlasen.hinweis === 'function') {
+        window.FinaleBlasen.hinweis(scene, _t(de, en));
+      } else if (window.EventSystem && typeof window.EventSystem.showEventToast === 'function') {
         window.EventSystem.showEventToast(scene, _t(de, en), 'finale');
       }
     } catch (e) {}
@@ -420,8 +445,12 @@
     var texte = vorKampfSeiten();
     b.hammerHalt = scene.__finaleHammer = FH.halten(scene, {
       richtung: 'erneuern',
-      // Unter der Esse: oben stehen die Meldungen und die Leiste.
-      beiAnsetzen: function (h) { _zeile(scene, h.x, h.y + 175, texte[1], '#e8dcc0'); },
+      // Erzaehlung: als Untertitel (FinaleBlasen), sonst unter der Esse
+      // (oben stehen die Meldungen und die Leiste).
+      beiAnsetzen: function (h) {
+        if (window.FinaleBlasen) window.FinaleBlasen.hinweis(scene, texte[1], 5200);
+        else _zeile(scene, h.x, h.y + 175, texte[1], '#e8dcc0');
+      },
       beiErkenntnis: function () {
         // Elara begreift es zuerst: sie dreht sich zu Dir.
         if (b.elara && b.elara.scene) {
@@ -461,7 +490,7 @@
     _seiten(scene, seiten, function () {
       _kampfBeginnt(scene, b, boss);
       if (typeof weiter === 'function') weiter();
-    });
+    }, b);
   }
 
   var HARREN_WEG_MS = 1500, STOSS_MS = 1000, HAMMER_MS = 800;
@@ -527,7 +556,11 @@
     if (b.harren) {
       b.harren.setTint(0xa8a8b0).setAlpha(0.92).setFlipX(weg.start.x > weg.ziel.x).setName('finaleHarren');
       scene.tweens.add({ targets: b.harren, x: weg.ziel.x, y: weg.ziel.y, duration: HARREN_WEG_MS, ease: 'Sine.easeInOut' });
-      _zeile(scene, weg.ziel.x, weg.ziel.y - b.mh * 0.8, 'Lene.', '#d8d8e0');
+      // Sein Ruf als kleine Blase ueber ihm, waehrend er geht.
+      var harren = b.harren;
+      if (!(window.FinaleBlasen && window.FinaleBlasen.kurz(scene, 'HARREN', 'Lene.', function () { return harren; }, 2600))) {
+        _zeile(scene, weg.ziel.x, weg.ziel.y - b.mh * 0.8, 'Lene.', '#d8d8e0');
+      }
     }
     // Sie dreht sich zu ihm.
     if (b.elara) scene.time.delayedCall(HARREN_WEG_MS * 0.6, function () { if (b.elara && b.elara.scene) b.elara.setFlipX(weg.ziel.x < b.elara.x); });
@@ -617,7 +650,7 @@
     var texte = vorKampfSeiten();
     _seiten(scene, [{ text: texte[0] }], function () {
       _hammerHeben(scene, b, function () { _nachDerErkenntnis(scene, b, boss, weiter); });
-    });
+    }, b);
     return true;
   }
 
@@ -670,11 +703,7 @@
         && typeof qs.updateQuestProgress === 'function') {
       try { qs.updateQuestProgress('boss_kill', 'schattenrat', 1); } catch (e) {}
     }
-    try {
-      if (window.EventSystem && typeof window.EventSystem.showEventToast === 'function') {
-        window.EventSystem.showEventToast(scene, _t('Kehre zurück. Thom wartet an der Presse.', 'Go back up. Thom is waiting at the press.'), 'finale');
-      }
-    } catch (e) {}
+    _toast(scene, 'Kehre zurück. Thom wartet an der Presse.', 'Go back up. Thom is waiting at the press.');
   }
 
   function _klingeAngelegt() {
@@ -767,10 +796,10 @@
   function _nachDemBruch(scene, b) {
     var texte = nachKampfSeiten();
     var nachWahl = function (text) {
-      window.EventSystem.showEventChoiceDialog(scene, text, [{
+      _dialog(scene, text, [{
         label: _t('Weiter', 'Continue'),
         callback: function () { _quelleAbschliessen(scene); }
-      }]);
+      }], b);
     };
     var maraDa = !_flag('convoy_blown');
     _seiten(scene, [{ text: texte[1] }, { text: texte[2] }, { text: texte[3] }].concat([
@@ -801,7 +830,7 @@
             }
           }
         ] }
-    ]));
+    ]), null, b);
   }
 
   var MARA_WEG_MS = 1200;
@@ -838,7 +867,7 @@
     scene.events.once('shutdown', function () { _weg(b.elara); });
     _seiten(scene, [{ text: _t('(Elara liegt noch dort, wo sie fiel, und die Esse brennt weiter. Die Bindung wartet auf Deinen Hammer.)',
       '(Elara still lies where she fell, and the Furnace keeps burning. The binding is waiting for your hammer.)') }],
-    function () { _letzterSchlag(scene, b); });
+    function () { _letzterSchlag(scene, b); }, b);
   }
 
   // Gibt true zurueck, wenn das Finale nach dem Kampf laeuft.
@@ -854,7 +883,7 @@
     })();
     var texte = nachKampfSeiten();
     _klingeTrifft(scene, ort, boss, function (b) {
-      _seiten(scene, [{ text: texte[0] }], function () { _letzterSchlag(scene, b); });
+      _seiten(scene, [{ text: texte[0] }], function () { _letzterSchlag(scene, b); }, b);
     });
     return true;
   }

@@ -70,9 +70,12 @@
     var qs = _qs();
     return (qs && typeof qs.getFlags === 'function') ? (qs.getFlags() || {}) : {};
   }
+  // An der Esse eine schmale Hinweiszeile unten statt des Messing-Toasts (b498).
   function _toast(scene, de, en) {
     try {
-      if (window.EventSystem && typeof window.EventSystem.showEventToast === 'function') {
+      if (window.FinaleBlasen && typeof window.FinaleBlasen.hinweis === 'function') {
+        window.FinaleBlasen.hinweis(scene, _t(de, en));
+      } else if (window.EventSystem && typeof window.EventSystem.showEventToast === 'function') {
         window.EventSystem.showEventToast(scene, _t(de, en), 'elara_besessen');
       }
     } catch (e) {}
