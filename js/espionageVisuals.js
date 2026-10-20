@@ -44,18 +44,66 @@
   // --- Die anderen Figuren (Schreiber, Diener, Traeger, Spitzel, Ungeziefer) ---
   // Vorhandene Bilder: die Menschen aus dem Hub (einfache Einzelbilder, nach
   // rechts gewandt), Spitzel/Ratte/Brut aus den Gegnerbildern (links/rechts).
+  // `eigen`: die eigenen PixelLab-Figuren (tools/spionageFigurenBauen.js) mit
+  // Gehbildern; h ist ihre Bildhoehe, abgestimmt auf die 54 des Spielers.
+  // Fehlt das Bild, bleibt das alte Hub-Bild (key/url/h/tint) — die Toenung
+  // greift ohnehin nur unter WebGL, darum tragen die neuen Figuren keine.
   var FIGUR = {
-    schreiber: { key: 'vorleser_alter', url: 'assets/sprites/vorleser_alter.png', h: 66 },
-    diener: { key: 'klerus', url: 'assets/sprites/klerus.png', h: 70 },
-    traeger: { key: 'buerger', url: 'assets/sprites/buerger.png?v=2', h: 68 },
-    // Ratsbote: der Junge aus dem Hub in Ratsrot. Geleerte: fahl wie die
-    // Traeger der Nachteskorte (dasselbe Buergerbild, grau getoent).
-    ratsbote: { key: 'vorleser_junge', url: 'assets/sprites/vorleser_junge.png', h: 60, tint: 0xe0a8a0 },
-    geleerter: { key: 'buerger', url: 'assets/sprites/buerger.png?v=2', h: 68, tint: 0x8d949c },
+    schreiber: { key: 'vorleser_alter', url: 'assets/sprites/vorleser_alter.png', h: 66, eigen: { name: 'schreiber', h: 54, gehen: 0 } },
+    diener: { key: 'klerus', url: 'assets/sprites/klerus.png', h: 58 },
+    // Der Traeger traegt seine Kiste selbst auf der Schulter (kein Beiwerk).
+    traeger: { key: 'buerger', url: 'assets/sprites/buerger.png?v=2', h: 68, eigen: { name: 'traeger', h: 56, gehen: 6, kiste: true } },
+    // Ratsbote in Ratsrot mit Depeschentasche; Geleerter: grau, leer, apathisch.
+    ratsbote: { key: 'vorleser_junge', url: 'assets/sprites/vorleser_junge.png', h: 60, tint: 0xe0a8a0, eigen: { name: 'ratsbote', h: 54, gehen: 6 } },
+    geleerter: { key: 'buerger', url: 'assets/sprites/buerger.png?v=2', h: 68, tint: 0x8d949c, eigen: { name: 'geleerter', h: 52, gehen: 8 } },
     spitzel: { dir: 'alarm', h: 66 },
     ratte: { dir: 'rat', h: 28 },
     brut: { dir: 'imp', h: 46 }
   };
+  // Die eigenen Figurbilder: right0 steht, walk_right0..n-1 geht (nach rechts,
+  // links = gespiegelt). Auch die Nachteskorte holt ihre Figuren hierueber.
+  var FigurBilder = {
+    ORDNER: 'assets/sprites/spionage/figuren/',
+    key: function (name, i) { return 'spion_fig_' + name + (i === undefined || i < 0 ? '_right0' : '_walk_right' + i); },
+    // Laedt, was fehlt; true, wenn etwas in die Ladeliste kam.
+    laden: function (scene, name, gehen) {
+      if (!scene || !scene.load || !scene.textures) return false;
+      var neu = false;
+      for (var i = -1; i < (gehen || 0); i++) {
+        var k = FigurBilder.key(name, i);
+        if (scene.textures.exists(k)) continue;
+        scene.load.image(k, FigurBilder.ORDNER + name + '/' + (i < 0 ? 'right0' : 'walk_right' + i) + '.png');
+        neu = true;
+      }
+      return neu;
+    },
+    // Geht die Figur? Lage gegen die zuletzt gesehene; die Spionage rechnet nicht
+    // in jedem Bild, darum gilt eine Bewegung noch 200 ms (sonst flackert der Gang).
+    geht: function (scene, merk, x, y) {
+      var t = (scene.time && scene.time.now) || 0;
+      if (merk._gx !== undefined && Math.abs(x - merk._gx) + Math.abs(y - merk._gy) > 0.05) merk._gt = t;
+      merk._gx = x; merk._gy = y;
+      return merk._gt !== undefined && t - merk._gt < 200;
+    },
+    da: function (scene, name) { return !!(scene && scene.textures && scene.textures.exists(FigurBilder.key(name))); },
+    // Stehend right0, gehend ein Bild des Gangs im Takt der Spieluhr.
+    bild: function (scene, name, gehen, laeuft) {
+      if (laeuft && gehen > 0) {
+        var t = (scene.time && scene.time.now) || 0;
+        var k = FigurBilder.key(name, Math.floor(t / 110) % gehen);
+        if (scene.textures.exists(k)) return k;
+      }
+      return FigurBilder.key(name);
+    }
+  };
+  if (typeof window !== 'undefined') window.SpionageFigurBilder = FigurBilder;
+  // Requisiten (PixelLab, tools/spionageFigurenBauen.js); ohne sie die gezeichneten esp_kiste/esp_pult.
+  var REQUISIT = {
+    spion_req_phiolenkiste: 'assets/sprites/spionage/requisiten/phiolenkiste.png',
+    spion_req_pult: 'assets/sprites/spionage/requisiten/pult.png'
+  };
+  var REQ_H = { spion_req_phiolenkiste: 20, spion_req_pult: 34 };
+
   // Kegelfarben: bernstein = bemerkt Dich, wenn Du zu lange bleibst;
   // violett = meldet Dich einer Wache (Spitzel, Ratsbote). (Blau/rot bleiben den Wachen.)
   var KEGEL = { schreiber: 0xf2c35a, diener: 0xf2c35a, spitzel: 0xc77dff, ratsbote: 0xc77dff };
@@ -112,6 +160,10 @@
     Object.keys(FIGUR).forEach(function (t) {
       var f = FIGUR[t];
       if (f.url && !scene.textures.exists(f.key) && scene.load) { scene.load.image(f.key, f.url); fehlt = true; }
+      if (f.eigen && FigurBilder.laden(scene, f.eigen.name, f.eigen.gehen)) fehlt = true;
+    });
+    Object.keys(REQUISIT).forEach(function (k) {
+      if (!scene.textures.exists(k) && scene.load) { scene.load.image(k, REQUISIT[k]); fehlt = true; }
     });
     if (fehlt) { try { if (!scene.load.isLoading()) scene.load.start(); } catch (e) {} }
     try {
@@ -140,10 +192,26 @@
     } catch (e) {}
   }
 
-  function _figurTex(scene, a) {
+  function _requisitKey(scene, a, tx) {
+    if (a.type === 'traeger') return (tx.eigen && tx.eigen.kiste) ? null : 'esp_kiste';
+    if (a.type === 'geleerter') return scene.textures.exists('spion_req_phiolenkiste') ? 'spion_req_phiolenkiste' : 'esp_kiste';
+    if (a.type === 'schreiber') return scene.textures.exists('spion_req_pult') ? 'spion_req_pult' : 'esp_pult';
+    return null;
+  }
+
+  // Sichtbare Hoehe einer Figur (fuer "?"/"!" ueber dem Kopf).
+  function _figurHoehe(scene, a) {
+    var f = FIGUR[a.type] || { h: 60 };
+    return (f.eigen && FigurBilder.da(scene, f.eigen.name)) ? f.eigen.h : f.h;
+  }
+
+  function _figurTex(scene, a, laeuft) {
     var f = FIGUR[a.type];
     if (!f) return { key: 'esp_figur_fallback', flip: false };
     var links = Math.cos(a._facing || 0) < 0;
+    if (f.eigen && FigurBilder.da(scene, f.eigen.name)) {
+      return { key: FigurBilder.bild(scene, f.eigen.name, f.eigen.gehen, !a.knocked && !!laeuft), flip: links, eigen: f.eigen };
+    }
     if (f.dir) {
       var k = f.dir + (links ? '_left0' : '_right0');
       if (scene.textures.exists(k)) return { key: k, flip: false };
@@ -254,10 +322,11 @@
     }
     for (var i = 0; i < actors.length; i++) {
       var a = actors[i], spr = figurSprites[i], f = FIGUR[a.type] || { h: 60 };
-      var tx = _figurTex(scene, a);
+      var laeuft = FigurBilder.geht(scene, spr, a.x, a.y);
+      var tx = _figurTex(scene, a, laeuft);
       if (spr.texture.key !== tx.key) spr.setTexture(tx.key);
       var fh = (spr.frame && spr.frame.height) || 40;            // Masse vom Frame
-      spr.setScale(f.h / fh);
+      spr.setScale((tx.eigen ? tx.eigen.h : f.h) / fh);
       spr.setFlipX(tx.flip);
       // Geleerte buecken sich im Takt ueber ihre Arbeit.
       var buecken = (a.type === 'geleerter' && !a.knocked) ? Math.max(0, Math.sin((a._workT || 0) * 2.4)) : 0;
@@ -265,11 +334,17 @@
       if (a.knocked) { spr.setTint(0x777777); spr.setAlpha(0.7); spr.setAngle(90); }
       else {
         spr.setAngle(buecken * 8 * (tx.flip ? -1 : 1)); spr.setAlpha(1);
-        if (a._mark === '!') spr.setTint(0xffb0a0); else if (f.tint) spr.setTint(f.tint); else spr.clearTint();
+        if (a._mark === '!') spr.setTint(0xffb0a0); else if (f.tint && !tx.eigen) spr.setTint(f.tint); else spr.clearTint();
       }
       // Requisit: die Kiste des Traegers, das Pult des Schreibers, die Arbeit des Geleerten.
-      var reqKey = (a.type === 'traeger' || a.type === 'geleerter') ? 'esp_kiste' : (a.type === 'schreiber' ? 'esp_pult' : null);
+      // Der eigene Traeger hat seine Kiste auf der Schulter; sonst die PixelLab-Requisiten, wenn geladen.
+      var reqKey = _requisitKey(scene, a, tx);
+      if (beiwerk[i] && beiwerk[i].texture.key !== reqKey) {
+        if (reqKey && scene.textures.exists(reqKey)) beiwerk[i].setTexture(reqKey);
+        else { try { beiwerk[i].destroy(); } catch (e) {} beiwerk[i] = null; }
+      }
       if (reqKey && !beiwerk[i] && scene.textures.exists(reqKey)) beiwerk[i] = scene.add.image(0, 0, reqKey).setScrollFactor(1);
+      if (beiwerk[i]) beiwerk[i].setScale(REQ_H[reqKey] ? REQ_H[reqKey] / (beiwerk[i].frame.height || 1) : 1);
       var req = beiwerk[i];
       if (req && a.type === 'traeger') {
         var dir = Math.cos(a._facing || 0) < 0 ? -1 : 1;
@@ -320,7 +395,7 @@
 
     // "?" / "!" ueber Wachen und Figuren: dieselbe Sprache fuer alle.
     var ents = (st.guards || []).map(function (gd) { return { e: gd, h: 78 }; })
-      .concat(actors.map(function (a) { return { e: a, h: (FIGUR[a.type] || { h: 60 }).h }; }));
+      .concat(actors.map(function (a) { return { e: a, h: _figurHoehe(scene, a) }; }));
     while (marken.length < ents.length) {
       marken.push(scene.add.text(0, 0, '', {
         fontFamily: 'monospace', fontSize: '24px', fontStyle: 'bold', color: '#ffd24a', stroke: '#000000', strokeThickness: 5

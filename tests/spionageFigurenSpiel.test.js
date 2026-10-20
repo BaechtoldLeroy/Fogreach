@@ -47,7 +47,9 @@ describe('Spionage-Figuren im Spiel (Umschlagstelle mit Nachteskorte)', () => {
     assert.strictEqual(r.mission, 'Umschlagstelle', 'falscher Raum: ' + r.mission);
     assert.ok(r.nk, 'die Nachteskorte laeuft nicht');
     assert.deepStrictEqual(r.typen.slice().sort(), ['geleerter', 'geleerter', 'ratsbote', 'schreiber']);
-    ['vorleser_alter', 'vorleser_junge', 'buerger'].forEach((k) => assert.ok(r.bilder.includes(k), 'Bild fehlt: ' + k + ' in ' + r.bilder.join(',')));
+    // Die eigenen Figuren (tests/spionageFigurenStil prueft Groesse und Rueckfall).
+    ['schreiber', 'ratsbote', 'geleerter'].forEach((n) => assert.ok(r.bilder.some((k) => k.indexOf('spion_fig_' + n + '_') === 0),
+      'Bild fehlt: ' + n + ' in ' + r.bilder.join(',')));
     assert.ok(!r.bilder.includes('esp_figur_fallback'), 'eine Figur steht als Platzhalter da: ' + r.bilder.join(','));
     assert.ok(r.wachen >= 4, 'Wachen fehlen');
   });

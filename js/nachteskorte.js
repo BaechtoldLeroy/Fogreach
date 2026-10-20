@@ -147,6 +147,7 @@
       frist: cfg.frist || 5,
       tempo: cfg.tempo || 46,
       schacht: cfg.schacht ? welt(cfg.schacht) : null,
+      waage: cfg.waage ? welt(cfg.waage) : null,
       phase: 'halt', station: 0, ziel: 1, abstand: 0, verloren: 0,
       pos: null, richtung: 1, spur: [], teile: {}, abschlussGespielt: false
     };
@@ -195,11 +196,29 @@
   function getState() { return st; }
 
   // --- Bilder ----------------------------------------------------------------
-  var TEX = { karren: 'eskorte_karren', traeger: 'buerger', fuhrmann: 'garde' };
+  // Eigene PixelLab-Bilder (tools/spionageFigurenBauen.js): der Fuhrmann, die
+  // Geleerten als Traeger (mit Gehbildern ueber window.SpionageFigurBilder),
+  // ein Karren mit Phiolenkisten, die Waage und der Schacht. Fehlt eines,
+  // gilt das alte Bild (ALT), die Waage entfaellt und der Schacht wird gezeichnet.
+  var FIG = {
+    fuhrmann: { name: 'fuhrmann', gehen: 6, h: 54 },
+    traeger: { name: 'geleerter', gehen: 8, h: 52 }
+  };
+  var ALT = {
+    karren: { key: 'eskorte_karren', h: KARREN_H },
+    fuhrmann: { key: 'garde', h: FIGUR_H, tint: 0xb8b0a0 },
+    traeger1: { key: 'buerger', h: FIGUR_H, tint: 0x8d949c },
+    traeger2: { key: 'buerger', h: FIGUR_H, tint: 0x7c838b }
+  };
+  var KARREN_NEU = 'eskorte_karren_neu', KARREN_NEU_H = 62;   // Deichsel zeigt im Bild nach links
+  var SCHACHT_BILD = 'eskorte_schacht_bild', WAAGE_BILD = 'eskorte_waage_bild';
   var DATEI = {
     eskorte_karren: 'assets/hub/karren.png',
     buerger: 'assets/sprites/buerger.png?v=2',
-    garde: 'assets/sprites/garde.png'
+    garde: 'assets/sprites/garde.png',
+    eskorte_karren_neu: 'assets/sprites/spionage/requisiten/karren.png',
+    eskorte_schacht_bild: 'assets/sprites/spionage/requisiten/schacht.png',
+    eskorte_waage_bild: 'assets/sprites/spionage/requisiten/waage.png'
   };
   function _vorladen(scene) {
     if (!scene.load || !scene.textures) return;
@@ -207,19 +226,53 @@
     if (window.SpionageSzenen && window.SpionageSzenen.vorladen) { try { window.SpionageSzenen.vorladen(scene); } catch (e) {} }
     var fehlt = Object.keys(DATEI).filter(function (k) { return !scene.textures.exists(k); });
     fehlt.forEach(function (k) { scene.load.image(k, DATEI[k]); });
-    if (fehlt.length) { try { if (!scene.load.isLoading()) scene.load.start(); } catch (e) {} }
+    var FB = window.SpionageFigurBilder, neu = false;
+    if (FB) Object.keys(FIG).forEach(function (k) { if (FB.laden(scene, FIG[k].name, FIG[k].gehen)) neu = true; });
+    if (fehlt.length || neu) { try { if (!scene.load.isLoading()) scene.load.start(); } catch (e) {} }
+  }
+
+  // Welches Bild eine Figur gerade traegt: das eigene (gehend, wenn der Karren
+  // faehrt), sonst das alte. Rein bis auf den Blick in den Texturspeicher.
+  function _bildFuer(scene, rolle, laeuft) {
+    if (rolle === 'karren') {
+      return scene.textures.exists(KARREN_NEU) ? { key: KARREN_NEU, h: KARREN_NEU_H, griffLinks: true } : ALT.karren;
+    }
+    var FB = window.SpionageFigurBilder, f = FIG[rolle === 'fuhrmann' ? 'fuhrmann' : 'traeger'];
+    if (FB && FB.da(scene, f.name)) return { key: FB.bild(scene, f.name, f.gehen, laeuft), h: f.h };
+    return ALT[rolle];
   }
 
   // Figuren entstehen, sobald ihre Bilder da sind (sie laden erst beim Betreten).
-  function _figur(scene, name, tex, hoehe, tint) {
+  // Jedes Bild bekommt seine Hoehe (Masse vom Frame); kommt das eigene Bild spaeter, wird getauscht.
+  function _figur(scene, name, bild) {
+    if (!bild || !scene.textures || !scene.textures.exists(bild.key) || !scene.add) return null;
     var o = st.teile[name];
-    if (o && o.scene) return o;
-    if (!scene.textures || !scene.textures.exists(tex) || !scene.add) return null;
-    o = scene.add.image(st.pos.x, st.pos.y, tex).setDepth(TIEFE_FIGUREN).setOrigin(0.5, 0.85);
-    o.setScale(hoehe / (o.height || hoehe));
-    if (tint) o.setTint(tint);
-    st.teile[name] = o;
+    if (!o || !o.scene) {
+      o = scene.add.image(st.pos.x, st.pos.y, bild.key).setDepth(TIEFE_FIGUREN).setOrigin(0.5, 0.85);
+      st.teile[name] = o;
+    } else if (o.texture.key !== bild.key) {
+      o.setTexture(bild.key);
+    }
+    o.setScale(bild.h / ((o.frame && o.frame.height) || bild.h));
+    if (bild.tint) o.setTint(bild.tint); else o.clearTint();
     return o;
+  }
+
+  // Bilder, die erst nach dem Laden kommen: die Waage an ihrer Station, der Schacht als Bild.
+  function _beiwerkZeichnen(scene) {
+    if (!scene.add || !scene.textures) return;
+    if (st.waage && !st.teile.waage && scene.textures.exists(WAAGE_BILD)) {
+      var w = scene.add.image(st.waage.x, st.waage.y, WAAGE_BILD).setOrigin(0.5, 0.85).setDepth(TIEFE_FIGUREN - 1);
+      w.setScale(56 / (w.frame.height || 56));
+      st.teile.waage = w;
+    }
+    if (st.schacht && !st.teile.schachtBild && scene.textures.exists(SCHACHT_BILD)) {
+      var b = scene.add.image(st.schacht.x, st.schacht.y, SCHACHT_BILD).setDepth(31);
+      b.setScale(110 / (b.frame.width || 110));
+      st.teile.schachtBild = b;
+      if (st.teile.schacht && st.teile.schacht.scene) { try { st.teile.schacht.destroy(); } catch (e) {} }
+      st.teile.schacht = null;
+    }
   }
 
   // Der Schacht: ein dunkles Loch, von unten glimmt es warm (die Esse, Tiefe 20).
@@ -258,12 +311,17 @@
   }
 
   function _zeichnen(scene) {
-    var karren = _figur(scene, 'karren', TEX.karren, KARREN_H, null);
-    var fuhrmann = _figur(scene, 'fuhrmann', TEX.fuhrmann, FIGUR_H, 0xb8b0a0);
-    var t1 = st.traegerFort ? null : _figur(scene, 'traeger1', TEX.traeger, FIGUR_H, 0x8d949c);
-    var t2 = st.traegerFort ? null : _figur(scene, 'traeger2', TEX.traeger, FIGUR_H, 0x7c838b);
+    _beiwerkZeichnen(scene);
+    // Gehbilder nur, solange der Karren wirklich rollt.
+    var FB = window.SpionageFigurBilder;
+    var laeuft = !!(FB && FB.geht(scene, st, st.pos.x, st.pos.y));
+    var kb = _bildFuer(scene, 'karren', false);
+    var karren = _figur(scene, 'karren', kb);
+    var fuhrmann = _figur(scene, 'fuhrmann', _bildFuer(scene, 'fuhrmann', laeuft));
+    var t1 = st.traegerFort ? null : _figur(scene, 'traeger1', _bildFuer(scene, 'traeger1', laeuft));
+    var t2 = st.traegerFort ? null : _figur(scene, 'traeger2', _bildFuer(scene, 'traeger2', laeuft));
     var p = st.pos;
-    if (karren) { karren.setPosition(p.x, p.y + 18); karren.setFlipX(st.richtung < 0); }
+    if (karren) { karren.setPosition(p.x, p.y + 18); karren.setFlipX(kb.griffLinks ? st.richtung > 0 : st.richtung < 0); }
     if (fuhrmann) { fuhrmann.setPosition(p.x + st.richtung * 46, p.y + 16); fuhrmann.setFlipX(st.richtung < 0); }
     // Die Traeger gehen in der Spur des Karrens; steht er, warten sie daneben.
     [t1, t2].forEach(function (t, i) {
