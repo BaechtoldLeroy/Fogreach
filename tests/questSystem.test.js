@@ -807,7 +807,7 @@ test('062 T019: jedes Objective-Ziel ist ausloesbar (Trigger-Audit)', () => {
       'sealed_bundle',                                          // #155
       'hundehalsband', 'eichgewicht']),                         // #148
     observe: new Set(['convoy_intel', 'archive_record', 'informant_id',
-      'escort_route',                                           // WP05 (062)
+      'eskorte_verladung', 'eskorte_waage', 'eskorte_schacht',  // Nachteskorte (js/nachteskorte.js)
       'collusion_reveal_seen', 'erster_riss_gesehen',
       'oeffentliche_sitzung',                                   // #159: Ratssaal (Hub-Szene)
       'edikte_gedruckt', 'edikte_plakatiert',   // #160: HubSceneV2 (_ediktDrucken/_ediktAushaengen/_ediktAuszaehlen)          // 063 WP04 / #156: Szenen-Trigger

@@ -114,7 +114,8 @@
 
     // Grund: das Tableau des Konvois (falls geladen), darueber Abdunklung.
     // Die Abdunklung faengt Klicks ab — nichts geht durch den Dialog hindurch.
-    var bildKey = 'spionbild_convoy_intel';
+    // Die Nachteskorte leiht sich den Dialog mit eigenem Bild und Titel.
+    var bildKey = cfg.bild || 'spionbild_convoy_intel';
     if (scene.textures && scene.textures.exists(bildKey)) {
       var tab = scene.add.image(cx, h / 2, bildKey);
       tab.setScale(Math.max(b / tab.width, h / tab.height));
@@ -126,7 +127,7 @@
     var kopf = scene.add.text(cx, 0, _t('ENTSCHEIDUNG', 'DECISION'), {
       fontFamily: 'monospace', fontSize: '12px', color: '#d8ccb4'
     }).setOrigin(0.5, 0);
-    var titel = scene.add.text(cx, 0, _t('Am Konvoi', 'At the Convoy'), {
+    var titel = scene.add.text(cx, 0, cfg.titel || _t('Am Konvoi', 'At the Convoy'), {
       fontFamily: 'serif', fontSize: '24px', fontStyle: 'bold', color: '#ffd166', stroke: '#000000', strokeThickness: 3
     }).setOrigin(0.5, 0);
     var rede = scene.add.text(cx, 0, cfg.text, {
@@ -913,7 +914,7 @@
     return schritt;
   }
 
-  window.Finale = { konvoi: konvoi, vorKampf: vorKampf, nachKampf: nachKampf, laeuftNachKampf: laeuftNachKampf,
+  window.Finale = { konvoi: konvoi, wahlSeite: _konvoiSeite, vorKampf: vorKampf, nachKampf: nachKampf, laeuftNachKampf: laeuftNachKampf,
     vorKampfSeiten: vorKampfSeiten, nachKampfSeiten: nachKampfSeiten, DEBUG_SCHRITTE: DEBUG_SCHRITTE,
     harrenWeg: harrenWeg, treppenFrei: _treppenFrei };
 })();

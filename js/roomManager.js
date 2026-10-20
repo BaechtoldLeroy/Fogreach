@@ -192,7 +192,9 @@ const ROOM_DESCRIPTIONS = {
   'ForgottenCrypt': 'Vergessene Krypta \u2014 Uralte Siegel leuchten schwach...',
   // #161: die Finalarena
   'DieQuelle':      'Die Esse \u2014 Hier entsteht der Nebel.',
-  'ElarasVersteck': 'Elaras Versteck \u2014 Hier findet Dich keiner.'
+  'ElarasVersteck': 'Elaras Versteck \u2014 Hier findet Dich keiner.',
+  // Nachteskorte: der Transport des Rats wechselt hier den Traeger.
+  'Umschlagstelle': 'Umschlagstelle \u2014 Hier wechseln die Kisten den Tr\u00e4ger.'
 };
 // #87: die deutschen Texte oben sind die Quelle; jedes Feld liefert danach
 // die aktive Sprache (Key room.desc.<Vorlage>).
@@ -207,7 +209,8 @@ if (window.i18n && typeof window.i18n.binden === 'function') {
     'room.desc.CouncilChamber': 'Council Chamber \u2014 The throne of the Chain Council stands abandoned...',
     'room.desc.ForgottenCrypt': 'Forgotten Crypt \u2014 Ancient seals glow faintly...',
     'room.desc.DieQuelle':      'The Furnace \u2014 This is where the fog is born.',
-    'room.desc.ElarasVersteck': "Elara's Hideout \u2014 Nobody will find you here."
+    'room.desc.ElarasVersteck': "Elara's Hideout \u2014 Nobody will find you here.",
+    'room.desc.Umschlagstelle': 'Transfer Point \u2014 Here the crates change hands.'
   });
 }
 
@@ -338,7 +341,7 @@ function initDungeonRun() {
   // Separate regular rooms from story rooms. Feature 055: die kuratierten
   // Espionage-Räume sind aus dem regulären Pool ausgeschlossen — sie
   // erscheinen NUR per quest-gesteuertem Force-Inject (s. unten), nie zufällig.
-  const ESPIONAGE_ROOM_NAMES = ['CouncilWarehouse', 'SealedArchive', 'InformantDen'];
+  const ESPIONAGE_ROOM_NAMES = ['CouncilWarehouse', 'SealedArchive', 'InformantDen', 'Umschlagstelle'];
   // #161: Die Quelle erscheint nur als Finalarena (BOSS_ARENAS).
   const NUR_ALS_ARENA = ['DieQuelle', 'ElarasVersteck'];
   const allStoryNames = [].concat(STORY_ROOMS.act2, STORY_ROOMS.act3, STORY_ROOMS.act4, ESPIONAGE_ROOM_NAMES, NUR_ALS_ARENA);
@@ -492,10 +495,9 @@ function initDungeonRun() {
       { qid: 'espionage_convoy',    room: 'CouncilWarehouse' },
       { qid: 'espionage_archive',   room: 'SealedArchive' },
       { qid: 'espionage_informant', room: 'InformantDen' },
-      // Feature 062: garde_night_escort teilt sich das Konvoi-Lager (thematisch
-      // ein nächtlicher Transport). CouncilWarehouse trägt jetzt zusätzlich
-      // die observe-Zone escort_route.
-      { qid: 'garde_night_escort',  room: 'CouncilWarehouse' },
+      // Die Nachteskorte hat ihren eigenen Raum: Verladung, Waage, Schacht
+      // (js/nachteskorte.js). Frueher teilte sie sich das Konvoi-Lager.
+      { qid: 'garde_night_escort',  room: 'Umschlagstelle' },
       // #159: die geheime Sitzung in der Ratskammer (erst nach der oeffentlichen)
       { qid: 'council_collusion_reveal', room: 'CouncilChamber' }
     ];
@@ -1083,6 +1085,7 @@ function enterRoom(scene, roomId) {
   if (window.EspionageSystem && window.EspionageSystem.isActive()) {
     try { window.EspionageSystem.endMission(); } catch (e) {}
   }
+  if (window.Nachteskorte) { try { window.Nachteskorte.beenden(); } catch (e) {} }
 
   // 1) Raum bauen: use procedural template from dungeon run if available
   let builtMeta = null;
@@ -1098,6 +1101,8 @@ function enterRoom(scene, roomId) {
   // gleich so, dass sie da ist. Ohne das baut die Vorlage zwar, aber der
   // Raum ist leer, und genau das will man beim Testen nicht sehen.
   if (_debugVersteck()) _erzwungen = [VERSTECK_RAUM];
+  // ?eskorte= fuehrt in die Umschlagstelle, mit laufendem Auftrag (docs/debug-modus.md).
+  if (window.Nachteskorte && window.Nachteskorte.debugRaum(roomId)) _erzwungen = ['Umschlagstelle'];
   const templateName = (_erzwungen && _erzwungen.length)
     ? _erzwungen[roomId % _erzwungen.length]
     : (dungeonRun && dungeonRun.templateOrder[roomId]);
@@ -3431,6 +3436,7 @@ function _maybeStartEspionage(scene, templateName, builtMeta) {
       if (z.seconds != null) out.seconds = z.seconds;
       if (z.id != null) out.id = z.id;
       if (z.questTarget != null) out.questTarget = z.questTarget;
+      if (z.gesperrt) out.gesperrt = true;                    // Nachteskorte: Station oeffnet der Karren
       if (hasWH) { out.w = (z.w || 0) * T; out.h = (z.h || 0) * T; }
       // #54: Wachen-Parameter (Sichtkegel + Patrouille) durchreichen.
       if (z.facing != null) out.facing = z.facing;            // rad
@@ -3475,10 +3481,16 @@ function _maybeStartEspionage(scene, templateName, builtMeta) {
       blockedAt: blockedAt
     });
     window.EspionageSystem.setDisguise(true); // Auto-Verkleidung bei Mission-Start
+    // Nachteskorte: der Transport faehrt durch den Raum, die Stationen oeffnen sich mit ihm.
+    if (esp.eskorte && window.Nachteskorte) {
+      window.Nachteskorte.starten(scene, esp.eskorte, { x: ox, y: oy, tile: T });
+    }
     // #197: der Auftrag als kurze Zwischenszene, sobald der Raum steht.
     if (window.SpionageSzenen && scene.time) {
       scene.time.delayedCall(600, function () {
-        if (window.EspionageSystem.isActive()) window.SpionageSzenen.start(scene, templateName);
+        // ?eskorte=<szene> springt gleich in eine Szene der Eskorte, ohne Auftrag davor.
+        var _sprung = window.Nachteskorte && window.Nachteskorte.debugSzene();
+        if (window.EspionageSystem.isActive() && !_sprung) window.SpionageSzenen.start(scene, templateName);
       });
     }
     try { console.log('[055] Espionage-Mission gestartet:', templateName); } catch (_) {}

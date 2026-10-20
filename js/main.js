@@ -1758,6 +1758,10 @@ function update(time, delta) {
   if (window.EspionageSystem && window.EspionageSystem.isActive()) {
     try { window.EspionageSystem.update(this, time, delta); } catch (e) {}
   }
+  // Nachteskorte: der Transport faehrt (no-op ohne laufende Eskorte).
+  if (window.Nachteskorte && window.Nachteskorte.aktiv()) {
+    try { window.Nachteskorte.update(this, delta); } catch (e) {}
+  }
   // 055 follow-up: stealth visibility layer (banner + zone/guard markers).
   // Self-managing — mounts/redraws/unmounts itself based on mission state.
   if (window.EspionageVisuals && typeof window.EspionageVisuals.sync === 'function') {

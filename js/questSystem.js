@@ -1214,23 +1214,29 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     garde_night_escort: {
       id: 'garde_night_escort',
       title: 'Nachteskorte',
-      description: 'Sichere verdeckt einen nächtlichen Transport — beobachte die Eskorten-Route (ab Tiefe 16).',
+      description: 'Begleite verkleidet einen Transport des Rats durch die Umschlagstelle, von der Verladung bis zum Schacht (ab Tiefe 16).',
       npcId: 'stadtwache',
       type: 'observe',
       chain: 3,
       // #72: gestaffelt.
       minDepth: 16,
-      // 'escort_route' als Spionage-Zone von WP05 (espionageSystem.js) verdrahtet.
+      // Die drei Stationen der Umschlagstelle (js/nachteskorte.js): die Zone
+      // einer Station oeffnet sich, wenn der Karren dort haelt.
       objectives: [
-        { type: 'observe', target: 'escort_route', current: 0, required: 1 }
+        { type: 'observe', target: 'eskorte_verladung', current: 0, required: 1 },
+        { type: 'observe', target: 'eskorte_waage', current: 0, required: 1 },
+        { type: 'observe', target: 'eskorte_schacht', current: 0, required: 1 }
       ],
       rewards: { xp: 90 },
       rewardTier: 'neben',
+      // Die Geleerten am Schacht: im Epilog kehren sie zurueck (questFinale).
+      // Die Wahl an der Waage setzt eskorte_seite_gemerkt / _gerissen.
+      completionFlags: ['geleerte_gesehen'],
       prerequisites: [],
       requiredAct: 3,
-      dialogueOffer: 'Heute Nacht geht ein Transport. Die Route führt tief hinab, ab Tiefe 16. Sicher sie, frag nicht, was drin ist. Loyalität zahlt sich aus.',
-      dialogueProgress: 'Der Transport rollt erst ab Tiefe 16. Halt die Route im Auge, bleib unauffällig.',
-      dialogueComplete: 'Die Route ist sicher. (Und in deinem Kopf, Weg, Zeit und Fracht, bereit für Mara. Es waren keine Waffen. Es waren dieselben Phiolen wie im Konvoi.)'
+      dialogueOffer: 'Heute Nacht geht ein Transport hinab, ab Tiefe 16. Du gehst in Ratsuniform mit, von der Verladung bis zum Schacht, und bleibst neben dem Karren. Frag nicht, was drin ist. Frag nicht, wer trägt. (Er klopft auf seine Börse.) Loyalität zahlt sich aus. Meistens.',
+      dialogueProgress: 'Ab Tiefe 16, in der Umschlagstelle. Bleib beim Karren, von der Verladung bis zum Schacht. Wer zurückbleibt, fällt auf.',
+      dialogueComplete: 'Verzeichnet und abgeliefert? Gut. (Er zählt Dir die Münzen hin.) Siehst Du, Loyalität zahlt sich aus.\n\n(Was Du ihm nicht sagst: Jede Phiole trug einen Namen, und an der Waage liest ein Schreiber sie ab wie Ware. Einen davon kanntest Du. Die Träger am Schacht waren Geleerte, und keiner von ihnen kam wieder herauf. Das alles trägst Du zu Mara.)'
     },
     who_you_were: {
       id: 'who_you_were',
@@ -1679,10 +1685,10 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.klerus_district_purge.dialogueComplete': "You bring the names? (The priest holds out his hand for the list.)\n\n(The infested had faces. You knew none of them, and yet every one seemed familiar. Mara took a copy from you before you came here. The list is still in your hand.)",
 
       'quest.garde_night_escort.title': "Night Escort",
-      'quest.garde_night_escort.description': "Covertly secure a night transport — watch the escort route (from depth 16).",
-      'quest.garde_night_escort.dialogueOffer': "A transport goes out tonight. The route leads deep down, from depth 16. Secure it, don't ask what is inside. Loyalty pays.",
-      'quest.garde_night_escort.dialogueProgress': "The transport only rolls from depth 16. Keep an eye on the route, stay inconspicuous.",
-      'quest.garde_night_escort.dialogueComplete': "The route is secure. (And in your head, route, time and cargo, ready for Mara. They were not weapons. They were the same vials as in the convoy.)",
+      'quest.garde_night_escort.description': "Escort a council transport in disguise through the transfer point, from the loading bay to the shaft (from depth 16).",
+      'quest.garde_night_escort.dialogueOffer': "A transport goes down tonight, from depth 16. You go along in council uniform, from the loading bay to the shaft, and you stay next to the cart. Do not ask what is inside. Do not ask who carries it. (He pats his purse.) Loyalty pays. Mostly.",
+      'quest.garde_night_escort.dialogueProgress': "From depth 16, at the transfer point. Stay with the cart, from the loading bay to the shaft. Whoever falls behind gets noticed.",
+      'quest.garde_night_escort.dialogueComplete': "Recorded and delivered? Good. (He counts the coins out for you.) You see, loyalty pays.\n\n(What you do not tell him: every vial bore a name, and at the scale a scribe reads them off like goods. You knew one of them. The porters at the shaft were emptied people, and none of them came back up. You carry all of it to Mara.)",
 
       'quest.who_you_were.title': "Who You Were",
       'quest.who_you_were.description': "Bring Branka three shards of your vial from the depths (from depth 17).",
@@ -2866,6 +2872,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       if (questState[id] && srcQuests[id] && typeof srcQuests[id] === 'object') {
         questState[id] = srcQuests[id];
         _standhaltenUmstellen(id);
+        _eskorteUmstellen(id);
         _zieleNachziehen(id);
       }
       // Old quest IDs from previous saves are silently ignored,
@@ -2940,6 +2947,22 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     if (!welle) return;
     var fertig = welle.current >= welle.required;
     st.objectives = QUEST_DEFINITIONS.brett_welle.objectives.map(function (o) {
+      return { type: o.type, target: o.target, current: fertig ? o.required : 0, required: o.required };
+    });
+  }
+
+  /**
+   * Die Nachteskorte belauschte frueher nur 'escort_route' im Konvoi-Lager.
+   * Ein laufender alter Stand bekommt die drei Stationen der Umschlagstelle;
+   * war die Route schon belauscht, gelten sie als erledigt (abgabebereit).
+   */
+  function _eskorteUmstellen(id) {
+    var st = questState[id];
+    if (id !== 'garde_night_escort' || !st || st.status !== 'active' || !Array.isArray(st.objectives)) return;
+    var alt = st.objectives.filter(function (o) { return o && o.target === 'escort_route'; })[0];
+    if (!alt) return;
+    var fertig = (alt.current || 0) >= (alt.required || 1);
+    st.objectives = QUEST_DEFINITIONS[id].objectives.map(function (o) {
       return { type: o.type, target: o.target, current: fertig ? o.required : 0, required: o.required };
     });
   }

@@ -379,12 +379,14 @@ StartScene.prototype.preload = function () {
     "CorridorLong", "CorridorBranch", "PillarHall", "AsymmetricChamber", "TerracedHall", "DoubleAlcove",
     // Feature 055: curated espionage stealth rooms
     "CouncilWarehouse", "SealedArchive", "InformantDen",
+    // Nachteskorte: die Umschlagstelle (nur, wenn garde_night_escort laeuft)
+    "Umschlagstelle",
     // #161: Die Quelle, Finalarena auf Tiefe 30 (nur als Boss-Arena),
     // und Elaras Versteck (nur, wenn ein Besuch faellig ist)
     "DieQuelle", "ElarasVersteck"
   ];
   for (const name of templateNames) {
-    this.load.json(name, `js/roomTemplates/${name}.json?v=074`);
+    this.load.json(name, `js/roomTemplates/${name}.json?v=075`);
   }
 };
 
@@ -971,7 +973,7 @@ StartScene.prototype.create = function () {
       "CorridorLong", "CorridorBranch", "PillarHall", "AsymmetricChamber", "TerracedHall", "DoubleAlcove",
       // Feature 055: curated espionage stealth rooms (registered in RT.TEMPLATES
       // so EspionageSystem can build them by name; not part of the random pool)
-      "CouncilWarehouse", "SealedArchive", "InformantDen",
+      "CouncilWarehouse", "SealedArchive", "InformantDen", "Umschlagstelle",
       // #161: Finalarena (BOSS_ARENAS) und Elaras Versteck (versteckBesuchFaellig)
       "DieQuelle", "ElarasVersteck"
     ];

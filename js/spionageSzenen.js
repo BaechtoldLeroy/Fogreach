@@ -37,7 +37,9 @@
   // Ein Pixel-Tableau je mitgehoertem Gespraech (PixelLab, 384x192, im Stil
   // der Akt-Zwischenszenen). Fehlt eines, schwenkt die Kamera wie bisher auf
   // den Lauschposten in der Spielwelt.
-  var BILDER = ['convoy_intel', 'escort_route', 'archive_record', 'informant_id'];
+  var BILDER = ['convoy_intel', 'escort_route', 'archive_record', 'informant_id',
+    // Nachteskorte: drei Stationen und der Abschluss (js/nachteskorte.js).
+    'eskorte_verladung', 'eskorte_waage', 'eskorte_schacht', 'eskorte_abschluss'];
   function bildKey(ziel) { return 'spionbild_' + ziel; }
   function vorladen(scene) {
     if (!scene || !scene.load || !scene.textures) return;
@@ -50,6 +52,13 @@
   var DANACH = {
     convoy_intel: function (scene) {
       if (window.Finale && typeof window.Finale.konvoi === 'function') { try { window.Finale.konvoi(scene); } catch (e) {} }
+    },
+    // Nachteskorte: an der Waage die Wahl um die Seite, am Schacht der Abschluss.
+    eskorte_waage: function (scene) {
+      if (window.Nachteskorte) { try { window.Nachteskorte.wahl(scene); } catch (e) {} }
+    },
+    eskorte_schacht: function (scene) {
+      if (window.Nachteskorte) { try { window.Nachteskorte.abschluss(scene); } catch (e) {} }
     }
   };
 
@@ -94,7 +103,27 @@
     'spion.enttarnt': 'Enttarnt',
     'spion.enttarnt.1': 'Halt! Das ist keiner von uns!',
     'spion.fertig': 'Alles gehört',
-    'spion.fertig.1': 'Genug gehört. Zurück, bevor sie Fragen stellen.'
+    'spion.fertig.1': 'Genug gehört. Zurück, bevor sie Fragen stellen.',
+    // Nachteskorte (js/nachteskorte.js): drei Stationen eines Transports.
+    'spion.Umschlagstelle.titel': 'Die Nachteskorte',
+    'spion.Umschlagstelle.1': 'Ein Transport des Rats, von der Verladung bis zum Schacht. Du gehst in Uniform mit, als seine Eskorte.',
+    'spion.Umschlagstelle.2': 'Bleib in der Nähe des Karrens. Fällst Du zurück, vermisst Dich der Fuhrmann, und der Transport beginnt an der letzten Station von vorn.',
+    'spion.fuhrmann': 'Fuhrmann',
+    'spion.eskorte_verladung.titel': 'Die Verladung',
+    'spion.eskorte_verladung.1': 'Jede Phiole bekommt ihr Schild. Name, Bezirk, Tag. Was nicht verzeichnet ist, ist nie geschehen.',
+    'spion.eskorte_verladung.2': 'Und die Träger? Die stehen da wie Säcke.',
+    'spion.eskorte_verladung.3': 'Die tragen und fragen nicht. Mehr hat der Rat von keinem je verlangt.',
+    'spion.eskorte_waage.titel': 'Die Waage',
+    'spion.eskorte_waage.1': 'Fuhre neun. Abgang aus der Kammer am Kreidekreis, Gewicht stimmt.',
+    'spion.eskorte_waage.2': 'Eingang, Zeile für Zeile: Hessel, Marta. Dorn, Ulrich. {name}.',
+    'spion.eskorte_waage.3': 'Lies nicht so laut. Die Namen gehen mit hinunter, nicht mit uns.',
+    'spion.eskorte_waage.gewarnt': '({name}. Du hast sie gewarnt. Sie hat es nicht mehr aus der Stadt geschafft.)',
+    'spion.eskorte_waage.abgeliefert': '({name}. Sein Name stand auf der Liste, die Du dem Priester gegeben hast.)',
+    'spion.eskorte_waage.mara': '({name}. Mara hat den Namen einmal erwähnt, leise, als zählte sie ihre Leute.)',
+    'spion.eskorte_schacht.titel': 'Der Schacht',
+    'spion.eskorte_schacht.1': 'Bis hierher und nicht weiter. Ab hier tragen die da.',
+    'spion.eskorte_schacht.2': 'Schau ihnen nicht ins Gesicht. Da ist keiner mehr drin, der zurückschaut.',
+    'spion.eskorte_schacht.3': '(Die Träger nehmen die Kisten, ohne zu fragen, und steigen die Wendeltreppe hinab. Unten glüht etwas im Nebel, und die Luft, die heraufkommt, ist warm.)'
   };
   var EN = {
     'spion.ueberspringen': 'Skip (ESC)',
@@ -137,7 +166,26 @@
     'spion.enttarnt': 'Exposed',
     'spion.enttarnt.1': 'Halt! That one is not one of us!',
     'spion.fertig': 'All heard',
-    'spion.fertig.1': 'Heard enough. Back out before they ask questions.'
+    'spion.fertig.1': 'Heard enough. Back out before they ask questions.',
+    'spion.Umschlagstelle.titel': 'The Night Escort',
+    'spion.Umschlagstelle.1': 'A council transport, from the loading bay to the shaft. You go along in uniform, as its escort.',
+    'spion.Umschlagstelle.2': 'Stay close to the cart. Fall behind and the carter misses you, and the transport starts over from the last station.',
+    'spion.fuhrmann': 'Carter',
+    'spion.eskorte_verladung.titel': 'The Loading',
+    'spion.eskorte_verladung.1': 'Every vial gets its tag. Name, district, day. What is not recorded never happened.',
+    'spion.eskorte_verladung.2': 'And the porters? They stand there like sacks.',
+    'spion.eskorte_verladung.3': 'They carry and do not ask. The council never asked more of anyone.',
+    'spion.eskorte_waage.titel': 'The Scale',
+    'spion.eskorte_waage.1': 'Load nine. Out of the chamber at the chalk circle, the weight is correct.',
+    'spion.eskorte_waage.2': 'Received, line by line: Hessel, Marta. Dorn, Ulrich. {name}.',
+    'spion.eskorte_waage.3': 'Do not read so loud. The names go down with the load, not with us.',
+    'spion.eskorte_waage.gewarnt': '({name}. You warned her. She did not make it out of the city.)',
+    'spion.eskorte_waage.abgeliefert': '({name}. His name was on the list you gave the priest.)',
+    'spion.eskorte_waage.mara': '({name}. Mara mentioned the name once, quietly, as if she were counting her people.)',
+    'spion.eskorte_schacht.titel': 'The Shaft',
+    'spion.eskorte_schacht.1': 'This far and no further. From here on, they carry.',
+    'spion.eskorte_schacht.2': 'Do not look them in the face. There is no one left in there to look back.',
+    'spion.eskorte_schacht.3': '(The porters take the crates without a question and climb down the spiral stair. Something glows in the fog below, and the air that rises is warm.)'
   };
   try {
     if (window.i18n && typeof window.i18n.register === 'function') {
@@ -151,8 +199,24 @@
     convoy_intel: [['spion.kutscher', 'spion.convoy_intel.1'], ['spion.wache', 'spion.convoy_intel.2'], ['spion.kutscher', 'spion.convoy_intel.3']],
     escort_route: [['spion.kutscher', 'spion.escort_route.1'], ['spion.wache', 'spion.escort_route.2'], ['spion.kutscher', 'spion.escort_route.3']],
     archive_record: [['spion.schreiber', 'spion.archive_record.1'], ['spion.archivar', 'spion.archive_record.2']],
-    informant_id: [['spion.stimme', 'spion.informant_id.1'], ['spion.mann', 'spion.informant_id.2'], ['spion.stimme', 'spion.informant_id.3']]
+    informant_id: [['spion.stimme', 'spion.informant_id.1'], ['spion.mann', 'spion.informant_id.2'], ['spion.stimme', 'spion.informant_id.3']],
+    eskorte_verladung: [['spion.schreiber', 'spion.eskorte_verladung.1'], ['spion.fuhrmann', 'spion.eskorte_verladung.2'], ['spion.schreiber', 'spion.eskorte_verladung.3']],
+    // An der Waage faellt ein Name, den Du kennst. Welcher, haengt an Maras Liste.
+    eskorte_waage: [['spion.schreiber', 'spion.eskorte_waage.1'], ['spion.schreiber', _mitName('spion.eskorte_waage.2')],
+      ['spion.fuhrmann', 'spion.eskorte_waage.3'], ['', _mitName(function () { return 'spion.eskorte_waage.' + _namensHerkunft(); })]],
+    eskorte_schacht: [['spion.fuhrmann', 'spion.eskorte_schacht.1'], ['spion.wache', 'spion.eskorte_schacht.2'], ['', 'spion.eskorte_schacht.3']]
   };
+
+  function _nk() { return window.Nachteskorte || null; }
+  function _namensHerkunft() { var N = _nk(); return N ? N.namensHerkunft() : 'mara'; }
+  // Ein Text mit dem erkannten Namen; der Schluessel darf selbst erst beim Spielen feststehen.
+  function _mitName(key) {
+    return function () {
+      var k = (typeof key === 'function') ? key() : key;
+      var N = _nk();
+      return _t(k).split('{name}').join(N ? N.erkannterName() : '');
+    };
+  }
 
   function _t(k) {
     try {
@@ -465,7 +529,10 @@
     return spiele(scene, {
       art: 'start', ziel: ziel,
       kopf: _t('spion.auftrag'), titel: _t('spion.' + stamm + '.titel'),
-      seiten: [{ sprecher: _t('spion.auftrag'), text: _t('spion.' + stamm + '.1') }, { sprecher: _t('spion.auftrag'), text: _t('spion.regel') }]
+      seiten: [{ sprecher: _t('spion.auftrag'), text: _t('spion.' + stamm + '.1') }]
+        // Eine eigene Regel des Auftrags (Nachteskorte: beim Karren bleiben).
+        .concat(DE['spion.' + stamm + '.2'] ? [{ sprecher: _t('spion.auftrag'), text: _t('spion.' + stamm + '.2') }] : [])
+        .concat([{ sprecher: _t('spion.auftrag'), text: _t('spion.regel') }])
     });
   }
 
@@ -507,7 +574,9 @@
     var g = GESPRAECHE[zone.questTarget];
     var z = null;
     if (!story && g) {
-      var seiten = g.map(function (s) { return { sprecher: _t(s[0]), text: _t(s[1]) }; });
+      var seiten = g.map(function (s) {
+        return { sprecher: s[0] ? _t(s[0]) : '', text: (typeof s[1] === 'function') ? s[1]() : _t(s[1]) };
+      });
       if (_zielText) { seiten.push({ sprecher: '', text: _zielText, ziel: true }); _zielText = null; }
       var danach = DANACH[zone.questTarget];
       z = spiele(scene, {

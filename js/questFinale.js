@@ -102,6 +102,9 @@
       aldricErzaehlt: 'Aldric lebt in einer Kammer unter dem Rathaus. Er hat seine Geschichte aus Deinem Mund gehört und liest sie jeden Tag auf Thoms Blättern nach, als ginge es um einen Fremden.',
       aldricVerschwiegen: 'Aldric irrt durch die unteren Gänge. Sein Name steht an jeder Tür der Stadt, und er weiss nicht, dass es seiner ist.',
       konvoiMann: 'Unter ihnen ist einer, dessen Name auf der Phiole stand, die am Konvoi zerbrach. Er erkennt Dich sofort.',
+      geleerte: 'Auch die Träger vom Schacht steigen wieder herauf. Einer trägt noch den Strick eines Namensschilds am Handgelenk und weiss jetzt, wessen Name darauf stand.',
+      seiteGemerkt: 'Ganz oben auf Thoms Blättern steht die Seite von der Waage, aus Deinem Gedächtnis gesetzt, Zeile für Zeile. Die erste Zeile heisst {name}.',
+      seiteGerissen: 'Die Seite aus dem Register der Waage legt Thom als erste unter die Presse, in der Handschrift des Schreibers, der sie verzeichnet hat. Die erste Zeile heisst {name}.',
       branka: 'Branka steht neben Dir an der Presse. Sie hat das gesprungene Siegel damals gesehen und nie ein Wort darüber verloren.',
       brankaAlt: 'Branka steht neben Dir an der Presse.',
       mara: 'Mara verteilt die Blätter in den Gassen, in denen ihr Netz noch steht.',
@@ -131,6 +134,9 @@
       aldricErzaehlt: 'Aldric lives in a chamber beneath the town hall. He heard his story from your mouth and reads it again every day on Thom\'s sheets, as if it were about a stranger.',
       aldricVerschwiegen: 'Aldric wanders the lower passages. His name is on every door in the city, and he does not know it is his.',
       konvoiMann: 'Among them is one whose name was on the vial that broke at the convoy. He recognizes you at once.',
+      geleerte: 'The porters from the shaft climb back up as well. One still wears the string of a name tag around his wrist and now knows whose name was on it.',
+      seiteGemerkt: 'At the very top of Thom\'s sheets stands the page from the scale, set from your memory, line by line. The first line reads {name}.',
+      seiteGerissen: 'Thom puts the page from the scale\'s register under the press first, in the handwriting of the scribe who recorded it. The first line reads {name}.',
       branka: 'Branka stands beside you at the press. She saw the cracked seal back then and never said a word about it.',
       brankaAlt: 'Branka stands beside you at the press.',
       mara: 'Mara hands out the sheets in the alleys where her network still holds.',
@@ -158,6 +164,11 @@
         : namen.slice(0, -1).join(', ') + T.und + namen[namen.length - 1];
       out.push(T.nachhall.replace('{namen}', liste));
     }
+    // Nachteskorte: die Seite von der Waage, je nach Wahl gemerkt oder gerissen.
+    var NK = window.Nachteskorte;
+    var seite = flag(flags, 'eskorte_seite_gerissen') ? T.seiteGerissen
+      : flag(flags, 'eskorte_seite_gemerkt') ? T.seiteGemerkt : null;
+    if (seite && NK && typeof NK.erkannterName === 'function') out.push(seite.replace('{name}', NK.erkannterName(flags || {})));
     out.push(T.glauben, T.nebel);
     if (flag(flags, 'harren_dead')) out.push(T.harren);
     out.push(st.elara === 'lives' ? T.elaraLebt : T.elaraTot);
@@ -169,6 +180,7 @@
       : flag(flags, 'petitions_kept') ? T.vieleZurueck
       : flag(flags, 'petitions_surrendered') ? T.wenigeZurueck : T.einigeZurueck;
     if (flag(flags, 'convoy_blade_drawn')) zurueck += ' ' + T.konvoiMann;
+    if (flag(flags, 'geleerte_gesehen')) zurueck += ' ' + T.geleerte;
     out.push(zurueck);
 
     if (st.allies.branka) out.push(flag(flags, 'verification_refused') ? T.branka : T.brankaAlt);

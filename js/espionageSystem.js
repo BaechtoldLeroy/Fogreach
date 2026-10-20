@@ -375,6 +375,13 @@
     // #158: Die Verkleidung faellt auf Wunsch der Geschichte (Konvoi: Klinge
     // gezogen) — dieselbe Folge wie ein entdeckter Angriff.
     enttarnen: function () { if (state.active) _expose(); },
+    // Nachteskorte: der Fuhrmann vermisst seine Eskorte. Treibt den Verdacht;
+    // voll laesst er die Verkleidung auffliegen wie eine Entdeckung.
+    verdacht: function (menge) {
+      if (!state.active || state.exposed) return;
+      state.detection = Math.min(1, state.detection + (menge || 0));
+      if (state.detection >= 1) _expose();
+    },
     getDetection: function () { return state.active ? state.detection : 0; },
 
     registerObserveZone: function (zone) {
@@ -384,6 +391,8 @@
         x: zone.x || 0, y: zone.y || 0, r: zone.r || 64,
         seconds: (typeof zone.seconds === 'number') ? zone.seconds : 4,
         questTarget: zone.questTarget || zone.target || null,
+        // Nachteskorte: die Station zaehlt erst, wenn der Karren dort haelt.
+        gesperrt: !!zone.gesperrt,
         _elapsed: 0, _done: false
       });
     },
@@ -466,7 +475,7 @@
         if (!state.exposed) {
           for (var i = 0; i < state.observeZones.length; i++) {
             var z = state.observeZones[i];
-            if (!z || z._done) continue;
+            if (!z || z._done || z.gesperrt) continue;
             var rr = z.r || 0;
             var zdx = px - z.x, zdy = py - z.y;
             if (zdx * zdx + zdy * zdy <= rr * rr) {

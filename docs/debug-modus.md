@@ -180,6 +180,25 @@ Ansehen mit
 
 `spy=1` erzwingt einen Spionage-Raum als ersten Raum (ohne Auftrag).
 
+### Nachteskorte (garde_night_escort)
+
+Die Umschlagstelle als erster Raum, mit laufendem Auftrag "Nachteskorte"
+(js/nachteskorte.js). Der Karren faehrt Verladung, Waage, Schacht ab.
+
+| Flagge | Wirkung |
+|---|---|
+| `?eskorte=1` | Umschlagstelle, Auftrag frisch, Karren an der Verladung (mit Auftrags-Szene) |
+| `?eskorte=verladung` | gleich das Gespraech an der Verladung |
+| `?eskorte=waage` | Verladung erledigt, gleich das Gespraech an der Waage (danach die Wahl) |
+| `?eskorte=wahl` | nur die Wahl an der Waage (Seite einpraegen oder herausreissen) |
+| `?eskorte=schacht` | Verladung und Waage erledigt, gleich das Gespraech am Schacht |
+| `?eskorte=abschluss` | alles erledigt, gleich die Abschluss-Szene am Schacht |
+| `&eskortenamen=gewarnt` / `=abgeliefert` | welcher Name an der Waage faellt (Maras Liste gewarnt / abgeliefert; sonst einer von Maras Leuten) |
+
+```
+?debug=1&dungeon=16&eskorte=waage&eskortenamen=gewarnt
+```
+
 ### Druckerpresse (#198)
 
 Seit b447 fest im Spiel (die Vorschau-Flagge `presse` gibt es nicht mehr):

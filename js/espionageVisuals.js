@@ -145,6 +145,10 @@
 
   function _actionText(st, allDone) {
     var en = _isEN();
+    // Die Nachteskorte sagt selbst, was gerade zu tun ist (beim Karren bleiben).
+    var NK = window.Nachteskorte;
+    var eigen = (NK && NK.aktiv && NK.aktiv() && NK.hinweis) ? NK.hinweis(st) : null;
+    if (eigen) return eigen;
     if (st.exposed) return en ? 'Get out of the red zones to blend back in.'
                               : 'Raus aus den roten Zonen, dann tauchst du wieder unter.';
     if (allDone) return en ? 'Leave via the stairs.' : 'Verlass den Raum über die Treppe.';
@@ -291,6 +295,9 @@
     _ensureZoneLabels(scene, zones);
     zones.forEach(function (z, i) {
       var r = z.r || 64;
+      // Gesperrte Station (Nachteskorte): erst sichtbar, wenn der Karren dort haelt.
+      if (zoneLabels[i]) zoneLabels[i].setVisible(!z.gesperrt);
+      if (z.gesperrt) return;
       // Fertigstellungs-Pop (einmalig je Zone)
       if (z._done && !z._fxDone) {
         z._fxDone = true;
@@ -326,7 +333,7 @@
     // --- Off-screen-Pfeil zur nächsten offenen Zone -------------------------
     gHud.clear();
     if (cam && !st.exposed && !allDone) {
-      var open = zones.filter(function (z) { return !z._done; });
+      var open = zones.filter(function (z) { return !z._done && !z.gesperrt; });
       if (open.length && pl) {
         var tgt = open[0], best = Infinity;
         open.forEach(function (z) {
@@ -358,7 +365,8 @@
     chipBg.setSize(Math.max(120, chipText.width + 26), 26);
     chipBg.setFillStyle(si.col, si.hot ? (0.75 + 0.25 * pulse) : 0.95);
     banner.setText(_actionText(st, allDone));
-    banner.setColor(st.exposed ? '#ff9a9a' : '#ffe6a8');
+    var _nkWarnt = !!(window.Nachteskorte && window.Nachteskorte.warnt && window.Nachteskorte.warnt());
+    banner.setColor((st.exposed || _nkWarnt) ? '#ff9a9a' : '#ffe6a8');
     // Box an den (evtl. umgebrochenen) Text anpassen, damit er nie ueberlaeuft.
     if (bannerBg && typeof bannerBg.setSize === 'function') {
       var _camW = (cam && cam.width) ? cam.width : 800;

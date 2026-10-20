@@ -247,14 +247,6 @@
         "r": 62,
         "seconds": 4,
         "questTarget": "convoy_intel"
-      },
-      {
-        "id": "escort_route_watch",
-        "x": 26,
-        "y": 9,
-        "r": 62,
-        "seconds": 4,
-        "questTarget": "escort_route"
       }
     ]
   }
