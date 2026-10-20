@@ -51,26 +51,31 @@
   }
 
   // --- Feindliches Rathaus ----------------------------------------------------
-  // Ein Balken quer, gedreht über die Verbindungslinie zweier Punkte.
-  function _plank(g, x1, y1, x2, y2, w) {
-    var ang = Math.atan2(y2 - y1, x2 - x1);
-    var dx = Math.sin(ang) * w / 2, dy = -Math.cos(ang) * w / 2;
-    var pts = [
-      { x: x1 + dx, y: y1 + dy }, { x: x2 + dx, y: y2 + dy },
-      { x: x2 - dx, y: y2 - dy }, { x: x1 - dx, y: y1 - dy }
-    ];
-    g.fillStyle(0x4a3728, 1);
-    g.fillPoints(pts, true);
-    // Maserung entlang der Achse + hellere Oberkante
-    g.fillStyle(0x63492f, 0.8);
-    g.fillPoints([
-      { x: x1 + dx, y: y1 + dy }, { x: x2 + dx, y: y2 + dy },
-      { x: x2 + dx * 0.3, y: y2 + dy * 0.3 }, { x: x1 + dx * 0.3, y: y1 + dy * 0.3 }
-    ], true);
-    // Nägel an den Enden
-    g.fillStyle(0x1e1710, 0.9);
-    g.fillCircle(x1 + (x2 - x1) * 0.06, y1 + (y2 - y1) * 0.06, 2);
-    g.fillCircle(x1 + (x2 - x1) * 0.94, y1 + (y2 - y1) * 0.94, 2);
+  // Das Kettenschloss vor der Rathaustuer (PixelLab, assets/hub/rathaus_schloss.png).
+  var SCHLOSS_BILD = 'hub_rathaus_schloss';
+
+  // Ohne Tuerblatt aus dem Hausbild (alter Aufbau, Tests): ueber der Tuerzone
+  // schaetzen, sonst aus dem Gebaeuderechteck.
+  function _tuerGeschaetzt(refs, r) {
+    var ent = refs.rathausEntrance || {
+      x: r.x + r.w * 0.38, y: r.y + r.h * 0.86, w: r.w * 0.24, h: r.h * 0.16
+    };
+    return { x: ent.x + ent.w * 0.3, y: ent.y - 60, w: ent.w * 0.4, h: 60 };
+  }
+
+  // Ersatz, solange das Bild fehlt: Kette quer ueber die Tuer, Schloss daran.
+  function _schlossGezeichnet(scene, cx, cy, w) {
+    var g = scene.add.graphics();
+    var half = w * 0.95;
+    g.fillStyle(0x1a1a1f, 1);
+    g.fillCircle(cx - half, cy - 10, 3);
+    g.fillCircle(cx + half, cy - 10, 3);
+    _chain(g, cx - half, cy - 10, cx + half, cy - 10, 8, 2.6);
+    g.fillStyle(0x2b2b30, 1);
+    g.fillRect(cx - 7, cy - 2, 14, 14);
+    g.fillStyle(0xb8975a, 1);
+    g.fillRect(cx - 5, cy + 1, 10, 4);
+    return g;
   }
 
   // Durchhängende Kette aus einzelnen Gliedern — das Motiv des Kettenrats.
@@ -288,6 +293,7 @@
       scene._hubPhaseViewObjs.forEach(function (o) { try { if (o) o.destroy(); } catch (_) {} });
       scene._hubPhaseViewObjs = null;
     }
+    scene._rathausSchloss = null;
     try { if (refs.bg.clearTint) refs.bg.clearTint(); } catch (_) {}
 
     var STYLE = window.HubPhase.PHASE_STYLE || {};
@@ -373,40 +379,29 @@
       track(scene.add.rectangle(r.x + r.w / 2, r.y + r.h / 2, r.w, r.h,
         0x2a0d0d, 0.18).setDepth(depth + 3), 1);
 
-      var g = scene.add.graphics().setDepth(depth + 4);
-      // Eingang: aus den Refs, sonst grob aus dem Gebäuderechteck geschätzt.
-      var ent = refs.rathausEntrance || {
-        x: r.x + r.w * 0.38, y: r.y + r.h * 0.86, w: r.w * 0.24, h: r.h * 0.16
-      };
-      var dcx = ent.x + ent.w / 2;
-      var dTop = ent.y - 30;
-      var dBot = ent.y + ent.h;
-      var half = ent.w / 2;
-
-      // 2) Zwei gekreuzte Bretter über der Tür — vernagelt.
-      _plank(g, dcx - half - 7, dTop + 8, dcx + half + 7, dBot - 6, 9);
-      _plank(g, dcx + half + 7, dTop + 8, dcx - half - 7, dBot - 6, 9);
-
-      // 3) Schwere Kette quer davor. Der Rat heisst Kettenrat — nach dem Bruch
-      //    hängt seine eigene Kette vor der Tür.
-      var cy0 = dTop + 12;
-      g.fillStyle(0x1a1a1f, 1);
-      g.fillCircle(dcx - half - 16, cy0, 4);   // Ankerring links
-      g.fillCircle(dcx + half + 16, cy0, 4);   // Ankerring rechts
-      _chain(g, dcx - half - 16, cy0, dcx + half + 16, cy0, 13, 3.4);
-
-      // 4) Amtssiegel, das am tiefsten Punkt der Kette hängt.
-      var sy = cy0 + 13;
-      g.fillStyle(0x2b2b30, 1);
-      g.fillRect(dcx - 1, sy, 2, 7);
-      g.fillStyle(0x7a1414, 1);
-      g.fillCircle(dcx, sy + 12, 7);
-      g.fillStyle(0x3d0a0a, 0.85);
-      g.fillCircle(dcx, sy + 12, 4);
-      g.fillStyle(0xa33030, 0.7);
-      g.fillCircle(dcx - 2, sy + 10, 2);
-
-      track(g, 1);
+      // 2) Das Kettenschloss des Rates AUF dem gemalten Tuerblatt. Bis b479
+      //    hing es an der Tuerzone — die liegt zum Hingehen auf dem Vorplatz,
+      //    und so baumelten Bretter und Kette ueber der Treppe statt an der
+      //    Tuer. rathausTuer kommt aus dem Hausbild (HubNeuWelt.phasenAnker),
+      //    folgt dem Haus also, wo immer es steht.
+      var tuer = refs.rathausTuer || _tuerGeschaetzt(refs, r);
+      // Knapp ueber der Standlinie des Hauses: auf der Fassade, aber hinter
+      // jeder Figur, die davor auf der Terrasse steht.
+      var tuerTiefe = (tuer.tiefe != null) ? tuer.tiefe + 0.5 : depth + 4;
+      var tcx = tuer.x + tuer.w / 2, tcy = tuer.y + tuer.h / 2;
+      var schloss;
+      if (scene.textures && scene.textures.exists && scene.textures.exists(SCHLOSS_BILD)) {
+        // Ketten ueber Kreuz von Laibung zu Laibung, das Schloss in der
+        // Mitte: so breit wie Tuerblatt samt Bogen (gut das Doppelte des
+        // Blatts), die Hoehe folgt dem Bild.
+        schloss = scene.add.image(tcx, tcy, SCHLOSS_BILD).setOrigin(0.5, 0.5);
+        if (schloss.width > 0 && schloss.setScale) schloss.setScale((tuer.w * 1.9) / schloss.width);
+      } else {
+        schloss = _schlossGezeichnet(scene, tcx, tcy, tuer.w);
+      }
+      schloss.setDepth(tuerTiefe);
+      track(schloss, 1);
+      scene._rathausSchloss = schloss;
     }
 
     scene._hubPhaseViewObjs = objs;
@@ -415,6 +410,7 @@
       destroy: function () {
         objs.forEach(function (o) { try { if (o) o.destroy(); } catch (_) {} });
         scene._hubPhaseViewObjs = null;
+        scene._rathausSchloss = null;
         try { if (refs.bg && refs.bg.clearTint) refs.bg.clearTint(); } catch (_) {}
       }
     };

@@ -313,11 +313,13 @@ class HubSceneV2 extends Phaser.Scene {
     // #181: Rathaus und Anschlagtafeln stehen dort, wo die Karte sie hat.
     // Die Werte oben stammen aus dem gemalten Bild; uebernommen, landeten
     // die Tafeln hinter dem Brunnen.
-    const _anker = window.HubNeuWelt.phasenAnker();
+    const _anker = window.HubNeuWelt.phasenAnker(this);
     if (_anker) {
       if (_anker.posterSpots && _anker.posterSpots.length) this._hubPhaseRefs.posterSpots = _anker.posterSpots;
       if (_anker.rathausRect) this._hubPhaseRefs.rathausRect = _anker.rathausRect;
       if (_anker.rathausEntrance) this._hubPhaseRefs.rathausEntrance = _anker.rathausEntrance;
+      // Das gemalte Tuerblatt: dort haengt nach dem Bruch das Kettenschloss.
+      if (_anker.rathausTuer) this._hubPhaseRefs.rathausTuer = _anker.rathausTuer;
     }
     this._dialogOpen = false;
     this._activeInteractable = null;
@@ -1470,6 +1472,15 @@ class HubSceneV2 extends Phaser.Scene {
    * nahm einfach den zuletzt geprueften. Hier gewinnt das NAECHSTE Ziel,
    * und nur die Box ueber dem Kopf zeigt, was [E] tun wird.
    */
+  // Die Box nennt, was man sieht: nach dem Bruch haengt das Kettenschloss an
+  // der Rathaustuer, hinab in den Keller geht es trotzdem.
+  _eingangsText(data) {
+    if (data && data.id === 'rathaus_entrance' && this._hubPhase === 'broken') {
+      return _HUB_T('hub.entrance.rathaus.verkettet');
+    }
+    return data.label;
+  }
+
   _refreshInteractionPrompt() {
     if (this._dialogOpen || !this.player?.body) return;
     const p = this.player;
@@ -1482,7 +1493,7 @@ class HubSceneV2 extends Phaser.Scene {
       const b = zone.getBounds();
       if (Phaser.Geom.Rectangle.Overlaps(b, pb)) {
         nimm(Phaser.Math.Distance.Between(p.x, p.y, b.centerX, b.bottom),
-          { type: 'entrance', data, zone }, data.label);
+          { type: 'entrance', data, zone }, this._eingangsText(data));
       }
     }
     for (const { sprite, nameText, data } of this.npcs) {

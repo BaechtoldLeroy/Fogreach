@@ -154,8 +154,12 @@
       { x: 28.5, y: 16.5, bild: 'vorleser_junge' }    // oestlicher Platz, vor der Druckerei
     ],
 
+    // portal: das Tuerblatt IM BILD, in Bildpixeln (x,y = links oben). Daran
+    // haengt nach dem Bruch das Kettenschloss — die Tuerzone oben unter
+    // tueren liegt auf dem Vorplatz und taugt dafuer nicht.
     haeuser: [
-      { bild: 'hub_rathaus_sockel', x: 20,   y: 4,  breite: 12,  farbe: 0xa9b2bf },
+      { bild: 'hub_rathaus_sockel', x: 20,   y: 4,  breite: 12,  farbe: 0xa9b2bf,
+        portal: { x: 60, y: 155, b: 14, h: 36 } },
       { bild: 'hub_werkstatt',      x: 5.5,  y: 14, breite: 7.6 },
       { bild: 'hub_druckerei',      x: 34.5, y: 14, breite: 7.6 },
       { bild: 'hub_kate_a',         x: 30.5, y: 23, breite: 5.5 },

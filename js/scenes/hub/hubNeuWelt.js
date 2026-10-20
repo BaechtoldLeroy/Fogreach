@@ -54,7 +54,7 @@
   ];
   var ERDE = 'hub_boden9';
 
-  var BAU_BILDER = ['stuetzmauer', 'freitreppe', 'truhe',
+  var BAU_BILDER = ['stuetzmauer', 'freitreppe', 'truhe', 'rathaus_schloss',
     'tafel_fresh', 'tafel_faded', 'tafel_torn', 'tafel_gedruckt'];
   var BAUM_BILDER = ['hub_kiefer', 'hub_baum'];
   var FEUER_BILDER = 9;            // brazier0..8, wie im Dungeon
@@ -507,19 +507,52 @@
     return true;
   }
 
+  function _texturMasse(scene) {
+    if (!scene || !scene.textures || !scene.textures.exists) return null;
+    return function (key) {
+      if (!scene.textures.exists(key)) return null;
+      var f = scene.textures.getFrame(key);
+      return f ? { w: f.width, h: f.height } : null;
+    };
+  }
+
+  /**
+   * Das gemalte Tuerblatt eines Hauses (h.portal, in Bildpixeln) in
+   * Weltkoordinaten — so umgerechnet, wie _stellen das Bild setzt (Fuss
+   * unten Mitte, Breite in Kacheln). Was an der Tuer haengt, bleibt so auf
+   * ihr, auch wenn das Haus verschoben oder anders breit wird.
+   * tiefe: die Standlinie des Hauses. Wer an der Tuer haengt, liegt knapp
+   * darueber — auf der Fassade und doch hinter den Figuren davor.
+   */
+  function portalImBild(K, h, masse) {
+    if (!h || !h.portal || !masse) return null;
+    var m = masse(h.bild);
+    if (!m || !m.w || !m.h) return null;
+    var z = K.kachel;
+    var s = (h.breite * z) / m.w;
+    var links = h.x * z - m.w * s / 2, oben = h.y * z - m.h * s;
+    var p = h.portal;
+    return { x: links + p.x * s, y: oben + p.y * s, w: p.b * s, h: p.h * s, tiefe: h.y * z };
+  }
+
   /**
    * Die Anker der Phasen-Darstellung in Weltkoordinaten: wo die
    * Anschlagtafeln haengen und wo das Rathaus steht. HubSceneV2 hatte sie
    * aus dem alten Layout fest eingetragen — im neuen Platz landeten die
    * Tafeln damit hinter dem Brunnen.
+   *
+   * quelle: die Szene (Bildmasse aus den Texturen) oder direkt eine
+   * Funktion masse(key) -> {w,h}. Ohne sie fehlt nur rathausTuer.
    */
-  function phasenAnker() {
+  function phasenAnker(quelle) {
     var K = karte();
     if (!K) return null;
     var z = K.kachel, T = K.terrasse;
     var rh = (K.haeuser || []).filter(function (h) { return h.bild === 'hub_rathaus_sockel'; })[0];
     var tuer = (K.tueren || []).filter(function (t) { return t.id === 'rathaus_entrance'; })[0];
+    var masse = (typeof quelle === 'function') ? quelle : _texturMasse(quelle);
     return {
+      rathausTuer: rh ? portalImBild(K, rh, masse) : null,
       posterSpots: (K.anschlagtafeln || []).map(function (p) { return { x: p.x * z, y: p.y * z }; }),
       patrouillen: (K.patrouillen || []).map(function (p) { return { x: p.x * z, y: p.y * z }; }),
       vorleser: (K.vorleser || []).map(function (p) { return { x: p.x * z, y: p.y * z, bild: p.bild }; }),

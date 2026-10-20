@@ -5,6 +5,9 @@
 if (window.i18n) {
   window.i18n.register('de', {
     'hub.entrance.rathaus': 'Rathauskeller [E]',
+    // Nach dem Bruch haengt das Kettenschloss des Rates an der Rathaustuer;
+    // der Weg hinab in den Keller bleibt offen.
+    'hub.entrance.rathaus.verkettet': 'Rathaus in Ketten · Keller [E]',
     'hub.entrance.truhe': 'Truhe [E]',
     // #188: der Eingang heisst wie die Szene dahinter.
     'hub.entrance.schmiede': 'Schmiede [E]',
@@ -30,6 +33,7 @@ if (window.i18n) {
   });
   window.i18n.register('en', {
     'hub.entrance.rathaus': 'Town Hall Cellar [E]',
+    'hub.entrance.rathaus.verkettet': 'Town Hall in chains · Cellar [E]',
     'hub.entrance.truhe': 'Stash [E]',
     'hub.entrance.schmiede': 'Forge [E]',
     'hub.entrance.druckerei': 'Printing House [E]',
