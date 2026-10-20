@@ -70,6 +70,15 @@ before(async () => {
       }
       return offen;
     };
+    // Fester Lauf. enterRoom ohne Raumnummer greift in den ganzen Vorlagenpool,
+    // und der enthaelt die 2-4 prozeduralen Raeume, die beim Start UNGESEEDET
+    // gewuerfelt wurden: ihre Zahl verschiebt jeden Griff, ihr Inhalt jede
+    // Kammer. Derselbe Raumseed traf so je nach Prozess 5 bis 9 Kammern (ueber
+    // 20 Pools x 20 Raeume: kein einziger Kammerfehler, nur die Menge schwankte).
+    var TT = window.RoomTemplates.TEMPLATES, alt = Math.random;
+    Object.keys(TT).forEach(function (n) { if (TT[n]._procedural) delete TT[n]; });
+    Math.random = window.__knSeed(3);
+    try { window.initDungeonRun(); } finally { Math.random = alt; }
     return 1;
   })()`);
 });

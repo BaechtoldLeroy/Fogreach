@@ -56,6 +56,13 @@ before(async () => {
     window.__ksSchutt = function () {
       return window.obstacles.getChildren().filter(function (o) { return o.active && o.getData('kammerSchutt'); });
     };
+    // Fester Lauf: der Vorlagenpool von enterRoom enthaelt die beim Start
+    // ungeseedet gewuerfelten prozeduralen Raeume — ohne das schwankt die
+    // Kammerzahl desselben Raumseeds von Prozess zu Prozess (wie kammerNische).
+    var TT = window.RoomTemplates.TEMPLATES, alt = Math.random;
+    Object.keys(TT).forEach(function (n) { if (TT[n]._procedural) delete TT[n]; });
+    Math.random = window.__ksSeed(3);
+    try { window.initDungeonRun(); } finally { Math.random = alt; }
     return 1;
   })()`);
 });
