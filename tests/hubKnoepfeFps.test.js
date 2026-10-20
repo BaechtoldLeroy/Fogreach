@@ -36,7 +36,8 @@ describe('ohne Debug', () => {
     })()`);
     assert.strictEqual(r.menue, 'Image:hud_icons');
     assert.strictEqual(r.inv, 'Image:hud_icons');
-    assert.strictEqual(r.ringe, 2, 'kein Messingring');
+    // Menue, Inventar und darunter der Rueckmeldungsknopf (feedback.js).
+    assert.strictEqual(r.ringe, 3, 'kein Messingring');
     assert.strictEqual(r.emoji, false, 'noch ein Text-/Emoji-Symbol');
   });
 

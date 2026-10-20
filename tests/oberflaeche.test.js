@@ -438,7 +438,8 @@ describe('HUD im Dungeon', () => {
 
   test('Ringe um Portraet und Knoepfe, Messingleiste um den Lebensbalken', () => {
     const b = run(H, HUD_BILDER);
-    assert.strictEqual(b.filter((x) => x.key === 'ui_ring' && x.tiefe === 1600.5).length, 3);
+    // Portraet, Menue, Inventar und der Rueckmeldungsknopf (feedback.js).
+    assert.strictEqual(b.filter((x) => x.key === 'ui_ring' && x.tiefe === 1600.5).length, 4);
     assert.strictEqual(b.filter((x) => x.key.indexOf('ui_leiste@230x28') === 0).length, 1);
     assert.strictEqual(run(H, `window.HUDv2.elements.hpFill.visible`), true);
   });

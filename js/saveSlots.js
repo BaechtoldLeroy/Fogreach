@@ -40,6 +40,8 @@
     'demonfall_audio',
     'demonfall_lastDifficulty',
     'demonfall_endless_best',
+    'demonfall.feedbackWarteschlange.v1', // feedback.js: noch nicht gesendete Rueckmeldungen
+    'demonfall.laufZaehler.v1',           // feedback.js: Laeufe fuer die Laufbewertung
     ACTIVE_SLOT_KEY,
     MIGRATED_KEY
   ];

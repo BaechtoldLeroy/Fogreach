@@ -531,6 +531,17 @@ class HubSceneV2 extends Phaser.Scene {
         invBg.setPosition(nx, ny); invIcon.setPosition(nx, ny);
         if (invRing) invRing.setPosition(nx, ny);
       });
+
+      // Rueckmeldung fuer Tester unter dem Inventar (wie im Dungeon), plus F8.
+      if (window.Feedback) {
+        this._hubFeedback = window.Feedback.knopf(this, {
+          lage: () => {
+            const s = window.__SAFE_AREA__ || { top: 0, right: 0 };
+            return { x: this.scale.width - 14 - (s.right || 0) - _mR, y: 14 + (s.top || 0) + _mR + 2 * _invGap };
+          },
+          r: _mR, tiefe: 1300
+        });
+      }
     }
 
     this.input.keyboard.on('keydown-E', this._handleInteract, this);
@@ -758,6 +769,9 @@ class HubSceneV2 extends Phaser.Scene {
       this.time.delayedCall(300, () => {
         if (window.lastRunSummary) this._showRunSummary(window.lastRunSummary);
       });
+    } else if (window.Feedback && window.Feedback.bewertungFaellig()) {
+      // Ohne Zusammenfassung (sonst bietet deren Schliessen die Bewertung an).
+      this.time.delayedCall(400, () => window.Feedback.bewertungAnbieten(this));
     }
 
     // #166/#167 Debug-Vorschau: ?sitzung=oeffentlich|geheim spielt die Szene sofort.
@@ -5166,6 +5180,8 @@ class HubSceneV2 extends Phaser.Scene {
       this.input.keyboard.off('keydown-SPACE', close);
       this.events.off('shutdown', close);
       container.destroy(true);
+      // Jeder 5. Lauf: Bewertung anbieten (verzoegert: beim Szenenende verfaellt sie).
+      if (window.Feedback) this.time.delayedCall(250, () => window.Feedback.bewertungAnbieten(this));
     };
     closeBtn.on('pointerdown', (pointer, x, y, event) => {
       if (event && event.stopPropagation) event.stopPropagation();
@@ -5246,6 +5262,8 @@ class HubSceneV2 extends Phaser.Scene {
       this.input.keyboard.off('keydown-SPACE', close);
       this.events.off('shutdown', close);
       container.destroy(true);
+      // Jeder 5. Lauf: Bewertung anbieten (verzoegert: beim Szenenende verfaellt sie).
+      if (window.Feedback) this.time.delayedCall(250, () => window.Feedback.bewertungAnbieten(this));
     };
     closeBtn.on('pointerdown', (pointer, x, y, event) => {
       if (event && event.stopPropagation) event.stopPropagation();

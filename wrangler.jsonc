@@ -1,11 +1,22 @@
-// Cloudflare Workers (statische Seite). Der Build-Befehl im Dashboard kopiert
-// nur das Spiel nach public/ — Tests, Werkzeuge, Specs, Rohbilder, deploy/
-// und reference/ bleiben im Repo und kommen nicht ins Netz:
+// Cloudflare Workers. Der Build-Befehl im Dashboard kopiert nur das Spiel
+// nach public/ — Tests, Werkzeuge, Specs, Rohbilder, deploy/ und reference/
+// bleiben im Repo und kommen nicht ins Netz:
 //   mkdir -p public && cp -r index.html favicon.ico js assets public/
+//
+// worker/ ist der Code fuer /api/feedback (Tester-Rueckmeldungen als
+// GitHub-Issues). Er wird von wrangler gebuendelt, nicht als Datei
+// ausgeliefert. Einrichtung (Secret, Repo, KV): docs/feedback.md.
+// Die KV-Bindung FEEDBACK_BILDER steht bewusst NICHT hier, solange ihre ID
+// fehlt (sonst scheitert jeder Deploy); Anleitung in docs/feedback.md.
 {
   "name": "fogreach",
   "compatibility_date": "2026-10-01",
+  "main": "worker/index.js",
   "assets": {
-    "directory": "./public"
-  }
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  // Variablen aus dem Dashboard (GITHUB_REPO) bei jedem Deploy behalten.
+  "keep_vars": true
 }

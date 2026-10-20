@@ -27,13 +27,13 @@
   var REIHE = ['angriff', 'rolle', 'trank', 'aktion', 'portraet',
     'hammer', 'steelGrasp', 'charge', 'frenzy', 'berserk', 'whirlwind',
     'twistingBlades', 'cycloneStrike', 'frostNova', 'teleportDash', 'heilwunde', 'deathBlow',
-    'inventar', 'menue'];
+    'inventar', 'menue', 'feedback'];
   var KEY = 'hud_icons';
   var KANTE = 48;
-  var BILD_V = 2;
+  var BILD_V = 3;
   // Feste Knoepfe -> Bildname; Faehigkeiten heissen wie ihre ID.
   var NAME = { attack: 'angriff', roll: 'rolle', potion: 'trank', interact: 'aktion', portrait: 'portraet',
-    inventory: 'inventar', menu: 'menue' };
+    inventory: 'inventar', menu: 'menue', feedback: 'feedback' };
 
   // Leiste (Desktop): Feldkante, Icon darin, Abstand, Rand unten.
   var FELD = 52, ICON = 40, ABSTAND = 6, RAND_UNTEN = 8;

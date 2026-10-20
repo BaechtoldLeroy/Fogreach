@@ -41,6 +41,7 @@
       'settings.debug.toast_added_iron': '+100 Eisenbrocken',
       'settings.section.gameplay': 'GAMEPLAY',
       'settings.gameplay.skip_tutorial': 'Tutorial überspringen',
+      'settings.gameplay.lauf_bewertung': 'Laufbewertung',
       'settings.extra_attack.label': 'Zusätzliche Angriffstaste',
       'settings.extra_attack.none': 'Keine',
       'settings.extra_attack.x': 'X',
@@ -88,6 +89,7 @@
       'settings.debug.toast_added_iron': '+100 Iron Chunks',
       'settings.section.gameplay': 'GAMEPLAY',
       'settings.gameplay.skip_tutorial': 'Skip Tutorial',
+      'settings.gameplay.lauf_bewertung': 'Run rating',
       'settings.extra_attack.label': 'Extra attack key',
       'settings.extra_attack.none': 'None',
       'settings.extra_attack.x': 'X',
@@ -127,7 +129,8 @@
     },
     // Feature 051: gameplay-flow toggles
     gameplay: {
-      skipTutorial: false // returning-donor toggle — bypasses 044 tutorial steps
+      skipTutorial: false, // returning-donor toggle — bypasses 044 tutorial steps
+      laufBewertung: true  // jeder 5. Lauf: Sterne-Dialog im Hub (feedback.js)
     },
     mobile: {
       deadZone: 0.15,
@@ -308,7 +311,8 @@
       // Feature 051 FR-05: persistent skip-tutorial toggle. Applies on the
       // NEXT New Game (existing Skip button below closes the active flow
       // mid-run; this toggle is the returning-donor "don't show again").
-      this._toggleRow(RIGHT_C, rightY, T('settings.gameplay.skip_tutorial'), 'gameplay.skipTutorial', COL_W); rightY += 24;
+      this._toggleRow(RIGHT_C, rightY, T('settings.gameplay.skip_tutorial'), 'gameplay.skipTutorial', COL_W); rightY += 22;
+      this._toggleRow(RIGHT_C, rightY, T('settings.gameplay.lauf_bewertung'), 'gameplay.laufBewertung', COL_W); rightY += 24;
       const skipBtn = this._tutorialButton(RIGHT_C, rightY, T('tutorial.settings.skip_label'), () => {
         if (!(window.TutorialSystem && window.TutorialSystem.isActive && window.TutorialSystem.isActive())) return;
         const ok = window.confirm(T('tutorial.skip.confirm'));

@@ -2143,6 +2143,10 @@ function leaveDungeonForHub(scene, options = {}) {
     };
     window.runStats = null;
   }
+  // Tester-Rueckmeldung: Laeufe zaehlen, jeder 5. bietet im Hub eine Bewertung an.
+  if (window.Feedback && typeof window.Feedback.laufBeendet === 'function') {
+    try { window.Feedback.laufBeendet(window.lastRunSummary); } catch (e) { /* never block hub return */ }
+  }
 
   // Issue #16 — Brunnen buffs/debuffs are run-scoped. Clear before save +
   // before the heal-on-return so the next dungeon entry starts clean.

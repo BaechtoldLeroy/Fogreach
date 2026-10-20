@@ -48,7 +48,11 @@
     SEEN_INTRO_SPLASH: 'demonfall_seen_intro_splash',
     SEEN_OUTRO_SPLASH: 'demonfall_seen_outro_splash',
     /** Ersteinstellung (Schwierigkeit/Steuerung) im Slot schon gezeigt. */
-    ERSTEINSTELLUNG: 'demonfall_ersteinstellung'
+    ERSTEINSTELLUNG: 'demonfall_ersteinstellung',
+    /** Tester-Rueckmeldungen, die noch nicht gesendet werden konnten (geraeteweit). */
+    FEEDBACK_WARTESCHLANGE: 'demonfall.feedbackWarteschlange.v1',
+    /** Zaehler der Laeufe fuer die Laufbewertung (geraeteweit). */
+    LAUF_ZAEHLER: 'demonfall.laufZaehler.v1'
   });
 
   // Keys that should be wiped on "new game". SETTINGS is intentionally

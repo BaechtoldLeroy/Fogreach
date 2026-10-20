@@ -275,6 +275,12 @@
     HUDv2.elements.invHit = invHit;
     HUDv2.elements.burgerIcon = _knopfIcon(scene, burgerCx, burgerCy, burgerHit, 'menu', '\u2630');
     HUDv2.elements.invIcon = _knopfIcon(scene, invCx, invCy, invHit, 'inventory', 'I');
+
+    // Rueckmeldung fuer Tester (Feder auf Pergament) unter dem Inventar, plus F8.
+    if (window.Feedback) {
+      HUDv2.elements.feedback = window.Feedback.knopf(scene,
+        { x: invCx, y: invCy + (ICON_R * 2 + 8), r: ICON_R, tiefe: HUD_DEPTH });
+    }
   }
 
   /**
