@@ -1002,11 +1002,19 @@
    * Debug-Vorschau im Hub: ?rueckblick=voll (bzw. allgemein, keiner) spielt
    * die Maulwurf-Szene mit dem Rueckblick gleich nach dem Betreten. Setzt
    * dafuer die Rettungs-Flaggen passend. Einmal pro Seitenaufruf.
+   * ?zettel=1|2|3 spielt dieselbe Szene ab diesem Bild der Zwischensequenz
+   * (js/zettelSzene.js); ohne ?rueckblick gilt dabei 'voll'.
    */
   var _vorschauGespielt = false;
   function vorschau(scene) {
     var G = window.DebugGate;
     var art = (G && typeof G.flagge === 'function') ? G.flagge('rueckblick') : null;
+    var Z = window.ZettelSzene;
+    var abBild = (!_vorschauGespielt && Z && typeof Z.vorschauBild === 'function') ? Z.vorschauBild() : null;
+    if (abBild !== null) {
+      if (!art) art = 'voll';
+      Z.startBildSetzen(abBild);
+    }
     var S = window.storyScenes;
     if (_vorschauGespielt || !art || !S || typeof S.playMaulwurfEnthuellung !== 'function') return false;
     art = String(art).toLowerCase();

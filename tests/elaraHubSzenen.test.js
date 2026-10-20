@@ -112,7 +112,7 @@ test('Die Szenen erzaehlen, was sie sollen', () => {
     // Das Wiedersehen ist seit b485 eine Zwischenszene mit eigenen Seiten
     // (tests/wiedersehenSzene.test.js); hier nur ihr Text.
     aus.playWiedersehen = window.WiedersehenSzene.seiten().map(function (s) { return s.text; }).join(' ');
-    ['playNachtNachDemBruch', 'playMaulwurfEnthuellung'].forEach(function (n) {
+    ['playNachtNachDemBruch'].forEach(function (n) {
       var gesehen = '';
       TW.anTextobjekt = function (s, textObj, voll) { gesehen = String(voll); return echt.apply(this, arguments); };
       // Die Nacht ist seit b484 eine Zwischenszene mit Bildern
@@ -132,6 +132,29 @@ test('Die Szenen erzaehlen, was sie sollen', () => {
   assert.ok(/Versteck/.test(t.playNachtNachDemBruch), 'die Nacht spielt nicht im Versteck: ' + t.playNachtNachDemBruch);
   assert.ok(/Versteck/.test(t.bruchNachtSzene) && /Branka/i.test(t.bruchNachtSzene),
     'die Zwischenszene der Nacht spielt nicht im Versteck: ' + t.bruchNachtSzene);
-  assert.ok(/Aldric/.test(t.playMaulwurfEnthuellung) && /drei Ketten/.test(t.playMaulwurfEnthuellung),
-    'die Enthuellung zeigt nicht Elara mit Aldric und das Zeichen: ' + t.playMaulwurfEnthuellung);
+});
+
+test('Die Enthuellung zeigt Elara mit Aldric und das Zeichen am Ring', () => {
+  // Die Bilder des Weges (js/zettelSzene.js) und danach der Text der Kammer.
+  H.run(`(function () {
+    var sc = window.game.scene.getScene('HubSceneV2');
+    var TW = window.DialogTypewriter, echt = TW.anTextobjekt;
+    window.__gesehen = [];
+    window.__twEcht = echt;
+    TW.anTextobjekt = function (s, textObj, voll) { window.__gesehen.push(String(voll)); return echt.apply(this, arguments); };
+    sc.__zettelSzene = null;
+    window.__echt.playMaulwurfEnthuellung(sc, function () {});
+    return 1;
+  })()`);
+  const HUB = `window.game.scene.getScene('HubSceneV2')`;
+  for (let i = 0; i < 300 && !H.run(`!!(${HUB}.__zettelSzene && ${HUB}.__zettelSzene.offen)`); i++) H.step(3);
+  for (let i = 0; i < 400 && H.run(`${HUB}.__zettelSzene.offen`); i++) { H.run(`${HUB}.__zettelSzene.weiter(); 1`); H.step(3); }
+  for (let i = 0; i < 200 && !H.run(`window.__gesehen.some(function (t) { return /Ring/.test(t); })`); i++) {
+    if (H.run(`!!(${HUB}.__rueckblick && ${HUB}.__rueckblick.phase !== 'fertig')`)) H.run(`${HUB}.__rueckblick.ueberspringen(); 1`);
+    H.step(3);
+  }
+  const alles = H.run(`window.DialogTypewriter.anTextobjekt = window.__twEcht; window.__gesehen.join(' | ')`);
+  H.run(`(function () { var sc = ${HUB}; if (sc.__szeneWartet) sc.__szeneWartet.ausloesen(); return 1; })()`);
+  assert.ok(/Aldric steht am Tisch/.test(alles) && /Elara/.test(alles), 'Elara mit Aldric fehlt: ' + alles);
+  assert.ok(/Ring: drei Ketten/.test(alles), 'das Zeichen am Ring fehlt: ' + alles);
 });

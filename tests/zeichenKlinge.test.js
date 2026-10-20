@@ -280,9 +280,18 @@ test('Das Buendel liegt mit dem Zeichen auf dem Siegel am Boden', () => {
 });
 
 test('Die Enthuellung zeigt das Zeichen am Ring als Bild', () => {
+  const SCG = `window.game.scene.getScene('GameScene')`;
+  H.run(`${SCG}.__zettelSzene = null; window.storyScenes.playMaulwurfEnthuellung(${SCG}, function () {}); 1`);
+  // Erst die Bilder des Weges (js/zettelSzene.js) und ggf. der Rueckblick,
+  // dann die Kammer mit dem Ring.
+  for (let i = 0; i < 300 && !H.run(`!!${SCG}.__zettelSzene`); i++) H.step(3);
+  H.run(`${SCG}.__zettelSzene.ueberspringen(); 1`);
+  for (let i = 0; i < 100 && H.run(`!!(${SCG}.__rueckblick && ${SCG}.__rueckblick.phase !== 'fertig')`); i++) {
+    H.run(`${SCG}.__rueckblick.ueberspringen(); 1`);
+    H.step(3);
+  }
   const r = H.run(`(function () {
     var sc = window.game.scene.getScene('GameScene');
-    window.storyScenes.playMaulwurfEnthuellung(sc, function () {});
     // Nur die Szenen-Ebene zaehlen: das Buendel aus dem Test davor liegt mit
     // derselben Textur am Boden und liess eine fehlende Szene gruen aussehen.
     var da = sc.children.list.some(function (o) {

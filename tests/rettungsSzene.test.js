@@ -236,20 +236,29 @@ describe('Der Rueckblick in der Ratskammer', () => {
   });
   after(async () => { if (H) await H.shutdown(); });
 
-  /** Stand setzen und die Maulwurf-Szene starten; liefert den Text der ersten Seite. */
+  /**
+   * Stand setzen und die Maulwurf-Szene starten. Zuerst laufen die drei
+   * Bilder des Weges zur Ratskammer (js/zettelSzene.js, eigener Test); sie
+   * werden hier durchgeblaettert. Liefert ihren ganzen Text.
+   */
   function szene(art) {
     H.run(`(function () {
       var qs = window.questSystem, sc = ${HUB};
       qs.setFlag('rettung_inszeniert', ${art === 'voll'});
       qs.setFlag('elara_rettung_gesehen', ${art !== 'keiner'});
       qs.setFlag('elaraMet', ${art !== 'keiner'});
-      sc.__rueckblick = null; sc.__szeneWartet = null;
+      sc.__rueckblick = null; sc.__szeneWartet = null; sc.__zettelSzene = null;
       window.__fertig = false; window.__praesentiert = [];
       window.storyScenes.playMaulwurfEnthuellung(sc, function () { window.__fertig = true; });
       return 1;
     })()`);
-    for (let i = 0; i < 300 && !H.run(`!!${HUB}.__szeneWartet`); i++) H.step(3);
-    return seite();
+    for (let i = 0; i < 300 && !H.run(`!!${HUB}.__zettelSzene`); i++) H.step(3);
+    for (let i = 0; i < 400 && H.run(`${HUB}.__zettelSzene.offen`); i++) {
+      H.run(`${HUB}.__zettelSzene.weiter(); 1`);
+      H.step(3);
+    }
+    assert.strictEqual(H.run(`${HUB}.__zettelSzene.offen`), false, 'die Bilder enden nicht');
+    return H.run(`${HUB}.__zettelSzene.protokoll.filter(function (e) { return e.text; }).map(function (e) { return e.text; }).join(' | ')`);
   }
   const seite = () => H.run(`${HUB}.children.list.filter(function (o) {
     return o.type === 'Text' && o.depth === 1550 && o.active; }).map(function (o) { return o.text; }).join(' | ')`);
@@ -269,7 +278,6 @@ describe('Der Rueckblick in der Ratskammer', () => {
     const erste = szene('voll');
     assert.match(erste, /Helmbusch/, 'der Waechter steht nicht in der Ratskammer: ' + erste);
     assert.match(erste, /Aldric steht am Tisch/);
-    H.run(`${HUB}.__szeneWartet.ausloesen(); 1`);
     assert.strictEqual(bisWarten(), 'wartet', 'der Rueckblick beginnt nicht');
     // Die Gegenwart: der Waechter mit dem roten Busch.
     assert.strictEqual(rb().phase, 'jetzt');
@@ -321,7 +329,6 @@ describe('Der Rueckblick in der Ratskammer', () => {
     const erste = szene('allgemein');
     assert.match(erste, /Kettenwächter/);
     assert.ok(!/Helmbusch/.test(erste), 'ein alter Stand kennt den Helmbusch nicht');
-    H.run(`${HUB}.__szeneWartet.ausloesen(); 1`);
     const phasen = [];
     for (let k = 0; k < 6; k++) {
       const w = bisWarten();
@@ -342,7 +349,9 @@ describe('Der Rueckblick in der Ratskammer', () => {
   test('Ganz ohne Rettung im Stand: kein Waechter, kein Rueckblick, die Szene laeuft wie bisher', () => {
     const erste = szene('keiner');
     assert.ok(!/Kettenwächter/.test(erste), 'ein Waechter ohne Rettung: ' + erste);
-    assert.match(erste, /Ring: drei Ketten/, 'die Szene steht nicht auf einer Seite');
+    for (let i = 0; i < 300 && !H.run(`!!${HUB}.__szeneWartet`); i++) H.step(3);
+    assert.strictEqual(H.run(`${HUB}.__rueckblick`), null, 'ein Rueckblick ohne Rettung');
+    assert.match(seite(), /Ring: drei Ketten/, 'nach den Bildern kommt nicht gleich der Ring');
     H.run(`${HUB}.__szeneWartet.ausloesen(); 1`);
     H.step(5);
     assert.strictEqual(H.run(`${HUB}.__rueckblick`), null, 'ein Rueckblick ohne Rettung');

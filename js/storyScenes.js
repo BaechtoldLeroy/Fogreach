@@ -571,16 +571,35 @@
   function playMaulwurfEnthuellung(scene, onDone) {
     var RS = window.RettungsSzene;
     var art = (RS && typeof RS.rueckblickArt === 'function') ? RS.rueckblickArt() : null;
+    var mitRueckblick = !!(_maulwurfWaechter(art) && RS && typeof RS.rueckblick === 'function');
+    var danach = function () {
+      if (mitRueckblick) RS.rueckblick(scene, art, function () { _maulwurfRest(scene, onDone); });
+      else _maulwurfRest(scene, onDone);
+    };
+    // Der Weg zur Ratskammer als Zwischensequenz mit drei Bildern
+    // (js/zettelSzene.js): der Zettel, die Treppe mit dem Waechter, der
+    // Tuerspalt. Erst danach der Rueckblick und der Ring. Fehlen die Bilder,
+    // die fruehere Textseite.
+    var ZS = window.ZettelSzene;
+    if (ZS && typeof ZS.laden === 'function') {
+      ZS.laden(scene, function (ok) {
+        if (ok) ZS.spielen(scene, art, danach, { abBild: ZS.startBildNehmen() });
+        else _maulwurfOhneBilder(scene, art, mitRueckblick, danach, onDone);
+      });
+      return;
+    }
+    _maulwurfOhneBilder(scene, art, mitRueckblick, danach, onDone);
+  }
+
+  // Die fruehere Fassung als Textseite, falls die Bilder nicht laden.
+  function _maulwurfOhneBilder(scene, art, mitRueckblick, danach, onDone) {
     var vorn = [
       _t('(Du bist dem gefalteten Zettel gefolgt. Durch die Kanäle, hinauf ins Rathaus, in die Ratskammer. Es ist Nacht.)', '(You followed the folded note. Through the canals, up into the town hall, into the council chamber. It is night.)'),
       _t('(Aldric steht am Tisch. Ihm gegenüber, ohne Kapuze: Elara.)', '(Aldric stands at the table. Across from him, hood down: Elara.)')
     ];
-    var waechter = _maulwurfWaechter(art);
-    if (waechter && RS && typeof RS.rueckblick === 'function') {
-      vorn.push(waechter);
-      _szeneSpielen(scene, vorn, null, function () {
-        RS.rueckblick(scene, art, function () { _maulwurfRest(scene, onDone); });
-      }, true, _nachtKulisse);
+    if (mitRueckblick) {
+      vorn.push(_maulwurfWaechter(art));
+      _szeneSpielen(scene, vorn, null, danach, true, _nachtKulisse);
       return;
     }
     _szeneSpielen(scene, vorn.concat(_maulwurfZeilen()), 'maulwurf_reveal', onDone, true, _nachtKulisse);
@@ -590,8 +609,17 @@
   // durchscheint (die Szene spielt nicht im Hub, sondern in der Kammer).
   function _nachtKulisse(scene) {
     var cam = scene.cameras.main;
-    return [scene.add.rectangle(cam.width / 2, cam.height / 2, cam.width, cam.height, 0x050407, 0.86)
-      .setScrollFactor(0).setDepth(1548)];
+    var teile = [];
+    // Hinter dem Ring bleibt der Tuerspalt aus der Zwischensequenz stehen,
+    // abgedunkelt: Du stehst noch immer dort.
+    if (scene.textures && scene.textures.exists('zettel_spalt')) {
+      var bild = scene.add.image(cam.width / 2, cam.height / 2, 'zettel_spalt').setScrollFactor(0).setDepth(1547);
+      bild.setScale(Math.max(cam.width / bild.width, cam.height / bild.height));
+      teile.push(bild);
+    }
+    teile.push(scene.add.rectangle(cam.width / 2, cam.height / 2, cam.width, cam.height, 0x050407, teile.length ? 0.84 : 0.86)
+      .setScrollFactor(0).setDepth(1548));
+    return teile;
   }
 
   function _maulwurfRest(scene, onDone) {

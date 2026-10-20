@@ -229,15 +229,21 @@ ohne den Dungeon und ohne den Spielstand anzufassen:
 | `?rueckblick=voll` | im Hub: die Maulwurf-Szene (Elara neben Aldric, der Waechter mit dem roten Helmbusch) mit dem Rueckblick auf die Rettung, alle drei Spuren hervorgehoben |
 | `?rueckblick=allgemein` | dasselbe fuer einen alten Spielstand ohne die inszenierte Rettung: kein Helmbusch, kein Nicken |
 | `?rueckblick=keiner` | Spielstand ganz ohne Rettung: die Maulwurf-Szene laeuft ohne Waechter und ohne Rueckblick |
+| `?zettel=1`, `2`, `3` | im Hub: dieselbe Maulwurf-Szene, aber ab Bild N der Zwischensequenz "Du bist dem gefalteten Zettel gefolgt" (1 der Zettel mit dem Siegel, 2 die Treppe mit dem Waechter, 3 der Tuerspalt); ohne `rueckblick` gilt `voll`, mit `rueckblick=...` dessen Stand |
 
 `rettung` stellt den Stand her, den die Rettung braucht (Harrens erster
 Auftrag erledigt, `elaraMet`, `elara_rettung_gesehen` und `rettung_inszeniert`
 geloescht). `rueckblick` setzt nur die drei Flaggen. Die Zwischensequenz
 ueberspringt nur ESC oder der Knopf, und auch dann erst bis zu Elaras Zeile.
 
+Die Maulwurf-Szene beginnt immer mit den drei Bildern (js/zettelSzene.js):
+die erste Taste zeigt den Satz ganz, die naechste blaettert weiter, ESC
+beendet die Bilder. Danach Rueckblick und Ring wie oben.
+
 ```
 ?debug=1&dungeon=3&rettung=sofort
 ?debug=1&autostart=1&rueckblick=voll
+?debug=1&autostart=1&zettel=3&rueckblick=allgemein
 ```
 
 ### Das Wiedersehen (Ende Akt 2)
