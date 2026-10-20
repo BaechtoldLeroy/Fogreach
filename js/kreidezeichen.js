@@ -146,7 +146,9 @@
   function vielleichtSpawnen(scene, opts) {
     try {
       if (!laeuft()) return null;
-      if (!(opts && opts.erzwingen) && Math.random() >= Kreidezeichen.CHANCE) return null;
+      // Debug ?kreide=1: in jedem Raum ein Zeichen (zum Testen des Auftrags).
+      var erzwungen = (opts && opts.erzwingen) || !!(window.DebugGate && window.DebugGate.an('kreide'));
+      if (!erzwungen && Math.random() >= Kreidezeichen.CHANCE) return null;
       var ES = window.EventSystem, HF = window.HiddenFinds;
       if (!scene || !ES || typeof ES.spawnEventObject !== 'function') return null;
       if (typeof player === 'undefined' || !player) return null;

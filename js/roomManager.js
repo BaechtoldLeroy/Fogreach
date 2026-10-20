@@ -3686,6 +3686,7 @@ function _maybeFireElaraCellarEncounter(scene, roomId) {
 // abgegeben wird es weiter ueber die Stufen 1.5 und 2 oben.
 // v6.1: Die Hand am Schloss (elara_schloesser) zuletzt, bis zum Maulwurf.
 var ELARA_AUFTRAEGE = ['resistance_fetch_01', 'widerstand_proof', 'elara_meeting', 'elara_ritual', 'elara_blade', 'elara_second_truth', 'elara_schloesser'];
+if (typeof window !== 'undefined') window.ELARA_AUFTRAEGE = ELARA_AUFTRAEGE;   // ?auftrag= (js/debugAuftrag.js)
 var _elaraSpaetSpawnZiel = null;
 
 function _elaraSpaetereAuftraege(scene, roomId) {

@@ -29,6 +29,7 @@ Alle Flaggen wirken **nur** bei eingeschaltetem Debug-Modus. Kombinierbar mit `&
 |---|---|
 | `?dungeon=N` | direkt in Tiefe N starten. **Loescht den Spielstand.** |
 | `?autostart=1` | Startbildschirm ueberspringen. **Loescht den Spielstand.** |
+| `?auftrag=<id>` | einen Auftrag mit seinem Stand annehmen, siehe [Einen Auftrag direkt testen](#einen-auftrag-direkt-testen). **Veraendert den Spielstand.** |
 
 ### Raum-Modi (#112)
 
@@ -400,20 +401,64 @@ Stift wird das Fenster enger und der Zeiger schneller; zwei Fehlgriffe sind
 frei. Alle Stifte → Ausrüstung auf Belohnungstruhen-Niveau, ein Teil → Gold
 nach Anteil, keiner → nichts.
 
+### Einen Auftrag direkt testen
+
+| Flagge | Wirkung |
+|---|---|
+| `?auftrag=<questId>` | stellt beim Betreten des Hubs den Stand her, den der Auftrag braucht, und nimmt ihn an (laeuft, Ziele auf 0) |
+| `&auftragfast=1` | dazu alle Ziele voll bis auf das letzte, dem eine Einheit fehlt: ein echter Schritt, dann abgeben (Abgabe, Wahl) |
+| `&kreide=1` | Kreidezeichen in **jedem** Raum statt zu 50 % (solange `mara_kreide` laeuft, ab Tiefe 18) |
+
+**Veraendert den Spielstand** (wie `?versteck=`) und wird gespeichert. Was die
+Flagge setzt ([`js/debugAuftrag.js`](../js/debugAuftrag.js)):
+
+- alle `prerequisites` rekursiv als erledigt, mit ihren `completionFlags`
+- die Flaggen, die das Tor (`gate`) des Auftrags verlangt (`!!questFlags.x`
+  setzt x, `!questFlags.x` loescht es), und die, die die Tore der erledigten
+  Vorgaenger gesetzt verlangten
+- den Akt per `storySystem.advanceToAct` auf `requiredAct` (die Vorgaenger
+  ziehen ihre `advanceAct` beim Laden ohnehin nach); die Aktkarten bis dahin
+  gelten als gesehen, sonst deckt die Karte den Hub zu
+- die erreichte Tiefe (`maxDepth`) mindestens auf `minDepth`/`angebotAb`
+- faellige Versteck-Besuche (`versteckBesuchFaellig`) als gesehen, sonst belegt
+  die Kammer den naechsten Kellerraum
+- **Elaras Kellerauftraege** (`ELARA_AUFTRAEGE` in js/roomManager.js): auch ihre
+  frueheren Auftraege der Liste als erledigt — sie kommt im Keller der Reihe
+  nach, und ein offener frueherer brachte sie mit DEM statt mit diesem
+- `thom_gegenedikt`: Druckerei offen, mindestens 5 Druckblaetter, kein
+  haengendes Edikt
+
+Gewirkt wird einmal pro Laden, nach dem Laden des Spielstands und vor dem
+Abstieg: mit `?dungeon=N` steht der Stand also, bevor der Keller beginnt (fuer
+die Ziele im Keller muss N die Mindesttiefe erreichen). Ohne `dungeon`/`autostart`
+gilt der Stand, mit dem man ueber "Fortsetzen" in den Hub kommt; widerspricht er
+dem Auftrag (etwa der Klerus nach dem Bruch), sagt es die Konsole. Eine
+unbekannte ID warnt auf der Konsole und aendert nichts.
+
+```
+?debug=1&auftrag=klerus_brueder&dungeon=15&sonder=beschwoerer
+?debug=1&auftrag=klerus_brueder&auftragfast=1&dungeon=15&sonder=beschwoerer
+```
+
+Geht fuer jeden Auftrag, auch die der Geschichte (`?debug=1&autostart=1&auftrag=espionage_archive`).
+
 ### Nebenauftraege der Akte 3 und 4 (Story-Kern v6.1)
 
-Keine eigenen Flaggen: jeder Auftrag haengt an einem Weg, den es schon gibt.
-Der Auftrag muss laufen und seine Mindesttiefe erreicht sein, sonst zaehlt nichts.
+Jeder Auftrag haengt an einem Weg, den es schon gibt. Der Auftrag muss laufen
+und seine Mindesttiefe erreicht sein, sonst zaehlt nichts. Die Adressen unten
+setzen beides; mit `&auftragfast=1` fehlt nur noch ein Schritt bis zur Abgabe
+(bei Brüdern, Helm und Fuhre folgt dort die Wahl). Abgegeben wird oben bei der
+Figur, nur Elara nimmt im Keller ab.
 
-| Auftrag | Ziel | So kommt man schnell hin |
-|---|---|---|
-| Die schweigenden Brüder (Klerus) | 3 Beschwörer, ab Tiefe 15 | `?sonder=beschwoerer`; solange der Auftrag laeuft, ziehen Beschwörer ohnehin schwerer |
-| Ein Edikt, das keiner bestellt hat (Thom) | riskantes Edikt drucken | Druckerei, eines der drei riskanten Edikte (ab Akt 3) |
-| Kreide an der Zellenwand (Mara) | 3 Kreidezeichen lesen, ab Tiefe 18 | je Raum zu 50 % ein Zeichen abseits; in der Konsole `Kreidezeichen.CHANCE = 1`, dann den naechsten Raum betreten |
-| Die Hand am Schloss (Elara, im Keller) | 3 Kettenschlösser ganz lösen, ab Tiefe 21 | `?event=chain_lock` |
-| Ein Name auf dem Helm (Stadtwache) | Helmmarke, nur von Elites, ab Tiefe 24 | Elites umhauen (35 % je Elite) |
-| Die letzte Fuhre (Mara) | 2 Jagdräume gewinnen, ab Tiefe 28 | `?mode=hunt` oder `?modes=hunt` |
-| Die Schmiede halten (Branka) | 2 Altäre halten, ab Tiefe 27 | `?mode=defend` oder `?modes=defend` |
+| Auftrag | Ziel | So kommt man schnell hin | Adresse |
+|---|---|---|---|
+| Die schweigenden Brüder (Klerus) | 3 Beschwörer, ab Tiefe 15 | `?sonder=beschwoerer`; solange der Auftrag laeuft, ziehen Beschwörer ohnehin schwerer | `?debug=1&auftrag=klerus_brueder&dungeon=15&sonder=beschwoerer` |
+| Ein Edikt, das keiner bestellt hat (Thom) | riskantes Edikt drucken | Druckerei, eines der drei riskanten Edikte (ab Akt 3) | `?debug=1&auftrag=thom_gegenedikt&autostart=1` |
+| Kreide an der Zellenwand (Mara) | 3 Kreidezeichen lesen, ab Tiefe 18 | je Raum zu 50 % ein Zeichen abseits, mit `&kreide=1` in jedem | `?debug=1&auftrag=mara_kreide&dungeon=18&kreide=1` |
+| Die Hand am Schloss (Elara, im Keller) | 3 Kettenschlösser ganz lösen, ab Tiefe 21 | `?event=chain_lock` (ab dem zweiten Raum); fertig, kommt Elara ein paar Raeume weiter zur Abgabe | `?debug=1&auftrag=elara_schloesser&dungeon=21&event=chain_lock` |
+| Ein Name auf dem Helm (Stadtwache) | Helmmarke, nur von Elites, ab Tiefe 24 | Elites umhauen (35 % je Elite); `?schar=1` stellt in jeden Raum einen Bannerträger (Elite) | `?debug=1&auftrag=wache_helm&dungeon=24&schar=1` |
+| Die letzte Fuhre (Mara) | 2 Jagdräume gewinnen, ab Tiefe 28 | `?mode=hunt` oder `?modes=hunt` | `?debug=1&auftrag=mara_letzte_fuhre&dungeon=28&mode=hunt` |
+| Die Schmiede halten (Branka) | 2 Altäre halten, ab Tiefe 27 | `?mode=defend` oder `?modes=defend` | `?debug=1&auftrag=branka_schmiede_halten&dungeon=27&mode=defend` |
 
 `questSystem.getAuftragsSchub('gegner' | 'raum' | 'ereignis')` zeigt in der
 Konsole, was die laufenden Auftraege gerade haeufiger machen.

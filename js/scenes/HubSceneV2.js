@@ -373,6 +373,12 @@ class HubSceneV2 extends Phaser.Scene {
     const _saveApplied = this._ensureSaveHydrated();
     // Neues Spiel (kein Save geladen): Starter-Kit ins Inventar legen.
     this._grantStarterKit(_saveApplied);
+    // Debug ?auftrag=<id>: Stand fuer einen Auftrag herstellen. Hier, weil
+    // erst jetzt der Spielstand angewendet ist, und vor Phase und Abstieg
+    // (?dungeon=N), die beide den neuen Akt sehen sollen.
+    if (window.DebugAuftrag) {
+      try { window.DebugAuftrag.anwenden(); } catch (e) { console.warn('[Auftrag] fehlgeschlagen', e); }
+    }
 
     // Jetzt erst steht der echte Akt-Index/Flag-Stand — Phase ableiten und
     // anwenden.

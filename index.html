@@ -20,7 +20,7 @@
     <meta name="apple-mobile-web-app-title" content="Fogreach" />
     <!-- #88: EIN Schalter fuer alle Debug-Oberflaechen. Steht vor dem
          Fehler-Overlay, weil das ihn schon braucht. Ohne Abhaengigkeiten. -->
-    <script src="js/debugGate.js?v=051"></script>
+    <script src="js/debugGate.js?v=052"></script>
 
     <script src="js/pixelTexturen.js?v=018"></script>
     <!-- Mobile-Fehler-Overlay: zeigt uncaught JS-Fehler ON-SCREEN, weil man auf
@@ -149,7 +149,7 @@
     <script src="js/ai/steering.js?v=003"></script>
     <script src="js/storage.js?v=070"></script>
     <script src="js/hiddenFinds.js?v=021"></script>
-    <script src="js/kreidezeichen.js?v=001"></script>
+    <script src="js/kreidezeichen.js?v=002"></script>
     <!-- #71: Kettenschloss-Minispiel — vor eventSystem (dort registriert) -->
     <script src="js/kettenschloss.js?v=006"></script>
     <script src="js/uiRahmen.js?v=010"></script>
@@ -177,7 +177,7 @@
     <script src="js/roomModeEscape.js?v=088"></script>
     <script src="js/roomModeVisuals.js?v=088"></script>
     <script src="js/spawnRegeln.js?v=002"></script>
-    <script src="js/roomManager.js?v=183"></script>
+    <script src="js/roomManager.js?v=184"></script>
     <script src="js/statusEffects.js?v=010"></script>
     <script src="js/particleEffects.js?v=006"></script>
     <!-- Reine Reichweiten-Mathematik für zerstörbare Props. Abhängigkeitsfrei
@@ -232,6 +232,8 @@
          + questSystem at runtime (lazy via window globals; load order only
          requires it to be before any scene that opens its dialog UI). -->
     <script src="js/printingHouse.js?v=009"></script>
+    <!-- Debug ?auftrag=<id> (docs/debug-modus.md); vor HubSceneV2, das ihn anwendet -->
+    <script src="js/debugAuftrag.js?v=001"></script>
     <!-- Knowledge Tree (feature 047 / Issue #26). Auto-inits on load. Must
          load after i18n.js (uses i18n.register) and before HubSceneV2.js
          (the modal UI calls window.KnowledgeTree.*). -->
@@ -255,7 +257,7 @@
     <script src="js/hubPhase.js?v=009"></script>
     <script src="js/anschlagtafel.js?v=004"></script>
     <script src="js/hubPhaseView.js?v=010"></script>
-    <script src="js/scenes/HubSceneV2.js?v=195"></script>
+    <script src="js/scenes/HubSceneV2.js?v=196"></script>
     <script src="js/scenes/CraftingScene.js?v=086"></script>
     <script src="js/scenes/ShopScene.js?v=094"></script>
     <script src="js/scenes/SkillTreeScene.js?v=070"></script>

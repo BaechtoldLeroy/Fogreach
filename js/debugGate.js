@@ -96,7 +96,9 @@
     'quer',             // Trailer im Querformat 960x480 statt hochkant (trailer=1&quer=1)
     'aktprobe',         // Akt-Zwischenszene ansehen: aktprobe=1..6 | epilog
     'bruchnacht',       // Zwischenszene "Die Nacht nach dem Bruch" ansehen
-    'wiedersehen'       // Zwischenszene «Das Wiedersehen» im Hub ansehen: wiedersehen=1
+    'wiedersehen',      // Zwischenszene «Das Wiedersehen» im Hub ansehen: wiedersehen=1
+    'auftrag', 'auftragfast',  // einen Auftrag direkt testen (js/debugAuftrag.js)
+    'kreide'            // Kreidezeichen in jedem Raum (js/kreidezeichen.js)
   ];
 
   /**
