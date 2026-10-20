@@ -76,6 +76,11 @@
     'spion.SealedArchive.1': 'Die Schreiber flüstern, wenn sie glauben, allein zu sein. Hör zu, was sie umschreiben.',
     'spion.InformantDen.titel': 'Der Maulwurf',
     'spion.InformantDen.1': 'Einer von uns trifft sich hier mit dem Rat. Finde heraus, wer.',
+    'spion.CouncilWarehouse.hinweis': 'Träger schleppen Kisten durchs Lager: Hinter ihnen sieht Dich keiner, aber remple sie nicht an. Der Spitzel im grauen Mantel erkennt Dich schnell und rennt zur Wache, der Ratsbote mit den Depeschen macht sie wachsam (violette Kegel). Fang beide ab, bevor sie ankommen.',
+    'spion.SealedArchive.hinweis': 'Die Schreiber an ihren Pulten heben dann und wann den Kopf (gelber Kegel). Bleib nicht zu lange in ihrer Nähe, sonst rufen sie die Wache. Der Geleerte an den Regalen sieht nichts mehr. In den Ecken hausen Ratten: Jeder Schlag auf sie ist laut.',
+    'spion.InformantDen.hinweis': 'Ein Ritualdiener geht von Feuerschale zu Feuerschale (gelber Kegel). Ein Spitzel mischt sich unter die Leute, ein Ratsbote bringt Nachricht (violette Kegel): Wer Dich erkennt, läuft zur Wache. In den Ecken lauert Brut aus dem Nebel. Kämpfen macht Lärm.',
+    'spion.Umschlagstelle.hinweis': 'An der Waage führt ein Schreiber das Register (gelber Kegel), ein Ratsbote eilt durch die Hallen und meldet Fremde der Wache (violetter Kegel). Die Geleerten an den Kisten sehen nichts.',
+    'spion.CouncilChamber.hinweis': 'Ein Schreiber führt Protokoll (gelber Kegel), ein Ratsbote eilt hin und her (violetter Kegel). Erkennt er Dich, läuft er zur Wache und macht sie wachsam. Der Geleerte an der Feuerschale sieht nichts.',
     'spion.allgemein.titel': 'Im Schatten',
     'spion.allgemein.1': 'Bleib unerkannt und hör zu.',
     'spion.belauscht': 'Mitgehört',
@@ -139,6 +144,11 @@
     'spion.SealedArchive.1': 'The scribes whisper when they think they are alone. Listen to what they rewrite.',
     'spion.InformantDen.titel': 'The Mole',
     'spion.InformantDen.1': 'One of ours meets the council here. Find out who.',
+    'spion.CouncilWarehouse.hinweis': 'Porters haul crates through the warehouse: nobody sees you behind them, but do not bump into them. The informer in the grey cloak spots you quickly and runs to a guard, the messenger with the dispatches makes a guard watchful (violet cones). Catch both before they get there.',
+    'spion.SealedArchive.hinweis': 'The scribes at their desks look up now and then (yellow cone). Do not linger near them, or they call the guard. The hollowed one at the shelves sees nothing anymore. Rats nest in the corners: every blow you strike at them is loud.',
+    'spion.InformantDen.hinweis': 'A ritual servant goes from brazier to brazier (yellow cone). An informer mingles with the crowd, a council messenger brings word (violet cones): whoever recognises you runs to a guard. Brood from the fog lurks in the corners. Fighting makes noise.',
+    'spion.Umschlagstelle.hinweis': 'At the scales a scribe keeps the register (yellow cone), a council messenger hurries through the halls and reports strangers to the guard (violet cone). The hollowed ones at the crates see nothing.',
+    'spion.CouncilChamber.hinweis': 'A scribe keeps the minutes (yellow cone), a council messenger hurries back and forth (violet cone). If he recognises you, he runs to a guard and makes it watchful. The hollowed one at the brazier sees nothing.',
     'spion.allgemein.titel': 'In the Shadows',
     'spion.allgemein.1': 'Stay unseen and listen.',
     'spion.belauscht': 'Overheard',
@@ -526,13 +536,16 @@
     var st = window.EspionageSystem && window.EspionageSystem.getState ? window.EspionageSystem.getState() : null;
     var stamm = DE['spion.' + templateName + '.titel'] ? templateName : 'allgemein';
     var ziel = _mitte(((st && st.guards) || []).concat((st && st.observeZones) || []));
+    var seiten = [{ sprecher: _t('spion.auftrag'), text: _t('spion.' + stamm + '.1') }]
+      // Eine eigene Regel des Auftrags (Nachteskorte: beim Karren bleiben).
+      .concat(DE['spion.' + stamm + '.2'] ? [{ sprecher: _t('spion.auftrag'), text: _t('spion.' + stamm + '.2') }] : [])
+      .concat([{ sprecher: _t('spion.auftrag'), text: _t('spion.regel') }]);
+    // Wer ausser den Wachen noch im Raum ist (Schreiber, Traeger, Spitzel ...).
+    if (DE['spion.' + stamm + '.hinweis']) seiten.push({ sprecher: _t('spion.auftrag'), text: _t('spion.' + stamm + '.hinweis') });
     return spiele(scene, {
       art: 'start', ziel: ziel,
       kopf: _t('spion.auftrag'), titel: _t('spion.' + stamm + '.titel'),
-      seiten: [{ sprecher: _t('spion.auftrag'), text: _t('spion.' + stamm + '.1') }]
-        // Eine eigene Regel des Auftrags (Nachteskorte: beim Karren bleiben).
-        .concat(DE['spion.' + stamm + '.2'] ? [{ sprecher: _t('spion.auftrag'), text: _t('spion.' + stamm + '.2') }] : [])
-        .concat([{ sprecher: _t('spion.auftrag'), text: _t('spion.regel') }])
+      seiten: seiten
     });
   }
 

@@ -43,7 +43,7 @@ describe('Spionage-Szenen', () => {
     })()`);
     assert.ok(r.titel.length > 0, 'Plakette ohne Titel');
     assert.ok(r.rede.length > 10, 'keine Briefing-Zeile');
-    assert.strictEqual(r.seiten, 2, 'Auftrag und Regel erwartet');
+    assert.strictEqual(r.seiten, 3, 'Auftrag, Regel und die anderen Figuren im Lager erwartet');
     assert.strictEqual(r.pause, true, 'die Spieluhr laeuft weiter');
     assert.strictEqual(r.klammern, false, 'eckige Klammern in der Szene');
     H.run(`${GS}.input.keyboard.emit('keydown', { key: 'Escape', keyCode: 27 })`);

@@ -87,7 +87,7 @@
   var BEKANNTE_FLAGGEN = [
     'dungeon', 'autostart', 'mode', 'modes', 'boss', 'beat',
     'perf', 'nofog', 'nomask', 'nospot', 'noexpl', 'explRes', 'fogInterval', 'rays',
-    'spy', 'roomsize', 'hubdebug',
+    'spy', 'spyseed', 'roomsize', 'hubdebug',
     'eskorte', 'eskortenamen',  // Nachteskorte (js/nachteskorte.js)
     'versteck', 'sonder', 'akt', 'stark',
     'sitzung',          // nur noch Vorschau: sitzung=oeffentlich | geheim

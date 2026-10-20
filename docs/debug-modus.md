@@ -179,6 +179,10 @@ Ansehen mit
 ```
 
 `spy=1` erzwingt einen Spionage-Raum als ersten Raum (ohne Auftrag).
+Gezielt einer: `spy=lager`, `spy=archiv`, `spy=maulwurf`, `spy=umschlag`,
+`spy=ratskammer`. Welche Figuren (Schreiber, Diener, Spitzel, Ratsbote,
+Traeger, Geleerte, Ungeziefer) wo stehen, entscheidet der Zufall des Raums;
+`spyseed=<Zahl>` haelt die Aufstellung fest.
 
 ### Nachteskorte (garde_night_escort)
 

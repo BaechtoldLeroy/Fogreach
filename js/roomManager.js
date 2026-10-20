@@ -561,7 +561,7 @@ function initDungeonRun() {
 
   // #54-Test (?spy=1): ersten Raum auf einen Spionage-Raum zwingen.
   if (_forceEspionageDebug()) {
-    var _espForce = 'CouncilWarehouse';
+    var _espForce = _spionageRaumDebug();
     var _known = window.RoomTemplates && window.RoomTemplates.TEMPLATES && window.RoomTemplates.TEMPLATES[_espForce];
     if (_known) {
       var _ei = templateOrder.indexOf(_espForce);
@@ -3410,6 +3410,21 @@ function _forceEspionageDebug() {
 }
 
 /**
+ * Welcher Spionage-Raum mit ?spy= erzwungen wird: spy=1 das Lagerhaus wie
+ * bisher, spy=lager|archiv|maulwurf|umschlag|ratskammer (oder der Vorlagenname) gezielt einer.
+ */
+function _spionageRaumDebug() {
+  var KURZ = { lager: 'CouncilWarehouse', konvoi: 'CouncilWarehouse', archiv: 'SealedArchive', maulwurf: 'InformantDen',
+    umschlag: 'Umschlagstelle', ratskammer: 'CouncilChamber' };
+  var v = '';
+  try { v = String((window.DebugGate && window.DebugGate.flagge('spy')) || '').toLowerCase(); } catch (e) {}
+  if (KURZ[v]) return KURZ[v];
+  var T = (window.RoomTemplates && window.RoomTemplates.TEMPLATES) || {};
+  var treffer = Object.keys(T).filter(function (n) { return n.toLowerCase() === v && T[n].espionage; })[0];
+  return treffer || 'CouncilWarehouse';
+}
+
+/**
  * Hat die Quest ein offenes observe-Ziel aus `targets`? #159: Ziele gelten der
  * Reihe nach — die geheime Sitzung zaehlt erst, wenn die oeffentliche gesehen
  * ist. Fuer Quests mit nur einem Ziel aendert sich nichts.
@@ -3490,11 +3505,24 @@ function _maybeStartEspionage(scene, templateName, builtMeta) {
       return !!blockedTiles[tx + ',' + ty];
     };
 
+    // Die anderen Figuren (Schreiber, Traeger, Spitzel, Ungeziefer ...): die
+    // Vorlage nennt Kandidaten-Orte/-Wege, der Zufall des Raums waehlt aus.
+    var punkt = function (w) { return { x: ox + (w.x || 0) * T, y: oy + (w.y || 0) * T }; };
+    var actors = (esp.actors || []).map(function (a) {
+      return {
+        type: a.type, count: a.count,
+        spots: (a.spots || []).map(function (s) { var o = punkt(s); if (s.facing != null) o.facing = s.facing; return o; }),
+        routes: (a.routes || []).map(function (r) { return r.map(punkt); })
+      };
+    });
+    var _seedFlagge = window.DebugGate && window.DebugGate.flagge && window.DebugGate.flagge('spyseed');
     window.EspionageSystem.startMission(scene, {
       missionId: templateName,
       guards: (esp.guards || []).map(function (g) { return toWorld(g, false); }),
       cover: (esp.cover || []).map(function (c) { return toWorld(c, true); }),
       observeZones: (esp.observe || []).map(function (o) { return toWorld(o, false); }),
+      actors: actors,
+      seed: (_seedFlagge != null && !isNaN(Number(_seedFlagge))) ? Number(_seedFlagge) : Math.floor(Math.random() * 1e9),
       blockedAt: blockedAt
     });
     window.EspionageSystem.setDisguise(true); // Auto-Verkleidung bei Mission-Start

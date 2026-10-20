@@ -23,6 +23,7 @@
 
   var DEPTH_WORLD = 520;   // über Boden/Gegnern, unter HUD
   var DEPTH_HUD = 1640;    // über dem normalen HUD-Layer
+  var DEPTH_MARKE = 1001;  // "?"/"!" und Ausrufe: über dem Nebel (1000), lesbar auch am Rand
 
   var mounted = false;
   var g = null;            // world-space Graphics (Zonen/Wachen/Deckung/Ring)
@@ -39,6 +40,118 @@
   var _t = 0;              // Pulse-Akkumulator
   var _prevExposed = false;
   var _cw = 1536, _ch = 800;
+
+  // --- Die anderen Figuren (Schreiber, Diener, Traeger, Spitzel, Ungeziefer) ---
+  // Vorhandene Bilder: die Menschen aus dem Hub (einfache Einzelbilder, nach
+  // rechts gewandt), Spitzel/Ratte/Brut aus den Gegnerbildern (links/rechts).
+  var FIGUR = {
+    schreiber: { key: 'vorleser_alter', url: 'assets/sprites/vorleser_alter.png', h: 66 },
+    diener: { key: 'klerus', url: 'assets/sprites/klerus.png', h: 70 },
+    traeger: { key: 'buerger', url: 'assets/sprites/buerger.png?v=2', h: 68 },
+    // Ratsbote: der Junge aus dem Hub in Ratsrot. Geleerte: fahl wie die
+    // Traeger der Nachteskorte (dasselbe Buergerbild, grau getoent).
+    ratsbote: { key: 'vorleser_junge', url: 'assets/sprites/vorleser_junge.png', h: 60, tint: 0xe0a8a0 },
+    geleerter: { key: 'buerger', url: 'assets/sprites/buerger.png?v=2', h: 68, tint: 0x8d949c },
+    spitzel: { dir: 'alarm', h: 66 },
+    ratte: { dir: 'rat', h: 28 },
+    brut: { dir: 'imp', h: 46 }
+  };
+  // Kegelfarben: bernstein = bemerkt Dich, wenn Du zu lange bleibst;
+  // violett = meldet Dich einer Wache (Spitzel, Ratsbote). (Blau/rot bleiben den Wachen.)
+  var KEGEL = { schreiber: 0xf2c35a, diener: 0xf2c35a, spitzel: 0xc77dff, ratsbote: 0xc77dff };
+  var figurSprites = [];   // je Figur ein Sprite
+  var beiwerk = [];        // je Figur: Kiste (Traeger) / Pult (Schreiber) oder null
+  var marken = [];         // "?"/"!" je Wache bzw. Figur
+  var rufe = [];           // [{b, txt}] Ausrufe ueber den Koepfen
+
+  var RUF_DE = {
+    'spion.ruf.ruf_schreiber': 'Wache! Der da schnüffelt in den Akten!',
+    'spion.ruf.ruf_diener': 'Wer bist Du? Wache, hierher!',
+    'spion.ruf.erkannt': 'Dich kenne ich nicht ...',
+    'spion.ruf.meldet': 'Da drüben! Ein Fremder in Uniform!',
+    'spion.ruf.abgefangen': 'Mmpf!',
+    'spion.ruf.rempler': 'He! Pass doch auf!',
+    'spion.ruf.laerm': 'Was war das?',
+    'spion.ruf.bote_meldet': 'Hauptmann, da treibt sich einer herum. Haltet die Augen offen!',
+    'spion.hinweis.spitzel': 'Der Spitzel rennt zur Wache! Fang ihn ab, bevor er sie erreicht.',
+    'spion.hinweis.ratsbote': 'Der Ratsbote eilt zur Wache! Fang ihn ab, sonst wird sie wachsam.'
+  };
+  var RUF_EN = {
+    'spion.ruf.ruf_schreiber': 'Guard! That one is snooping in the files!',
+    'spion.ruf.ruf_diener': 'Who are you? Guard, over here!',
+    'spion.ruf.erkannt': 'I do not know you ...',
+    'spion.ruf.meldet': 'Over there! A stranger in uniform!',
+    'spion.ruf.abgefangen': 'Mmph!',
+    'spion.ruf.rempler': 'Hey! Watch it!',
+    'spion.ruf.laerm': 'What was that?',
+    'spion.ruf.bote_meldet': 'Captain, someone is lurking about. Keep your eyes open!',
+    'spion.hinweis.spitzel': 'The informer is running to a guard! Catch him before he gets there.',
+    'spion.hinweis.ratsbote': 'The council messenger is hurrying to a guard! Catch him, or the guard turns watchful.'
+  };
+  try {
+    if (window.i18n && typeof window.i18n.register === 'function') {
+      window.i18n.register('de', RUF_DE);
+      window.i18n.register('en', RUF_EN);
+    }
+  } catch (e) {}
+  function _rufText(k) {
+    try {
+      if (window.i18n && typeof window.i18n.t === 'function') {
+        var v = window.i18n.t(k);
+        if (v && v !== k && v.indexOf('[MISSING') !== 0) return v;
+      }
+    } catch (e) {}
+    return (_isEN() ? RUF_EN[k] : RUF_DE[k]) || RUF_DE[k] || k;
+  }
+
+  // Hub-Bilder nachladen (der Direkteinstieg in den Keller kommt am Hub vorbei)
+  // und die kleinen Requisiten einmal zeichnen.
+  function _figurenVorbereiten(scene) {
+    if (!scene || !scene.textures) return;
+    var fehlt = false;
+    Object.keys(FIGUR).forEach(function (t) {
+      var f = FIGUR[t];
+      if (f.url && !scene.textures.exists(f.key) && scene.load) { scene.load.image(f.key, f.url); fehlt = true; }
+    });
+    if (fehlt) { try { if (!scene.load.isLoading()) scene.load.start(); } catch (e) {} }
+    try {
+      if (!scene.textures.exists('esp_figur_fallback')) {
+        var a = scene.make.graphics({ add: false });
+        a.fillStyle(0x4a4038, 1); a.fillTriangle(12, 10, 2, 40, 22, 40);   // Kutte
+        a.fillStyle(0x8a7a66, 1); a.fillCircle(12, 8, 6);                   // Kopf
+        a.generateTexture('esp_figur_fallback', 24, 40); a.destroy();
+      }
+      if (!scene.textures.exists('esp_kiste')) {
+        var k = scene.make.graphics({ add: false });
+        k.fillStyle(0x7a5230, 1); k.fillRect(0, 0, 18, 14);
+        k.lineStyle(2, 0x3e2814, 1); k.strokeRect(1, 1, 16, 12);
+        k.lineBetween(1, 1, 17, 13); k.lineBetween(17, 1, 1, 13);
+        k.generateTexture('esp_kiste', 18, 14); k.destroy();
+      }
+      if (!scene.textures.exists('esp_pult')) {
+        var p = scene.make.graphics({ add: false });
+        p.fillStyle(0x3e2a18, 1); p.fillRect(0, 4, 36, 14);                 // Pult
+        p.fillStyle(0x5c3f24, 1); p.fillRect(0, 2, 36, 5);
+        p.fillStyle(0xe8dcb8, 1); p.fillRect(8, 0, 14, 8);                  // Blatt
+        p.fillStyle(0x1a1a22, 1); p.fillCircle(28, 3, 2.5);                 // Tintenfass
+        p.fillStyle(0xffd27a, 1); p.fillRect(3, 0, 2, 4);                   // Kerze
+        p.generateTexture('esp_pult', 36, 18); p.destroy();
+      }
+    } catch (e) {}
+  }
+
+  function _figurTex(scene, a) {
+    var f = FIGUR[a.type];
+    if (!f) return { key: 'esp_figur_fallback', flip: false };
+    var links = Math.cos(a._facing || 0) < 0;
+    if (f.dir) {
+      var k = f.dir + (links ? '_left0' : '_right0');
+      if (scene.textures.exists(k)) return { key: k, flip: false };
+      if (scene.textures.exists(f.dir + '_right0')) return { key: f.dir + '_right0', flip: links };
+      return { key: 'esp_figur_fallback', flip: false };
+    }
+    return scene.textures.exists(f.key) ? { key: f.key, flip: links } : { key: 'esp_figur_fallback', flip: false };
+  }
 
   // Echte Wachen-Textur auflösen (ChainGuard passt zum Kettenrat-Warenhaus);
   // Fallback: einmalig eine simple Wachen-Figur generieren.
@@ -79,6 +192,7 @@
     // Echte Wachen-Sprites vorbereiten (Verkleidung = ersetztes Spieler-Sprite).
     _guardTex = _resolveGuardTex(scene);
     guardSprites = [];
+    _figurenVorbereiten(scene);
 
     var cam = scene.cameras && scene.cameras.main;
     _cw = cam ? cam.width : 1536;
@@ -117,6 +231,144 @@
     for (var k = 0; k < guardSprites.length; k++) { try { guardSprites[k].destroy(); } catch (e) {} }
     zoneLabels = [];
     guardSprites = [];
+    _figurenWeg();
+  }
+
+  function _figurenWeg() {
+    figurSprites.concat(beiwerk, marken).forEach(function (o) { if (o) { try { o.destroy(); } catch (e) {} } });
+    rufe.forEach(function (r) { try { r.txt.destroy(); } catch (e) {} });
+    figurSprites = []; beiwerk = []; marken = []; rufe = [];
+  }
+
+  // Figuren, Requisiten, "?"/"!" und Ausrufe, jeden Frame aus dem State.
+  function _figurenZeichnen(scene, st, sichtZu) {
+    var actors = st.actors || [];
+    var D = DEPTH_WORLD + 2;
+    while (figurSprites.length < actors.length) {
+      figurSprites.push(scene.add.sprite(0, 0, 'esp_figur_fallback').setDepth(D).setScrollFactor(1));
+      beiwerk.push(null);
+    }
+    while (figurSprites.length > actors.length) {
+      try { figurSprites.pop().destroy(); } catch (e) {}
+      var bw = beiwerk.pop(); if (bw) { try { bw.destroy(); } catch (e) {} }
+    }
+    for (var i = 0; i < actors.length; i++) {
+      var a = actors[i], spr = figurSprites[i], f = FIGUR[a.type] || { h: 60 };
+      var tx = _figurTex(scene, a);
+      if (spr.texture.key !== tx.key) spr.setTexture(tx.key);
+      var fh = (spr.frame && spr.frame.height) || 40;            // Masse vom Frame
+      spr.setScale(f.h / fh);
+      spr.setFlipX(tx.flip);
+      // Geleerte buecken sich im Takt ueber ihre Arbeit.
+      var buecken = (a.type === 'geleerter' && !a.knocked) ? Math.max(0, Math.sin((a._workT || 0) * 2.4)) : 0;
+      spr.setPosition(a.x, a.y + buecken * 3);
+      if (a.knocked) { spr.setTint(0x777777); spr.setAlpha(0.7); spr.setAngle(90); }
+      else {
+        spr.setAngle(buecken * 8 * (tx.flip ? -1 : 1)); spr.setAlpha(1);
+        if (a._mark === '!') spr.setTint(0xffb0a0); else if (f.tint) spr.setTint(f.tint); else spr.clearTint();
+      }
+      // Requisit: die Kiste des Traegers, das Pult des Schreibers, die Arbeit des Geleerten.
+      var reqKey = (a.type === 'traeger' || a.type === 'geleerter') ? 'esp_kiste' : (a.type === 'schreiber' ? 'esp_pult' : null);
+      if (reqKey && !beiwerk[i] && scene.textures.exists(reqKey)) beiwerk[i] = scene.add.image(0, 0, reqKey).setScrollFactor(1);
+      var req = beiwerk[i];
+      if (req && a.type === 'traeger') {
+        var dir = Math.cos(a._facing || 0) < 0 ? -1 : 1;
+        if (a.knocked) req.setPosition(a.x + 14, a.y + 16).setDepth(D - 0.1).setAngle(20);
+        else req.setPosition(a.x + dir * 9, a.y - 4).setDepth(D + 0.1).setAngle(0);
+      } else if (req && a.type === 'geleerter') {
+        var gd = Math.cos(a._baseFacing || 0) < 0 ? -1 : 1;
+        req.setPosition(a._homeX + gd * 16, a._homeY + 22).setDepth(D + 0.1);
+      } else if (req) {
+        var bf = a._baseFacing || 0;
+        var rx = a._homeX + Math.cos(bf) * 22, ry = a._homeY + Math.sin(bf) * 18 + 10;
+        req.setPosition(rx, ry).setDepth(ry > a.y ? D + 0.2 : D - 0.2);
+      }
+    }
+
+    // Kegel der Figuren, die Augen haben (an Waenden und Traegern abgeschnitten).
+    actors.forEach(function (a) {
+      var col = KEGEL[a.type];
+      if (!col || a.knocked || !a.range) return;
+      if (a._state === 'report') {
+        // Der Spitzel rennt: gestrichelte Linie zu der Wache, die er holt.
+        if (a._target) {
+          var dx = a._target.x - a.x, dy = a._target.y - a.y, L = Math.sqrt(dx * dx + dy * dy) || 1;
+          g.lineStyle(3, 0xff5a5a, 0.85);
+          for (var s = 0; s < L; s += 18) {
+            var e = Math.min(L, s + 10);
+            g.beginPath(); g.moveTo(a.x + dx * s / L, a.y + dy * s / L); g.lineTo(a.x + dx * e / L, a.y + dy * e / L); g.strokePath();
+          }
+        }
+        return;
+      }
+      var f0 = a._facing || 0, half = a.halfAngle || 0.6, pts = [], RAYS = 12;
+      for (var ri = 0; ri <= RAYS; ri++) {
+        var ang = f0 - half + 2 * half * (ri / RAYS), hit = a.range;
+        for (var d = 9; d <= a.range; d += 9) { if (sichtZu(a.x + Math.cos(ang) * d, a.y + Math.sin(ang) * d)) { hit = Math.max(0, d - 4); break; } }
+        pts.push(a.x + Math.cos(ang) * hit, a.y + Math.sin(ang) * hit);
+      }
+      var n = a._notice || 0;
+      g.fillStyle(col, 0.07 + 0.22 * n);
+      g.beginPath(); g.moveTo(a.x, a.y);
+      for (var pi = 0; pi < pts.length; pi += 2) g.lineTo(pts[pi], pts[pi + 1]);
+      g.closePath(); g.fillPath();
+      g.lineStyle(1.5, col, 0.35 + 0.5 * n);
+      g.beginPath(); g.moveTo(a.x, a.y);
+      for (var pk = 0; pk < pts.length; pk += 2) g.lineTo(pts[pk], pts[pk + 1]);
+      g.closePath(); g.strokePath();
+    });
+
+    // "?" / "!" ueber Wachen und Figuren: dieselbe Sprache fuer alle.
+    var ents = (st.guards || []).map(function (gd) { return { e: gd, h: 78 }; })
+      .concat(actors.map(function (a) { return { e: a, h: (FIGUR[a.type] || { h: 60 }).h }; }));
+    while (marken.length < ents.length) {
+      marken.push(scene.add.text(0, 0, '', {
+        fontFamily: 'monospace', fontSize: '24px', fontStyle: 'bold', color: '#ffd24a', stroke: '#000000', strokeThickness: 5
+      }).setOrigin(0.5, 1).setDepth(DEPTH_MARKE).setScrollFactor(1));
+    }
+    while (marken.length > ents.length) { try { marken.pop().destroy(); } catch (e) {} }
+    var puls = 1 + 0.12 * Math.sin(_t * 6);
+    ents.forEach(function (it, mi) {
+      var m = marken[mi], e = it.e, mk = (e && !e.knocked) ? e._mark : null;
+      if (!mk) { m.setVisible(false); return; }
+      var top = e.y - it.h / 2 - 8;
+      m.setVisible(true).setText(mk).setColor(mk === '!' ? '#ff4a3a' : '#ffd24a').setPosition(e.x, top).setScale(puls);
+      // Wie weit ist die Figur? Kleiner Balken unter dem "?".
+      if (mk === '?' && typeof e._notice === 'number' && e._notice > 0) {
+        var bw = 26;
+        g.fillStyle(0x000000, 0.6); g.fillRect(e.x - bw / 2 - 1, top + 1, bw + 2, 6);
+        g.fillStyle(0xffd24a, 1); g.fillRect(e.x - bw / 2, top + 2, bw * Math.min(1, e._notice), 4);
+      }
+    });
+
+    // Ausrufe: kurz ueber dem Kopf, dann verblassen.
+    var barks = st.barks || [];
+    rufe = rufe.filter(function (r) {
+      if (barks.indexOf(r.b) !== -1) return true;
+      try { r.txt.destroy(); } catch (e) {}
+      return false;
+    });
+    barks.forEach(function (b) {
+      if (!b.ent) return;
+      var r = null;
+      for (var ri2 = 0; ri2 < rufe.length; ri2++) if (rufe[ri2].b === b) { r = rufe[ri2]; break; }
+      if (!r) {
+        var warn = b.key === 'meldet' || b.key === 'bote_meldet' || b.key.indexOf('ruf_') === 0;
+        r = { b: b, txt: scene.add.text(0, 0, _rufText('spion.ruf.' + b.key), {
+          fontFamily: 'serif', fontSize: '16px', fontStyle: 'bold', color: warn ? '#ff9e8f' : '#f4efe2',
+          stroke: '#000000', strokeThickness: 4, align: 'center', wordWrap: { width: 260 }
+        }).setOrigin(0.5, 1).setDepth(DEPTH_MARKE + 1).setScrollFactor(1) };
+        rufe.push(r);
+      }
+      var hh = FIGUR[b.ent.type] ? FIGUR[b.ent.type].h : 78;
+      r.txt.setPosition(b.ent.x, b.ent.y - hh / 2 - 36 - b.t * 6).setAlpha(b.t > 1.6 ? Math.max(0, 1 - (b.t - 1.6) / 0.6) : 1);
+    });
+
+    // Laerm: ein Ring, der sich vom Kampfort ausbreitet.
+    (st.noises || []).forEach(function (nz) {
+      g.lineStyle(3, 0xffe9a8, Math.max(0, 0.9 - nz.t));
+      g.strokeCircle(nz.x, nz.y, 24 + nz.t * 200);
+    });
   }
 
   function _ensureZoneLabels(scene, zones) {
@@ -139,12 +391,18 @@
     var en = _isEN();
     if (st.exposed) return { txt: en ? '! EXPOSED' : '! ENTTARNT', col: 0xff4444, tcol: '#ffffff', hot: true };
     if (allDone) return { txt: en ? '✓ ALL HEARD' : '✓ ABGEHOERT', col: 0x33cc77, tcol: '#06210f', hot: false };
-    if ((st.detection || 0) > 0.05) return { txt: en ? 'SUSPICIOUS' : 'VERDAECHTIG', col: 0xe0a020, tcol: '#1a1200', hot: true };
+    var notice = (window.EspionageSystem && window.EspionageSystem.getNotice) ? window.EspionageSystem.getNotice() : 0;
+    if ((st.detection || 0) > 0.05 || notice > 0.15) return { txt: en ? 'SUSPICIOUS' : 'VERDAECHTIG', col: 0xe0a020, tcol: '#1a1200', hot: true };
     return { txt: en ? 'DISGUISED' : 'VERKLEIDET', col: 0x4a8fd0, tcol: '#04121f', hot: false };
   }
 
   function _actionText(st, allDone) {
     var en = _isEN();
+    // Ein Melder rennt: das ist dringender als alles andere (auch in der Nachteskorte).
+    if (!st.exposed) {
+      var rennt = (st.actors || []).filter(function (a) { return a && !a.knocked && a._state === 'report'; })[0];
+      if (rennt) return _rufText(rennt.type === 'ratsbote' ? 'spion.hinweis.ratsbote' : 'spion.hinweis.spitzel');
+    }
     // Die Nachteskorte sagt selbst, was gerade zu tun ist (beim Karren bleiben).
     var NK = window.Nachteskorte;
     var eigen = (NK && NK.aktiv && NK.aktiv() && NK.hinweis) ? NK.hinweis(st) : null;
@@ -161,7 +419,7 @@
     var active = !!(window.EspionageSystem && typeof window.EspionageSystem.isActive === 'function'
       && window.EspionageSystem.isActive());
     // Stale-mount guard (Hub-Rückkehr / Scene-Switch zerstört unsere Objekte).
-    if (mounted && (!g || !g.scene)) { mounted = false; g = gHud = banner = bannerBg = chipBg = chipText = null; zoneLabels = []; guardSprites = []; }
+    if (mounted && (!g || !g.scene)) { mounted = false; g = gHud = banner = bannerBg = chipBg = chipText = null; zoneLabels = []; guardSprites = []; figurSprites = []; beiwerk = []; marken = []; rufe = []; }
 
     if (!active) { if (mounted) unmount(); return; }
     if (!mounted) mount(scene);
@@ -196,13 +454,15 @@
     var alert = st.exposed ? 1 : Math.min(1, det * 1.5);
     var guards = st.guards || [];
     var blockedAt = st.blockedAt;   // (wx,wy)=>bool: Wand-Test für Sichtlinien
+    // Traeger mit Kiste schneiden die Kegel ab wie eine Wand (bewegte Deckung).
+    var sichtZu = (typeof window.EspionageSystem.sightBlockedAt === 'function')
+      ? window.EspionageSystem.sightBlockedAt : (blockedAt || function () { return false; });
     // Raycast: wie weit reicht ein Strahl aus (gx,gy) unter Winkel ang, bis er
     // auf eine Wand trifft (oder die volle Reichweite)?
     var _rayHit = function (gx, gy, ang, range) {
-      if (!blockedAt) return range;
       var cx = Math.cos(ang), sy = Math.sin(ang), step = 9;
       for (var d = step; d <= range; d += step) {
-        if (blockedAt(gx + cx * d, gy + sy * d)) return Math.max(0, d - step * 0.5);
+        if (sichtZu(gx + cx * d, gy + sy * d)) return Math.max(0, d - step * 0.5);
       }
       return range;
     };
@@ -290,6 +550,8 @@
       }
     }
     // Verkleidung = ersetztes Spieler-Sprite (siehe player.js), kein Overlay hier.
+
+    _figurenZeichnen(scene, st, sichtZu);
 
     // --- Abhör-Zonen (golden, pulsierend; grün wenn fertig) ----------------
     _ensureZoneLabels(scene, zones);
