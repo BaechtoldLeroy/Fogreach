@@ -4039,6 +4039,11 @@ function makeBoss(boss, def, cycle) {
     boss.setScale(def.scale);
   }
   boss.setCollideWorldBounds(true);
+  // Bosse sind schwer: wer in sie hineinlaeuft oder -stuermt, bleibt an ihnen
+  // stehen, statt sie vor sich herzuschieben (gemessen: ~75 px je Sekunde
+  // Laufen, ~50 px je Ansturm). Gewoehnliche Gegner setzt spawnEnemy genauso;
+  // der Boss kommt ueber enemies.create und hatte Phasers Vorgabe (schiebbar).
+  if (boss.body) boss.body.pushable = false;
   // Hitbox an die sichtbaren Pixel anpassen (Boss-Frames tragen grosse
   // transparente Ränder — sonst reicht der Body weit unter das Sprite).
   fitBodyToSprite(boss);

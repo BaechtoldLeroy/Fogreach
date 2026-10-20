@@ -1226,6 +1226,19 @@ window.performRoll = performRoll;
 window.shieldBash = shieldBash;
 window.handlePlayerProjectileEnemyOverlap = handlePlayerProjectileEnemyOverlap;
 
+// Rueckstoss eines Treffers: kurz wegschleudern, dann anhalten. Bosse sind
+// schwer und davon ausgenommen — nur ihre eigenen Angriffe bewegen sie. Ein
+// Bruchteil des Stosses waere bei ihnen ohnehin nur ein Ruck von einem Bild
+// (ihre KI setzt das Tempo jedes Bild neu), und das spaetere Anhalten wuerde
+// mitten in ihre eigene Bewegung fallen. Die Treffer-Toenung bleibt als Rueckmeldung.
+function _rueckstoss(scene, enemy, vx, vy, dauerMs) {
+  if (!enemy || !enemy.active || !enemy.body || enemy.isBoss) return;
+  enemy.body.setVelocity(vx, vy);
+  scene.time.delayedCall(dauerMs, () => {
+    if (enemy && enemy.active && enemy.body) enemy.body.setVelocity(0, 0);
+  });
+}
+
 function hasLineOfSightToEnemy(enemy) {
   if (!enemy || !player || typeof Steering === 'undefined' || !obstacles) {
     return !!enemy;
@@ -2914,11 +2927,8 @@ function releaseChargedSlash(forceMaxCharge = false) {
     if (window.statusEffectManager && window.StatusEffectType && enemy.active) {
       window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.BLEED, 'hammer');
     }
-    if (enemy.body) {
-      const nl = Math.max(1, d);
-      enemy.body.setVelocity((ddx / nl) * knockback, (ddy / nl) * knockback);
-      scene.time.delayedCall(150, () => { if (enemy && enemy.active && enemy.body) enemy.body.setVelocity(0, 0); });
-    }
+    const nl = Math.max(1, d);
+    _rueckstoss(scene, enemy, (ddx / nl) * knockback, (ddy / nl) * knockback, 150);
   }, { requireLineOfSight: false });
 
   // Props im Einschlagradius zerschlagen (Zentrum = Einschlag, NICHT Spieler).
@@ -4115,13 +4125,7 @@ function shadowCharge() {
         duration: res && res.isCrit ? 180 : 120
       });
       // Knockt ALLE getroffenen Gegner in Dash-Richtung weg.
-      if (enemy && enemy.active && enemy.body) {
-        tmp.set(dashDir.x, dashDir.y);
-        enemy.body.setVelocity(tmp.x * knockback, tmp.y * knockback);
-        scene.time.delayedCall(140, function () {
-          if (enemy && enemy.active && enemy.body) enemy.body.setVelocity(0, 0);
-        });
-      }
+      _rueckstoss(scene, enemy, dashDir.x * knockback, dashDir.y * knockback, 140);
     }, { requireLineOfSight: false });
   };
 
@@ -4607,11 +4611,7 @@ function shieldBash() {
       window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.STUN, 'shieldBash');
     }
 
-    if (!enemy || !enemy.active || !enemy.body) return;
-    enemy.body.setVelocity(tempVec.x * knockback, tempVec.y * knockback);
-    scene.time.delayedCall(180, () => {
-      if (enemy && enemy.active && enemy.body) enemy.body.setVelocity(0, 0);
-    });
+    _rueckstoss(scene, enemy, tempVec.x * knockback, tempVec.y * knockback, 180);
   }, { requireLineOfSight: true });
 
   shieldBashCooldown = true;
@@ -4651,15 +4651,10 @@ function handlePlayerProjectileEnemyOverlap(projectile, enemy) {
     const { isCrit } = dealDamageToEnemy(scene, enemy, twMult, 'twistingBlades', { ranged: true });
     handleEnemyHit(scene, enemy, { tint: isCrit ? 0xfff2a6 : 0xffaa88, duration: isCrit ? 200 : 140 });
     const tkb = projectile.getData('knockback') ?? 120;
-    if (enemy.active && enemy.body) {
-      const kdx = enemy.x - projectile.x;
-      const kdy = enemy.y - projectile.y;
-      const klen = Math.hypot(kdx, kdy) || 1;
-      enemy.body.setVelocity((kdx / klen) * tkb, (kdy / klen) * tkb);
-      scene.time.delayedCall(120, () => {
-        if (enemy && enemy.active && enemy.body) enemy.body.setVelocity(0, 0);
-      });
-    }
+    const kdx = enemy.x - projectile.x;
+    const kdy = enemy.y - projectile.y;
+    const klen = Math.hypot(kdx, kdy) || 1;
+    _rueckstoss(scene, enemy, (kdx / klen) * tkb, (kdy / klen) * tkb, 120);
     return; // niemals destroyen — Rückkehr/Lifespan-Timer räumt auf
   }
 
@@ -4681,14 +4676,11 @@ function handlePlayerProjectileEnemyOverlap(projectile, enemy) {
     window.statusEffectManager.applyEffect(enemy, window.StatusEffectType.POISON, 'dagger');
   }
 
-  if (enemy && enemy.active && enemy.body) {
+  if (enemy) {
     const dx = enemy.x - projectile.x;
     const dy = enemy.y - projectile.y;
     const len = Math.hypot(dx, dy) || 1;
-    enemy.body.setVelocity((dx / len) * knockback, (dy / len) * knockback);
-    scene.time.delayedCall(120, () => {
-      if (enemy && enemy.active && enemy.body) enemy.body.setVelocity(0, 0);
-    });
+    _rueckstoss(scene, enemy, (dx / len) * knockback, (dy / len) * knockback, 120);
   }
 
   // Windstoß (Wind Gust): dagger pierces through first enemy
@@ -4960,9 +4952,11 @@ function _kettenSynergy(nodeId, stat) {
 // _pullSpeed; die Gegner-KI (handleEnemies) überspringt während dieser Zeit ihr
 // Steering und zieht den Gegner aktiv heran (sonst überschreibt die KI die
 // Velocity sofort → Pull unsichtbar). Defensiv: nur lebende Gegner mit Body.
+// Bosse laesst die Kette nicht von der Stelle (sie sind schwer, s. _rueckstoss):
+// Stahlgriff und Wirbelsog treffen sie nur.
 function _pullEnemyToPlayer(scene, enemy, speed, durationMs) {
   try {
-    if (!scene || !player || !enemy || !enemy.active || !enemy.body) return;
+    if (!scene || !player || !enemy || !enemy.active || !enemy.body || enemy.isBoss) return;
     var now = (scene.time && typeof scene.time.now === 'number') ? scene.time.now : 0;
     enemy._pullUntil = now + durationMs;
     enemy._pullSpeed = speed;
