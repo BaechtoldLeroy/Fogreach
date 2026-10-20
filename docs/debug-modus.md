@@ -400,6 +400,24 @@ Stift wird das Fenster enger und der Zeiger schneller; zwei Fehlgriffe sind
 frei. Alle Stifte → Ausrüstung auf Belohnungstruhen-Niveau, ein Teil → Gold
 nach Anteil, keiner → nichts.
 
+### Nebenauftraege der Akte 3 und 4 (Story-Kern v6.1)
+
+Keine eigenen Flaggen: jeder Auftrag haengt an einem Weg, den es schon gibt.
+Der Auftrag muss laufen und seine Mindesttiefe erreicht sein, sonst zaehlt nichts.
+
+| Auftrag | Ziel | So kommt man schnell hin |
+|---|---|---|
+| Die schweigenden Brüder (Klerus) | 3 Beschwörer, ab Tiefe 15 | `?sonder=beschwoerer`; solange der Auftrag laeuft, ziehen Beschwörer ohnehin schwerer |
+| Ein Edikt, das keiner bestellt hat (Thom) | riskantes Edikt drucken | Druckerei, eines der drei riskanten Edikte (ab Akt 3) |
+| Kreide an der Zellenwand (Mara) | 3 Kreidezeichen lesen, ab Tiefe 18 | je Raum zu 50 % ein Zeichen abseits; in der Konsole `Kreidezeichen.CHANCE = 1`, dann den naechsten Raum betreten |
+| Die Hand am Schloss (Elara, im Keller) | 3 Kettenschlösser ganz lösen, ab Tiefe 21 | `?event=chain_lock` |
+| Ein Name auf dem Helm (Stadtwache) | Helmmarke, nur von Elites, ab Tiefe 24 | Elites umhauen (35 % je Elite) |
+| Die letzte Fuhre (Mara) | 2 Jagdräume gewinnen, ab Tiefe 28 | `?mode=hunt` oder `?modes=hunt` |
+| Die Schmiede halten (Branka) | 2 Altäre halten, ab Tiefe 27 | `?mode=defend` oder `?modes=defend` |
+
+`questSystem.getAuftragsSchub('gegner' | 'raum' | 'ereignis')` zeigt in der
+Konsole, was die laufenden Auftraege gerade haeufiger machen.
+
 ### Kriegsschar (#95)
 
 | Flagge | Wirkung |

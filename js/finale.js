@@ -313,7 +313,10 @@
         '(The Furnace. A shaft of embers and smoke, as tall as the town hall. Before it, hood down: Elara. Around her neck an amulet of the council, a true one.)\n\nELARA: You are here. I knew it. Now loosen the binding, the way I showed you, and the Furnace is history.'),
       // 1. Der erhobene Hammer (Stufe 3: Bildunterschrift beim Ansetzen).
       _t('(Du setzt den Hammer an die Bindung, an der Stelle, die sie Dir gezeigt hat. Deine Hände wissen, was zu tun ist. Sie wissen es zu gut.)',
-        '(You set the hammer to the binding, at the spot she showed you. Your hands know what to do. They know it too well.)'),
+        '(You set the hammer to the binding, at the spot she showed you. Your hands know what to do. They know it too well.)')
+        // v6.1 (Die Hand am Schloss): wer die Schloesser geuebt hat.
+        + (_flag('drehung_geuebt') ? _t('\n\n(Deine Hände kennen die Drehung. Sie hat sie Dir beigebracht, Schloss für Schloss.)',
+          '\n\n(Your hands know the turn. She taught it to you, lock by lock.)') : ''),
       _t('(Mitten im Schlag erkennst Du den Griff. Das ist kein Lösen. Das ist das Erneuern, das Du schon einmal verweigert hast, damals, als Du noch wusstest, wer Du bist.)\n\n(Du hältst inne. Der Hammer bleibt oben.)',
         '(In the middle of the strike you recognize the grip. This is no loosening. This is the renewal you refused once before, back when you still knew who you were.)\n\n(You stop. The hammer stays raised.)'),
       _t('ELARA: (leise) Alles haben wir vorausgesehen. Nur nicht, dass Du es merkst.',

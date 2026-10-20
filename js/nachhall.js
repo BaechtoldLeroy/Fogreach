@@ -124,6 +124,11 @@
       var s = satzAus(q.text);
       if (s) pool.push({ text: s, art: 'satz', quelle: 'auftrag:' + q.id });
     });
+    // v6.1: Wer Maras Kreidezeichen gelesen hat, hoert sie wieder.
+    var K = (typeof window !== 'undefined') ? window.Kreidezeichen : null;
+    if (ids.indexOf('mara_kreide') >= 0 && K && typeof K.satzListe === 'function') {
+      K.satzListe(flags, e.lang).forEach(function (s) { pool.push({ text: s, art: 'satz', quelle: 'kreide' }); });
+    }
     if (ids.indexOf('who_you_were') >= 0 || flags.self_remembered) {
       pool.push({ text: T.eigen, art: 'eigen', quelle: 'eigen' });
     }

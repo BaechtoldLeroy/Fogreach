@@ -89,6 +89,15 @@
         { label: 'Erst die Leute warnen', setFlags: ['namen_gewarnt'], response: '(Du gibst Mara ein Zeichen und lässt Dir Zeit auf dem Weg zum Rathaus. In der Nacht leeren sich die Häuser auf der Liste.)\n\nPRIESTER: Leer? Alle? (Er sieht Dich lange an.) Der Befall wandert. Das Licht wird ihn finden.' }
       ]
     },
+    // v6.1: Die schweigenden Brueder. Der Ring des Hochpriesters landet im
+    // Epilog auf Thoms Blatt, wenn Du ihn ihm zusteckst.
+    klerus_brueder: {
+      prompt: 'PRIESTER: Alle drei. Leg sie hierher.',
+      choices: [
+        { label: 'Alle Ringe abgeben', setFlags: ['klerus_ringe_abgeliefert'], response: 'PRIESTER: Das Licht dankt Dir. (Er lässt die Ringe in eine Lade fallen und schliesst ab. Von den drei Brüdern spricht danach niemand mehr.)' },
+        { label: 'Den schweren Ring Thom zustecken', setFlags: ['klerus_ring_thom'], response: '(Du legst zwei Ringe auf den Tisch. Den schweren behältst Du in der Faust.)\n\nPRIESTER: Zwei? (Er zählt nach.) Der Dritte trug keinen, sagst Du. Das Licht wird ihn finden.\n\n(Am Abend legst Du den Ring auf Thoms Setzkasten. Er dreht ihn lange unter der Lampe und sagt nichts. Dann verschwindet der Ring in einer Lade.)' }
+      ]
+    },
     mara_contact: {
       prompt: 'MARA: Du hast früher Fragen gestellt, Archivschmied.',
       choices: [
@@ -128,8 +137,24 @@
       ]
     },
 
+    // v6.1: Ein Name auf dem Helm. Wahrheit oder Trost fuer den Hauptmann.
+    wache_helm: {
+      prompt: 'HAUPTMANN: Sag es mir. Hat er gekämpft?',
+      choices: [
+        { label: 'Die Wahrheit sagen', setFlags: ['wachtmeister_wahrheit'], response: '(Du sagst ihm, wie es war. Dass er leer war. Dass er sich kaum gewehrt hat.)\n\nHAUPTMANN: (lange nichts) Sie schreiben mir jeden Monat, er halte den Weg. (Er steckt die Marke ein.) Dann haben sie ihn mir genommen, lange bevor Du hinunterkamst.' },
+        { label: '"Er ist im Dienst gefallen."', setFlags: ['wachtmeister_trost'], response: 'HAUPTMANN: Im Dienst. (Er nickt, mehrmals.) Dann hat er gehalten, was er halten sollte. (Er richtet sich auf, die Hand am Helm.) Danke, Archivschmied. Die Garde vergisst ihre Toten nicht.' }
+      ]
+    },
     // ------------------------------------------------------------------ AKT 4
     // v6.1: Branka schickt Dich zur Esse (Harren steigt selbst hinab).
+    // v6.1: Die letzte Fuhre. Zerschlagen (verweht zum Teil) oder binden.
+    mara_letzte_fuhre: {
+      prompt: 'MARA: Zerschlagen oder binden?',
+      choices: [
+        { label: 'Unten zerschlagen', setFlags: ['phiolen_zerschlagen'], response: '(Du trägst sie noch einmal hinab, an den Rand des Nebels, und zerschlägst sie dort, eine nach der anderen. Was darin war, steigt auf. Manches findet zurück. Manches verweht.)\n\nMARA: Wenigstens frisst die Esse es nicht.' },
+        { label: 'Zu Branka bringen', setFlags: ['phiolen_gebunden'], response: '(Du bringst sie zu Branka. Sie legt sie neben den Amboss, eine nach der anderen, und liest jeden Namen laut.)\n\nBRANKA: Ich binde sie. Langsam. Keiner soll halb zurückkommen.' }
+      ]
+    },
     schattenrat_finale: {
       prompt: 'BRANKA: Geh zur Esse. Und komm zurück.',
       choices: [
@@ -246,6 +271,12 @@
     'storydialog.klerus_district_purge.1.label': 'Warn the people first',
     'storydialog.klerus_district_purge.1.response': '(You give Mara a sign and take your time on the way to the town hall. In the night the houses on the list empty.)\n\nPRIEST: Empty? All of them? (He looks at you for a long time.) The infestation moves on. The Light will find it.',
 
+    'storydialog.klerus_brueder.prompt': 'PRIEST: All three. Put them here.',
+    'storydialog.klerus_brueder.0.label': 'Hand over all the rings',
+    'storydialog.klerus_brueder.0.response': 'PRIEST: The Light thanks you. (He drops the rings into a drawer and locks it. Nobody speaks of the three brothers after that.)',
+    'storydialog.klerus_brueder.1.label': 'Slip the heavy ring to Thom',
+    'storydialog.klerus_brueder.1.response': '(You lay two rings on the table. The heavy one stays in your fist.)\n\nPRIEST: Two? (He counts again.) The third wore none, you say. The Light will find him.\n\n(In the evening you put the ring on Thom\'s type case. He turns it under the lamp for a long time and says nothing. Then the ring disappears into a drawer.)',
+
     'storydialog.mara_contact.prompt': 'MARA: You used to ask questions, Archivesmith.',
     'storydialog.mara_contact.0.label': 'I asked questions? Before?',
     'storydialog.mara_contact.0.response': 'MARA: Oh, you did. Maybe that is why they emptied you. Think about it.',
@@ -265,6 +296,18 @@
     'storydialog.thom_truth.prompt': 'THOM: I print what is true. Will you stand behind it when things get tight?',
     'storydialog.thom_truth.0.label': 'I stand behind it. Even if it costs something.',
     'storydialog.thom_truth.0.response': 'THOM: Then there are two of us. We pay the price together. That is enough to start.',
+
+    'storydialog.wache_helm.prompt': 'CAPTAIN: Tell me. Did he fight?',
+    'storydialog.wache_helm.0.label': 'Tell the truth',
+    'storydialog.wache_helm.0.response': '(You tell him how it was. That he was empty. That he barely fought back.)\n\nCAPTAIN: (nothing for a long time) Every month they write to me that he holds the way. (He pockets the tag.) Then they took him from me long before you went down.',
+    'storydialog.wache_helm.1.label': '"He fell in service."',
+    'storydialog.wache_helm.1.response': 'CAPTAIN: In service. (He nods, several times.) Then he held what he was meant to hold. (He straightens up, his hand at his helmet.) Thank you, Archivesmith. The Guard does not forget its dead.',
+
+    'storydialog.mara_letzte_fuhre.prompt': 'MARA: Smash them or bind them?',
+    'storydialog.mara_letzte_fuhre.0.label': 'Smash them down below',
+    'storydialog.mara_letzte_fuhre.0.response': '(You carry them down once more, to the edge of the fog, and smash them there, one after another. What was inside rises. Some of it finds its way back. Some of it blows away.)\n\nMARA: At least the Furnace does not eat it.',
+    'storydialog.mara_letzte_fuhre.1.label': 'Take them to Branka',
+    'storydialog.mara_letzte_fuhre.1.response': '(You take them to Branka. She lays them next to the anvil, one after another, and reads every name aloud.)\n\nBRANKA: I will bind them. Slowly. Nobody should come back halfway.',
 
     'storydialog.schattenrat_finale.prompt': 'BRANKA: Go to the Furnace. And come back.',
     'storydialog.schattenrat_finale.0.label': 'And Elara?',

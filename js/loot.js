@@ -19,7 +19,8 @@ if (window.i18n) {
     'loot.quest_item.PROCLAMATION': 'Edikt-Plakat',
     'loot.quest_item.MEMORY_SHARD': 'Splitter Deiner Phiole',
     'loot.quest_item.HUNDEHALSBAND': 'Brunos Halsband',
-    'loot.quest_item.EICHGEWICHT': 'Eichgewicht der Zunft'
+    'loot.quest_item.EICHGEWICHT': 'Eichgewicht der Zunft',
+    'loot.quest_item.HELMMARKE': 'Helmmarke'
   });
   window.i18n.register('en', {
     'loot.legacy.weapon': 'Sword',
@@ -41,7 +42,8 @@ if (window.i18n) {
     'loot.quest_item.PROCLAMATION': 'Edict Poster',
     'loot.quest_item.MEMORY_SHARD': 'Shard of Your Vial',
     'loot.quest_item.HUNDEHALSBAND': "Bruno's Collar",
-    'loot.quest_item.EICHGEWICHT': 'Guild Standard Weight'
+    'loot.quest_item.EICHGEWICHT': 'Guild Standard Weight',
+    'loot.quest_item.HELMMARKE': 'Helmet Tag'
   });
 }
 const _LOOT_T = (key) => (window.i18n ? window.i18n.t(key) : key);
@@ -322,11 +324,15 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
       // Botengang, den man ewig sucht, ist keiner.
       // Das Buendel liegt mit dem Zeichen auf dem Siegel da (#156) — der
       // Spieler sieht es, bevor er weiss, was es bedeutet.
-      { target: 'sealed_bundle',     name: _LOOT_T('loot.quest_item.SEALED_BUNDLE'),     nameKey: 'loot.quest_item.SEALED_BUNDLE',     key: 'SEALED_BUNDLE',     tint: 0xffffff, chance: 0.25, iconKey: 'zeichen_schattenrat' }
+      { target: 'sealed_bundle',     name: _LOOT_T('loot.quest_item.SEALED_BUNDLE'),     nameKey: 'loot.quest_item.SEALED_BUNDLE',     key: 'SEALED_BUNDLE',     tint: 0xffffff, chance: 0.25, iconKey: 'zeichen_schattenrat' },
+      // v6.1 (Ein Name auf dem Helm): die Marke traegt nur, wer unten fuehrt.
+      // nurElite: faellt ausschliesslich von Elite-Gegnern, dafuer oft.
+      { target: 'helmmarke',         name: _LOOT_T('loot.quest_item.HELMMARKE'),         nameKey: 'loot.quest_item.HELMMARKE',         key: 'HELMMARKE',         tint: 0xd8b060, chance: 0.35, nurElite: true }
     ];
 
     for (var qi = 0; qi < questItemDefs.length; qi++) {
       var qiDef = questItemDefs[qi];
+      if (qiDef.nurElite && !(sourceEnemy && sourceEnemy.isElite)) continue;
       var needsItem = activeQuests.some(function (q) {
         // #72: unterhalb der Mindesttiefe faellt nichts — es zaehlte ohnehin nicht.
         if (typeof window.questSystem.tiefeErreicht === 'function' && !window.questSystem.tiefeErreicht(q.id)) return false;

@@ -383,7 +383,9 @@ test('055: fetch-Quests nutzen nur Targets mit Loot-Item (C-05)', () => {
     // #155: Elaras Buendel (vorher kill x5 ohne Gegenstand).
     'sealed_bundle',
     // #148: die beiden menschlichen Nebenquests.
-    'hundehalsband', 'eichgewicht']);
+    'hundehalsband', 'eichgewicht',
+    // v6.1: Ein Name auf dem Helm (nur von Elites, loot.js nurElite).
+    'helmmarke']);
   Object.keys(defs).forEach((id) => {
     (defs[id].objectives || []).forEach((o) => {
       if (o.type === 'fetch') {
@@ -758,10 +760,10 @@ test('062 T014: entfernte/umbenannte IDs weg, v4-Nachfolger da', () => {
 
 // --- T015 — Struktur-Invarianten -------------------------------------------
 
-test('062 T015: 51 Quests (33 + zwei Nebenquests #148 + sieben Aushaenge #68 + acht Einfuehrungen #143 + der Nachhall, v6.1 Stufe 2), keine doppelten ids/titles', () => {
+test('062 T015: 58 Quests (33 + zwei Nebenquests #148 + sieben Aushaenge #68 + acht Einfuehrungen #143 + der Nachhall, v6.1 Stufe 2 + sieben Nebenauftraege der Akte 3/4), keine doppelten ids/titles', () => {
   const D = freshSystem().QUEST_DEFINITIONS;
   const ids = Object.keys(D);
-  assert.strictEqual(ids.length, 51, 'die v4-Struktur hat 34 Quests (ohne "Waffen für den Widerstand", b479: 33), dazu zwei Nebenquests (#148), sieben Aushaenge am Brett (#68), acht Einfuehrungsquests (#143: dazu Akte und Truhe) und "Was der Rauch behält" (Stufe 2)');
+  assert.strictEqual(ids.length, 58, 'die v4-Struktur hat 34 Quests (ohne "Waffen für den Widerstand", b479: 33), dazu zwei Nebenquests (#148), sieben Aushaenge am Brett (#68), acht Einfuehrungsquests (#143: dazu Akte und Truhe), "Was der Rauch behält" (Stufe 2) und sieben Nebenauftraege (v6.1, Akte 3/4)');
   const titles = ids.map((id) => D[id].title);
   assert.strictEqual(new Set(titles).size, titles.length, 'keine doppelten Titel');
   const idField = ids.map((id) => D[id].id).filter(Boolean);
@@ -794,7 +796,7 @@ test('062 T019: jedes Objective-Ziel ist ausloesbar (Trigger-Audit)', () => {
     // #143: onSystemUsed nimmt genau diese Ziele an — ein Tippfehler in einer
     // Quest waere ein Auftrag, den man nicht abschliessen kann.
     system: new Set(SYS.SYSTEM_ZIELE || []),
-    kill: '*',           // updateQuestProgress('kill', target)
+    kill: '*',           // updateQuestProgress('kill', target); typ_<n>: player.js nach Gegnertyp (v6.1)
     boss_kill: '*',      // onBossKilled(name)
     explore: new Set(['room', 'room_lauf']),   // room_lauf: Aushang Standhalten, markRoomCleared (b477)
     craft: '*',          // onItemCrafted
@@ -805,13 +807,18 @@ test('062 T019: jedes Objective-Ziel ist ausloesbar (Trigger-Audit)', () => {
       'seized_writings', 'interrogation_record', 'print_plate',
       'verification_seal', 'proclamation', 'memory_shard',     // WP05
       'sealed_bundle',                                          // #155
-      'hundehalsband', 'eichgewicht']),                         // #148
+      'hundehalsband', 'eichgewicht',                           // #148
+      'helmmarke']),                                            // v6.1: loot.js, nurElite
     observe: new Set(['convoy_intel', 'archive_record', 'informant_id',
       'eskorte_verladung', 'eskorte_waage', 'eskorte_schacht',  // Nachteskorte (js/nachteskorte.js)
       'collusion_reveal_seen', 'erster_riss_gesehen',
       'oeffentliche_sitzung',                                   // #159: Ratssaal (Hub-Szene)
       'edikte_gedruckt', 'edikte_plakatiert',   // #160: HubSceneV2 (_ediktDrucken/_ediktAushaengen/_ediktAuszaehlen)          // 063 WP04 / #156: Szenen-Trigger
-      'aldric_gefunden'])                       // v6.1: roomManager _tiefenBegegnung (Die letzte Wache)
+      'aldric_gefunden',                        // v6.1: roomManager _tiefenBegegnung (Die letzte Wache)
+      'kreidezeichen',                          // v6.1: js/kreidezeichen.js (Kreide an der Zellenwand)
+      'schloss_geloest']),                      // v6.1: eventSystem chain_lock, ganz geloest (Die Hand am Schloss)
+    // v6.1: roomModes.updateActive meldet jeden gewonnenen Raum mit seinem Modus.
+    raum: new Set(['hunt', 'defend', 'survival', 'escape'])
   };
   Object.keys(D).forEach((id) => {
     (D[id].objectives || []).forEach((o) => {

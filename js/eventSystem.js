@@ -304,6 +304,15 @@
     } catch (e) { return false; }
   }
 
+  /** v6.1: Gewichtsschub laufender Auftraege (questSystem.getAuftragsSchub). */
+  function _auftragsSchub(art) {
+    try {
+      var qs = window.questSystem;
+      if (qs && typeof qs.getAuftragsSchub === 'function') return qs.getAuftragsSchub(art) || {};
+    } catch (e) {}
+    return {};
+  }
+
   var EVENT_TYPES = [
     {
       id: 'treasure_cache',
@@ -1500,6 +1509,8 @@
     id: 'chain_lock',
     name: T('event.lock.name'),
     weight: 11,
+    // v6.1: Solange Elaras Uebung laeuft (Die Hand am Schloss), haeufiger.
+    gewicht: function () { return 11 + (_auftragsSchub('ereignis').chain_lock || 0); },
     minDepth: 2,
     handler: function (scene) {
       showEventToast(scene, T('event.lock.toast_spawn'), 'chain_lock');
@@ -1510,6 +1521,13 @@
         if (!window.Kettenschloss || typeof window.Kettenschloss.spiele !== 'function') return;
         window.Kettenschloss.spiele(scene, tiefe, function (erg) {
           var lohn = window.Kettenschloss.belohnung(erg.gesetzt, erg.anzahl, tiefe, erg.verloren);
+          // v6.1: Ganz geloest, ohne Bruch: zaehlt fuer Elaras Uebung.
+          if (erg && erg.anzahl > 0 && erg.gesetzt === erg.anzahl && !erg.verloren) {
+            try {
+              var qs = window.questSystem;
+              if (qs && typeof qs.updateQuestProgress === 'function') qs.updateQuestProgress('observe', 'schloss_geloest', 1);
+            } catch (e) {}
+          }
           try {
             if (lohn.art === 'item' && window.LootSystem
                 && typeof window.LootSystem.rollItem === 'function'

@@ -515,6 +515,19 @@ function spawnEnemy(xCoordinates, yCoordinates, enemyType, opts) {
     // Finalraum — der gehoert dem Boss bzw. der Klimax).
     const _profil = (!window.__isFinalDungeonRoom && typeof _aktiveQuestProfil === 'function') ? _aktiveQuestProfil() : null;
     if (_profil && _profil.length) availableTypes = _profil;
+    // v6.1: Laufende Auftraege ziehen ihre Gegner schwerer (questSystem
+    // getAuftragsSchub('gegner'), z. B. Beschwoerer). Nur Typen, die Tiefe
+    // und Akt hier ohnehin zulassen; die Obergrenzen je Raum gelten weiter.
+    if (!window.__isFinalDungeonRoom && window.questSystem && typeof window.questSystem.getAuftragsSchub === 'function') {
+      try {
+        const _schub = window.questSystem.getAuftragsSchub('gegner');
+        Object.keys(_schub).forEach((k) => {
+          const t = Number(k);
+          if (availableTypes.indexOf(t) === -1) return;
+          availableTypes = availableTypes.concat(new Array(Math.max(0, _schub[k] | 0)).fill(t));
+        });
+      } catch (e) { /* nie das Spawnen brechen */ }
+    }
     // #12: Sondertypen nur, wo sie hingehoeren, und nicht zu viele auf einmal.
     const SG = window.Sondergegner;
     if (SG && typeof SG.istSondertyp === 'function') {

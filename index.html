@@ -149,6 +149,7 @@
     <script src="js/ai/steering.js?v=003"></script>
     <script src="js/storage.js?v=070"></script>
     <script src="js/hiddenFinds.js?v=021"></script>
+    <script src="js/kreidezeichen.js?v=001"></script>
     <!-- #71: Kettenschloss-Minispiel — vor eventSystem (dort registriert) -->
     <script src="js/kettenschloss.js?v=006"></script>
     <script src="js/uiRahmen.js?v=010"></script>
@@ -158,12 +159,12 @@
     <script src="js/schriftstuecke.js?v=002"></script>
     <script src="js/hudLeiste.js?v=006"></script>
     <script src="js/feedback.js?v=001"></script>
-    <script src="js/eventSystem.js?v=062"></script>
+    <script src="js/eventSystem.js?v=063"></script>
     <!-- 061: Raum-Ziel-Modi. roomModes.js (Framework + ClearMode) MUSS vor
          roomManager/wave/main laden. Die Modus-Dateien (survival/defend/hunt/
          visuals/escape) registrieren sich selbst und kommen in späteren WPs;
          fehlt eine Datei, fällt die Auswahl defensiv auf `clear` zurück. -->
-    <script src="js/roomModes.js?v=092"></script>
+    <script src="js/roomModes.js?v=093"></script>
     <!-- 112: gemeinsamer Anker-Baustein (Platz + Sichtpruefung). MUSS vor den
          Modus-Dateien laden — deren arm() greift darauf zu. -->
     <script src="js/roomModeAnchor.js?v=002"></script>
@@ -176,13 +177,13 @@
     <script src="js/roomModeEscape.js?v=088"></script>
     <script src="js/roomModeVisuals.js?v=088"></script>
     <script src="js/spawnRegeln.js?v=002"></script>
-    <script src="js/roomManager.js?v=182"></script>
+    <script src="js/roomManager.js?v=183"></script>
     <script src="js/statusEffects.js?v=010"></script>
     <script src="js/particleEffects.js?v=006"></script>
     <!-- Reine Reichweiten-Mathematik für zerstörbare Props. Abhängigkeitsfrei
          und VOR player.js, das sie in breakDestructiblesInRange nutzt. -->
     <script src="js/propRange.js?v=002"></script>
-    <script src="js/player.js?v=147"></script>
+    <script src="js/player.js?v=148"></script>
     <script src="js/enemySpawnGating.js?v=008"></script>
     <script src="js/sondergegner.js?v=007"></script>
     <script src="js/bossIntro.js?v=005"></script>
@@ -190,8 +191,8 @@
     <script src="js/bossZwischenszene.js?v=009"></script>
     <!-- Elaras Rettung als Zwischensequenz und ihr Rueckblick (Story v6.1) -->
     <script src="js/rettungsSzene.js?v=005"></script>
-    <script src="js/enemy.js?v=149"></script>
-    <script src="js/nachhall.js?v=002"></script>
+    <script src="js/enemy.js?v=150"></script>
+    <script src="js/nachhall.js?v=003"></script>
     <!-- Stufe 3: der Kampf gegen die besessene Elara (nach enemy.js) -->
     <script src="js/elaraKampf.js?v=002"></script>
     <!-- Gegner-Sprite-Ladeliste (queueEnemySprites): Hintergrund-Load im Hub +
@@ -200,19 +201,19 @@
     <script src="js/eliteEnemies.js?v=013"></script>
     <!-- #95: Kriegsschar — braucht EliteEnemies (Affix-Definitionen) -->
     <script src="js/kriegsschar.js?v=005"></script>
-    <script src="js/loot.js?v=037"></script>
-    <script src="js/questSystem.js?v=057"></script>
+    <script src="js/loot.js?v=038"></script>
+    <script src="js/questSystem.js?v=058"></script>
     <!-- Akt-Zwischenszenen (vor storySystem) -->
     <script src="js/aktwechsel.js?v=003"></script>
     <script src="js/storySystem.js?v=026"></script>
     <!-- Feature 063: Story-Inszenierung (Logik/Daten/Komponente vor HubSceneV2) -->
-    <script src="js/questFinale.js?v=012"></script>
+    <script src="js/questFinale.js?v=013"></script>
     <!-- #158: Finale an der Quelle und die Entscheidung am Konvoi. -->
     <!-- Stufe 3: die Esse als Handwerk (erhobener Hammer, letzter Schlag) -->
     <script src="js/finaleHandwerk.js?v=003"></script>
-    <script src="js/finale.js?v=015"></script>
+    <script src="js/finale.js?v=016"></script>
     <script src="js/dialogChoice.js?v=005"></script>
-    <script src="js/storyDialog.js?v=013"></script>
+    <script src="js/storyDialog.js?v=014"></script>
     <script src="js/sitzungsBuehne.js?v=003"></script>
     <script src="js/zettelSzene.js?v=002"></script>
     <script src="js/storyScenes.js?v=024"></script>
@@ -230,7 +231,7 @@
     <!-- Printing House (feature 046 / Issue #24). Depends on storySystem
          + questSystem at runtime (lazy via window globals; load order only
          requires it to be before any scene that opens its dialog UI). -->
-    <script src="js/printingHouse.js?v=008"></script>
+    <script src="js/printingHouse.js?v=009"></script>
     <!-- Knowledge Tree (feature 047 / Issue #26). Auto-inits on load. Must
          load after i18n.js (uses i18n.register) and before HubSceneV2.js
          (the modal UI calls window.KnowledgeTree.*). -->

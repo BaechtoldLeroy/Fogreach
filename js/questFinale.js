@@ -102,6 +102,11 @@
       aldricErzaehlt: 'Aldric lebt in einer Kammer unter dem Rathaus. Er hat seine Geschichte aus Deinem Mund gehört und liest sie jeden Tag auf Thoms Blättern nach, als ginge es um einen Fremden.',
       aldricVerschwiegen: 'Aldric irrt durch die unteren Gänge. Sein Name steht an jeder Tür der Stadt, und er weiss nicht, dass es seiner ist.',
       konvoiMann: 'Unter ihnen ist einer, dessen Name auf der Phiole stand, die am Konvoi zerbrach. Er erkennt Dich sofort.',
+      ringThom: 'Unter Aldrics Namen steht auch der Ring des Hochpriesters gedruckt, Zeichen für Zeichen abgenommen. Thom hat ihn aufbewahrt, bis es eine Seite gab, auf die er gehörte.',
+      phiolenGebunden: 'Wer aus der letzten Fuhre heimkehrt, kehrt ganz zurück. Branka hat jede Phiole einzeln gebunden, und die Leute holen ihre Erinnerungen an der Schmiede ab wie ein Werkstück.',
+      phiolenZerschlagen: 'Wer aus der letzten Fuhre heimkehrt, kommt mit Lücken. Was Du unten zerschlagen hast, ist zum Teil verweht, und manche suchen noch nach einem Tag, der ihnen fehlt.',
+      wachtmeisterWahrheit: 'Eines Morgens steht der Hauptmann der Stadtwache vor Thoms Tür, allein. Er liest das Blatt mit dem Namen seines Sohnes, lange. Dann geht er wieder.',
+      wachtmeisterTrost: 'Der Hauptmann der Stadtwache bleibt der Garde treu. Für ihn ist sein Sohn im Dienst gefallen, und so steht es auch auf dem Stein, den er hat setzen lassen.',
       geleerte: 'Auch die Träger vom Schacht steigen wieder herauf. Einer trägt noch den Strick eines Namensschilds am Handgelenk und weiss jetzt, wessen Name darauf stand.',
       seiteGemerkt: 'Ganz oben auf Thoms Blättern steht die Seite von der Waage, aus Deinem Gedächtnis gesetzt, Zeile für Zeile. Die erste Zeile heisst {name}.',
       seiteGerissen: 'Die Seite aus dem Register der Waage legt Thom als erste unter die Presse, in der Handschrift des Schreibers, der sie verzeichnet hat. Die erste Zeile heisst {name}.',
@@ -134,6 +139,11 @@
       aldricErzaehlt: 'Aldric lives in a chamber beneath the town hall. He heard his story from your mouth and reads it again every day on Thom\'s sheets, as if it were about a stranger.',
       aldricVerschwiegen: 'Aldric wanders the lower passages. His name is on every door in the city, and he does not know it is his.',
       konvoiMann: 'Among them is one whose name was on the vial that broke at the convoy. He recognizes you at once.',
+      ringThom: 'Beneath Aldric\'s name the High Priest\'s ring is printed too, its sign copied line by line. Thom kept it until there was a page it belonged on.',
+      phiolenGebunden: 'Whoever comes home from the last load comes home whole. Branka bound every vial on its own, and people collect their memories at the forge like a finished piece.',
+      phiolenZerschlagen: 'Whoever comes home from the last load comes home with gaps. What you smashed down there partly blew away, and some are still looking for a day they are missing.',
+      wachtmeisterWahrheit: 'One morning the City Watch captain stands at Thom\'s door, alone. He reads the sheet with his son\'s name on it for a long time. Then he leaves again.',
+      wachtmeisterTrost: 'The City Watch captain stays loyal to the Guard. To him his son fell in service, and that is what the stone he had set says as well.',
       geleerte: 'The porters from the shaft climb back up as well. One still wears the string of a name tag around his wrist and now knows whose name was on it.',
       seiteGemerkt: 'At the very top of Thom\'s sheets stands the page from the scale, set from your memory, line by line. The first line reads {name}.',
       seiteGerissen: 'Thom puts the page from the scale\'s register under the press first, in the handwriting of the scribe who recorded it. The first line reads {name}.',
@@ -164,6 +174,8 @@
         : namen.slice(0, -1).join(', ') + T.und + namen[namen.length - 1];
       out.push(T.nachhall.replace('{namen}', liste));
     }
+    // v6.1 (Die schweigenden Brueder): der Ring, den Du Thom zugesteckt hast.
+    if (flag(flags, 'klerus_ring_thom')) out.push(T.ringThom);
     // Nachteskorte: die Seite von der Waage, je nach Wahl gemerkt oder gerissen.
     var NK = window.Nachteskorte;
     var seite = flag(flags, 'eskorte_seite_gerissen') ? T.seiteGerissen
@@ -181,12 +193,18 @@
       : flag(flags, 'petitions_surrendered') ? T.wenigeZurueck : T.einigeZurueck;
     if (flag(flags, 'convoy_blade_drawn')) zurueck += ' ' + T.konvoiMann;
     if (flag(flags, 'geleerte_gesehen')) zurueck += ' ' + T.geleerte;
+    // v6.1 (Die letzte Fuhre): gebunden oder zerschlagen.
+    if (flag(flags, 'phiolen_gebunden')) zurueck += ' ' + T.phiolenGebunden;
+    else if (flag(flags, 'phiolen_zerschlagen')) zurueck += ' ' + T.phiolenZerschlagen;
     out.push(zurueck);
 
     if (st.allies.branka) out.push(flag(flags, 'verification_refused') ? T.branka : T.brankaAlt);
     if (st.allies.mara) out.push(T.mara);
     else if (flag(flags, 'convoy_blown')) out.push(T.maraFort);
     if (st.allies.thom) out.push(T.thom);
+    // v6.1 (Ein Name auf dem Helm): was Du dem Hauptmann gesagt hast.
+    if (flag(flags, 'wachtmeister_wahrheit')) out.push(T.wachtmeisterWahrheit);
+    else if (flag(flags, 'wachtmeister_trost')) out.push(T.wachtmeisterTrost);
     if (st.aloneAtEnd) out.push(T.allein);
 
     // v6.1: Aldrics Ende, sobald Die letzte Wache gespielt ist.

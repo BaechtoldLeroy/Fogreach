@@ -56,7 +56,8 @@ const EINFUEHRUNGEN = [
 ];
 
 /** Alle System-Ziele, auch die zweiten Schritte. */
-const ALLE_ZIELE = EINFUEHRUNGEN.reduce((a, e) => a.concat([e.ziel], e.danach || []), []);
+// v6.1: dazu Thoms Gegen-Edikt (thom_gegenedikt), ein Nebenauftrag, keine Einfuehrung.
+const ALLE_ZIELE = EINFUEHRUNGEN.reduce((a, e) => a.concat([e.ziel], e.danach || []), []).concat(['edikt_riskant']);
 
 /** Alle js-Dateien des Spiels, damit ein Ausloeser auffindbar ist. */
 function spielDateien(verzeichnis) {

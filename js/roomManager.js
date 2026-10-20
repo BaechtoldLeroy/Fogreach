@@ -1763,6 +1763,13 @@ function enterRoom(scene, roomId) {
     _maybeSpawnHiddenFind(scene);
   }
 
+  // v6.1: Kreide an der Zellenwand (Mara). Hoechstens ein Zeichen je Raum,
+  // solange der Auftrag laeuft; nie im Spionage-, Flucht- oder Finalraum.
+  if (!_espionageRoom && !_versteckRaum && !_flucht && !window.__isFinalDungeonRoom
+      && window.Kreidezeichen && typeof window.Kreidezeichen.vielleichtSpawnen === 'function') {
+    window.Kreidezeichen.vielleichtSpawnen(scene);
+  }
+
   // Die Markierung der VORIGEN Kammer muss weg, sonst zeigt die Minikarte im
   // neuen Raum auf eine Stelle, an der nichts ist.
   try { if (scene) scene._kammerMarkierung = null; } catch (e) {}
@@ -3667,7 +3674,8 @@ function _maybeFireElaraCellarEncounter(scene, roomId) {
 // (Akt 3). v6.1: Die Rettung gibt das Buendel (Stufe 1, _showElaraDialog),
 // danach erst bietet sie hier das Ratsdokument an. Angenommen, gesucht und
 // abgegeben wird es weiter ueber die Stufen 1.5 und 2 oben.
-var ELARA_AUFTRAEGE = ['resistance_fetch_01', 'widerstand_proof', 'elara_meeting', 'elara_ritual', 'elara_blade', 'elara_second_truth'];
+// v6.1: Die Hand am Schloss (elara_schloesser) zuletzt, bis zum Maulwurf.
+var ELARA_AUFTRAEGE = ['resistance_fetch_01', 'widerstand_proof', 'elara_meeting', 'elara_ritual', 'elara_blade', 'elara_second_truth', 'elara_schloesser'];
 var _elaraSpaetSpawnZiel = null;
 
 function _elaraSpaetereAuftraege(scene, roomId) {

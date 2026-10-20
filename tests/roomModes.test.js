@@ -159,3 +159,54 @@ test('updateActive tickt nicht, solange die Pause-Uhr laeuft', () => {
   R.updateActive(16);
   assert.strictEqual(ticks, baseline + 1, 'nach dem Schliessen laeuft es weiter');
 });
+
+// v6.1: Ein gewonnener Raum meldet raum:<modus> an die Auftraege (Die letzte
+// Fuhre, Die Schmiede halten). Ein verlorener (Altar zerstoert) meldet nichts.
+function raumMeldung(gescheitert) {
+  const w = globalThis.window;
+  const R = w.RoomMode;
+  const meldungen = [];
+  w.questSystem = { updateQuestProgress: (typ, ziel, n) => { meldungen.push([typ, ziel, n]); },
+    getAuftragsSchub: () => ({}) };
+  w.markRoomCleared = () => {};
+  R.register('testmodus', () => ({
+    start() {}, update() {},
+    isComplete: () => true,
+    objectiveFailed: () => gescheitert,
+    getState: () => ({ mode: 'testmodus' })
+  }));
+  try {
+    R.beginRoom(null, { modus: 'testmodus', roomIndex: 2, depth: 5 });
+    R.updateActive(16);
+    R.updateActive(16);   // nur einmal je Raum
+  } finally {
+    delete w.questSystem;
+    delete w.markRoomCleared;
+  }
+  return meldungen;
+}
+
+test('v6.1: ein gewonnener Spezialraum meldet raum:<modus> genau einmal', () => {
+  assert.deepStrictEqual(raumMeldung(false), [['raum', 'testmodus', 1]]);
+});
+
+test('v6.1: ein gescheiterter Spezialraum meldet nichts', () => {
+  assert.deepStrictEqual(raumMeldung(true), []);
+});
+
+test('v6.1: der Auftragsschub hebt das Gewicht seines Modus', () => {
+  const w = globalThis.window;
+  const R = w.RoomMode;
+  ['survival', 'defend', 'hunt', 'escape'].forEach((m) => R.register(m, () => ({ start() {}, update() {}, isComplete: () => false })));
+  let schub = {};
+  w.questSystem = { getAuftragsSchub: () => schub };
+  let i = 0;
+  const rng = () => { i = (i * 9301 + 49297) % 233280; return i / 233280; };
+  const zaehlen = () => { let t = 0; for (let k = 0; k < 4000; k++) if (R.selectForRoom({ roomIndex: 3, depth: 20 }, rng) === 'hunt') t++; return t; };
+  try {
+    const ohne = zaehlen();
+    schub = { hunt: 4 };
+    const mit = zaehlen();
+    assert.ok(mit >= ohne * 3, 'Jagd ' + ohne + ' -> ' + mit);
+  } finally { delete w.questSystem; }
+});

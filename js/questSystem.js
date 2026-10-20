@@ -1294,6 +1294,188 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       dialogueComplete: 'Sie hat die Meldung weggesteckt. Eine wahre Meldung, und niemand wird sie je lesen. "Nicht alles hilft", hat sie gesagt. Du schiebst den Gedanken beiseite. Noch.'
     },
 
+    // =======================================================
+    // === v6.1: Nebenauftraege der Akte 3 und 4 ===
+    // =======================================================
+    // Sieben Gefaelligkeiten zwischen den Story-Beats. Jede nutzt einen Weg,
+    // den das Spiel wirklich meldet, und schiebt ihn an, solange sie laeuft
+    // (Feld `schub`, gelesen ueber getAuftragsSchub: Gegnertypen in enemy.js,
+    // Raum-Modi in roomModes.js, Ereignisse in eventSystem.js).
+    //
+    // Klerus: Beschwoerer (enemyType 13) toeten -> kill:typ_13 (player.js).
+    // Ein Ratsauftrag wie Aldrics: entfaellt beim Bruch (ratsAuftrag).
+    klerus_brueder: {
+      id: 'klerus_brueder',
+      title: 'Die schweigenden Brüder',
+      description: 'Besiege 3 Beschwörer in der Tiefe (ab Tiefe 15). Der Klerus nennt sie vom Licht abgefallene Brüder.',
+      npcId: 'klerus_priester',
+      type: 'kill',
+      chain: 4,
+      minDepth: 15,
+      angebotAb: 15,
+      objectives: [
+        { type: 'kill', target: 'typ_13', current: 0, required: 3 }
+      ],
+      rewards: { xp: 120, gold: 60 },
+      rewardTier: 'neben',
+      prerequisites: ['klerus_district_purge'],
+      requiredAct: 3,
+      ratsAuftrag: true,
+      // Doppelt gesichert: ratsAuftrag setzt ihn mit 'enttarnt' ohnehin auf
+      // 'entfallen'; das Tor haelt das Angebot zu, falls das je anders kommt.
+      gate: function () { return !questFlags.enttarnt; },
+      // Beschwoerer stehen ab Tiefe 10 im Pool, aber nur als einer von 14
+      // Typen. Solange der Auftrag laeuft, ziehen sie schwerer.
+      schub: { gegner: { 13: 4 } },
+      dialogueOffer: 'Drei unserer Brüder sind vom Licht abgefallen. Sie sind hinabgestiegen und rufen dort unten, was kein Gebet je rufen sollte. Der Klerus spricht nicht über sie, und Du wirst es auch nicht tun.\n\nAb Tiefe 15 findest Du sie, Beschwörer nennt man sie jetzt. Bring mir ihre Siegelringe. Das Licht vergisst nicht, wer ihm dient.',
+      dialogueProgress: 'Die Abgefallenen rufen noch. Beschwörer, ab Tiefe 15. Bring mir ihre Ringe.',
+      // Die Wahl folgt auf diesen Text (storyDialog.byQuest.klerus_brueder):
+      // alle Ringe abgeben oder den des Hochpriesters Thom zustecken.
+      dialogueComplete: '(Der Priester sieht auf Deine Hand, nicht in Dein Gesicht.) Die Ringe.\n\n(Bei einem der Brüder lag ein Zettel, eng beschrieben, die Tinte verlaufen: "Die Glut wird schwach. Wer erneuert sie?" Du hast ihn eingesteckt. Einer der drei Ringe ist schwerer als die anderen und trägt das Zeichen des Hochpriesters.)'
+    },
+    // Thom: ein riskantes Edikt an der Presse (printingHouse meldet die Stufe).
+    thom_gegenedikt: {
+      id: 'thom_gegenedikt',
+      title: 'Ein Edikt, das keiner bestellt hat',
+      description: 'Lass an der Presse ein riskantes Edikt drucken. Thom setzt es im Satz des Rats.',
+      npcId: 'thom',
+      type: 'system',
+      chain: 3,
+      // Kein minDepth: das Ziel liegt in der Druckerei, nicht im Keller.
+      angebotAb: 16,
+      objectives: [
+        { type: 'system', target: 'edikt_riskant', current: 0, required: 1 }
+      ],
+      rewards: { xp: 110, druckblaetter: 3 },
+      rewardTier: 'neben',
+      prerequisites: ['thom_truth'],
+      requiredAct: 3,
+      dialogueOffer: 'Der Rat druckt jede Woche, was die Stadt denken soll. Ich will einmal etwas drucken, das er nicht bestellt hat, und zwar so, dass es aussieht, als hätte er es. Dieselben Lettern, derselbe Satz, derselbe Rand.\n\n(Er hebt einen Bogen hoch.) Ich habe nur eine Sorte Papier. Seine. Also bekommt die Stadt ein Gegen-Edikt im Gewand des Rats.\n\nSuch Dir an der Presse eines der riskanten Edikte aus. Es kostet Dich Druckblätter und Aufmerksamkeit beim Rat. Das ist der Preis.',
+      dialogueProgress: 'Noch hängt nichts Riskantes. Such Dir an der Presse eines der riskanten Edikte aus, ich setze es im Satz des Rats.',
+      dialogueComplete: '(Thom hält den frischen Bogen neben einen echten des Rats. Kein Unterschied, bis auf das, was darauf steht.)\n\nDie Garde hat heute Morgen zwei davon abgerissen und vor drei anderen salutiert, weil sie nicht liest, was sie bewacht. (Er grinst.) Ein Schreiber im Rathaus sucht jetzt den Mann, der es bestellt hat. Er wird lange suchen.'
+    },
+    // Mara: Kreidezeichen in den Zellen (js/kreidezeichen.js, observe:kreidezeichen).
+    mara_kreide: {
+      id: 'mara_kreide',
+      title: 'Kreide an der Zellenwand',
+      description: 'Lies 3 Kreidezeichen in der Tiefe (ab Tiefe 18). Maras verhaftete Leute haben sie an die Wände geschrieben.',
+      npcId: 'mara',
+      type: 'observe',
+      chain: 7,
+      minDepth: 18,
+      angebotAb: 18,
+      objectives: [
+        { type: 'observe', target: 'kreidezeichen', current: 0, required: 3 }
+      ],
+      rewards: { xp: 130, fragments: 1 },
+      rewardTier: 'neben',
+      prerequisites: ['mara_warning'],
+      requiredAct: 3,
+      gate: function () { return !questFlags.mole_evidence; },
+      dialogueOffer: 'Die Leute, die sie mir geholt haben, sassen unten in Zellen, bevor man sie weiterbrachte. Wir haben es immer so gehalten: Wer eingesperrt wird, schreibt an die Wand, was er weiss. Mit Kreide, klein, unten am Stein.\n\nAb Tiefe 18 liegen die Zellen. Lies, was sie geschrieben haben. Drei Zeichen, mehr verlange ich nicht. Ich muss wissen, was sie wussten.',
+      dialogueProgress: 'Die Zeichen sind klein, unten am Stein, abseits der Wege. Ab Tiefe 18. Lies drei davon.',
+      dialogueComplete: '(Mara lässt Dich jedes Zeichen zweimal aufsagen.) Nur sieben. (Sie zählt an den Fingern ab und hört bei sechs auf.) Sieben wussten den Treffpunkt, und einer davon hat geredet.\n\nSag das niemandem. Auch nicht denen, denen Du traust.'
+    },
+    // Elara: drei Kettenschloesser ganz loesen (eventSystem chain_lock).
+    // Sie vergibt im Keller (roomManager, ELARA_AUFTRAEGE). Ein laufender
+    // Auftrag entfaellt mit dem Maulwurf (entfaelltBeiMaulwurf).
+    elara_schloesser: {
+      id: 'elara_schloesser',
+      title: 'Die Hand am Schloss',
+      description: 'Löse in der Tiefe 3 Kettenschlösser vollständig (ab Tiefe 21), ohne eines zu brechen.',
+      abgabeHinweis: 'Elara wartet im Keller auf Dich.',
+      npcId: 'elara',
+      type: 'observe',
+      chain: 5,
+      minDepth: 21,
+      angebotAb: 21,
+      objectives: [
+        { type: 'observe', target: 'schloss_geloest', current: 0, required: 3 }
+      ],
+      rewards: { xp: 160 },
+      rewardTier: 'story',
+      prerequisites: ['elara_ritual'],
+      requiredAct: 3,
+      gate: function () { return !questFlags.mole_evidence; },
+      entfaelltBeiMaulwurf: true,
+      // Im Finale beim erhobenen Hammer eine Zeile mehr (js/finale.js).
+      completionFlags: ['drehung_geuebt'],
+      schub: { ereignis: { chain_lock: 50 } },
+      dialogueOffer: 'Die Esse hält eine Bindung wie ein Schloss. Löse drei, ohne eins zu brechen. Deine Hände sollen die Drehung kennen, bevor es ernst wird.\n\nUnten hängen genug Kettenschlösser, ab Tiefe 21. Jeder Ring muss sitzen.',
+      dialogueProgress: 'Drei Schlösser, ganz gelöst, ab Tiefe 21. Ein halbes zählt nicht. Deine Hände sollen es wissen, nicht nur Dein Kopf.',
+      dialogueComplete: '(Sie nimmt Deine Hand und dreht sie einmal im Gelenk, langsam, als prüfe sie ein Werkzeug.)\n\nGenau so. Am Ende ist es dieselbe Drehung, nur grösser.'
+    },
+    // Stadtwache: die Helmmarke faellt nur von Elites (loot.js, nurElite).
+    wache_helm: {
+      id: 'wache_helm',
+      title: 'Ein Name auf dem Helm',
+      description: 'Bring dem Hauptmann der Stadtwache die Helmmarke seines Sohnes. Einer der Anführer in der Tiefe trägt sie (ab Tiefe 24).',
+      npcId: 'stadtwache',
+      type: 'fetch',
+      chain: 4,
+      minDepth: 24,
+      angebotAb: 24,
+      objectives: [
+        { type: 'fetch', target: 'helmmarke', current: 0, required: 1 }
+      ],
+      rewards: { xp: 150, gold: 70 },
+      rewardTier: 'neben',
+      prerequisites: [],
+      // Nach dem Bruch: oben bist Du gesucht, und er hat Befehl, Dich zu fassen.
+      requiredAct: 3,
+      gate: function () { return !!questFlags.enttarnt; },
+      dialogueOffer: '(Er sieht sich um, bevor er spricht.) Ich habe Befehl, Dich festzunehmen. Ich habe auch einen Sohn. Er ging mit der Kettenwache hinab, vor zwei Wintern. Er hält den Weg, schreiben sie mir. Jeden Monat derselbe Satz.\n\nJeder Wächter trägt eine Marke am Helm, mit seinem Namen. Wenn Du unten einem begegnest, der führt, ab Tiefe 24, dann sieh nach. Ich will wissen, was er hält.',
+      dialogueProgress: 'Eine Messingmarke am Helm, mit seinem Namen. Die Anführer da unten tragen sie, ab Tiefe 24.',
+      // Die Wahl folgt (storyDialog.byQuest.wache_helm): Wahrheit oder Trost.
+      dialogueComplete: '(Er nimmt die Marke und reibt mit dem Daumen über den Namen, bis er glänzt.)\n\n(Der Mann, der sie trug, war ein Geleerter. Er hat sich kaum gewehrt. Er stand nur da, mitten im Gang, als hielte er tatsächlich etwas.)'
+    },
+    // Mara: zwei Jagdraeume gewinnen (roomModes meldet raum:hunt).
+    mara_letzte_fuhre: {
+      id: 'mara_letzte_fuhre',
+      title: 'Die letzte Fuhre',
+      description: 'Erlege in 2 Räumen den Rudelführer (ab Tiefe 28). Einer von ihnen trägt die Phiolen der letzten Fuhre.',
+      npcId: 'mara',
+      type: 'raum',
+      chain: 2,
+      minDepth: 28,
+      angebotAb: 28,
+      objectives: [
+        { type: 'raum', target: 'hunt', current: 0, required: 2 }
+      ],
+      rewards: { xp: 180, fragments: 1 },
+      rewardTier: 'neben',
+      prerequisites: ['was_der_rauch_behaelt'],
+      requiredAct: 4,
+      schub: { raum: { hunt: 4 } },
+      dialogueOffer: 'Die Esse ist hungrig, seit Elara unten ist. Jede Nacht geht eine Fuhre hinab, mehr als früher. Die von gestern ist noch nicht verbrannt. Die Phiolen liegen unten, ab Tiefe 28, und ein Rudelführer trägt sie mit sich herum.\n\nJag ihn. Erwischst Du den Falschen, jag den nächsten. Was in den Phiolen ist, gehört nicht der Esse.',
+      dialogueProgress: 'Die Rudelführer halten die Gänge ab Tiefe 28. Zwei musst Du stellen, einer von ihnen trägt die Fuhre.',
+      // Die Wahl folgt (storyDialog.byQuest.mara_letzte_fuhre).
+      dialogueComplete: '(Du legst die Phiolen vor Mara auf den Tisch, ein Dutzend, das Wachs noch warm vom Tragen. Auf jeder steht ein Name.)\n\nNoch nicht verbrannt. (Sie fasst keine an.) Zerschlägst Du sie, kommt heraus, was drin ist, und geht, wohin es will. Branka könnte es binden. Dann gehört es eine Weile dem Metall, aber es geht nichts verloren.'
+    },
+    // Branka: zwei Verteidigungsraeume halten (roomModes meldet raum:defend).
+    branka_schmiede_halten: {
+      id: 'branka_schmiede_halten',
+      title: 'Die Schmiede halten',
+      description: 'Verteidige in 2 Räumen den Altar, bis die Zeit um ist (ab Tiefe 27). Dort kommt die Kettenwache herauf.',
+      npcId: 'branka',
+      type: 'raum',
+      chain: 6,
+      minDepth: 27,
+      angebotAb: 27,
+      objectives: [
+        { type: 'raum', target: 'defend', current: 0, required: 2 }
+      ],
+      // Ein Stueck aus Brankas Esse: selten, gewuerfelt wie jeder Fund.
+      rewards: { xp: 170, items: [{ key: 'BRANKAS_STUECK', tier: 2, name: 'Brankas Schmiedestück', nameKey: 'quest.reward.BRANKAS_STUECK' }] },
+      rewardTier: 'neben',
+      prerequisites: ['bruch_confrontation'],
+      requiredAct: 3,
+      schub: { raum: { defend: 4 } },
+      dialogueOffer: 'Seit dem Bruch sucht die Kettenwache meine Schmiede. Oben findet sie nichts, dafür sorge ich. Aber sie kommt von unten, durch die alten Zugänge, und die kann ich nicht halten, wenn ich am Amboss stehe.\n\nWo unten ein Altar steht, liegt ein Zugang darüber. Halt zwei davon für mich, ab Tiefe 27, bis keiner mehr kommt. Dann schmiede ich Dir etwas, das sich lohnt.',
+      dialogueProgress: 'Zwei Altäre, ab Tiefe 27. Halt durch, bis keiner mehr kommt. Oben läuft der Blasebalg.',
+      dialogueComplete: '(Branka legt Dir ein Stück auf den Amboss, noch warm.)\n\nDie Zugänge sind still. Die Kettenwache sucht jetzt woanders, und ich hatte zwei Nächte Ruhe. Das hier ist daraus geworden. Trag es, und komm wieder herauf.'
+    },
+
     // Feature 062: 'final_truth' entfernt (ging ins Finale auf). the_reckoning
     // schaltet story_ending frei und macht damit das Story-Ende erreichbar (#44).
     // Objective 'dialogue' (Auto-Complete bei Annahme): die Vier-Regler-
@@ -1709,6 +1891,51 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.the_reckoning.dialogueProgress': "The press is waiting.",
       'quest.the_reckoning.dialogueComplete': "The fog thins. Not because someone drives it away, but because too many people remember too much at once. What stands in a thousand places, nobody can burn any more.",
 
+      // v6.1: Nebenauftraege der Akte 3 und 4.
+      'quest.klerus_brueder.title': 'The Silent Brothers',
+      'quest.klerus_brueder.description': 'Defeat 3 Summoners in the depths (from depth 15). The Clergy calls them brothers who fell from the Light.',
+      'quest.klerus_brueder.dialogueOffer': 'Three of our brothers have fallen from the Light. They went down and call up things down there that no prayer should ever call. The Clergy does not speak of them, and neither will you.\n\nFrom depth 15 you will find them, Summoners they are called now. Bring me their signet rings. The Light does not forget who serves it.',
+      'quest.klerus_brueder.dialogueProgress': 'The fallen are still calling. Summoners, from depth 15. Bring me their rings.',
+      'quest.klerus_brueder.dialogueComplete': '(The priest looks at your hand, not at your face.) The rings.\n\n(One of the brothers had a note on him, closely written, the ink smudged: "The embers grow weak. Who renews them?" You pocketed it. One of the three rings is heavier than the others and bears the sign of the High Priest.)',
+
+      'quest.thom_gegenedikt.title': 'An Edict Nobody Ordered',
+      'quest.thom_gegenedikt.description': 'Have a risky edict printed at the press. Thom sets it in the council\'s type.',
+      'quest.thom_gegenedikt.dialogueOffer': 'Every week the council prints what the city is supposed to think. For once I want to print something it never ordered, and make it look as if it had. Same letters, same setting, same margin.\n\n(He holds up a sheet.) I only have one kind of paper. Theirs. So the city gets a counter-edict dressed as the council.\n\nPick one of the risky edicts at the press. It costs you print sheets and the council\'s attention. That is the price.',
+      'quest.thom_gegenedikt.dialogueProgress': 'Nothing risky is hanging yet. Pick one of the risky edicts at the press, and I will set it in the council\'s type.',
+      'quest.thom_gegenedikt.dialogueComplete': '(Thom holds the fresh sheet next to a genuine one of the council\'s. No difference, except for what it says.)\n\nThis morning the Guard tore down two of them and saluted three others, because it does not read what it guards. (He grins.) A scribe at the town hall is now looking for the man who ordered it. He will be looking for a long time.',
+
+      'quest.mara_kreide.title': 'Chalk on the Cell Wall',
+      'quest.mara_kreide.description': 'Read 3 chalk marks in the depths (from depth 18). Mara\'s arrested people wrote them on the walls.',
+      'quest.mara_kreide.dialogueOffer': 'The people they took from me sat in cells down there before they were moved on. We always kept to it: whoever gets locked up writes on the wall what they know. In chalk, small, low on the stone.\n\nThe cells lie from depth 18. Read what they wrote. Three marks, I ask no more. I need to know what they knew.',
+      'quest.mara_kreide.dialogueProgress': 'The marks are small, low on the stone, away from the paths. From depth 18. Read three of them.',
+      'quest.mara_kreide.dialogueComplete': '(Mara makes you recite every mark twice.) Only seven. (She counts on her fingers and stops at six.) Seven knew the meeting place, and one of them talked.\n\nTell no one. Not even those you trust.',
+
+      'quest.elara_schloesser.title': 'The Hand on the Lock',
+      'quest.elara_schloesser.description': 'Fully open 3 chain locks in the depths (from depth 21) without breaking one.',
+      'quest.elara_schloesser.abgabeHinweis': 'Elara is waiting for you in the cellar.',
+      'quest.elara_schloesser.dialogueOffer': 'The Furnace holds a binding like a lock. Open three without breaking one. Your hands should know the turn before it matters.\n\nThere are enough chain locks hanging down there, from depth 21. Every ring has to sit.',
+      'quest.elara_schloesser.dialogueProgress': 'Three locks, fully opened, from depth 21. Half of one does not count. Your hands should know it, not just your head.',
+      'quest.elara_schloesser.dialogueComplete': '(She takes your hand and turns it once at the wrist, slowly, as if testing a tool.)\n\nExactly like that. In the end it is the same turn, only bigger.',
+
+      'quest.wache_helm.title': 'A Name on the Helmet',
+      'quest.wache_helm.description': 'Bring the City Watch captain his son\'s helmet tag. One of the leaders in the depths carries it (from depth 24).',
+      'quest.wache_helm.dialogueOffer': '(He looks around before he speaks.) I have orders to arrest you. I also have a son. He went down with the Chain Guard, two winters ago. He holds the way, they write to me. Every month the same sentence.\n\nEvery guard wears a tag on his helmet, with his name. If you meet one down there who leads, from depth 24, take a look. I want to know what he is holding.',
+      'quest.wache_helm.dialogueProgress': 'A brass tag on the helmet, with his name. The leaders down there wear them, from depth 24.',
+      'quest.wache_helm.dialogueComplete': '(He takes the tag and rubs his thumb over the name until it shines.)\n\n(The man who wore it was one of the emptied. He barely fought back. He just stood there, in the middle of the passage, as if he really were holding something.)',
+
+      'quest.mara_letzte_fuhre.title': 'The Last Load',
+      'quest.mara_letzte_fuhre.description': 'Slay the pack leader in 2 rooms (from depth 28). One of them carries the vials of the last load.',
+      'quest.mara_letzte_fuhre.dialogueOffer': 'The Furnace has been hungry since Elara went down. Every night a load goes down, more than before. Yesterday\'s has not been burned yet. The vials are down there, from depth 28, and a pack leader carries them around with him.\n\nHunt him. If you catch the wrong one, hunt the next. What is in those vials does not belong to the Furnace.',
+      'quest.mara_letzte_fuhre.dialogueProgress': 'The pack leaders hold the passages from depth 28. You have to face two, one of them carries the load.',
+      'quest.mara_letzte_fuhre.dialogueComplete': '(You lay the vials on the table in front of Mara, a dozen, the wax still warm from carrying. Each one bears a name.)\n\nNot burned yet. (She touches none of them.) If you smash them, whatever is inside comes out and goes where it wants. Branka could bind it. Then it belongs to the metal for a while, but nothing is lost.',
+
+      'quest.branka_schmiede_halten.title': 'Holding the Forge',
+      'quest.branka_schmiede_halten.description': 'Defend the altar in 2 rooms until time runs out (from depth 27). That is where the Chain Guard comes up.',
+      'quest.branka_schmiede_halten.dialogueOffer': 'Since the break the Chain Guard has been looking for my forge. Up here it finds nothing, I see to that. But it comes from below, through the old passages, and I cannot hold those while I stand at the anvil.\n\nWherever an altar stands down there, a passage lies above it. Hold two of them for me, from depth 27, until nobody comes any more. Then I will forge you something worth it.',
+      'quest.branka_schmiede_halten.dialogueProgress': 'Two altars, from depth 27. Hold out until nobody comes any more. Up here the bellows keep going.',
+      'quest.branka_schmiede_halten.dialogueComplete': '(Branka lays a piece on the anvil for you, still warm.)\n\nThe passages are quiet. The Chain Guard is searching elsewhere now, and I had two nights of peace. This is what came of them. Wear it, and come back up.',
+      'quest.reward.BRANKAS_STUECK': 'Branka\'s Forgework',
+
       // === Quest reward strings ===
       'quest.reward.info.mara_contact': "Mara's network revealed",
       'quest.reward.ALDRIC_SCHWERT': 'Council Sword',
@@ -1749,6 +1976,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.reward.ALDRIC_SCHWERT': 'Ratsschwert',
       'quest.reward.RITUAL_AMULETT': 'Nebelamulett des Rats',
       'quest.reward.ELARAS_KLINGE': 'Elaras Klinge',
+      'quest.reward.BRANKAS_STUECK': 'Brankas Schmiedestück',
       'quest.rarity.common': 'Gewöhnlich',
       'quest.rarity.rare': 'Selten',
       'quest.rarity.epic': 'Episch',
@@ -1880,7 +2108,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     // Feature 063: setFlag(name) ohne value setzt true (DialogChoice ruft so).
     if (arguments.length < 2) value = true;
     questFlags[name] = !!value;
-    if (name === 'enttarnt' && value) _ratsAuftraegeBeenden();
+    if ((name === 'enttarnt' || name === 'mole_evidence') && value) _ratsAuftraegeBeenden();
     _notifyUpdate();
     _persistIfPossible();
   }
@@ -2167,6 +2395,27 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
   // would otherwise sit in memory until the next scene transition.
   // saveGame writes the entire payload (inventory, equipment, quests,
   // story, etc.) so it's idempotent — no risk of partial state.
+  /**
+   * v6.1: Was laufende Auftraege im Keller haeufiger machen (Feld schub).
+   * art: 'gegner' (Typnummer -> zusaetzliche Lose im Gegnerpool),
+   * 'raum' (Modus -> zusaetzliches Gewicht), 'ereignis' (Ereignis-Id ->
+   * zusaetzliches Gewicht). Nur solange der Auftrag laeuft, noch nicht
+   * erfuellt ist und seine Mindesttiefe im laufenden Lauf erreicht ist.
+   * @returns {Object<string, number>} summiert ueber alle Auftraege
+   */
+  function getAuftragsSchub(art) {
+    var out = {};
+    Object.keys(QUEST_DEFINITIONS).forEach(function (id) {
+      var def = QUEST_DEFINITIONS[id];
+      var map = def.schub && def.schub[art];
+      var st = questState[id];
+      if (!map || !st || st.status !== 'active') return;
+      if (!_questDepthMet(id) || isQuestReadyToComplete(id)) return;
+      Object.keys(map).forEach(function (k) { out[k] = (out[k] || 0) + (Number(map[k]) || 0); });
+    });
+    return out;
+  }
+
   function _persistIfPossible() {
     if (typeof window === 'undefined' || typeof window.saveGame !== 'function') return;
     try { window.saveGame(); } catch (err) {
@@ -2313,7 +2562,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
    *   'truhe'    ein Stueck in die Hub-Truhe gelegt (hubTruhe.hineinlegen)
    */
   var SYSTEM_ZIELE = ['upgrade', 'edikt', 'markt', 'talent', 'wissen', 'haendler',
-    'charakterwerte', 'loadout', 'truhe'];
+    'charakterwerte', 'loadout', 'truhe', 'edikt_riskant'];
 
   function onSystemUsed(ziel) {
     if (SYSTEM_ZIELE.indexOf(ziel) === -1) {
@@ -2909,11 +3158,17 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
    * Abschluss des Bruchs und beim Laden.
    * @returns {string[]} die eben beendeten Auftraege
    */
+  // v6.1: Dieselbe Regel fuer Auftraege anderer Ratsstimmen (Feld ratsAuftrag,
+  // der Klerus) und, mit dem Maulwurf (mole_evidence), fuer Elaras Uebung an
+  // den Schloessern (entfaelltBeiMaulwurf): danach vergibt sie nichts mehr.
   function _ratsAuftraegeBeenden() {
-    if (!questFlags.enttarnt) return [];
+    if (!questFlags.enttarnt && !questFlags.mole_evidence) return [];
     var beendet = [];
     Object.keys(QUEST_DEFINITIONS).forEach(function (id) {
-      if (QUEST_DEFINITIONS[id].npcId !== 'aldric') return;
+      var def = QUEST_DEFINITIONS[id];
+      var rat = !!questFlags.enttarnt && (def.npcId === 'aldric' || def.ratsAuftrag === true);
+      var maulwurf = !!questFlags.mole_evidence && def.entfaelltBeiMaulwurf === true;
+      if (!rat && !maulwurf) return;
       var st = questState[id];
       if (!st || st.status === 'completed' || st.status === 'entfallen') return;
       questState[id] = { status: 'entfallen', objectives: null, warAngenommen: st.status === 'active' };
@@ -3071,6 +3326,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     // #131: Tiefensperre vor einem Story-Boss, dessen Quest noch nicht laeuft.
     onItemCrafted: onItemCrafted,
     onSystemUsed: onSystemUsed,
+    getAuftragsSchub: getAuftragsSchub,
     SYSTEM_ZIELE: SYSTEM_ZIELE,
     areAllQuestChainsComplete: areAllQuestChainsComplete,
     isQuestReadyToComplete: isQuestReadyToComplete,

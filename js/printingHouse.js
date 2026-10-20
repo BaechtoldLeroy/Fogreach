@@ -409,6 +409,10 @@
     // #143: Die Einfuehrungsquest zu diesem System haengt daran.
     if (window.questSystem && typeof window.questSystem.onSystemUsed === 'function') {
       try { window.questSystem.onSystemUsed('edikt'); } catch (e) { /* swallow */ }
+      // v6.1: Thoms Gegen-Edikt verlangt die riskante Stufe.
+      if (def.tier === 'risky') {
+        try { window.questSystem.onSystemUsed('edikt_riskant'); } catch (e) { /* swallow */ }
+      }
     }
     _persist();
     return { success: true };

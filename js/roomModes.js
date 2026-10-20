@@ -57,12 +57,25 @@
     // Pro Nicht-Erst-/Nicht-Boss-Raum die Chance, dass er speziell ist.
     // Bei ~8 solcher Räume/Run ergibt p≈0.18–0.28 im Schnitt 1–2 Spezialräume.
     var p = Math.min(0.30, 0.16 + depth * 0.004);
+    // v6.1: Laufende Auftraege (Die letzte Fuhre, Die Schmiede halten)
+    // wollen ihren Modus oefter sehen: mehr Gewicht und etwas mehr Raeume.
+    var schub = _auftragsSchub();
+    var gewicht = function (m) { return SPECIAL_WEIGHTS[m] + (schub[m] || 0); };
+    if (ids.some(function (m) { return schub[m] > 0; })) p = Math.min(0.45, p + 0.12);
     if (rng() >= p) return 'clear';
     var total = 0, i;
-    for (i = 0; i < ids.length; i++) total += SPECIAL_WEIGHTS[ids[i]];
+    for (i = 0; i < ids.length; i++) total += gewicht(ids[i]);
     var r = rng() * total;
-    for (i = 0; i < ids.length; i++) { r -= SPECIAL_WEIGHTS[ids[i]]; if (r <= 0) return ids[i]; }
+    for (i = 0; i < ids.length; i++) { r -= gewicht(ids[i]); if (r <= 0) return ids[i]; }
     return ids[ids.length - 1];
+  }
+
+  function _auftragsSchub() {
+    try {
+      var qs = (typeof window !== 'undefined') ? window.questSystem : null;
+      if (qs && typeof qs.getAuftragsSchub === 'function') return qs.getAuftragsSchub('raum') || {};
+    } catch (e) {}
+    return {};
   }
 
   // Debug-Einstiege (Vorbild ?spy=1):
@@ -296,6 +309,13 @@
         var _failed = false;
         try { _failed = !!(_current.objectiveFailed && _current.objectiveFailed()); } catch (e) {}
         try { if (typeof window.markRoomCleared === 'function') window.markRoomCleared({ objective: true, failed: _failed }); } catch (e) {}
+        // v6.1: Ein gewonnener Raum zaehlt fuer Auftraege (raum:<modus>).
+        if (!_failed) {
+          try {
+            var qs = window.questSystem;
+            if (qs && typeof qs.updateQuestProgress === 'function') qs.updateQuestProgress('raum', _ctx.modeId, 1);
+          } catch (e) {}
+        }
       }
     }
   }

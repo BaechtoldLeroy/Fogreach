@@ -2207,6 +2207,11 @@ function handleEnemyHit(scene, enemy, options = {}) {
     // Quest progress: enemy kill
     if (window.questSystem && typeof window.questSystem.updateQuestProgress === 'function') {
       window.questSystem.updateQuestProgress('kill', 'enemy', 1);
+      // v6.1: Kill nach Gegnertyp (kill:typ_13 = Beschwoerer, Die schweigenden
+      // Brueder). Zurueckgekehrte Vergessene zaehlen nicht ein zweites Mal.
+      if (typeof enemy.enemyType === 'number' && !enemy.isBoss && !enemy._vergessen) {
+        window.questSystem.updateQuestProgress('kill', 'typ_' + enemy.enemyType, 1);
+      }
       // Track elite kills for quest objectives
       if (enemy.isElite) {
         window.questSystem.updateQuestProgress('kill', 'elite_enemy', 1);
