@@ -478,6 +478,15 @@
     for (var bx = 0; bx < width; bx++) { grid[0][bx] = '#'; grid[height - 1][bx] = '#'; }
     for (var by = 0; by < height; by++) { grid[by][0] = '#'; grid[by][width - 1] = '#'; }
 
+    // 7b) Koerper-Durchgaenge: Der Spieler (34x56 px) passt nur durch Luecken
+    //     ab 2 Kacheln. Tuer-Stummel, deren Kammer entfernt oder versiegelt
+    //     wurde, beruehren die Nachbarkammer sonst manchmal nur mit 1 Kachel —
+    //     per Kachel-Flut offen, fuer den Koerper zu. Dieselbe Reparatur wie in
+    //     den Hoehlen, beschraenkt auf das von der Startkammer aus Erreichbare.
+    var KG = window.CaveGenerator;
+    var bereich = KG && leaves.length ? kachelFlut(grid, leaves[0]) : null;
+    if (bereich) KG.sichereKoerperDurchgaenge(grid, [], bereich);
+
     // 8) Find accessible chambers (flood from first chamber center)
     var accessibleChambers = floodAccessible(grid, leaves);
 
@@ -851,6 +860,18 @@
       }
     });
 
+    // 16) Feste Objekte und Truhen duerfen keinen Weg unter Koerperbreite
+    //     druecken (z. B. Kiste 1 Kachel vor der Wand). Erst die Truhen (eine,
+    //     die mit den vorigen einen Weg abschneidet, entfaellt), dann die
+    //     Objekte: wer am Rand des abgeschnittenen Bereichs steht, faellt weg.
+    if (KG) {
+      var verlust = KG.koerperPruefer(grid, playerSpawn);
+      loot = loot.reduce(function (ok, l) {
+        return verlust(ok.concat([l])).length ? ok : ok.concat([l]);
+      }, []);
+      objects = KG.ohneEngstellen(objects, function (objs) { return verlust(objs.concat(loot)); });
+    }
+
     return {
       name: name,
       tags: ['procedural', 'large'].concat(theme.tags),
@@ -869,6 +890,25 @@
       _procedural: true,
       _seed: seed
     };
+  }
+
+  // Kachel-Flut (4er-Nachbarschaft) ab der Kammermitte; Uint8Array w*h oder
+  // null, wenn die Mitte keine Bodenkachel ist.
+  function kachelFlut(grid, leaf) {
+    var w = grid[0].length, h = grid.length;
+    var sx = leaf.x + Math.floor(leaf.w / 2), sy = leaf.y + Math.floor(leaf.h / 2);
+    if (!grid[sy] || grid[sy][sx] !== '.') return null;
+    var seen = new Uint8Array(w * h), q = [sy * w + sx];
+    seen[q[0]] = 1;
+    for (var k = 0; k < q.length; k++) {
+      var x = q[k] % w, y = (q[k] - x) / w;
+      [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]].forEach(function (n) {
+        var i = n[1] * w + n[0];
+        if (n[0] < 0 || n[1] < 0 || n[0] >= w || n[1] >= h || seen[i] || grid[n[1]][n[0]] !== '.') return;
+        seen[i] = 1; q.push(i);
+      });
+    }
+    return seen;
   }
 
   function findNearestFloorInRow(grid, targetRow, preferredX) {

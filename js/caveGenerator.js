@@ -103,6 +103,7 @@
     // 4 -> reichte nicht zuverlaessig, v.a. nach den spaeter gegrabenen
     // Eingangs-Tunneln (siehe zweiter Aufruf unten).
     var MAX_PASSES = 12;
+    var geoeffnet = 0;
     for (var pass = 0; pass < MAX_PASSES; pass++) {
       var toOpen = [];
       for (var y = 1; y < h - 1; y++) {
@@ -151,9 +152,313 @@
       toOpen.forEach(function (c) {
         if (c.x > 0 && c.x < w - 1 && c.y > 0 && c.y < h - 1 && g[c.y][c.x] === '#') {
           g[c.y][c.x] = '.';
+          geoeffnet++;
         }
       });
     }
+    return geoeffnet;
+  }
+
+  // ── Koerper-Erreichbarkeit ────────────────────────────────────────────────
+  // Der Spielerkoerper (34x56 px) ist breiter und hoeher als eine Kachel (32),
+  // aber hoechstens zwei Kacheln gross. Bei kachelgenauen Waenden steht er
+  // darum genau dort, wo ein 2x2-Block Boden ist, und gleitet von Block zu
+  // Block, wenn zwei freie Bloecke seitlich benachbart sind. Was der Koerper
+  // erreicht, ist also eine Komponente freier 2x2-Bloecke — die Kachel-BFS
+  // dagegen sieht jede 1-Kachel-Luecke und jede um eine Kachel versetzte
+  // 2er-Treppe als offen ("knapp nicht durchkommen"). Gemessen vor diesem
+  // Pass: in 57 von 200 Hoehlen lag ein Eingang oder eine Truhe hinter so
+  // einer Stelle, mit Props in 139 von 200.
+  // Ein 2x2-Block hat seine linke obere Kachel bei (x, y); Rand bleibt Wand
+  // (applyRoomTemplate mauert ihn ohnehin zu).
+  function freieBloecke(g, gesperrt) {
+    var h = g.length, w = g[0].length;
+    var frei = new Uint8Array(w * h);
+    var offen = function (x, y) { return g[y][x] === '.' && !(gesperrt && gesperrt[y * w + x]); };
+    for (var y = 1; y < h - 2; y++) {
+      for (var x = 1; x < w - 2; x++) {
+        if (offen(x, y) && offen(x + 1, y) && offen(x, y + 1) && offen(x + 1, y + 1)) frei[y * w + x] = 1;
+      }
+    }
+    return frei;
+  }
+
+  // Komponenten freier Bloecke (4er-Nachbarschaft). comp[i] = Nummer oder -1.
+  function blockKomponenten(frei, w, h) {
+    var comp = new Int32Array(w * h).fill(-1);
+    var groessen = [];
+    for (var i = 0; i < w * h; i++) {
+      if (!frei[i] || comp[i] >= 0) continue;
+      var id = groessen.length, n = 0, q = [i];
+      comp[i] = id;
+      for (var k = 0; k < q.length; k++) {
+        var c = q[k], cx = c % w;
+        n++;
+        var nb = [cx < w - 1 ? c + 1 : -1, cx > 0 ? c - 1 : -1, c + w, c - w];
+        for (var j = 0; j < 4; j++) {
+          var d = nb[j];
+          if (d < 0 || d >= w * h || !frei[d] || comp[d] >= 0) continue;
+          comp[d] = id;
+          q.push(d);
+        }
+      }
+      groessen.push(n);
+    }
+    return { comp: comp, groessen: groessen };
+  }
+
+  // Kacheln, die ein Block der Komponente `id` ueberdeckt.
+  function abdeckung(comp, id, w, h) {
+    var deck = new Uint8Array(w * h);
+    for (var i = 0; i < w * h; i++) {
+      if (comp[i] !== id) continue;
+      deck[i] = deck[i + 1] = deck[i + w] = deck[i + w + 1] = 1;
+    }
+    return deck;
+  }
+
+  // Komponente, in der der Koerper auf Kachel (x, y) stehen kann; sonst -1.
+  function komponenteBei(comp, w, x, y) {
+    var kand = [[x, y], [x - 1, y], [x, y - 1], [x - 1, y - 1]];
+    for (var i = 0; i < 4; i++) {
+      var id = comp[kand[i][1] * w + kand[i][0]];
+      if (id >= 0) return id;
+    }
+    return -1;
+  }
+
+  // Billigster Weg (am wenigsten Wand) von der Hauptkomponente zu einem der
+  // Zielbloecke; die Waende der Bloecke auf dem Weg werden Boden. Der Weg
+  // folgt so dem vorhandenen engen Durchgang und weitet ihn nur auf.
+  function grabeVerbindung(g, comp, haupt, ziel) {
+    var h = g.length, w = g[0].length, n = w * h;
+    var kosten = new Float64Array(n).fill(Infinity);
+    var vor = new Int32Array(n).fill(-1);
+    var heap = [];
+    function push(i, c) {
+      heap.push([c, i]);
+      var k = heap.length - 1;
+      while (k > 0) {
+        var p = (k - 1) >> 1;
+        if (heap[p][0] <= heap[k][0]) break;
+        var t = heap[p]; heap[p] = heap[k]; heap[k] = t; k = p;
+      }
+    }
+    function pop() {
+      var top = heap[0], last = heap.pop();
+      if (heap.length) {
+        heap[0] = last;
+        var k = 0;
+        for (;;) {
+          var l = 2 * k + 1, r = l + 1, m = k;
+          if (l < heap.length && heap[l][0] < heap[m][0]) m = l;
+          if (r < heap.length && heap[r][0] < heap[m][0]) m = r;
+          if (m === k) break;
+          var t = heap[m]; heap[m] = heap[k]; heap[k] = t; k = m;
+        }
+      }
+      return top;
+    }
+    var wandIn = function (i) {
+      var x = i % w, y = (i - x) / w;
+      return (g[y][x] === '#') + (g[y][x + 1] === '#') + (g[y + 1][x] === '#') + (g[y + 1][x + 1] === '#');
+    };
+    for (var i = 0; i < n; i++) if (comp[i] === haupt) { kosten[i] = 0; push(i, 0); }
+    var treffer = -1;
+    while (heap.length) {
+      var e = pop(), c = e[0], cur = e[1];
+      if (c > kosten[cur]) continue;
+      if (ziel[cur]) { treffer = cur; break; }
+      var cx = cur % w, cy = (cur - cx) / w;
+      var nb = [[cx + 1, cy], [cx - 1, cy], [cx, cy + 1], [cx, cy - 1]];
+      for (var j = 0; j < 4; j++) {
+        var nx = nb[j][0], ny = nb[j][1];
+        if (nx < 1 || ny < 1 || nx > w - 3 || ny > h - 3) continue;
+        var ni = ny * w + nx;
+        var nc = c + 1 + 8 * wandIn(ni);
+        if (nc < kosten[ni]) { kosten[ni] = nc; vor[ni] = cur; push(ni, nc); }
+      }
+    }
+    if (treffer < 0) return false;
+    for (var p = treffer; p >= 0 && comp[p] !== haupt; p = vor[p]) {
+      var px = p % w, py = (p - px) / w;
+      g[py][px] = g[py][px + 1] = g[py + 1][px] = g[py + 1][px + 1] = '.';
+    }
+    return true;
+  }
+
+  // Jede Stelle der Hoehle muss der Koerper erreichen koennen. Abgeschnittene
+  // Bereiche ab MIN_ANSCHLUSS Bloecken und Pflichtkacheln (Eingaenge) werden
+  // ueber die schmalste vorhandene Stelle aufgeweitet; was danach immer noch
+  // kein Koerper betreten kann (1-Kachel-Zipfel, Mini-Taschen), wird Wand —
+  // dann sieht man auch, dass dort kein Weg ist.
+  var MIN_ANSCHLUSS = 4;
+  // bereich (optional, Uint8Array w*h): nur Boden darin zaehlt. Der BSP-
+  // Generator gibt so nur das per Kachel Erreichbare vor — abgeschlossene
+  // Kammern ausserhalb bleiben, wie sie sind.
+  function sichereKoerperDurchgaenge(g, pflicht, bereich) {
+    var h = g.length, w = g[0].length;
+    var aufgegeben = {};
+    // Groesste Komponente, die den Bereich beruehrt; -1 wenn keine.
+    var hauptVon = function (k) {
+      var drin = new Uint8Array(k.groessen.length);
+      for (var i = 0; i < w * h; i++) {
+        var id = k.comp[i];
+        if (id < 0 || drin[id]) continue;
+        if (!bereich || bereich[i] || bereich[i + 1] || bereich[i + w] || bereich[i + w + 1]) drin[id] = 1;
+      }
+      var best = -1;
+      for (var a = 0; a < k.groessen.length; a++) if (drin[a] && (best < 0 || k.groessen[a] > k.groessen[best])) best = a;
+      return { haupt: best, drin: drin };
+    };
+    for (var runde = 0; runde < 40; runde++) {
+      var k = blockKomponenten(freieBloecke(g, null), w, h);
+      var hv = hauptVon(k), haupt = hv.haupt;
+      if (haupt < 0) return;
+      var deck = abdeckung(k.comp, haupt, w, h);
+      var ziel = null, schluessel = null;
+      for (var id = 0; id < k.groessen.length && !ziel; id++) {
+        if (id === haupt || !hv.drin[id] || k.groessen[id] < MIN_ANSCHLUSS) continue;
+        var marke = null;
+        for (var i = 0; i < w * h; i++) if (k.comp[i] === id) { marke = 'c' + i; break; }
+        if (aufgegeben[marke]) continue;
+        ziel = new Uint8Array(w * h);
+        for (var i2 = 0; i2 < w * h; i2++) if (k.comp[i2] === id) ziel[i2] = 1;
+        schluessel = marke;
+      }
+      for (var pi = 0; pi < (pflicht || []).length && !ziel; pi++) {
+        var p = pflicht[pi];
+        if (deck[p.y * w + p.x] || aufgegeben['p' + pi]) continue;
+        ziel = new Uint8Array(w * h);
+        [[p.x, p.y], [p.x - 1, p.y], [p.x, p.y - 1], [p.x - 1, p.y - 1]].forEach(function (b) {
+          if (b[0] >= 1 && b[1] >= 1 && b[0] <= w - 3 && b[1] <= h - 3) ziel[b[1] * w + b[0]] = 1;
+        });
+        schluessel = 'p' + pi;
+      }
+      if (!ziel) break;
+      if (!grabeVerbindung(g, k.comp, haupt, ziel)) aufgegeben[schluessel] = true;
+    }
+    var kEnde = blockKomponenten(freieBloecke(g, null), w, h);
+    var hauptEnde = hauptVon(kEnde).haupt;
+    var deckEnde = hauptEnde >= 0 ? abdeckung(kEnde.comp, hauptEnde, w, h) : new Uint8Array(w * h);
+    for (var y = 1; y < h - 1; y++) {
+      for (var x = 1; x < w - 1; x++) {
+        if (g[y][x] === '.' && !deckEnde[y * w + x] && (!bereich || bereich[y * w + x])) g[y][x] = '#';
+      }
+    }
+  }
+
+  // Wandkacheln an Stellen, wo sich zwei Bodenkacheln nur diagonal beruehren.
+  function eckBeruehrungen(g) {
+    var h = g.length, w = g[0].length, ecken = [];
+    for (var y = 1; y < h - 2; y++) {
+      for (var x = 1; x < w - 1; x++) {
+        if (g[y][x] !== '.' || g[y + 1][x] !== '#') continue;
+        if (x < w - 2 && g[y][x + 1] === '#' && g[y + 1][x + 1] === '.') ecken.push({ x: x + 1, y: y }, { x: x, y: y + 1 });
+        if (x > 1 && g[y][x - 1] === '#' && g[y + 1][x - 1] === '.') ecken.push({ x: x - 1, y: y }, { x: x, y: y + 1 });
+      }
+    }
+    return ecken;
+  }
+
+  // Wie viel Platz ein festes Objekt dem Koerper nimmt. Statue (48x64) und
+  // grosse Saeule (48x48) ragen 16 bzw. 8 px in die Kacheln darueber und
+  // darunter — ein 2 Kacheln hoher Spalt daneben ist fuer den 56 px hohen
+  // Koerper dann zu (Statue) oder ohne jede Luft (Saeule). Sie sperren darum
+  // ihre Kachel samt der Nachbarn oben und unten. Der Altar (64x40, nur in
+  // BSP-Hallen) ragt 16 px nach links und rechts; zwei Altaere uebereinander
+  // lassen dazwischen nur 24 px — er sperrt die Nachbarn links und rechts.
+  var HOHE_OBJEKTE = { statue_knight: 1, pillar_large: 1 };
+  var BREITE_OBJEKTE = { altar: 1 };
+  function sperrKacheln(o) {
+    var t = [[o.x, o.y]];
+    if (HOHE_OBJEKTE[o.type]) t.push([o.x, o.y - 1], [o.x, o.y + 1]);
+    if (BREITE_OBJEKTE[o.type]) t.push([o.x - 1, o.y], [o.x + 1, o.y]);
+    return t;
+  }
+
+  // Prueft, ob feste Objekte (Props, Truhen) dem Koerper einen Weg abschneiden.
+  // Vergleich gegen die Hoehle ohne Objekte: jede Bodenkachel, die dort
+  // erreichbar war und nicht selbst unter einem Objekt liegt, muss es bleiben.
+  function koerperPruefer(g, start) {
+    var h = g.length, w = g[0].length;
+    var k0 = blockKomponenten(freieBloecke(g, null), w, h);
+    var id0 = komponenteBei(k0.comp, w, start.x, start.y);
+    var deck0 = id0 >= 0 ? abdeckung(k0.comp, id0, w, h) : null;
+    return function verlust(objekte) {
+      if (!deck0) return [];
+      var gesperrt = new Uint8Array(w * h);
+      objekte.forEach(function (o) {
+        sperrKacheln(o).forEach(function (t) {
+          if (t[0] >= 0 && t[1] >= 0 && t[0] < w && t[1] < h) gesperrt[t[1] * w + t[0]] = 1;
+        });
+      });
+      var k = blockKomponenten(freieBloecke(g, gesperrt), w, h);
+      var id = komponenteBei(k.comp, w, start.x, start.y);
+      var deck = id >= 0 ? abdeckung(k.comp, id, w, h) : new Uint8Array(w * h);
+      var weg = [];
+      for (var i = 0; i < w * h; i++) {
+        if (deck0[i] && !gesperrt[i] && !deck[i]) weg.push({ x: i % w, y: Math.floor(i / w) });
+      }
+      weg.deck = deck;
+      weg.breite = w;
+      return weg;
+    };
+  }
+
+  // Setzt Objekte um, bis keines mehr einen Weg abschneidet oder einen
+  // 1-Kachel-Spalt zur Wand laesst. Schuldig ist, wer am Rand des Verlusts
+  // steht: hoechstens 2 Kacheln von einer verlorenen UND von einer noch
+  // erreichbaren Kachel — Objekte mitten im abgeschnittenen Bereich sind
+  // unschuldig. Schuldige ziehen auf einen Ersatzplatz (ersatz(), z. B. die
+  // naechste freie Bodenkachel) und werden dort erneut geprueft; gibt es
+  // keinen, fallen sie weg. So bleibt die Prop-Dichte, nur die Lage aendert sich.
+  // Ohne ersatz (BSP) faellt je Runde nur EIN Schuldiger weg: von zwei Altaeren,
+  // die zusammen einen Zwickel bilden, reicht es, einen zu nehmen.
+  function ohneEngstellen(objekte, verlust, ersatz) {
+    var rest = objekte.slice();
+    var runden = ersatz ? 12 : 12 + objekte.length;
+    for (var runde = 0; runde < runden && rest.length; runde++) {
+      var weg = verlust(rest);
+      if (!weg.length) return rest;
+      var deck = weg.deck, breite = weg.breite;
+      var nahAn = function (t, liste) {
+        return liste.some(function (v) { return Math.abs(v.x - t[0]) <= 2 && Math.abs(v.y - t[1]) <= 2; });
+      };
+      var randErreicht = function (t) {
+        for (var dy = -2; dy <= 2; dy++) {
+          for (var dx = -2; dx <= 2; dx++) {
+            var x = t[0] + dx, y = t[1] + dy;
+            if (x >= 0 && y >= 0 && x < breite && deck[y * breite + x]) return true;
+          }
+        }
+        return false;
+      };
+      var schuldig = rest.filter(function (o) {
+        return sperrKacheln(o).some(function (t) { return nahAn(t, weg) && randErreicht(t); });
+      });
+      if (!schuldig.length) {
+        // Niemand am Rand (sollte nicht vorkommen): das naechste Objekt nehmen.
+        var bester = rest[0], bestD = Infinity;
+        rest.forEach(function (o) {
+          weg.forEach(function (v) {
+            var dd = Math.abs(v.x - o.x) + Math.abs(v.y - o.y);
+            if (dd < bestD) { bestD = dd; bester = o; }
+          });
+        });
+        schuldig = [bester];
+      }
+      if (!ersatz) schuldig = schuldig.slice(0, 1);
+      rest = rest.filter(function (o) { return schuldig.indexOf(o) < 0; });
+      // In den letzten Runden nicht mehr umsetzen, nur noch entfernen.
+      if (ersatz && runde < 8) {
+        schuldig.forEach(function (o) {
+          var p = ersatz();
+          if (p) rest.push(Object.assign({}, o, { x: p.x, y: p.y }));
+        });
+      }
+    }
+    return verlust(rest).length ? [] : rest;
   }
 
   // BFS from (sx, sy) over floor tiles. Returns a 2D distance array (Infinity
@@ -450,24 +755,43 @@
     //     Oeffnet nur Waende -> trennt nie Regionen, bewegt keine Eingaenge.
     widenNarrowPassages(g);
 
+    // 4c) Koerper-Durchgaenge: jede Engstelle ist danach mindestens 2 Kacheln
+    //     (64 px) frei oder ganz zu. Die Region-Maske folgt dem Ergebnis.
+    //     Das Zumauern kann Boden zuruecklassen, der sich nur ueber Eck
+    //     beruehrt. Solche Ecken werden Pflicht: der naechste Durchlauf graebt
+    //     sie zu einem echten Durchgang auf (nur Zumauern liesse den Riss).
+    var pflicht = entrances.slice();
+    for (var kr = 0; kr < 6; kr++) {
+      sichereKoerperDurchgaenge(g, pflicht);
+      var ecken = eckBeruehrungen(g);
+      if (!ecken.length) break;
+      pflicht = pflicht.concat(ecken);
+    }
+    var mask = region.mask.map(function (row, my) {
+      return row.map(function (v, mx) { return v && g[my][mx] === '.'; });
+    });
+
     // 5) Pick player spawn — the floor tile with the highest "openness" score
     //    (count of floor tiles in a 5×5 neighborhood). Falls back to the
     //    region seed if no good spot is found.
-    var spawn = pickOpenestTile(g, region.mask, rng) || region.seed;
+    var spawn = pickOpenestTile(g, mask, rng) || anyFloor(g, mask) || region.seed;
+    var verlust = koerperPruefer(g, spawn);
 
     // 6) Loot — BFS-farthest floor tile from spawn, plus one mid-distance.
+    //    Truhen sind feste Hindernisse: eine Truhe, die einen Gang verstopft,
+    //    weicht auf eine andere Kachel derselben Entfernung aus.
     var farMap = bfsDistance(g, spawn.x, spawn.y);
-    var farPick = findFarthest(g, region.mask, farMap.dist);
-    var midPick = findFarthest(g, region.mask, farMap.dist, 0.5);
     var loot = [];
+    var farPick = pickLootTile(g, mask, farMap.dist, undefined, loot, verlust);
     if (farPick) loot.push({ x: farPick.x, y: farPick.y, type: rng() < 0.5 ? 'chest_medium' : 'chest_small', locked: rng() < 0.3 });
+    var midPick = pickLootTile(g, mask, farMap.dist, 0.5, loot, verlust);
     if (midPick && (midPick.x !== farPick?.x || midPick.y !== farPick?.y)) {
       loot.push({ x: midPick.x, y: midPick.y, type: 'chest_small' });
     }
 
     // 7) Decorations + breakable props. Lower density than BSP chambers — caves
     //    feel emptier and rely on geometry for interest.
-    var floorTiles = collectFloor(g, region.mask, spawn, entrances, loot);
+    var floorTiles = collectFloor(g, mask, spawn, entrances, loot);
     var solidPool = SOLID_PROPS[theme.propSet] || SOLID_PROPS.mossy;
     var propPool = PROP_SETS[theme.propSet] || PROP_SETS.mossy;
 
@@ -494,6 +818,16 @@
       used.add(keyOf(pos2));
       objects.push({ type: rng() < 0.5 ? 'barrel' : 'crate', x: pos2.x, y: pos2.y, breakable: true });
     }
+    // Kein Prop darf einen Gang unter Koerperbreite druecken — auch kein
+    // zerbrechliches: Kisten sind Physik-Hindernisse wie Saeulen. Die Truhen
+    // stehen schon und zaehlen mit, weichen aber nicht.
+    objects = ohneEngstellen(objects, function (objs) { return verlust(objs.concat(loot)); }, function () {
+      while (floorTiles.length) {
+        var p = floorTiles.pop();
+        if (p && !used.has(keyOf(p))) { used.add(keyOf(p)); return p; }
+      }
+      return null;
+    });
     for (var d1 = 0; d1 < decorCount && floorTiles.length; d1++) {
       var pos3 = floorTiles.pop();
       if (!pos3 || used.has(keyOf(pos3))) continue;
@@ -505,7 +839,7 @@
     //    don't pile everyone at the spawn.
     var enemies = [];
     var packCount = 4 + Math.floor(rng() * 5);
-    var clusterCandidates = collectFloor(g, region.mask, spawn, entrances, loot)
+    var clusterCandidates = collectFloor(g, mask, spawn, entrances, loot)
       .filter(function (t) {
         var d = farMap.dist[t.y] && farMap.dist[t.y][t.x];
         return Number.isFinite(d) && d >= 8;
@@ -585,27 +919,45 @@
     return best;
   }
 
-  function findFarthest(g, mask, dist, ratio) {
+  function anyFloor(g, mask) {
+    for (var y = 1; y < g.length - 1; y++) {
+      for (var x = 1; x < g[0].length - 1; x++) if (mask[y][x]) return { x: x, y: y };
+    }
+    return null;
+  }
+
+  // Truhenplatz: weitester (bzw. mittlerer) Boden ab Spawn, aber nur dort, wo die Truhe (zusammen mit
+  // den schon gesetzten) keinen Weg fuer den Koerper verstopft.
+  function pickLootTile(g, mask, dist, ratio, schon, verlust) {
     var h = g.length, w = g[0].length;
     var maxD = 0;
     for (var y = 1; y < h - 1; y++) {
       for (var x = 1; x < w - 1; x++) {
-        if (!mask[y][x]) continue;
         var d = dist[y][x];
-        if (Number.isFinite(d) && d > maxD) maxD = d;
+        if (mask[y][x] && Number.isFinite(d) && d > maxD) maxD = d;
       }
     }
     var target = ratio ? Math.floor(maxD * ratio) : maxD;
-    var hits = [];
-    for (var y2 = 1; y2 < h - 1; y2++) {
-      for (var x2 = 1; x2 < w - 1; x2++) {
-        if (!mask[y2][x2]) continue;
-        var d2 = dist[y2][x2];
-        if (Number.isFinite(d2) && d2 >= target - 1 && d2 <= target + 1) hits.push({ x: x2, y: y2 });
+    // Erst das Band um die Zielentfernung, dann schrittweise breiter.
+    for (var band = 1; band <= 8; band *= 2) {
+      var hits = [];
+      for (var y2 = 1; y2 < h - 1; y2++) {
+        for (var x2 = 1; x2 < w - 1; x2++) {
+          var d2 = dist[y2][x2];
+          if (mask[y2][x2] && Number.isFinite(d2) && Math.abs(d2 - target) <= band) hits.push({ x: x2, y: y2 });
+        }
+      }
+      // Math.random wie bisher: der Truhenplatz variiert je Lauf.
+      for (var i = hits.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = hits[i]; hits[i] = hits[j]; hits[j] = t;
+      }
+      for (var k = 0; k < hits.length && k < 40; k++) {
+        var probe = schon.concat([{ x: hits[k].x, y: hits[k].y, type: 'chest_small' }]);
+        if (!verlust(probe).length) return hits[k];
       }
     }
-    if (!hits.length) return null;
-    return hits[Math.floor(Math.random() * hits.length)];
+    return null;
   }
 
   function collectFloor(g, mask, spawn, entrances, loot) {
@@ -660,5 +1012,12 @@
     };
   }
 
-  window.CaveGenerator = { generate: generate, mulberry32: mulberry32 };
+  window.CaveGenerator = {
+    generate: generate,
+    mulberry32: mulberry32,
+    // Fuer Tests: Koerper-Erreichbarkeit (2x2-Bloecke) und die Engstellen-Reparatur.
+    sichereKoerperDurchgaenge: sichereKoerperDurchgaenge,
+    koerperPruefer: koerperPruefer,
+    ohneEngstellen: ohneEngstellen
+  };
 })();
