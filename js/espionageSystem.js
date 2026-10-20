@@ -34,6 +34,16 @@
   var DEF_PAUSE = 0.7;              // s Pause am Wegpunkt
   var DEF_SCANARC = 0.9;            // rad — stationäres Hin-und-Her-Scannen
   var DEF_SCANSPEED = 0.85;         // Scan-Geschwindigkeit
+  // Spieler meldeten: "Die Kegel muessen groesser sein." Ein Knopf fuer alle
+  // Spionage-Raeume: Reichweite und Oeffnung jedes Kegels (Wachen und Figuren)
+  // wachsen um diesen Faktor; Zeichnung und Erkennung lesen dieselben Werte.
+  // Mehr macht das Archiv eng (der Schreiber sieht dann aufs Abhoerpult).
+  var KEGEL_WEITE = 1.25;
+  var KEGEL_WINKEL = 1.2;
+  // Wer Verdacht schoepft, bleibt stehen und sieht hin, statt weiterzugehen.
+  var HALT_DREH = 3.5;              // rad/s: so schnell dreht sie sich nach Dir
+  var HALT_VERWEILEN = 1.0;         // s: nach dem Abklingen noch kurz stehen, dann weiter
+  var HALT_MAX = 4;                 // s ohne Sicht hoechstens (Verdacht kommt auch von anderen)
 
   // --- Weitere Figuren neben den Wachen ----------------------------------
   // Spieler meldeten: "immer nur Wachen". Jede Figur hat ein eigenes Verhalten
@@ -159,8 +169,8 @@
     var hp = (typeof g.hp === 'number') ? g.hp : (isAlert ? 3 : 2);
     return {
       x: g.x || 0, y: g.y || 0,
-      range: (typeof g.range === 'number' && g.range > 0) ? g.range : DEF_VISION,
-      halfAngle: (typeof g.halfAngle === 'number') ? g.halfAngle : DEF_HALFANGLE,
+      range: ((typeof g.range === 'number' && g.range > 0) ? g.range : DEF_VISION) * KEGEL_WEITE,
+      halfAngle: ((typeof g.halfAngle === 'number') ? g.halfAngle : DEF_HALFANGLE) * KEGEL_WINKEL,
       speed: (typeof g.speed === 'number') ? g.speed : DEF_SPEED,
       pause: (typeof g.pause === 'number') ? g.pause : DEF_PAUSE,
       patrol: (g.patrol && g.patrol.length) ? g.patrol.map(function (w) { return { x: w.x || 0, y: w.y || 0 }; }) : null,
@@ -181,6 +191,7 @@
       _wpIndex: 0, _pauseT: 0, _scanT: 0,
       _homeX: g.x || 0, _homeY: g.y || 0,
       _invest: null,                  // {x,y,t}: geht einem Geraeusch nach
+      _halt: null,                    // {x,y,t,verweil}: misstrauisch stehengeblieben
       _mark: null                     // '?' | '!' | null
     };
   }
@@ -197,7 +208,8 @@
     var facing = (typeof place.facing === 'number') ? place.facing : 0;
     return {
       type: type, x: x, y: y,
-      range: T.range || 0, halfAngle: T.halfAngle || 0,
+      range: (T.range || 0) * KEGEL_WEITE, halfAngle: (T.halfAngle || 0) * KEGEL_WINKEL,
+      _weite: (T.range || 0) * KEGEL_WEITE, _halt: null, _sieht: false,
       speed: T.speed || 0, pause: T.pause || 0,
       patrol: route, _wpIndex: route ? (start + 1) % route.length : 0, _pauseT: 0,
       hp: T.hp || 1, maxHp: T.hp || 1,
@@ -260,6 +272,33 @@
     _moveGuard(ent, ent.x + (dx / dist) * step, ent.y + (dy / dist) * step);
     ent._facing = Math.atan2(dy, dx);
     return false;
+  }
+
+  // Spieler meldeten: "Waehrend Misstrauen waechst, soll nicht weggelaufen
+  // werden." Wer Dich im Kegel hat und Verdacht schoepft, bleibt stehen und
+  // dreht den Blick nach Dir (verliert er Dich, dahin, wo er Dich zuletzt sah).
+  // Klingt der Verdacht ab, steht er noch kurz, dann geht er weiter.
+  // sieht: Spieler im Kegel UND der Verdacht steigt; verdachtLebt: noch nicht
+  // abgeklungen. true = die Figur haelt, ihr Weg ruht diesen Takt.
+  function _misstrauischHalten(ent, sieht, verdachtLebt, p, dt) {
+    if (sieht && p) {
+      if (!ent._halt) ent._halt = { x: p.x, y: p.y, t: 0, verweil: 0 };
+      var h0 = ent._halt;
+      h0.x = p.x; h0.y = p.y; h0.t = 0; h0.verweil = 0;
+    }
+    var h = ent._halt;
+    if (!h) return false;
+    if (!sieht) {
+      h.t += dt;
+      if (!verdachtLebt || h.t >= HALT_MAX) {
+        h.verweil += dt;
+        if (h.verweil >= HALT_VERWEILEN) { ent._halt = null; return false; }
+      }
+    }
+    var d = _angDiff(Math.atan2(h.y - ent.y, h.x - ent.x), ent._facing || 0);
+    var m = HALT_DREH * dt;
+    ent._facing = (ent._facing || 0) + Math.max(-m, Math.min(m, d));
+    return true;
   }
 
   // --- Wegsuche der Melder ------------------------------------------------
@@ -462,6 +501,7 @@
     var gs = state.guards;
     var p = _player();
     var scene = (p && p.scene) ? p.scene : null;
+    var inCover = p ? _inCover(p.x, p.y) : false;
     for (var i = 0; i < gs.length; i++) {
       var g = gs[i];
       if (!g || g.knocked) continue;
@@ -471,6 +511,7 @@
       if (p) _pushOut(p, g, GUARD_SOLID_R);
       // Feindselig: auf den Spieler zu bewegen und im Nahkampf zuschlagen.
       if (g.hostile && p) {
+        g._halt = null;
         var hdx = p.x - g.x, hdy = p.y - g.y;
         var hdist = Math.sqrt(hdx * hdx + hdy * hdy);
         if (hdist > 0.001) g._facing = Math.atan2(hdy, hdx);
@@ -484,6 +525,13 @@
           try { if (typeof window !== 'undefined' && typeof window.applyPlayerDamage === 'function') window.applyPlayerDamage(g.damage || 8, scene); } catch (_) {}
         }
         continue;
+      }
+      // Sieht sie Dich und zaehlt es (Alarm-Wache oder unverkleidet), steigt der
+      // Verdacht: stehenbleiben und hinsehen, bis er abklingt.
+      if (state.exposed) g._halt = null;
+      else {
+        var sieht = !!p && !inCover && (g.alert || !state.disguised) && _coneIntensity(g, p.x, p.y) > 0.02;
+        if (_misstrauischHalten(g, sieht, state.detection > 0.02, p, dt)) continue;
       }
       // Einem Geraeusch oder Ruf nachgehen: hin, umsehen, dann zurueck an die Arbeit.
       if (g._invest) {
@@ -672,6 +720,7 @@
 
       // Gehen: Spitzel auf Meldung rennt, sonst Weg/Posten.
       if (a._state === 'report') {
+        a._halt = null; a._sieht = false;
         if (!a._target || a._target.knocked) a._target = _nearestGuard(a.x, a.y);
         a._runT += dt;
         if (a._target) _laufeZu(a, a._target.x, a._target.y, T.runSpeed, dt);
@@ -691,7 +740,11 @@
       }
       var bumped = false;
       if (p && T.solid) bumped = _pushOut(p, a, T.solid);
-      if (a.patrol && a.patrol.length > 1) {
+      // _sieht stammt aus dem Bemerken des letzten Takts (unten).
+      var haelt = T.watcher && _misstrauischHalten(a, a._sieht, a._notice > 0, p, dt);
+      if (haelt) {
+        if (!a.patrol || a.patrol.length < 2) a.range = a._weite;   // der Schreiber hebt den Kopf
+      } else if (a.patrol && a.patrol.length > 1) {
         if (bumped && T.porter && a._bumpCd <= 0) {
           // Angerempelt: der Traeger bleibt stehen und schimpft.
           a._bumpCd = PORTER_BUMP_CD; a._markT = 1.5; a._stopT = 1;
@@ -716,7 +769,7 @@
         // hebt er den Kopf und sieht sich um (voller Kegel).
         a._scanT += dt;
         var zyklus = a._scanT % 6.2, schaut = zyklus >= 4;
-        a.range = T.range * (schaut ? 1 : 0.55);
+        a.range = a._weite * (schaut ? 1 : 0.55);
         a._facing = a._baseFacing + (schaut ? Math.sin((zyklus - 4) * 2.2) * (T.scanArc || 0) : 0);
       }
 
@@ -725,12 +778,14 @@
       if (T.blind) { a._workT = (a._workT || 0) + dt; a._notice = 0; a._mark = null; continue; }
 
       // Bemerken (Schreiber, Diener, Spitzel): eigener Zaehler je Figur.
+      a._sieht = false;
       if (a._state === 'rest') {
         if (a._cool <= 0) a._state = 'idle';
       } else if (!state.exposed && a._cool <= 0 && p) {
         var inten = inCover ? 0 : _coneIntensity(a, p.x, p.y);
         var eff = state.disguised ? inten - T.tolerance : inten;
         if (eff > 0.02) {
+          a._sieht = true;
           var mult = state.disguised ? 1 : UNDISGUISED_MULT;
           a._notice = Math.min(1, a._notice + T.rise * mult * (0.4 + 0.6 * inten) * dt);
         } else {

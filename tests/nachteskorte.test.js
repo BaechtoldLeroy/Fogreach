@@ -131,7 +131,9 @@ describe('Nachteskorte', () => {
     // Ein Stueck mitfahren, dann weit weg und dort bleiben.
     await mitlaufen(H, "window.Nachteskorte.getState().pos.x > 500", 2000);
     const vorher = H.run('window.EspionageSystem.getDetection()');
-    H.run('window.player.setPosition(960, 96)');
+    // Weit weg in die Ecke oben links. Oben rechts (960, 96) steht man seit den groesseren
+    // Kegeln (b498) im Blick der roten Wache an der Ostwand, und enttarnt haelt der Karren an.
+    H.run('window.player.setPosition(72, 72)');
     assert.ok(await bis(H, "window.Nachteskorte.warnt()", 100), 'keine Warnung ausserhalb der Reichweite');
     assert.ok(/Karren|cart/.test(H.run('window.Nachteskorte.hinweis({})')), 'kein Hinweis');
     assert.ok(await bis(H, "window.Nachteskorte.getState().verloren === 1", 1500), 'der Transport setzt nicht zurueck');
