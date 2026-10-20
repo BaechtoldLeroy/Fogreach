@@ -240,7 +240,7 @@ function _quelleZeichnen(scene, x, y) {
   var bild = (FH && typeof FH.esseAufstellen === 'function') ? FH.esseAufstellen(scene, x, y, vorbei ? 'zerbrochen' : 'intakt') : null;
   var g = scene.add.graphics();
   if (bild) {
-    // Roter Schein auf dem Boden, unter dem Bild; ueber ihm liegen Glut und Bindung (31, 32).
+    // Roter Schein auf dem Boden, unter Glut und Bindung (31, 32) und unter dem Bild (FinaleHandwerk.ESSE_TIEFE).
     g.setDepth(30.5);
     g.fillStyle(0x5a1a10, 0.35); g.fillEllipse(0, 0, 250, 150);
     g.fillStyle(0xa0301a, 0.3);  g.fillEllipse(0, 0, 170, 100);

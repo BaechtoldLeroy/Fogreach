@@ -70,6 +70,24 @@ const esse = () => H.run(`(function () { var sc = ${GSC}, b = sc._esseBild, k = 
     ort: o
   }; })()`);
 
+// Was sich am Boden um die Esse dreht oder ausbreitet: Glut, Bindung und
+// Rauchzug der Halte-Aktion, Risse und Nebelring beim Zerbrechen, die
+// Nebelzonen der Arena. Die Esse muss darueber liegen (Wunsch zu b487).
+const KREISE = ['esseGlut', 'esseBindung', 'esseZug', 'esseRisse', 'esseNebelRing', 'elaraZone'];
+const kreise = () => H.run(`(function () { var sc = ${GSC}, b = sc._esseBild, namen = ${JSON.stringify(KREISE)};
+  var da = sc.children.list.filter(function (o) { return o.active && namen.indexOf(o.name) >= 0; });
+  return {
+    esse: b && b.active ? b.depth : null,
+    gesehen: da.map(function (o) { return o.name; }).filter(function (n, i, a) { return a.indexOf(n) === i; }).sort(),
+    drueber: da.filter(function (o) { return !(b && b.active && o.depth < b.depth); }).map(function (o) { return o.name + '@' + o.depth; })
+  }; })()`);
+function esseUeber(erwartet, wann) {
+  const k = kreise();
+  assert.ok(k.esse !== null, wann + ': kein Bild der Esse');
+  erwartet.forEach((n) => assert.ok(k.gesehen.indexOf(n) >= 0, wann + ': ' + n + ' fehlt (' + k.gesehen.join(', ') + ')'));
+  assert.deepStrictEqual(Array.from(k.drueber), [], wann + ': ueber der Esse (' + k.esse + ') liegen ' + k.drueber.join(', '));
+}
+
 test('Beim Betreten steht die Esse intakt, an der Stelle der Glut, der Sockel hat einen Koerper', () => {
   const e = esse();
   assert.strictEqual(e.bild, true, 'kein Bild der Esse (Textur geladen? ' + H.run(`${GSC}.textures.exists('esse_intakt')`) + ')');
@@ -79,8 +97,8 @@ test('Beim Betreten steht die Esse intakt, an der Stelle der Glut, der Sockel ha
   assert.deepStrictEqual([e.ort.x, e.ort.y], [e.glut.x, e.glut.y]);
   assert.strictEqual(e.bx, e.glut.x);
   assert.strictEqual(e.by, e.glut.y + H.run('window.FinaleHandwerk.ESSE_SOCKEL'));
-  // Schein unter dem Bild, Glut und Bindung der Halte-Aktion (31, 32) darueber.
-  assert.ok(e.glut.tiefe < e.tiefe && e.tiefe < 31, 'Tiefen: Schein ' + e.glut.tiefe + ', Bild ' + e.tiefe);
+  // Schein am Boden unter dem Bild; die Esse steht ueber der Bodenebene, unter Props und Figuren.
+  assert.ok(e.glut.tiefe < e.tiefe && e.tiefe < H.run('window.WELT_TIEFEN.PROP_SCHATTEN'), 'Tiefen: Schein ' + e.glut.tiefe + ', Bild ' + e.tiefe);
   // Koerper: der Sockel, 76 x 28, mittig unter dem Ort, Unterkante am Sockel.
   const k = e.koerper;
   assert.ok(k && k.inHindernissen, 'kein Sockelkoerper in den Hindernissen: ' + JSON.stringify(k));
@@ -122,7 +140,15 @@ test('?finale=hammer: waehrend des erhobenen Hammers glimmt die Esse (intakt)', 
   // Heben bis zur Erkenntnis, loslassen: noch glimmt sie.
   H.run(`(function () { var h = ${GSC}.__finaleHammer; player.setPosition(h.x, h.y + 70); player.body.reset(player.x, player.y); })()`);
   taste(true);
+  for (let i = 0; i < 400 && H.run(`${GSC}.__finaleHammer.fortschritt`) < 0.3; i++) H.step(1);
+  esseUeber(['esseBindung', 'esseGlut', 'esseZug'], 'erhobener Hammer');
+  // Elara (und Harren, sobald er kommt) stehen auf der Buehne vor der Esse.
+  const figuren = H.run(`(function () { var sc = ${GSC}, b = sc.__finaleBuehne || {};
+    return [b.elara, b.harren].filter(function (o) { return o && o.active; }).map(function (o) { return o.depth; }); })()`);
+  assert.ok(figuren.length >= 1, 'Elara fehlt auf der Buehne');
+  figuren.forEach((d) => assert.ok(d > esse().tiefe, 'eine Figur liegt unter der Esse: ' + d));
   for (let i = 0; i < 400 && H.run(`${GSC}.__finaleHammer.phase`) !== 'erkannt'; i++) H.step(1);
+  esseUeber(['esseBindung', 'esseGlut'], 'Erkenntnis');
   taste(false);
   for (let i = 0; i < 100 && H.run(`!!${GSC}.__finaleHammer`); i++) H.step(1);
   assert.strictEqual(esse().zustand, 'intakt', 'schon die Erkenntnis laesst die Esse lodern');
@@ -150,6 +176,31 @@ test('Kampf (kampf ... schlag): die Esse flackert, im festen Muster zwischen bei
   assert.ok(!gesehen.esse_zerbrochen, 'im Kampf zerbrochen');
 });
 
+test('Arena-Zonen (zonen): die Esse liegt ueber dem Nebel, Elara und der Spieler davor ueber der Esse, dahinter verdeckt sie ihn', () => {
+  const BOSS = 'enemies.getChildren().filter(function (x) { return x && x.isBoss && x.active; })[0]';
+  arenaBetreten();
+  stand({ harren_dead: true });
+  H.lab.spawnBoss();
+  // Wie der Kampf-Fall: braucht den verbrauchten ?finale=hammer-Schritt der Faelle davor.
+  for (let i = 0; i < 10 && !H.run(`!!(${BOSS} && ${BOSS}._elaraKampf)`); i++) H.step(1);
+  H.run(`(function () { var b = ${BOSS}; b.speed = 0; b.damage = 1; b.baseDamage = 1; b.nextPatternAt = 1e15; b.hp = Math.ceil(b.maxHp * 0.6); })()`);
+  H.step(3);
+  H.run(`${BOSS}.nextPatternAt = 1e15`);
+  assert.strictEqual(H.run(`${BOSS}.phase`), 2, 'keine Phase 2: ' + H.run(`JSON.stringify({ kampf: !!${BOSS}._elaraKampf, harrenTot: window.questSystem.hasFlag('harren_dead') })`));
+  esseUeber(['elaraZone'], 'Zonen angekuendigt');
+  for (let i = 0; i < 90; i++) H.step(1);
+  esseUeber(['elaraZone'], 'Zonen scharf');
+  // Spieler vor dem Sockel: ueber der Esse. Hinter dem Schacht: die Esse vor ihm.
+  const o = esse().ort;
+  H.run(`(function () { player.setPosition(${o.x}, ${o.y} + 60); player.body.reset(player.x, player.y); })()`);
+  H.step(2);
+  assert.ok(esse().tiefe < H.run('player.depth'), 'der Spieler vor der Esse wird verdeckt');
+  H.run(`(function () { player.setPosition(${o.x}, ${o.y} - 45); player.body.reset(player.x, player.y); })()`);
+  H.step(2);
+  assert.ok(esse().tiefe > H.run('player.depth'), 'hinter dem Schacht steht der Spieler vor der Esse');
+  esseUeber(['elaraZone'], 'Spieler hinter der Esse');
+});
+
 test('Letzter Schlag (loesen): lodernd an der Esse, nach dem Schlag zerbrochen; Koerper und Ort bleiben', () => {
   arenaBetreten();
   stand({ harren_dead: true, elara_besiegt: true });
@@ -161,10 +212,13 @@ test('Letzter Schlag (loesen): lodernd an der Esse, nach dem Schlag zerbrochen; 
   const vorher = esse();
   H.run(`(function () { var h = ${GSC}.__finaleLoesen; player.setPosition(h.x, h.y + 70); player.body.reset(player.x, player.y); })()`);
   taste(true);
+  for (let i = 0; i < 400 && H.run(`!!${GSC}.__finaleLoesen && ${GSC}.__finaleLoesen.fortschritt < 0.5`); i++) H.step(1);
+  esseUeber(['esseBindung', 'esseGlut', 'esseZug'], 'letzter Schlag');
   for (let i = 0; i < 400 && H.run(`!!${GSC}.__finaleLoesen`); i++) H.step(1);
   taste(false);
   assert.strictEqual(H.run(`!!${GSC}.__finaleLoesen`), false, 'der letzte Schlag geht nicht durch');
   H.step(2);
+  esseUeber(['esseRisse', 'esseNebelRing'], 'Zerbrechen');
   const nach = esse();
   assert.strictEqual(nach.key, 'esse_zerbrochen');
   assert.strictEqual(nach.zustand, 'zerbrochen');

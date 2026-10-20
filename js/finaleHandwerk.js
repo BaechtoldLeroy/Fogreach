@@ -23,7 +23,7 @@
   var ERKENNEN_BEI = 0.62;    // hier trifft Dich die Erkenntnis (erneuern)
   var ABFALL_JE_S = 0.7;      // so viel faellt ohne Halten je Sekunde zurueck
   var LOSLASSEN_AB_MS = 450;  // so lange steht der Moment, bevor Loslassen zaehlt
-  var TIEFE = 32;             // ueber der Glut der Arena (31), unter den Figuren
+  var TIEFE = 32;             // ueber der Glut der Arena (31), unter dem Bild der Esse (ESSE_TIEFE)
 
   function _en() {
     try { return !!(window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en'); } catch (e) { return false; }
@@ -397,6 +397,11 @@
   // Ort, [E]-Reichweite und Bindung, wo sie waren.
   var ESSE_ANKER = { x: 68 / 128, y: 112 / 128 };
   var ESSE_SOCKEL = 8;
+  // Die Esse steht UEBER allem, was sich am Boden um sie dreht: Glut (31) und
+  // Bindung (32) der Halte-Aktion, Rauchzug und Nebelring (33), Risse und die
+  // Nebelzonen der Arena (34). Unter den Props (38+) und den Figuren; steht
+  // der Spieler hinter dem Schacht, hebt sortiereZumSpieler sie vor ihn.
+  var ESSE_TIEFE = 36;
   // Der Koerper ist nur der Sockel (Bildpunkte 30..106 x 84..112), nicht der
   // Schornstein: hinter dem Schacht kann man vorbeigehen.
   var ESSE_KOERPER = { w: 76, h: 28 };
@@ -415,9 +420,8 @@
   /** Stellt die Esse als Bild samt Sockelkoerper auf; null, wenn das Bild fehlt. */
   function esseAufstellen(scene, x, y, zustand) {
     if (!scene || !scene.add || !scene.textures || !scene.textures.exists(ESSE_BILDER.intakt)) return null;
-    var T = window.WELT_TIEFEN || {};
     var bild = scene.add.image(x, y + ESSE_SOCKEL, ESSE_BILDER.intakt).setOrigin(ESSE_ANKER.x, ESSE_ANKER.y)
-      .setDepth((T.BODENDEKO_MAX || 30) + 0.8).setName('esseBild');
+      .setDepth(ESSE_TIEFE).setName('esseBild');
     bild.setData('esseZustand', 'intakt');
     bild.once('destroy', function () { if (bild._flackern) { bild._flackern.remove(false); bild._flackern = null; } });
     scene._esseBild = bild;
@@ -469,7 +473,7 @@
     REICHWEITE: REICHWEITE, DAUER_MS: DAUER_MS, ERKENNEN_BEI: ERKENNEN_BEI, ZERBRECHEN_MS: ZERBRECHEN_MS,
     ort: ort, halten: halten, zerbrechen: zerbrechen, haeltGedrueckt: haeltGedrueckt,
     hammerTextur: hammerTextur, tonSchnitt: tonSchnitt,
-    ESSE_BILDER: ESSE_BILDER, ESSE_KOERPER: ESSE_KOERPER, ESSE_SOCKEL: ESSE_SOCKEL, FLACKER_MUSTER: FLACKER_MUSTER, FLACKER_MS: FLACKER_MS,
+    ESSE_BILDER: ESSE_BILDER, ESSE_KOERPER: ESSE_KOERPER, ESSE_SOCKEL: ESSE_SOCKEL, ESSE_TIEFE: ESSE_TIEFE, FLACKER_MUSTER: FLACKER_MUSTER, FLACKER_MS: FLACKER_MS,
     bilderVorladen: bilderVorladen, esseAufstellen: esseAufstellen, esseZustand: esseZustand
   };
 })();
