@@ -39,6 +39,8 @@
       'erst.steuerung.arpg': 'WASD laufen, die Maus zielt und schlägt, 1 2 3 4 für Fähigkeiten.',
       'erst.hinweis': 'Alle Einstellungen findest Du jederzeit mit O oder über das Menü oben rechts.',
       'erst.hinweis.mobil': 'Alle Einstellungen findest Du jederzeit über das Menü oben rechts.',
+      'erst.feedback': 'Fehler oder eine Idee? Der Feder-Knopf unter dem Inventar oder F8 öffnet das Feedback.',
+      'erst.feedback.mobil': 'Fehler oder eine Idee? Der Feder-Knopf unter dem Inventar öffnet das Feedback.',
       'erst.los': "Los geht's"
     });
     window.i18n.register('en', {
@@ -52,6 +54,8 @@
       'erst.steuerung.arpg': 'WASD moves, the mouse aims and attacks, 1 2 3 4 for abilities.',
       'erst.hinweis': 'You can open all settings at any time with O or via the menu at the top right.',
       'erst.hinweis.mobil': 'You can open all settings at any time via the menu at the top right.',
+      'erst.feedback': 'Found a bug or have an idea? The quill button below the inventory or F8 opens the feedback.',
+      'erst.feedback.mobil': 'Found a bug or have an idea? The quill button below the inventory opens the feedback.',
       'erst.los': "Let's go"
     });
   }
@@ -132,7 +136,7 @@
     var reihen = touch ? ['stufe', 'los'] : ['stufe', 'schema', 'los'];
 
     var W = Math.min(640, cw - 40);
-    var H = touch ? 256 : 362;
+    var H = touch ? 290 : 396;
     var top = cy - H / 2;
 
     // Abdunkeln und alle Klicks dahinter abfangen.
@@ -187,6 +191,10 @@
 
     var hinweis = text(cx, y + 6, T(touch ? 'erst.hinweis.mobil' : 'erst.hinweis'),
       { fontSize: '13px', color: '#e8dcc0', wordWrap: { width: W - 70 } });
+
+    // Tester sollen wissen, wo Rueckmeldungen hingehen (js/feedback.js).
+    text(cx, y + 40, T(touch ? 'erst.feedback.mobil' : 'erst.feedback'),
+      { fontSize: '13px', color: '#b8d4e8', wordWrap: { width: W - 70 } });
 
     var losY = top + H - 38;
     var los = add(scene.add.rectangle(cx, losY, 200, 40, 0x2a2a2a)

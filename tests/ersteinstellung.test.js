@@ -59,6 +59,17 @@ function nichtFest(objekte) {
   return schlecht;
 }
 
+/** Der Feedback-Hinweis steht da und ueberlappt weder Hinweis noch Los-Knopf. */
+function feedbackHinweis(e, mitF8) {
+  const fb = e.objekte.find((o) => o.type === 'Text' && /Feder-Knopf|quill/.test(o.text));
+  assert.ok(fb, 'kein Hinweis aufs Feedback im Startdialog');
+  assert.strictEqual(/F8/.test(fb.text), mitF8, 'F8 im Hinweis falsch: ' + fb.text);
+  const los = e.objekte.find((o) => o.type === 'Rectangle' && o.width === 200 && o.height === 40);
+  const b = fb.getBounds(), h = e.hinweis.getBounds();
+  assert.ok(h.bottom <= b.top, 'Feedback-Hinweis liegt auf dem Einstellungs-Hinweis');
+  if (los) assert.ok(b.bottom <= los.getBounds().top, 'Feedback-Hinweis liegt auf dem Los-Knopf');
+}
+
 test('Ersteinstellung: Desktop — einmal je Slot, Enter uebernimmt Wahl', async () => {
   h.run('window.game.device.input.touch = false');
   const W = h.window;
@@ -73,6 +84,7 @@ test('Ersteinstellung: Desktop — einmal je Slot, Enter uebernimmt Wahl', async
   assert.strictEqual(e.zustand.stufe, 1, 'Normal nicht vorgewaehlt');
   assert.strictEqual(e.zustand.schema, 0, 'Klassisch nicht vorgewaehlt');
   assert.ok(/ O /.test(e.hinweis.text), 'Desktop-Hinweis nennt O nicht: ' + e.hinweis.text);
+  feedbackHinweis(e, true);
   assert.deepStrictEqual(nichtFest(e.objekte), [], 'Objekte mit Scrollfaktor != 0');
 
   // Tastatur: rechts = Schwer, runter auf Steuerung, rechts = ARPG, Enter.
@@ -133,6 +145,7 @@ test('Ersteinstellung: Mobile — ohne Steuerungszeile, ohne O; Klick auf Los', 
   assert.strictEqual(e.zustand.schema, null, 'Steuerungszeile auf Mobile');
   const texte = e.objekte.filter((o) => o.type === 'Text').map((o) => o.text);
   assert.ok(!texte.some((t) => /Steuerung|Controls|Klassisch|ARPG/.test(t)), 'Steuerung sichtbar: ' + texte.join(' | '));
+  feedbackHinweis(e, false);
   assert.ok(!/ O /.test(e.hinweis.text), 'Mobile-Hinweis nennt O: ' + e.hinweis.text);
   assert.ok(/Menü oben rechts|menu at the top right/.test(e.hinweis.text), 'Hinweis aufs Menue fehlt');
   assert.deepStrictEqual(nichtFest(e.objekte), [], 'Objekte mit Scrollfaktor != 0');
