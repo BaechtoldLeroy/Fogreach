@@ -83,6 +83,13 @@
     if (scene._dialogOpen) return;
 
     scene._dialogOpen = true;
+    // Wie Inventar und Einstellungen: solange das Menue offen ist, steht das
+    // Spiel (Gegner, Physik, Abklingzeiten). Nur loesen, was wir selbst
+    // angehalten haben, sonst laeuft z.B. ein offener Dialog darunter weiter.
+    const P = window.__GAME_PAUSE;
+    const selbstAngehalten = !!(P && P.since == null && typeof window.pauseGameClock === 'function');
+    if (selbstAngehalten) { try { window.pauseGameClock(scene); } catch (e) {} }
+    if (typeof player !== 'undefined' && player && player.body && player.setVelocity) player.setVelocity(0, 0);
 
     const AS = window.AbilitySystem;
     const UR = window.uiRahmen;
@@ -414,6 +421,9 @@
       scene.input.keyboard.off('keydown-ESC', close);
       scene.input.keyboard.off('keydown-K', close);
       scene._dialogOpen = false;
+      if (selbstAngehalten && typeof window.resumeGameClock === 'function') {
+        try { window.resumeGameClock(scene); } catch (e) {}
+      }
       scene._loadoutSuppressUntil = (scene.time?.now || 0) + 200;
     };
     closeBtn.on('pointerdown', close);
@@ -423,9 +433,10 @@
       }
     });
     scene.input.keyboard.on('keydown-ESC', close);
-    scene.time.delayedCall(50, () => {
+    // Echtzeit statt scene.time: die Spieluhr steht, ein delayedCall feuerte nie.
+    setTimeout(() => {
       if (scene._loadoutContainer) scene.input.keyboard.on('keydown-K', close);
-    });
+    }, 50);
   }
 
   window.openLoadoutUI = openLoadoutUI;
