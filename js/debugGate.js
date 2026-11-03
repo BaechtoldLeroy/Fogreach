@@ -98,6 +98,7 @@
     'bruchnacht',       // Zwischenszene "Die Nacht nach dem Bruch" ansehen
     'wiedersehen',      // Zwischenszene «Das Wiedersehen» im Hub ansehen: wiedersehen=1
     'epilog',           // Epilog als Bildfolge ansehen: epilog=1 | lebt,grab,allein,... (js/epilogSzene.js)
+    'abstieg', 'aldric', // Tiefenszenen ansehen: abstieg=1..3 | aldric=1|erzaehlt|geschwiegen
     'auftrag', 'auftragfast',  // einen Auftrag direkt testen (js/debugAuftrag.js)
     'kreide'            // Kreidezeichen in jedem Raum (js/kreidezeichen.js)
   ];

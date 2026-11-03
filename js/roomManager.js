@@ -4365,6 +4365,9 @@ function _elaraSzene(scene, key, amEnde) {
 // ---------------------------------------------------------------------------
 var HARREN_FIGUR_HOEHE = 52;
 var ALDRIC_FIGUR_HOEHE = 54;
+// Sitzend (Harren auf der Stufe, Aldric am Boden): niedriger als stehend.
+var HARREN_SITZ_HOEHE = 40;
+var ALDRIC_SITZ_HOEHE = 44;   // die ausgestreckten Beine machen ihn hoeher
 var _tiefenBegegnungAb = 2;
 
 var HARREN_ABSTIEG = [
@@ -4492,22 +4495,40 @@ function _tiefenBegegnung(scene, roomId) {
   if (!f) return;
   _tiefenBegegnungAb = roomId + 2;
   var qs = window.questSystem;
+  // Seit b501 spielen die Begegnungen als Zwischenszene auf Tableaus
+  // (js/tiefenSzene.js); die Bilder laden schon, waehrend die Figur steht.
+  // Fehlen sie, bleibt es bei der Textfassung oben.
+  var TS = window.TiefenSzene;
+  var hatBild = function (k) { return !!(scene.textures && scene.textures.exists(k)); };
   if (f.art === 'harren') {
     var schritt = f.schritt;
-    window.EventSystem.spawnEventObject(scene, 'harren_right0', 0xffffff, 0xd9b867, 'Harren', function () {
+    var szene = 'abstieg' + f.nr;
+    if (TS) { try { TS.vorladen(scene, szene); } catch (e) {} }
+    // Auf der Stufe sitzt er (eigene Figur), sonst steht er.
+    var sitzt = f.nr === 2 && hatBild('harren_sitzend');
+    window.EventSystem.spawnEventObject(scene, sitzt ? 'harren_sitzend' : 'harren_right0', 0xffffff, 0xd9b867, 'Harren', function () {
       if (qs && typeof qs.setFlag === 'function') qs.setFlag(schritt.flag);
-      if (typeof window.EventSystem.showEventChoiceDialog !== 'function') return;
-      _begegnungSpielen(scene, schritt.seiten());
-    }, { figurHoehe: HARREN_FIGUR_HOEHE });
+      var textFassung = function () {
+        if (typeof window.EventSystem.showEventChoiceDialog !== 'function') return;
+        _begegnungSpielen(scene, schritt.seiten());
+      };
+      if (!TS || !TS.spielen(scene, szene, null, textFassung)) textFassung();
+    }, { figurHoehe: sitzt ? HARREN_SITZ_HOEHE : HARREN_FIGUR_HOEHE });
     return;
   }
-  window.EventSystem.spawnEventObject(scene, 'aldric_right0', 0xffffff, 0x8a8298, 'Aldric', function () {
+  if (TS) { try { TS.vorladen(scene, 'aldric'); } catch (e) {} }
+  // Der Text sagt "am Boden, ohne Mantel": so sitzt er auch im Raum.
+  var leer = hatBild('aldric_sitzend');
+  window.EventSystem.spawnEventObject(scene, leer ? 'aldric_sitzend' : 'aldric_right0', 0xffffff, 0x8a8298, 'Aldric', function () {
     var fertig = function () {
       if (qs && typeof qs.updateQuestProgress === 'function') qs.updateQuestProgress('observe', 'aldric_gefunden', 1);
     };
-    if (typeof window.EventSystem.showEventChoiceDialog !== 'function') { fertig(); return; }
-    _begegnungSpielen(scene, ALDRIC_ENDE.seiten(), fertig);
-  }, { figurHoehe: ALDRIC_FIGUR_HOEHE });
+    var textFassung = function () {
+      if (typeof window.EventSystem.showEventChoiceDialog !== 'function') { fertig(); return; }
+      _begegnungSpielen(scene, ALDRIC_ENDE.seiten(), fertig);
+    };
+    if (!TS || !TS.spielen(scene, 'aldric', fertig, textFassung)) textFassung();
+  }, { figurHoehe: leer ? ALDRIC_SITZ_HOEHE : ALDRIC_FIGUR_HOEHE });
 }
 if (typeof window !== 'undefined') window._tiefenBegegnung = _tiefenBegegnung;
 

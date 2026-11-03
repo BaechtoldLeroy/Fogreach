@@ -972,6 +972,13 @@ function preload() {
   if (!this.textures.exists('aldric_right0')) {
     this.load.image('aldric_right0', 'assets/npc/aldric/right0.png');
   }
+  // Sitzend: Harren auf der Stufe (Abstieg 2), Aldric leer am Boden (b501).
+  if (!this.textures.exists('harren_sitzend')) {
+    this.load.image('harren_sitzend', 'assets/npc/harren/sitzend.png');
+  }
+  if (!this.textures.exists('aldric_sitzend')) {
+    this.load.image('aldric_sitzend', 'assets/npc/aldric/sitzend.png');
+  }
   // Stufe 3: Mara steht im Endkampf am Rand der Arena (elaraKampf.js).
   if (!this.textures.exists('spaeherin')) {
     this.load.image('spaeherin', 'assets/sprites/spaeherin.png');

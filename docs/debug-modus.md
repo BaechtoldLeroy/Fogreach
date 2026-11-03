@@ -308,6 +308,31 @@ die naechste blaettert, ESC oder "Überspringen" beendet.
 ?debug=1&autostart=1&epilog=tot,allein,verschwiegen
 ```
 
+### Harrens Abstieg und Aldrics Ende (Akt 4)
+
+Die Begegnungen auf dem Weg nach unten als Zwischenszenen (js/tiefenSzene.js,
+Tableaus aus `assets/sprites/abstieg/` und `assets/sprites/aldricende/`). Im
+Spiel steht die Figur im Raum (Harren auf Tiefe 24/26/28 waehrend
+`schattenrat_finale`, Aldric bei Welle 30 in `mara_assault`), [E] spielt die
+Szene. Die Vorschau setzt keine Flaggen.
+
+| Flagge | Wirkung |
+|---|---|
+| `?abstieg=1` / `2` / `3` | Harren an der Wand / auf der Stufe / am Schacht, beim Betreten des Hubs |
+| `?aldric=1` | Aldrics Ende mit der Wahl (sagen oder schweigen) |
+| `?aldric=erzaehlt` / `geschwiegen` | Aldrics Ende, die Wahl steht schon fest |
+
+ESC oder "Überspringen" springt zur offenen Wahl und beendet die Szene erst
+danach. Im echten Keller stellt `?auftrag=schattenrat_finale&dungeon=24` den
+Stand fuer den Abstieg her (Harren ab dem zweiten Raum, die naechste Begegnung
+zwei Raeume spaeter und erst ab ihrer Tiefe).
+
+```
+?debug=1&autostart=1&abstieg=2
+?debug=1&autostart=1&aldric=geschwiegen
+?debug=1&auftrag=schattenrat_finale&dungeon=28
+```
+
 
 ### Die sechs Sondergegner (#12)
 

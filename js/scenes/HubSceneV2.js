@@ -621,6 +621,10 @@ class HubSceneV2 extends Phaser.Scene {
     if (!this._dialogOpen && window.BruchNachtSzene) {
       this._dialogOpen = window.BruchNachtSzene.probe(this, () => { this._dialogOpen = false; });
     }
+    // Debug ?abstieg=1..3 / ?aldric=1|erzaehlt|geschwiegen: Tiefenszenen ansehen.
+    if (!this._dialogOpen && window.TiefenSzene) {
+      this._dialogOpen = window.TiefenSzene.probe(this, () => { this._dialogOpen = false; });
+    }
 
     if (this.player) {
       this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
