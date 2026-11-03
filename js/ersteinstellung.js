@@ -31,9 +31,9 @@
     window.i18n.register('de', {
       'erst.titel': 'Bevor es losgeht',
       'erst.schwierigkeit': 'Schwierigkeit',
-      'erst.schwierigkeit.easy': 'Schwächere Gegner, schwächere Beute. Für die Geschichte.',
+      'erst.schwierigkeit.easy': 'Schwächere Gegner. Für die Geschichte.',
       'erst.schwierigkeit.normal': 'So ist Fogreach gedacht.',
-      'erst.schwierigkeit.hard': 'Stärkere Gegner, stärkere Beute.',
+      'erst.schwierigkeit.hard': 'Stärkere Gegner. Die Beute bleibt dieselbe.',
       'erst.steuerung': 'Steuerung',
       'erst.steuerung.classic': 'Pfeiltasten laufen, Leertaste schlägt, Q W E R für Fähigkeiten.',
       'erst.steuerung.arpg': 'WASD laufen, die Maus zielt und schlägt, 1 2 3 4 für Fähigkeiten.',
@@ -46,9 +46,9 @@
     window.i18n.register('en', {
       'erst.titel': 'Before you begin',
       'erst.schwierigkeit': 'Difficulty',
-      'erst.schwierigkeit.easy': 'Weaker enemies, weaker loot. For the story.',
+      'erst.schwierigkeit.easy': 'Weaker enemies. For the story.',
       'erst.schwierigkeit.normal': 'Fogreach as it is meant to be played.',
-      'erst.schwierigkeit.hard': 'Stronger enemies, stronger loot.',
+      'erst.schwierigkeit.hard': 'Stronger enemies. The loot stays the same.',
       'erst.steuerung': 'Controls',
       'erst.steuerung.classic': 'Arrow keys move, Space attacks, Q W E R for abilities.',
       'erst.steuerung.arpg': 'WASD moves, the mouse aims and attacks, 1 2 3 4 for abilities.',

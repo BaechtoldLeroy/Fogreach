@@ -103,25 +103,40 @@ test('Schmiede zeigt die Wurfstufe — frisch, nach Ausbau und beim Questlohn', 
   stimmt(r.lohn, 18, 'Questlohn in der Schmiede');
 });
 
-test('Schwierig: haertere Werte, dieselbe Stufe', () => {
-  // _applyDifficultyToRolledItem rechnete itemLevel mit Tiefe x 1,5 nach.
+test('Schwierigkeit aendert die Beute nicht: gleicher Wurf, gleiche Werte und Stufe', () => {
+  // Gemeldet: Die Beute soll nicht mit der Schwierigkeit skalieren. Frueher
+  // multiplizierte loot.js alle Werte mit 0,6 bzw. 1,5. Derselbe Zufall muss
+  // auf Leicht, Normal und Schwierig dasselbe Stueck liefern.
   const r = H.run(`(function () {
-    var alt = window.DIFFICULTY_MULTIPLIER, altF = window.getDifficultyMultiplier;
-    window.getDifficultyMultiplier = function () { return 1.5; };
-    window.DIFFICULTY_MULTIPLIER = 1.5;
+    var alt = window.DIFFICULTY_MULTIPLIER, altF = window.getDifficultyMultiplier, altR = Math.random;
     var cw = window.currentWave; window.currentWave = 10; currentWave = 10;
-    var it = null;
+    var aus = {};
     try {
-      for (var i = 0; i < 60 && !(it && it.tier !== undefined && it.baseStats && it.type !== 'material' && it.type !== 'potion'); i++) {
-        it = window.randomLoot(1, { nurAusruestung: true });
-      }
+      [0.6, 1, 1.5].forEach(function (m) {
+        window.getDifficultyMultiplier = function () { return m; };
+        window.DIFFICULTY_MULTIPLIER = m;
+        var z = 12345;
+        Math.random = function () { z = (z * 1103515245 + 12345) % 2147483648; return z / 2147483648; };
+        var stuecke = [];
+        for (var i = 0; i < 12; i++) {
+          var it = window.randomLoot(1, { nurAusruestung: true });
+          stuecke.push({ key: it.key, tier: it.tier, stufe: window.LootSystem.gegenstandsstufe(it),
+            iLevel: it.iLevel, itemLevel: it.itemLevel,
+            hp: it.hp, damage: it.damage, speed: it.speed, range: it.range, armor: it.armor,
+            crit: it.crit, move: it.move, baseStats: it.baseStats });
+        }
+        aus[String(m)] = JSON.stringify(stuecke);
+      });
     } finally {
+      Math.random = altR;
       window.getDifficultyMultiplier = altF; window.DIFFICULTY_MULTIPLIER = alt;
       window.currentWave = cw; currentWave = cw;
     }
-    return { stufe: window.LootSystem.gegenstandsstufe(it), iLevel: it.iLevel, itemLevel: it.itemLevel };
+    return aus;
   })()`);
-  stimmt(r, 10, 'Schwierig, Tiefe 10');
+  assert.strictEqual(r['0.6'], r['1'], 'Leicht liefert andere Beute als Normal');
+  assert.strictEqual(r['1.5'], r['1'], 'Schwierig liefert andere Beute als Normal');
+  stimmt(JSON.parse(r['1.5'])[0], 10, 'Schwierig, Tiefe 10');
 });
 
 test('Opferstein: andere Zahlen, dieselbe Stufe', async () => {

@@ -87,15 +87,6 @@ function trackLootSprite(scene, sprite) {
   return sprite;
 }
 
-function getDifficultyMultiplierValue() {
-  const fn = typeof window?.getDifficultyMultiplier === 'function'
-    ? window.getDifficultyMultiplier
-    : null;
-  const raw = fn ? fn() : window?.DIFFICULTY_MULTIPLIER;
-  if (typeof raw !== 'number' || !Number.isFinite(raw) || raw <= 0) return 1;
-  return Phaser?.Math?.Clamp ? Phaser.Math.Clamp(raw, 0.1, 10) : Math.min(Math.max(raw, 0.1), 10);
-}
-
 // Legacy helper kept only so older save blobs (pre-migration) don't crash if
 // any reader passes a string tier key. Always returns a numeric tier (0-3).
 function getTierFromLegacyRarityKey(key) {
@@ -479,24 +470,12 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
       // bei Gewoehnlich sogar der SCHADEN. Genau diese Wege (Truhen, Belohnungen,
       // Elite-Garantien, Ereignisse) sollten die BESSEREN sein.
       //
-      // Darum derselbe Weg wie beim normalen Gegner-Drop: Schwierigkeit ohne
-      // Deckelung. Die Deckelung ist inzwischen ganz weg (siehe unten): die
-      // Seltenheit steuert die ANZAHL DER AFFIXE, nicht die Anzahl der
-      // Basiswerte. Was die Waffe kann, gehoert der Waffe.
-      const _hatBasiswerte = !!(baseItem && baseItem.baseStats
-        && Object.keys(baseItem.baseStats).length);
-      if (_hatBasiswerte) {
-        // baseStats mitkopieren: _applyDifficultyToRolledItem schreibt hinein,
-        // und { ...maybeItem } teilt das Unterobjekt sonst mit dem Aufrufer.
-        baseItem.baseStats = { ...baseItem.baseStats };
-        item = _applyDifficultyToRolledItem(baseItem, Math.max(1, currentWave));
-      } else {
-        // Von Hand gebaute Alt-Items (Elaras Klinge, Ritualamulett): kein
-        // baseStats, auch kein tier — sie liefen deshalb als Tier 0 durch die
-        // Deckelung und haetten von vier Werten EINEN behalten. Auch sie sind
-        // reine Basiswerte, also nur noch Schwierigkeitsskalierung.
-        item = scaleItemForDifficulty(baseItem, Math.max(1, currentWave));
-      }
+      // Darum derselbe Weg wie beim normalen Gegner-Drop: Basiswerte
+      // unangetastet. Die Deckelung ist ganz weg (siehe unten): die Seltenheit
+      // steuert die ANZAHL DER AFFIXE, nicht die Anzahl der Basiswerte. Was die
+      // Waffe kann, gehoert der Waffe. Die Schwierigkeit aendert nur die Gegner,
+      // nie die Beute.
+      item = baseItem;
     } else {
       // Unified rollItem drop (#36 Phase 2b): rollItem rollt Affixe passend zum
       // Tier, daher greift die Re-Roll-Absicherung normalerweise nicht mehr (kein
@@ -827,27 +806,6 @@ function _stufeSpiegeln(item) {
   if (LS && typeof LS.stufeNachtragen === 'function') LS.stufeNachtragen(item);
 }
 
-function scaleItemForDifficulty(item, depth) {
-  if (!item) return item;
-  const multiplier = getDifficultyMultiplierValue();
-  if (multiplier === 1) return item;
-
-  ITEM_STAT_KEYS.forEach((key) => {
-    if (typeof item[key] === 'number') {
-      const scaled = item[key] * multiplier;
-      item[key] = clampStat(key, scaled);
-    }
-  });
-
-  if (typeof item.move === 'number') {
-    const scaledMove = item.move * multiplier;
-    item.move = Number((Math.round(scaledMove * 100) / 100).toFixed(2));
-  }
-
-  _stufeSpiegeln(item);
-  return item;
-}
-
 function addBoostsToItem(item, boosts, depth) {
   const totalBoosts = Math.max(0, boosts);
   if (!totalBoosts) return;
@@ -907,7 +865,7 @@ function randomLoot(qualityBias, opts) {
           const gehoben = window.LootSystem.rollItem(it.key, iL, mindestStufe, qualityBias);
           if (gehoben) it = gehoben;
         }
-        if (it) return _applyDifficultyToRolledItem(it, iL);
+        if (it) return it;
       } catch (e) { /* fall through to fallback */ }
     }
     return _legacyEquipmentFallback(depth);
@@ -938,25 +896,6 @@ function randomLoot(qualityBias, opts) {
     baseStats: {},
     hp: 0, damage: 0, speed: 0, range: 0, armor: 0, crit: 0
   });
-}
-
-// Apply the difficulty multiplier to a freshly-rolled ITEM_BASES item. The
-// multiplier is positive (0.6/1.0/1.5) so it preserves the sign of penalty
-// stats (e.g. a heavy weapon's negative attack-speed). At Normal (1.0) this is
-// a no-op.
-function _applyDifficultyToRolledItem(item, depth) {
-  if (!item) return item;
-  const mult = getDifficultyMultiplierValue();
-  if (mult === 1) return item;
-  const keys = ['hp', 'damage', 'speed', 'range', 'armor', 'crit', 'move'];
-  keys.forEach((k) => {
-    if (typeof item[k] === 'number' && item[k] !== 0) item[k] = item[k] * mult;
-    if (item.baseStats && typeof item.baseStats[k] === 'number' && item.baseStats[k] !== 0) {
-      item.baseStats[k] = item.baseStats[k] * mult;
-    }
-  });
-  _stufeSpiegeln(item);
-  return item;
 }
 
 // Defensive fallback used only if LootSystem.rollItem is somehow unavailable
