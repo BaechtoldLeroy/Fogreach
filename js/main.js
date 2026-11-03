@@ -1077,22 +1077,19 @@ function create() {
   rollCooldown = false;
   rollCooldownStartTime = 0;
   const updateWorldBounds = (width, height) => {
-    // Guard: scale resize events can fire after the GameScene has been
-    // shut down (e.g., player accepts a quest in the hub which spawns a
-    // dialog and triggers a scale event). After shutdown, this.physics
-    // and this.cameras.main are null and would throw setBounds on null.
+    // Schutz gegen Aufrufe nach dem Herunterfahren der Szene.
     if (!this.physics || !this.physics.world || !this.cameras || !this.cameras.main) return;
     const boundsWidth = width + WORLD_RIGHT_PADDING;
     this.physics.world.setBounds(0, 0, boundsWidth, height);
     this.cameras.main.setBounds(0, 0, boundsWidth, height);
   };
 
+  // Nur Startwert: ab dem ersten Raum setzt roomManager die Grenzen auf die
+  // echte Raumgroesse. Kein 'resize'-Handler mehr — jeder Vollbildwechsel
+  // loest einen aus und schnitt den Raum auf die feste Spielflaeche (FIT,
+  // 960 x 480) zurueck: nach dem Verlassen des Vollbilds war ein Teil des
+  // Raums unerreichbar.
   updateWorldBounds(this.scale.width, this.scale.height);
-  const onResize = (gameSize) => updateWorldBounds(gameSize.width, gameSize.height);
-  this.scale.on('resize', onResize);
-  this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-    this.scale.off('resize', onResize);
-  });
 
   // 4.1 Vollbild & Touch-Pointer
   this.input.addPointer(1);
