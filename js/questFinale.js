@@ -159,31 +159,37 @@
   };
 
   /**
-   * Die Absaetze des Epilogs in Reihenfolge.
+   * Die Absaetze des Epilogs in Reihenfolge, jeder mit seinem Teil-Namen
+   * (welcher Absatz bzw. Zweig es ist). Daran haengt js/epilogSzene.js das
+   * passende Tableau.
    * @param {object} flags
    * @param {string} [lang] 'de' (Standard) oder 'en'
-   * @returns {string[]}
+   * @returns {{teil: string, text: string}[]}
    */
-  function epilog(flags, lang) {
+  function epilogTeile(flags, lang) {
     var T = EPILOG[lang === 'en' ? 'en' : 'de'];
     var st = computeFinaleState(flags);
-    var out = [T.presse, T.druck];
+    var out = [];
+    var push = function (teil, text) { out.push({ teil: teil, text: text }); };
+    push('presse', T.presse);
+    push('druck', T.druck);
     var namen = (flags && Array.isArray(flags.nachhall_namen)) ? flags.nachhall_namen.filter(Boolean) : [];
     if (namen.length) {
       var liste = namen.length === 1 ? namen[0]
         : namen.slice(0, -1).join(', ') + T.und + namen[namen.length - 1];
-      out.push(T.nachhall.replace('{namen}', liste));
+      push('nachhall', T.nachhall.replace('{namen}', liste));
     }
     // v6.1 (Die schweigenden Brueder): der Ring, den Du Thom zugesteckt hast.
-    if (flag(flags, 'klerus_ring_thom')) out.push(T.ringThom);
+    if (flag(flags, 'klerus_ring_thom')) push('ringThom', T.ringThom);
     // Nachteskorte: die Seite von der Waage, je nach Wahl gemerkt oder gerissen.
     var NK = window.Nachteskorte;
-    var seite = flag(flags, 'eskorte_seite_gerissen') ? T.seiteGerissen
-      : flag(flags, 'eskorte_seite_gemerkt') ? T.seiteGemerkt : null;
-    if (seite && NK && typeof NK.erkannterName === 'function') out.push(seite.replace('{name}', NK.erkannterName(flags || {})));
-    out.push(T.glauben, T.nebel);
-    if (flag(flags, 'harren_dead')) out.push(T.harren);
-    out.push(st.elara === 'lives' ? T.elaraLebt : T.elaraTot);
+    var seiteTeil = flag(flags, 'eskorte_seite_gerissen') ? 'seiteGerissen'
+      : flag(flags, 'eskorte_seite_gemerkt') ? 'seiteGemerkt' : null;
+    if (seiteTeil && NK && typeof NK.erkannterName === 'function') push(seiteTeil, T[seiteTeil].replace('{name}', NK.erkannterName(flags || {})));
+    push('glauben', T.glauben);
+    push('nebel', T.nebel);
+    if (flag(flags, 'harren_dead')) push('harren', T.harren);
+    if (st.elara === 'lives') push('elaraLebt', T.elaraLebt); else push('elaraTot', T.elaraTot);
 
     // v6.1: Maras Namensliste (klerus_district_purge) entscheidet. Die Gesuche
     // aus v5 nur noch fuer Staende, in denen diese Wahl noch nicht fiel.
@@ -196,30 +202,36 @@
     // v6.1 (Die letzte Fuhre): gebunden oder zerschlagen.
     if (flag(flags, 'phiolen_gebunden')) zurueck += ' ' + T.phiolenGebunden;
     else if (flag(flags, 'phiolen_zerschlagen')) zurueck += ' ' + T.phiolenZerschlagen;
-    out.push(zurueck);
+    push('zurueck', zurueck);
 
-    if (st.allies.branka) out.push(flag(flags, 'verification_refused') ? T.branka : T.brankaAlt);
-    if (st.allies.mara) out.push(T.mara);
-    else if (flag(flags, 'convoy_blown')) out.push(T.maraFort);
-    if (st.allies.thom) out.push(T.thom);
+    if (st.allies.branka) push(flag(flags, 'verification_refused') ? 'branka' : 'brankaAlt', flag(flags, 'verification_refused') ? T.branka : T.brankaAlt);
+    if (st.allies.mara) push('mara', T.mara);
+    else if (flag(flags, 'convoy_blown')) push('maraFort', T.maraFort);
+    if (st.allies.thom) push('thom', T.thom);
     // v6.1 (Ein Name auf dem Helm): was Du dem Hauptmann gesagt hast.
-    if (flag(flags, 'wachtmeister_wahrheit')) out.push(T.wachtmeisterWahrheit);
-    else if (flag(flags, 'wachtmeister_trost')) out.push(T.wachtmeisterTrost);
-    if (st.aloneAtEnd) out.push(T.allein);
+    if (flag(flags, 'wachtmeister_wahrheit')) push('wachtmeisterWahrheit', T.wachtmeisterWahrheit);
+    else if (flag(flags, 'wachtmeister_trost')) push('wachtmeisterTrost', T.wachtmeisterTrost);
+    if (st.aloneAtEnd) push('allein', T.allein);
 
     // v6.1: Aldrics Ende, sobald Die letzte Wache gespielt ist.
-    if (flag(flags, 'aldric_erzaehlt')) out.push(T.aldricErzaehlt);
-    else if (flag(flags, 'aldric_verschwiegen')) out.push(T.aldricVerschwiegen);
+    if (flag(flags, 'aldric_erzaehlt')) push('aldricErzaehlt', T.aldricErzaehlt);
+    else if (flag(flags, 'aldric_verschwiegen')) push('aldricVerschwiegen', T.aldricVerschwiegen);
 
     // v6.1, leise: Wer weiss, dass das Zeichen der drei Ketten von ihm ist
     // (Klinge im Inventar oder Branka), dem bindet der Epilog es hier an.
-    out.push(flag(flags, 'schmiedemarke_erkannt') ? T.plattenZeichen : T.platten);
-    out.push(st.remembered ? T.erinnert : T.namenlos);
+    if (flag(flags, 'schmiedemarke_erkannt')) push('plattenZeichen', T.plattenZeichen); else push('platten', T.platten);
+    if (st.remembered) push('erinnert', T.erinnert); else push('namenlos', T.namenlos);
     return out;
+  }
+
+  /** Die Absaetze des Epilogs in Reihenfolge (nur die Texte). */
+  function epilog(flags, lang) {
+    return epilogTeile(flags, lang).map(function (a) { return a.text; });
   }
 
   window.QuestFinale = {
     computeFinaleState: computeFinaleState,
-    epilog: epilog
+    epilog: epilog,
+    epilogTeile: epilogTeile
   };
 })();

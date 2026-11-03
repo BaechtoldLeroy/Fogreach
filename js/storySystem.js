@@ -748,6 +748,11 @@
   // (Einfuehrungstext eines neuen Spiels).
   function showStoryOverlay(scene, eventData, onDismiss, optionen) {
     if (!scene || !eventData) return;
+    // Der Epilog erzaehlt als eigene Bildfolge (js/epilogSzene.js), je nach
+    // Ausgang mit anderen Tableaus.
+    if (eventData.actId === 'ending' && window.EpilogSzene && typeof window.EpilogSzene.spielen === 'function') {
+      return window.EpilogSzene.spielen(scene, onDismiss);
+    }
     // Zwischenszene mit Tableau (js/aktwechsel.js). Nur wenn das Bild des
     // Akts fehlt, die alte Titelkarte darunter.
     if (window.Aktwechsel && window.Aktwechsel.kann(scene, eventData)) {

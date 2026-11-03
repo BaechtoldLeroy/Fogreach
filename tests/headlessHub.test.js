@@ -154,31 +154,47 @@ test('hub: Harren ist nach seinem Tod an der Quelle nicht mehr auf dem Platz (#1
   assert.strictEqual(r.nachher, false, 'Harren steht nach seinem Tod noch auf dem Platz');
 });
 
+// Seit der Bildfolge (js/epilogSzene.js) legt Thom nur die Platten; den Epilog
+// erzaehlt danach die Karte 'ending' (tests/epilogSzene.test.js). Ohne die
+// Bildfolge stehen die Absaetze wie frueher auf Thoms Seiten.
 test('hub: die Presse erzaehlt den Epilog aus den Entscheidungen (#158)', () => {
   const r = H.run(`(function () {
     var sc = window.game.scene.getScene('HubSceneV2');
     var qs = window.questSystem;
     var alt = qs.getFlags();
     ['harren_dead', 'elara_spared', 'petitions_kept'].forEach(function (f) { qs.setFlag(f, true); });
-    var seiten = null;
+    var seiten = null, ohne = null;
     var echt = sc._showDialoguePages;
     sc._showDialoguePages = function (npc, titel, pages) { seiten = pages; };
-    try { sc._showReckoningFinale({ id: 'setzer_thom', name: 'Thom' }, { id: 'the_reckoning' }); }
-    finally { sc._showDialoguePages = echt; }
+    var ES = window.EpilogSzene;
+    try {
+      sc._showReckoningFinale({ id: 'setzer_thom', name: 'Thom' }, { id: 'the_reckoning' });
+      ohne = seiten;
+      window.EpilogSzene = null;
+      sc._showReckoningFinale({ id: 'setzer_thom', name: 'Thom' }, { id: 'the_reckoning' });
+    } finally { sc._showDialoguePages = echt; window.EpilogSzene = ES; }
+    var bild = ES.seiten(qs.getFlags()).map(function (p) { return p.text; }).join('\\n');
     ['harren_dead', 'elara_spared', 'petitions_kept'].forEach(function (f) { qs.setFlag(f, !!alt[f]); });
     if (!seiten) return { fehler: 'keine Seiten' };
     var letzte = seiten[seiten.length - 1];
     return {
       text: seiten.map(function (p) { return p.text; }).join('\\n'),
+      thom: ohne.map(function (p) { return p.text; }).join('\\n'),
+      bild: bild,
       knopf: letzte.choices && letzte.choices[0] && letzte.choices[0].action,
+      knopfThom: ohne[0].choices && ohne[0].choices[0] && ohne[0].choices[0].action,
       finalize: typeof sc._pendingReckoningFinalize
     };
   })()`);
   assert.ok(!r.fehler, r.fehler);
-  assert.ok(/Lene/.test(r.text), 'Harrens Grab fehlt im Epilog');
-  assert.ok(/hinter den Gittern/.test(r.text), 'Elaras Schicksal fehlt');
-  assert.ok(/Viele der Verschwundenen/.test(r.text), 'die Gesuche fehlen');
-  assert.ok(!/Nebelschleuse|Harren tritt aus dem Schatten/.test(r.text), 'die alte Fassung (v4) ist noch drin');
+  for (const t of [r.text, r.bild]) {
+    assert.ok(/Lene/.test(t), 'Harrens Grab fehlt im Epilog');
+    assert.ok(/hinter den Gittern/.test(t), 'Elaras Schicksal fehlt');
+    assert.ok(/Viele der Verschwundenen/.test(t), 'die Gesuche fehlen');
+    assert.ok(!/Nebelschleuse|Harren tritt aus dem Schatten/.test(t), 'die alte Fassung (v4) ist noch drin');
+  }
+  assert.ok(!/Lene/.test(r.thom), 'mit Bildfolge steht der Epilog doppelt: auch bei Thom');
+  assert.strictEqual(r.knopfThom, 'reckoning_done');
   assert.strictEqual(r.knopf, 'reckoning_done');
   assert.strictEqual(r.finalize, 'function');
 });

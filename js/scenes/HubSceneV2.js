@@ -784,6 +784,8 @@ class HubSceneV2 extends Phaser.Scene {
     if (window.SitzungsBuehne) window.SitzungsBuehne.vorschau(this);
     if (window.RettungsSzene) window.RettungsSzene.vorschau(this);
     if (window.WiedersehenSzene) window.WiedersehenSzene.vorschau(this);
+    // Debug ?epilog=<variante>: den Epilog als Bildfolge ansehen.
+    if (window.EpilogSzene) window.EpilogSzene.vorschau(this);
   }
 
   createPrompt() {
@@ -5423,16 +5425,19 @@ class HubSceneV2 extends Phaser.Scene {
 
   // #158: Die Presse ist der Epilog (Story-Bibel v5, Abschnitt 8/9). Harrens Tod
   // und die Wahl ueber Elara sind unten an der Quelle gefallen (js/finale.js);
-  // hier druckt Thom, und der Epilog erzaehlt, was die Entscheidungen
-  // unterwegs daraus gemacht haben (questFinale.epilog). Schliesst danach
-  // the_reckoning ab (schaltet story_ending frei).
+  // hier legt Thom die Platten, und wer den Hebel zieht, schliesst
+  // the_reckoning ab (schaltet story_ending frei). Den Epilog selbst erzaehlt
+  // danach die Bildfolge (js/epilogSzene.js), die _checkStoryEvent beim
+  // Schliessen dieses Dialogs als Karte 'ending' oeffnet. Ohne sie stehen die
+  // Absaetze wie frueher hier auf den Seiten.
   _showReckoningFinale(npcData, questData) {
     const qs = window.questSystem;
     const flags = (qs && typeof qs.getFlags === 'function') ? qs.getFlags() : {};
     const lang = (window.i18n && typeof window.i18n.getLanguage === 'function') ? window.i18n.getLanguage() : 'de';
-    const absaetze = (window.QuestFinale && typeof window.QuestFinale.epilog === 'function')
-      ? window.QuestFinale.epilog(flags, lang)
-      : ['Der Nebel bricht.'];
+    const absaetze = window.EpilogSzene ? []
+      : (window.QuestFinale && typeof window.QuestFinale.epilog === 'function')
+        ? window.QuestFinale.epilog(flags, lang)
+        : ['Der Nebel bricht.'];
 
     const finalize = () => {
       if (!qs) return;

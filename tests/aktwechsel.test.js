@@ -182,13 +182,15 @@ describe('Zwischenszene', () => {
     assert.strictEqual(H.run('window.storySystem.consumePendingEvent()'), null, 'eine Karte ist doppelt faellig');
   });
 
-  test('Epilog: eigenes Bild, ohne Nummer', () => {
+  // Seit dem Epilog als Bildfolge (js/epilogSzene.js, tests/epilogSzene.test.js)
+  // laeuft die Karte 'ending' dort, nicht mehr als Aktkarte.
+  test('Epilog: eigene Bildfolge statt Aktkarte', () => {
     oeffnen(H, `window.storySystem.probeEreignis('epilog')`);
-    const r = H.run(`({ bild: ${TEIL('aktwechselBild')}.texture.key, akt: !!(${TEIL('aktwechselAkt')}), titel: ${TEIL('aktwechselTitel')}.text })`);
-    assert.strictEqual(r.bild, 'aktwechsel_ending');
-    assert.strictEqual(r.akt, false, 'der Epilog traegt eine Aktnummer');
-    assert.strictEqual(r.titel, 'Epilog');
+    const r = H.run(`({ akt: !!(${C}), epilog: !!${HUB}.__epilog })`);
+    assert.strictEqual(r.akt, false, 'der Epilog lief als Aktkarte');
+    assert.strictEqual(r.epilog, true, 'die Bildfolge des Epilogs lief nicht');
     H.run('window.__ov.ueberspringen()');
+    assert.ok(bis(H, 'window.__zu === 1'), 'der Epilog schliesst nicht');
   });
 
   test('Text Seite fuer Seite: Taste, Klick, Hinweis "Weiter" ohne Klammern', () => {
@@ -273,7 +275,7 @@ describe('Zwischenszene', () => {
     for (const lang of ['de', 'en']) {
       H.run(`window.i18n.setLanguage('${lang}')`);
       // Englisch nur die laengsten Titel — jede Messung rendert ein ganzes Bild.
-      for (const n of lang === 'de' ? ['1', '2', '3', '4', '5', 'epilog'] : ['2', '3', 'epilog']) {
+      for (const n of lang === 'de' ? ['1', '2', '3', '4', '5'] : ['2', '3']) {
         oeffnen(H, `window.storySystem.probeEreignis('${n}')`);
         assert.ok(eingeblendet(H));
         bis(H, `${TEIL('aktwechselWeiter')}.alpha > 0.95`);
@@ -305,13 +307,14 @@ describe('Zwischenszene', () => {
       ${HUB}._checkStoryEvent(); })()`);
     const erst = H.run(`${TEIL('aktwechselTitel')}.text`);
     H.run(`${HUB}.input.keyboard.emit('keydown-ESC')`);
-    const dann = H.run(`(function () { var t = ${TEIL('aktwechselTitel')}; return t ? t.text : null; })()`);
+    const dann = H.run(`!!${HUB}.__epilog`);
     const offen = H.run(`${HUB}._dialogOpen`);
-    H.run(`${HUB}.input.keyboard.emit('keydown-ESC')`);
+    H.run(`${HUB}.input.keyboard.emit('keydown', { key: 'Escape', keyCode: 27 })`);
+    bis(H, `!${HUB}._dialogOpen`);
     const r = H.run(`(function () { var qs = window.questSystem; qs.areAllQuestChainsComplete = window.__echtAlle;
       return { offen: ${HUB}._dialogOpen, naechste: window.storySystem.consumePendingEvent() }; })()`);
     assert.strictEqual(erst, 'Die Esse');
-    assert.strictEqual(dann, 'Epilog', 'der Epilog folgte nicht');
+    assert.strictEqual(dann, true, 'der Epilog folgte nicht');
     assert.strictEqual(offen, true);
     assert.strictEqual(r.offen, false, 'nach der Kette bleibt der Hub blockiert');
     assert.strictEqual(r.naechste, null, 'eine Karte ist doppelt faellig');

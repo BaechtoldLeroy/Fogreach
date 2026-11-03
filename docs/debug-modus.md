@@ -89,7 +89,7 @@ die Szene von Akt 1. Fehlt das Bild eines Akts, kommt die alte Titelkarte.
 
 | Flagge | Wirkung |
 |---|---|
-| `?aktprobe=N` | zeigt beim Betreten des Hubs einmal die Szene von Akt N (`1`–`5`) bzw. den Epilog (`6` oder `epilog`). Der Spielstand bleibt unberuehrt. |
+| `?aktprobe=N` | zeigt beim Betreten des Hubs einmal die Szene von Akt N (`1`–`5`) bzw. den Epilog (`6` oder `epilog`, als Bildfolge, siehe unten). Der Spielstand bleibt unberuehrt. |
 
 ```
 ?debug=1&autostart=1&aktprobe=3
@@ -286,6 +286,26 @@ ESC oder "Überspringen" beendet die Szene.
 
 ```
 ?debug=1&autostart=1&wiedersehen=1
+```
+
+### Der Epilog als Bildfolge
+
+Der Epilog erzaehlt auf elf Tableaus (js/epilogSzene.js, Bilder in
+`assets/sprites/epilog/`, Rohbilder in `tools/rohbilder/epilog/`). Im Spiel
+laeuft er, sobald man bei Thom den Hebel zieht ("Die Presse läuft an"); die
+Bilder folgen dem Ausgang wie der Text (questFinale.epilogTeile).
+
+| Flagge | Wirkung |
+|---|---|
+| `?epilog=1` | spielt den Epilog beim Betreten des Hubs mit den Flaggen des Spielstands |
+| `?epilog=<bausteine>` | dasselbe mit erdachtem Ausgang; Bausteine mit Komma: `lebt` / `tot` (Elara), `grab` (Harren tot), `verbuendete` / `allein` (Platz voll oder leer), `erzaehlt` / `verschwiegen` (Aldric), `erinnert` (eigener Name) |
+
+Der Spielstand bleibt unberuehrt. Erste Taste oder Klick zeigt den Satz ganz,
+die naechste blaettert, ESC oder "Überspringen" beendet.
+
+```
+?debug=1&autostart=1&epilog=lebt,grab,verbuendete,erzaehlt
+?debug=1&autostart=1&epilog=tot,allein,verschwiegen
 ```
 
 

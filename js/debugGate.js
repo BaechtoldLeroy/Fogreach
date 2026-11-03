@@ -97,6 +97,7 @@
     'aktprobe',         // Akt-Zwischenszene ansehen: aktprobe=1..6 | epilog
     'bruchnacht',       // Zwischenszene "Die Nacht nach dem Bruch" ansehen
     'wiedersehen',      // Zwischenszene «Das Wiedersehen» im Hub ansehen: wiedersehen=1
+    'epilog',           // Epilog als Bildfolge ansehen: epilog=1 | lebt,grab,allein,... (js/epilogSzene.js)
     'auftrag', 'auftragfast',  // einen Auftrag direkt testen (js/debugAuftrag.js)
     'kreide'            // Kreidezeichen in jedem Raum (js/kreidezeichen.js)
   ];
