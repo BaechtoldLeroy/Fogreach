@@ -156,6 +156,16 @@ dem Spieler.
 | `?finale=echos` | Kampf, sie ruft sofort die Echos der Besiegten |
 | `?finale=schlag` | Kampf bei 1 LP: der naechste Treffer ist der letzte (ihre eigene Klinge, dann der letzte Schlag an der Esse) |
 | `?finale=loesen` | nach dem Kampf: Elara liegt an der Esse, gleich der letzte Schlag, dann das Urteil |
+| `?finale=urteil` | nach dem letzten Schlag: die Esse ist zerbrochen, gleich die Lichter (Tableau `bruch`), Mara und die Wahl |
+
+Seit b501 halten acht Momente fuer ein Tableau an (js/finaleTableau.js,
+`assets/sprites/finale/tableau_*.png`, Rohbilder und Bau in
+`tools/finaleBilderBauen.js`): vor dem Kampf `hammer` (nach dem Loslassen),
+`lene` (Harren ist da), `stoss` (er liegt), `esse` (nach der Verwandlung);
+danach `bruch` (die Lichter), `urteil` (Mara ist herab, nur wenn sie kommt),
+`verschonen` bzw. `richten` (nach der Wahl). Taste/Klick zeigt die Zeile ganz,
+die naechste geht weiter, ESC oder "Überspringen" beendet das Bild. Ansehen:
+`?finale=harren` (vor dem Kampf) und `?finale=urteil` (danach).
 
 `&finaleflags=a,b` setzt zusaetzliche Quest-Flags, etwa
 `self_remembered` (der erste Griff prallt an "Wer Du warst" ab),
@@ -165,6 +175,7 @@ dem Spieler.
 ?debug=1&dungeon=30&room=DieQuelle&boss=elara&finale=hammer
 ?debug=1&dungeon=30&room=DieQuelle&boss=elara&finale=raub&finaleflags=self_remembered
 ?debug=1&dungeon=30&room=DieQuelle&boss=elara&finale=loesen
+?debug=1&dungeon=30&room=DieQuelle&boss=elara&finale=urteil
 ```
 
 `dungeon=` loescht den Spielstand (siehe oben). Ein unbekannter Schritt wird

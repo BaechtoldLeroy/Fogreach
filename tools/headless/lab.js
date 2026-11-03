@@ -226,11 +226,30 @@ function attachLab(h) {
     },
 
     /**
+     * Steht ein Tableau des Finales (FinaleTableau), es ueberspringen und
+     * takten, bis es weg ist. Gibt den Namen des Tableaus zurueck, sonst null.
+     */
+    tableauWeg() {
+      const name = h.run(`(function () {
+        var t = window.game.scene.getScene('${SCENE}').__finaleTableau;
+        if (!t) return null;
+        t.ueberspringen();
+        return t.name;
+      })()`);
+      if (!name) return null;
+      for (let i = 0; i < 400 && h.run(`!!window.game.scene.getScene('${SCENE}').__finaleTableau`); i++) h.step(1);
+      return name;
+    },
+
+    /**
      * Eine Seite des Finales (Sprechblasen, FinaleBlasen) weitertippen: bis zur
      * letzten Blase echte Taps auf die Flaeche, dann Knopf n; gibt es keinen
      * Knopf (nur "Weiter"), noch einmal auf die Flaeche. false: keine Seite offen.
      */
     blaseTippen(n) {
+      // Ein Tableau des Finales (finaleTableau.js) steht davor: ueberspringen
+      // und takten, bis es ausgeblendet ist (das zaehlt als ein Tipp).
+      if (this.tableauWeg()) return true;
       return h.run(`(function () {
         var sc = window.game.scene.getScene('${SCENE}');
         var d = sc && sc.__finaleBlase;

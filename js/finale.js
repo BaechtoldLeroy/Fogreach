@@ -31,6 +31,11 @@
 // und Untertitel unten (FinaleBlasen, js/finaleBlasen.js); der
 // Konvoi hat seit b447 einen eigenen Messing-Dialog (er folgt direkt auf die
 // Abhoer-Szene und soll aussehen wie sie).
+//
+// Seit b501 haelt das Finale an acht Momenten fuer ein Pixel-Tableau an
+// (FinaleTableau, js/finaleTableau.js), und die Figuren tragen eigene Bilder:
+// Harren geht und faellt, Elara verwandelt sich und kniet, Mara geht herein
+// (FIGUREN unten). Ohne die Bilder bleibt die alte Darstellung.
 (function () {
   'use strict';
 
@@ -369,6 +374,100 @@
     s.setScale(hoehe / (s.height || 60));
     return s;
   }
+
+  // Eigene Figuren des Finales (PixelLab, tools/finaleBilderBauen.js): je
+  // Figur ein gemeinsamer Ausschnitt fuer Stand- und Bewegungsbilder.
+  // ursprung: Mitte der stehenden Figur im Ausschnitt; hoehe: ihre Hoehe in
+  // Bildpunkten (daraus die Groesse neben dem Spieler).
+  var FIGUR_ORDNER = 'assets/sprites/finale/figuren/';
+  var FIGUREN = {
+    harren: { bilder: { gehen: 8, fall: 5 }, ursprung: [0.492, 0.492], hoehe: 58 },
+    mara: { bilder: { gehen: 6 }, ursprung: [0.515, 0.5], hoehe: 62 },
+    elara: { bilder: { besessen: 8 }, ursprung: [0.5, 0.508], hoehe: 63 },
+    elara_kniend: { bilder: { atmen: 4 }, ursprung: [0.5, 0.524], hoehe: 59 }
+  };
+  // Bilder je Sekunde und ob es sich wiederholt.
+  var FIGUR_TAKT = {
+    harren_gehen: [7, -1], harren_fall: [9, 0], mara_gehen: [10, -1],
+    elara_besessen: [8, 0], elara_kniend_atmen: [3, -1]
+  };
+  // Die Kniende ist kleiner als die Stehende (Anteil der Menschenhoehe).
+  var KNIEND_ANTEIL = 0.74;
+  function figurKey(figur, bild) { return 'finale_fig_' + figur + '_' + bild; }
+  function figurBilder() {
+    var raus = [];
+    Object.keys(FIGUREN).forEach(function (f) {
+      raus.push([figurKey(f, 'stand'), FIGUR_ORDNER + f + '/stand.png']);
+      var b = FIGUREN[f].bilder;
+      Object.keys(b).forEach(function (n) {
+        for (var i = 0; i < b[n]; i++) raus.push([figurKey(f, n + i), FIGUR_ORDNER + f + '/' + n + i + '.png']);
+      });
+    });
+    return raus;
+  }
+  /** Laedt die Figuren und Elaras Klinge mit (GameScene.preload, main.js). */
+  function bilderVorladen(scene) {
+    if (!scene || !scene.load || !scene.textures) return;
+    figurBilder().concat([[KLINGE_BILD, 'assets/finale/klinge.png']]).forEach(function (e) {
+      if (!scene.textures.exists(e[0])) scene.load.image(e[0], e[1]);
+    });
+  }
+  /** Die Bewegungen als Phaser-Animationen (einmal, global). */
+  function _animationen(scene) {
+    var A = scene.anims;
+    if (!A || typeof A.create !== 'function') return;
+    Object.keys(FIGUR_TAKT).forEach(function (k) {
+      var key = 'finale_' + k;
+      if (A.exists(key)) return;
+      var teil = k.lastIndexOf('_');
+      var figur = k.slice(0, teil), art = k.slice(teil + 1);
+      var n = FIGUREN[figur] && FIGUREN[figur].bilder[art];
+      if (!n) return;
+      var frames = [];
+      for (var i = 0; i < n; i++) {
+        if (!scene.textures.exists(figurKey(figur, art + i))) return;
+        frames.push({ key: figurKey(figur, art + i) });
+      }
+      A.create({ key: key, frames: frames, frameRate: FIGUR_TAKT[k][0], repeat: FIGUR_TAKT[k][1], yoyo: art === 'atmen' });
+    });
+  }
+  /** Eine eigene Figur als Sprite (Mitte bei x, y), oder null ohne Bild. */
+  function _figurSprite(scene, figur, x, y, hoehe) {
+    var def = FIGUREN[figur];
+    var key = figurKey(figur, 'stand');
+    if (!def || !scene.textures || !scene.textures.exists(key)) return null;
+    _animationen(scene);
+    var s = scene.add.sprite(x, y, key).setDepth(FIGUR_TIEFE);
+    s.setOrigin(def.ursprung[0], def.ursprung[1]);
+    s.setScale(hoehe / def.hoehe);
+    s.setData('finaleFigur', figur);
+    return s;
+  }
+  /** Spielt eine Bewegung der Figur; false, wenn sie (oder das Bild) fehlt. */
+  function _bewegung(s, art) {
+    if (!s || !s.scene || !s.anims || !s.getData) return false;
+    var key = 'finale_' + s.getData('finaleFigur') + '_' + art;
+    if (!s.scene.anims || !s.scene.anims.exists(key)) return false;
+    s.play(key);
+    return true;
+  }
+  /** Zurueck ins Standbild (nach dem Gehen). */
+  function _stehen(s) {
+    if (!s || !s.scene || !s.getData || !s.getData('finaleFigur')) return;
+    if (s.anims) s.anims.stop();
+    s.setTexture(figurKey(s.getData('finaleFigur'), 'stand'));
+  }
+  /** Ein Tableau (FinaleTableau), danach fertig(); ohne Bild gleich weiter. */
+  function _tableau(scene, name, fertig) {
+    if (window.FinaleTableau && typeof window.FinaleTableau.zeigen === 'function') {
+      window.FinaleTableau.zeigen(scene, name, fertig);
+    } else {
+      fertig();
+    }
+  }
+  function _tableausLaden(scene) {
+    try { if (window.FinaleTableau) window.FinaleTableau.laden(scene, function () {}); } catch (e) {}
+  }
   function _menschHoehe() {
     var p = _spieler();
     var h = p && p.displayHeight;
@@ -424,8 +523,9 @@
     var e = _esse(scene);
     var mh = _menschHoehe();
     var b = { boss: boss, esse: e, mh: mh };
-    b.elara = _figur(scene, 'elara_right0', e.x + 74, e.y + 18, mh);
+    b.elara = _figurSprite(scene, 'elara', e.x + 74, e.y + 18, mh) || _figur(scene, 'elara_right0', e.x + 74, e.y + 18, mh);
     if (b.elara) { b.elara.setFlipX(true).setName('finaleElara'); }
+    _tableausLaden(scene);
     _bossZurueckhalten(boss);
     scene.__finaleBuehne = b;
     scene.events.once('shutdown', function () { _buehneAbbauen(b); });
@@ -471,19 +571,25 @@
   // Seiten 2 bis 8: Erkenntnis, Plan, Harren, der Stoss, der Hammer, die Esse nimmt sie.
   function _nachDerErkenntnis(scene, b, boss, weiter) {
     var texte = vorKampfSeiten();
+    // Die vier grossen Momente halten fuer ein Tableau an (FinaleTableau),
+    // danach erzaehlen die Blasen weiter.
     var seiten = [
-      { text: texte[2] },
+      { text: texte[2], vorher: function (fertig) { _tableau(scene, 'hammer', fertig); } },
       { text: texte[3] },
       { text: texte[4] },
       // Harren kommt hinter Dir herein, langsam, und bleibt vor ihr stehen.
-      { text: texte[5], vorher: function (fertig) { _harrenKommt(scene, b, fertig); } },
-      { text: texte[6], vorher: function (fertig) { _derStoss(scene, b, fertig); },
+      { text: texte[5], vorher: function (fertig) { _harrenKommt(scene, b, function () { _tableau(scene, 'lene', fertig); }); } },
+      { text: texte[6], vorher: function (fertig) { _derStoss(scene, b, function () { _tableau(scene, 'stoss', fertig); }); },
         // Harren faellt auf der Seite, auf der sie ihn wegstoesst (vor der Esse).
         danach: function () { _setzen('harren_dead'); } },
       { text: texte[7], vorher: function (fertig) { _hammerGenommen(scene, b, fertig); } },
       { text: texte[8], weiter: _t('Kämpfen', 'Fight'),
-        // #89: Der Moment, in dem die Esse sie nimmt, ist mehr als eine Textseite.
-        beiAnzeige: function () { _quelleNimmtSie(scene); _besessenheit(scene, b); },
+        // #89: Der Moment, in dem die Esse sie nimmt, ist mehr als eine
+        // Textseite: erst verwandelt sie sich vor Dir, dann das Tableau.
+        vorher: function (fertig) {
+          _quelleNimmtSie(scene); _besessenheit(scene, b);
+          scene.time.delayedCall(BESESSEN_MS, function () { _tableau(scene, 'esse', fertig); });
+        },
         // Wer die Szene vorzeitig verlaesst, soll sie nicht noch einmal sehen.
         danach: function () { _setzen('harren_dead'); } }
     ];
@@ -493,7 +599,8 @@
     }, b);
   }
 
-  var HARREN_WEG_MS = 1500, STOSS_MS = 1000, HAMMER_MS = 800;
+  var HARREN_WEG_MS = 1500, STOSS_MS = 1000, HAMMER_MS = 800, BESESSEN_MS = 1300;
+  var HAMMER_HOEHE = 40;   // so hoch steht der Hammer, den sie Dir entreisst
   // Wo Harren geht und liegt: begehbarer Boden (Mitte und Ecken des
   // Koerpers), weg von Waenden und Hindernissen, mit Abstand zu jeder Treppe.
   // Vorher lag er je nach Raum auf der Treppe (gemeldet nach b461).
@@ -552,9 +659,15 @@
     var e = b.esse;
     var ex = b.elara ? b.elara.x : e.x + 74, ey = b.elara ? b.elara.y : e.y + 18;
     var weg = b.harrenWeg = harrenWeg(scene, ex, ey, e);
-    b.harren = _figur(scene, 'harren_right0', weg.start.x, weg.start.y, b.mh * 0.95);
+    // Er geht (eigene Gehbilder); ohne sie gleitet das alte Standbild, grau getoent.
+    b.harren = _figurSprite(scene, 'harren', weg.start.x, weg.start.y, b.mh * 0.95);
+    if (!b.harren) {
+      b.harren = _figur(scene, 'harren_right0', weg.start.x, weg.start.y, b.mh * 0.95);
+      if (b.harren) b.harren.setTint(0xa8a8b0).setAlpha(0.92);
+    }
     if (b.harren) {
-      b.harren.setTint(0xa8a8b0).setAlpha(0.92).setFlipX(weg.start.x > weg.ziel.x).setName('finaleHarren');
+      b.harren.setFlipX(weg.start.x > weg.ziel.x).setName('finaleHarren');
+      _bewegung(b.harren, 'gehen');
       scene.tweens.add({ targets: b.harren, x: weg.ziel.x, y: weg.ziel.y, duration: HARREN_WEG_MS, ease: 'Sine.easeInOut' });
       // Sein Ruf als kleine Blase ueber ihm, waehrend er geht.
       var harren = b.harren;
@@ -566,23 +679,50 @@
     if (b.elara) scene.time.delayedCall(HARREN_WEG_MS * 0.6, function () { if (b.elara && b.elara.scene) b.elara.setFlipX(weg.ziel.x < b.elara.x); });
     scene.time.delayedCall(HARREN_WEG_MS + 150, function () {
       // Tweens laufen headless langsamer als die Uhr: zum Stoss steht er sicher am Ziel.
-      if (b.harren && b.harren.scene) { scene.tweens.killTweensOf(b.harren); b.harren.setPosition(weg.ziel.x, weg.ziel.y); }
+      if (b.harren && b.harren.scene) {
+        scene.tweens.killTweensOf(b.harren);
+        b.harren.setPosition(weg.ziel.x, weg.ziel.y);
+        _stehen(b.harren);
+        // Er sieht sie an.
+        if (b.elara && b.elara.scene) b.harren.setFlipX(b.elara.x < b.harren.x);
+      }
       fertig();
     });
   }
+  /** Liegt Harren? Mit eigenen Bildern das letzte Fallbild, sonst gedreht. */
+  function harrenLiegt(h) {
+    if (!h || !h.scene) return false;
+    if (h.getData && h.getData('finaleFigur')) return !!(h.texture && h.texture.key === figurKey('harren', 'fall' + (FIGUREN.harren.bilder.fall - 1)));
+    return Math.abs(h.angle) >= 80;
+  }
   function _derStoss(scene, b, fertig) {
     var weg = b.harrenWeg;
+    var bilder = !!(b.harren && b.harren.getData && b.harren.getData('finaleFigur'));
     if (b.elara && b.harren && weg) {
       var ex = b.elara.x;
       scene.tweens.add({ targets: b.elara, x: ex + 22 * weg.richtung, duration: 160, yoyo: true, ease: 'Quad.easeOut' });
-      scene.tweens.add({ targets: b.harren, x: weg.liegt.x, y: weg.liegt.y, angle: 90 * weg.richtung, alpha: 0.75,
-        delay: 140, duration: 520, ease: 'Quad.easeOut' });
+      if (bilder) {
+        // Er faellt rueckwaerts, weg von ihr (sein Blick bleibt bei ihr).
+        b.harren.setFlipX(b.elara.x < b.harren.x);
+        scene.time.delayedCall(140, function () { if (b.harren && b.harren.scene) _bewegung(b.harren, 'fall'); });
+        scene.tweens.add({ targets: b.harren, x: weg.liegt.x, y: weg.liegt.y, delay: 140, duration: 520, ease: 'Quad.easeOut' });
+      } else {
+        scene.tweens.add({ targets: b.harren, x: weg.liegt.x, y: weg.liegt.y, angle: 90 * weg.richtung, alpha: 0.75,
+          delay: 140, duration: 520, ease: 'Quad.easeOut' });
+      }
       if (scene.cameras && scene.cameras.main) { try { scene.cameras.main.shake(180, 0.006); } catch (e) {} }
     }
     scene.time.delayedCall(STOSS_MS, function () {
       if (b.harren && b.harren.scene && weg) {
         scene.tweens.killTweensOf(b.harren);
-        b.harren.setPosition(weg.liegt.x, weg.liegt.y).setAngle(90 * weg.richtung).setAlpha(0.75);
+        b.harren.setPosition(weg.liegt.x, weg.liegt.y);
+        if (bilder) {
+          // Animationen laufen headless nicht im Takt der Uhr: zum Tableau liegt er sicher.
+          if (b.harren.anims) b.harren.anims.stop();
+          b.harren.setTexture(figurKey('harren', 'fall' + (FIGUREN.harren.bilder.fall - 1)));
+        } else {
+          b.harren.setAngle(90 * weg.richtung).setAlpha(0.75);
+        }
       }
       fertig();
     });
@@ -593,16 +733,19 @@
     if (p && b.elara && FH) {
       b.elara.setFlipX(p.x < b.elara.x);   // zurueck zu Dir
       b.hammer = scene.add.image(p.x + 12, p.y - 6, FH.hammerTextur(scene)).setDepth(FIGUR_TIEFE + 1).setName('finaleHammer');
+      b.hammer.setScale(HAMMER_HOEHE / (b.hammer.frame.height || HAMMER_HOEHE));
       scene.tweens.add({ targets: b.hammer, x: b.elara.x - 10, y: b.elara.y - b.mh * 0.35, angle: -60, duration: 420, ease: 'Quad.easeIn' });
       scene.tweens.add({ targets: b.elara, x: b.elara.x - 14, duration: 180, yoyo: true, repeat: 1, delay: 450 });
     }
     scene.time.delayedCall(HAMMER_MS, fertig);
   }
-  // Rauch aus der Esse kriecht in sie hinein, sie waechst, die Farbe kippt.
+  // Rauch aus der Esse kriecht in sie hinein, sie breitet die Arme aus, ihre
+  // Augen glimmen violett (eigene Bilder), und sie waechst. Ohne die Bilder
+  // kippt nur die Farbe.
   function _besessenheit(scene, b) {
     if (!b.elara || !b.elara.scene) return;
-    b.elara.setTint(0xc4a8ff);
-    scene.tweens.add({ targets: b.elara, scale: b.elara.scale * 1.6, duration: 900, ease: 'Quad.easeIn' });
+    if (!_bewegung(b.elara, 'besessen')) b.elara.setTint(0xc4a8ff);
+    scene.tweens.add({ targets: b.elara, scale: b.elara.scale * 1.35, duration: 900, ease: 'Quad.easeIn' });
     var e = b.esse;
     for (var i = 0; i < 14; i++) {
       var f = scene.add.circle(e.x + (Math.random() - 0.5) * 50, e.y + (Math.random() - 0.5) * 30, 5 + Math.random() * 5, 0x6a4aa0, 0.6)
@@ -633,7 +776,7 @@
     // Elara ist schon gefallen, aber der letzte Schlag fehlt (Lauf vorher
     // verlassen): gleich an die Esse, ohne zweiten Kampf.
     if (_flag('elara_besiegt') && !_flag('elara_spared') && !_flag('elara_killed')) {
-      _wiederAnDerEsse(scene, boss);
+      _wiederAnDerEsse(scene, boss, schritt);
       return true;
     }
     if (_flag('harren_dead')) return false;   // schon gesehen: gleich der Kampf
@@ -712,8 +855,13 @@
     } catch (e) { return false; }
   }
 
-  /** Eine Klinge als Textur: Stahl, Parierstange, und am Heft drei kleine Ketten. */
+  /**
+   * Elaras Klinge: das PixelLab-Bild (assets/finale/klinge.png, mit der
+   * Gravur der drei Ketten), sonst gezeichnet: Stahl, Parierstange, am Heft
+   * drei kleine Ketten.
+   */
   function _klingeTextur(scene) {
+    if (scene.textures && scene.textures.exists(KLINGE_BILD)) return KLINGE_BILD;
     var key = 'finale_klinge';
     if (!scene.textures || scene.textures.exists(key)) return key;
     var g = scene.make.graphics({ x: 0, y: 0, add: false });
@@ -732,11 +880,35 @@
   // ein Blitz, der Rauch weicht aus ihr in die Esse, und was zurueckbleibt,
   // ist wieder Elara, auf den Knien.
   var KLINGE_MS = 1700;
+  var KLINGE_BILD = 'finale_klinge_bild';
+  /** Elara auf den Knien: eigene Figur (atmet), sonst das Standbild gestaucht. */
+  function knien(scene, fig, mh, links) {
+    if (!fig || !fig.scene) return fig;
+    var def = FIGUREN.elara_kniend;
+    if (fig.setData && scene.textures.exists(figurKey('elara_kniend', 'stand')) && fig.anims) {
+      _animationen(scene);
+      fig.clearTint();
+      fig.setTexture(figurKey('elara_kniend', 'stand'));
+      fig.setOrigin(def.ursprung[0], def.ursprung[1]);
+      fig.setScale(mh * KNIEND_ANTEIL / def.hoehe);
+      fig.setData('finaleFigur', 'elara_kniend');
+      fig.setFlipX(!!links);
+      _bewegung(fig, 'atmen');
+      return fig;
+    }
+    if (scene.textures.exists('elara_right0')) fig.setTexture('elara_right0');
+    fig.clearTint();
+    fig.setScale(mh / (fig.height || 60));
+    fig.setScale(fig.scaleX, fig.scaleY * 0.82);
+    fig.setFlipX(!!links);
+    return fig;
+  }
   function _klingeTrifft(scene, ort, boss, fertig) {
     var p = _spieler();
     var b = { esse: _esse(scene), mh: _menschHoehe() };
+    _tableausLaden(scene);
     var key = scene.textures && scene.textures.exists('boss_elara_left0') ? 'boss_elara_left0' : 'elara_right0';
-    var fig = scene.add.image(ort.x, ort.y, key).setDepth(FIGUR_TIEFE).setName('finaleElaraFall');
+    var fig = scene.add.sprite(ort.x, ort.y, key).setDepth(FIGUR_TIEFE).setName('finaleElaraFall');
     fig.setScale(boss && boss.scaleX ? boss.scaleX : b.mh * 2.6 / (fig.height || 60));
     fig.setTint(0xc4a8ff);
     if (p && p.x > ort.x) fig.setFlipX(true);
@@ -761,11 +933,7 @@
         scene.tweens.add({ targets: fig, alpha: 0.2, duration: 500, onComplete: function () {
           if (!fig.scene) return;
           // Zurueck bleibt die Frau aus dem Hub, auf den Knien.
-          if (scene.textures.exists('elara_right0')) fig.setTexture('elara_right0');
-          fig.clearTint();
-          fig.setScale(b.mh / (fig.height || 60));
-          fig.setScale(fig.scaleX, fig.scaleY * 0.82);
-          fig.setFlipX(!!(p && p.x < ort.x));
+          knien(scene, fig, b.mh, p && p.x < ort.x);
           scene.tweens.add({ targets: fig, alpha: 1, duration: 400 });
         } });
       });
@@ -802,7 +970,11 @@
       }], b);
     };
     var maraDa = !_flag('convoy_blown');
-    _seiten(scene, [{ text: texte[1] }, { text: texte[2] }, { text: texte[3] }].concat([
+    // Tableaus: die Lichter steigen auf, Mara verlangt das Urteil (nur wenn
+    // sie da ist: das Bild zeigt sie), und die Wahl selbst.
+    var mitBild = function (name, weiter) { return function () { _tableau(scene, name, weiter); }; };
+    _seiten(scene, [{ text: texte[1] }, { text: texte[2], vorher: function (fertig) { _tableau(scene, 'bruch', fertig); } },
+      { text: texte[3] }].concat([
       // Stufe 1b: Ist Maras Netz am Konvoi verbrannt, ist sie nicht da (wie
       // im Epilog, questFinale maraFort). Die Frage stellt sich trotzdem.
       { text: !maraDa
@@ -810,14 +982,16 @@
           '(No one comes down the steps. Mara\'s network has been torn since the convoy; no one takes the decision from you. Elara killed her father, with her own hand, and she knew what she was doing.)\n\n(Elara\'s blade is in your hand. What do you do?)')
         : _t('MARA: (Sie kommt die letzten Stufen herab, den Bogen gesenkt.) Sie hat ihren Vater getötet. Mit eigener Hand, und sie wusste, was sie tut. Richte sie, Archivschmied.\n\n(Elaras Klinge liegt in Deiner Hand. Was tust Du?)',
           'MARA: (She comes down the last steps, bow lowered.) She killed her father. With her own hand, and she knew what she was doing. Judge her, Archivesmith.\n\n(Elara\'s blade is in your hand. What do you do?)'),
-        vorher: maraDa ? function (fertig) { _maraKommt(scene, b, fertig); } : null,
+        vorher: maraDa ? function (fertig) { _maraKommt(scene, b, mitBild('urteil', fertig)); } : null,
         auswahl: [
           {
             label: _t('Verschonen', 'Spare her'),
             callback: function () {
               _setzen('elara_spared');
-              nachWahl(_t('Du lässt die Klinge sinken. Sie wird leben, hinter Gittern, mit dem, was sie getan hat.',
-                'You lower the blade. She will live, behind bars, with what she has done.'));
+              mitBild('verschonen', function () {
+                nachWahl(_t('Du lässt die Klinge sinken. Sie wird leben, hinter Gittern, mit dem, was sie getan hat.',
+                  'You lower the blade. She will live, behind bars, with what she has done.'));
+              })();
             }
           },
           {
@@ -825,8 +999,10 @@
             callback: function () {
               _setzen('elara_killed');
               if (b && b.elara && b.elara.scene) scene.tweens.add({ targets: b.elara, alpha: 0, duration: 1200 });
-              nachWahl(_t('Du beendest es mit dem Geschenk, das sie Dir gab.',
-                'You end it with the gift she gave you.'));
+              mitBild('richten', function () {
+                nachWahl(_t('Du beendest es mit dem Geschenk, das sie Dir gab.',
+                  'You end it with the gift she gave you.'));
+              })();
             }
           }
         ] }
@@ -836,13 +1012,27 @@
   var MARA_WEG_MS = 1200;
   function _maraKommt(scene, b, fertig) {
     var p = _spieler();
-    var m = scene.__maraFigur && scene.__maraFigur.scene ? scene.__maraFigur
-      : _figur(scene, 'spaeherin', (p ? p.x : 0) - 240, (p ? p.y : 0) - 120, _menschHoehe());
+    // Stand sie im Kampf am Rand (elaraKampf), geht sie von dort; ihre
+    // Kampffigur ist ein Standbild und tritt fuer die gehende zurueck.
+    var alt = scene.__maraFigur && scene.__maraFigur.scene ? scene.__maraFigur : null;
+    var sx = alt ? alt.x : (p ? p.x : 0) - 240, sy = alt ? alt.y : (p ? p.y : 0) - 120;
+    var m = _figurSprite(scene, 'mara', sx, sy, _menschHoehe());
+    if (m) { if (alt) alt.setVisible(false); }
+    else m = alt || _figur(scene, 'spaeherin', sx, sy, _menschHoehe());
     if (m && p) {
       m.setName('finaleMara');
-      scene.tweens.add({ targets: m, x: p.x - 50, y: p.y - 10, duration: MARA_WEG_MS, ease: 'Sine.easeInOut' });
+      var zx = p.x - 50, zy = p.y - 10;
+      m.setFlipX(zx < m.x);
+      _bewegung(m, 'gehen');
+      scene.tweens.add({ targets: m, x: zx, y: zy, duration: MARA_WEG_MS, ease: 'Sine.easeInOut',
+        onComplete: function () { _stehen(m); if (m.scene && p) m.setFlipX(p.x < m.x); } });
+      if (m !== alt) scene.events.once('shutdown', function () { _weg(m); });
     }
-    scene.time.delayedCall(m ? MARA_WEG_MS + 100 : 0, fertig);
+    scene.time.delayedCall(m ? MARA_WEG_MS + 100 : 0, function () {
+      // Tweens laufen headless langsamer als die Uhr: zum Urteil steht sie.
+      if (m && m.scene && p) { scene.tweens.killTweensOf(m); m.setPosition(p.x - 50, p.y - 10); _stehen(m); m.setFlipX(p.x < m.x); }
+      fertig();
+    });
   }
 
   // Waehrend Klinge, letztem Schlag und Urteil kommt keine neue Welle in die
@@ -856,15 +1046,22 @@
 
   // Schon gefallen, aber nicht geloest: Elara liegt an der Esse, der Boss
   // verschwindet ohne Kampf und ohne zweite Beute.
-  function _wiederAnDerEsse(scene, boss) {
+  function _wiederAnDerEsse(scene, boss, schritt) {
     _nachKampfBeginnt(scene);
-    if (window.FinaleHandwerk && window.FinaleHandwerk.esseZustand) window.FinaleHandwerk.esseZustand(scene, 'flackern');
+    _tableausLaden(scene);
+    var FH = window.FinaleHandwerk;
+    // ?finale=urteil: die Esse ist schon zerbrochen, gleich Mara und die Wahl.
+    var gebrochen = schritt === 'urteil';
+    if (FH && FH.esseZustand) FH.esseZustand(scene, gebrochen ? 'zerbrochen' : 'flackern');
     var e = _esse(scene);
     if (boss && boss.active) { try { boss.destroy(); } catch (x) {} }
     var b = { esse: e, mh: _menschHoehe() };
-    b.elara = _figur(scene, 'elara_right0', e.x + 80, e.y + 30, b.mh);
-    if (b.elara) { b.elara.setScale(b.elara.scaleX, b.elara.scaleY * 0.82).setFlipX(true).setName('finaleElaraFall'); }
+    var key = scene.textures && scene.textures.exists(figurKey('elara_kniend', 'stand')) ? figurKey('elara_kniend', 'stand') : 'elara_right0';
+    if (scene.textures && scene.textures.exists(key)) {
+      b.elara = knien(scene, scene.add.sprite(e.x + 80, e.y + 30, key).setDepth(FIGUR_TIEFE), b.mh, true).setName('finaleElaraFall');
+    }
     scene.events.once('shutdown', function () { _weg(b.elara); });
+    if (gebrochen) { _nachDemBruch(scene, b); return; }
     _seiten(scene, [{ text: _t('(Elara liegt noch dort, wo sie fiel, und die Esse brennt weiter. Die Bindung wartet auf Deinen Hammer.)',
       '(Elara still lies where she fell, and the Furnace keeps burning. The binding is waiting for your hammer.)') }],
     function () { _letzterSchlag(scene, b); }, b);
@@ -912,7 +1109,7 @@
   // --- Debug: ?finale=<schritt> (docs/debug-modus.md) ----------------------------
   // Springt mit ?boss=elara direkt an eine Stelle des Finales. Stellt den
   // Queststand her (Die Quelle aktiv) und setzt die Flaggen des Schritts.
-  var DEBUG_SCHRITTE = ['hammer', 'erkenntnis', 'harren', 'kampf', 'raub', 'zonen', 'echos', 'schlag', 'loesen'];
+  var DEBUG_SCHRITTE = ['hammer', 'erkenntnis', 'harren', 'kampf', 'raub', 'zonen', 'echos', 'schlag', 'loesen', 'urteil'];
   var _debugErledigt = false;
   function _debugFlagge(name) {
     try { return (window.DebugGate && window.DebugGate.flagge(name)) || null; } catch (e) { return null; }
@@ -936,7 +1133,7 @@
       var extra = _debugFlagge('finaleflags');
       if (extra) String(extra).split(',').forEach(function (f) { if (f) st.flags[f.trim()] = true; });
       if (['kampf', 'raub', 'zonen', 'echos', 'schlag'].indexOf(schritt) >= 0) st.flags.harren_dead = true;
-      if (schritt === 'loesen') { st.flags.harren_dead = true; st.flags.elara_besiegt = true; }
+      if (schritt === 'loesen' || schritt === 'urteil') { st.flags.harren_dead = true; st.flags.elara_besiegt = true; }
       qs.loadQuestSaveData(st);
     }
     // Nach dem Kampfbeginn (spawnBoss startet ElaraKampf gleich danach).
@@ -956,5 +1153,7 @@
 
   window.Finale = { konvoi: konvoi, wahlSeite: _konvoiSeite, vorKampf: vorKampf, nachKampf: nachKampf, laeuftNachKampf: laeuftNachKampf,
     vorKampfSeiten: vorKampfSeiten, nachKampfSeiten: nachKampfSeiten, DEBUG_SCHRITTE: DEBUG_SCHRITTE,
-    harrenWeg: harrenWeg, treppenFrei: _treppenFrei };
+    harrenWeg: harrenWeg, treppenFrei: _treppenFrei, harrenLiegt: harrenLiegt,
+    FIGUREN: FIGUREN, figurKey: figurKey, figurBilder: figurBilder, bilderVorladen: bilderVorladen,
+    KLINGE_BILD: KLINGE_BILD, klingeTextur: _klingeTextur };
 })();

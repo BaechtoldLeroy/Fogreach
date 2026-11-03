@@ -205,7 +205,7 @@ test('Ein unsichtbarer Gegner macht den Aktionsknopf nicht zum Angriff', () => {
 
 test('Debug: ?finale= kennt jeden Schritt', () => {
   const schritte = H.run('window.Finale.DEBUG_SCHRITTE');
-  assert.deepStrictEqual(Array.from(schritte), ['hammer', 'erkenntnis', 'harren', 'kampf', 'raub', 'zonen', 'echos', 'schlag', 'loesen']);
+  assert.deepStrictEqual(Array.from(schritte), ['hammer', 'erkenntnis', 'harren', 'kampf', 'raub', 'zonen', 'echos', 'schlag', 'loesen', 'urteil']);
   const doku = require('fs').readFileSync(require('path').join(__dirname, '..', 'docs', 'debug-modus.md'), 'utf8');
   for (const s of schritte) assert.ok(doku.indexOf('finale=' + s) >= 0, 'docs/debug-modus.md nennt finale=' + s + ' nicht');
 });

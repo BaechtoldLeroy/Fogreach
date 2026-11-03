@@ -78,11 +78,12 @@ describe('Der ganze Weg durch die Szene (?finale=harren)', () => {
       klick(); n++;
     }
     const r = H.run(`(function () { var sc = ${GSC}, h = sc.children.getByName('finaleHarren');
-      return h ? { x: h.x, y: h.y, winkel: Math.round(h.angle), frei: window.Finale.treppenFrei(sc, h.x, h.y, 22), boden: sc.isPointAccessible(h.x, h.y),
+      return h ? { x: h.x, y: h.y, liegt: window.Finale.harrenLiegt(h), bild: h.texture.key, frei: window.Finale.treppenFrei(sc, h.x, h.y, 22), boden: sc.isPointAccessible(h.x, h.y),
         treppen: sc.stairsGroup.getChildren().filter(function (t) { return t.active; }).length } : null; })()`);
     assert.ok(r, 'Harren steht nicht in der Szene');
     assert.ok(r.treppen > 0, 'keine Treppe im Raum');
-    assert.ok(Math.abs(r.winkel) >= 80, 'er liegt noch nicht: ' + JSON.stringify(r));
+    // Seit b501 faellt er mit eigenen Bildern (das letzte Fallbild liegt).
+    assert.ok(r.liegt && r.bild === 'finale_fig_harren_fall4', 'er liegt noch nicht: ' + JSON.stringify(r));
     assert.strictEqual(r.frei, true, 'Harren liegt an der Treppe: ' + JSON.stringify(r));
     assert.strictEqual(r.boden, true, 'Harren liegt in der Wand: ' + JSON.stringify(r));
   });

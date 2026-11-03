@@ -24,6 +24,8 @@ before(async () => {
     var sc = ${GSC};
     // Die Seiten des Finales sind Sprechblasen (b498): bis zur letzten tippen, dann waehlen.
     window.__knopf = function () {
+      // Seit b501 stehen an den grossen Momenten Tableaus (FinaleTableau).
+      if (sc.__finaleTableau) { sc.__finaleTableau.ueberspringen(); return true; }
       var d = sc.__finaleBlase;
       if (!d) return false;
       for (var k = 0; k < 60 && d.schritt() < d.schritte.length - 1; k++) d.fang.emit('pointerdown');

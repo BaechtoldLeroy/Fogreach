@@ -95,6 +95,8 @@ const pause = (H) => H.run('!!(window.__GAME_PAUSE && window.__GAME_PAUSE.since 
 const flag = (H, n) => H.run(`window.questSystem.hasFlag('${n}')`);
 function warteAufSeite(H, re) {
   for (let i = 0; i < 1500; i++) {
+    // Seit b501 stehen an den grossen Momenten Tableaus davor (FinaleTableau).
+    if (H.lab.tableauWeg()) continue;
     const b = blase(H);
     if (b && (!re || re.test(b.text))) return b;
     H.step(2);
@@ -315,6 +317,7 @@ describe('Das Urteil', () => {
 
   /** Elara besiegen, letzter Schlag, bis Mara das Urteil verlangt. */
   function bisZumUrteil() {
+    H.lab.tableauWeg();
     H.run(`(function () { var sc = ${GSC};
       ['__finaleHammer', '__finaleLoesen'].forEach(function (k) { if (sc[k]) { sc[k].abbrechen(); sc[k] = null; } });
       if (sc.__finaleBlase) sc.__finaleBlase.zu(); sc.__finaleNachKampf = false; })()`);

@@ -61,8 +61,14 @@
     return scene.__esseOrt;
   }
 
-  /** Ein Hammer als Textur, einmal gezeichnet (Stiel, Kopf, Messingband). */
+  /**
+   * Der Hammer: das PixelLab-Bild (assets/finale/hammer.png, Schmiedehammer
+   * mit Messingband), sonst einmal gezeichnet (Stiel, Kopf, Messingband).
+   */
+  var HAMMER_BILD = 'finale_hammer_bild';
+  var HAMMER_HOEHE = 60;   // so hoch steht er ueber dem Spieler
   function hammerTextur(scene) {
+    if (scene.textures && scene.textures.exists(HAMMER_BILD)) return HAMMER_BILD;
     var key = 'finale_hammer';
     if (!scene.textures || scene.textures.exists(key)) return key;
     var g = scene.make.graphics({ x: 0, y: 0, add: false });
@@ -145,8 +151,9 @@
     glut.setAlpha(0.35);
     var zug = scene.add.graphics().setDepth(TIEFE + 1).setName('esseZug');
     // Ueber dem Spieler (Tiefe 100), gross genug, um ihn steigen zu sehen.
-    var hammer = scene.add.image(0, 0, hammerTextur(scene)).setOrigin(0.5, 0.92).setDepth(101).setScale(1.5)
+    var hammer = scene.add.image(0, 0, hammerTextur(scene)).setOrigin(0.5, 0.92).setDepth(101)
       .setVisible(false).setName('esseHammer');
+    hammer.setScale(HAMMER_HOEHE / (hammer.frame.height || 40));
     var prompt = scene.add.text(e.x, e.y - 96, '', {
       fontSize: '14px', fill: '#ffdd44', fontFamily: 'monospace', stroke: '#000', strokeThickness: 3, align: 'center'
     }).setOrigin(0.5).setDepth(500).setName('esseHinweis');
@@ -415,6 +422,7 @@
       var key = ESSE_BILDER[z];
       if (!scene.textures.exists(key)) scene.load.image(key, 'assets/finale/' + key + '.png');
     });
+    if (!scene.textures.exists(HAMMER_BILD)) scene.load.image(HAMMER_BILD, 'assets/finale/hammer.png');
   }
 
   /** Stellt die Esse als Bild samt Sockelkoerper auf; null, wenn das Bild fehlt. */
@@ -472,7 +480,7 @@
   window.FinaleHandwerk = {
     REICHWEITE: REICHWEITE, DAUER_MS: DAUER_MS, ERKENNEN_BEI: ERKENNEN_BEI, ZERBRECHEN_MS: ZERBRECHEN_MS,
     ort: ort, halten: halten, zerbrechen: zerbrechen, haeltGedrueckt: haeltGedrueckt,
-    hammerTextur: hammerTextur, tonSchnitt: tonSchnitt,
+    hammerTextur: hammerTextur, HAMMER_BILD: HAMMER_BILD, HAMMER_HOEHE: HAMMER_HOEHE, tonSchnitt: tonSchnitt,
     ESSE_BILDER: ESSE_BILDER, ESSE_KOERPER: ESSE_KOERPER, ESSE_SOCKEL: ESSE_SOCKEL, ESSE_TIEFE: ESSE_TIEFE, FLACKER_MUSTER: FLACKER_MUSTER, FLACKER_MS: FLACKER_MS,
     bilderVorladen: bilderVorladen, esseAufstellen: esseAufstellen, esseZustand: esseZustand
   };

@@ -987,6 +987,10 @@ function preload() {
   if (window.FinaleHandwerk && typeof window.FinaleHandwerk.bilderVorladen === 'function') {
     try { window.FinaleHandwerk.bilderVorladen(this); } catch (e) { /* nicht fatal */ }
   }
+  // Die Figuren des Finales (Harren, Mara, Elara) und Elaras Klinge (finale.js).
+  if (window.Finale && typeof window.Finale.bilderVorladen === 'function') {
+    try { window.Finale.bilderVorladen(this); } catch (e) { /* nicht fatal */ }
+  }
   // #192: Elaras eingerichtete Kammer — die Requisiten.
   if (typeof window.versteckBilderVorladen === 'function') {
     try { window.versteckBilderVorladen(this); } catch (e) { /* nicht fatal */ }

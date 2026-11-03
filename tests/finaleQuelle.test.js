@@ -10,6 +10,10 @@
 //     (dieselbe Halte-Aktion, andere Richtung), Mara verlangt das Urteil,
 //     verschonen oder richten (elara_spared/killed); das Ziel ist erfuellt,
 //     abgegeben wird bei Thom
+//   * Seit b501 halten acht Momente fuer ein Tableau an (FinaleTableau): vor
+//     dem Kampf hammer, lene, stoss, esse; danach bruch, urteil (nur mit
+//     Mara), verschonen oder richten. Die Hilfen unten blaettern sie weg und
+//     merken sich die Reihenfolge (tableaus).
 //   * Am Konvoi: still bleiben oder die Klinge ziehen    -> convoy_blown (#84),
 //     im Messing-Dialog nach der Abhoer-Szene, genau einmal (b447)
 // Die Halte-Aktion selbst (Handy, kurzer Druck, Slot 3) steht in
@@ -21,6 +25,13 @@ const { launchDungeon, flush } = require('../tools/headless/index.js');
 
 let H = null;
 let L = null;
+let tableaus = [];
+/** Steht ein Tableau, ueberspringen und merken. */
+function tableauWeg() {
+  const t = L.tableauWeg();
+  if (t) tableaus.push(t);
+  return t;
+}
 
 before(async () => {
   H = await launchDungeon({ depth: 30 });
@@ -65,12 +76,21 @@ beforeEach(() => {
   L.setDepth(30, 30);
   // Offene Dialoge und Halte-Aktionen vom Fall davor schliessen.
   for (let i = 0; i < 20 && H.run('!!window.eventChoiceOpen'); i++) {
+    if (tableauWeg()) continue;
     H.run("(function () { var d = window.game.scene.getScene('GameScene').__konvoiDialog; if (d) d.zu(); else window.__klick(0); })()");
     H.step(2);
   }
+  tableaus = [];
   H.run(`(function () { var sc = ${GSC};
     ['__finaleHammer', '__finaleLoesen'].forEach(function (k) { if (sc[k]) { sc[k].abbrechen(); sc[k] = null; } });
-    sc.__finaleNachKampf = false; sc.__esseOrt = null; })()`);
+    sc.__finaleNachKampf = false; sc.__esseOrt = null;
+    // Die Esse auf freien Boden weit weg von jeder Treppe: wer dort E haelt,
+    // soll nicht die Treppe nehmen (im Zufallsraum lag sie sonst manchmal daneben).
+    var b = sc.physics.world.bounds;
+    for (var gy = 0.2; gy <= 0.8 && !sc.__esseOrt; gy += 0.05) for (var gx = 0.2; gx <= 0.8 && !sc.__esseOrt; gx += 0.05) {
+      var x = b.x + b.width * gx, y = b.y + b.height * gy;
+      if (sc.isPointAccessible(x, y) && sc.isPointAccessible(x, y + 20) && window.Finale.treppenFrei(sc, x, y, 160)) sc.__esseOrt = { x: x, y: y };
+    } })()`);
   H.run('window.__dialogLog.length = 0');
 });
 
@@ -88,6 +108,7 @@ const letzter = () => H.run(`(function () { var l = window.__dialogLog; return l
 /** Taktet, bis ein neuer Dialog offen ist (Seiten mit Figurenspiel davor brauchen Zeit). */
 function naechsterDialog(vorher) {
   for (let i = 0; i < 900; i++) {
+    if (tableauWeg()) continue;
     if (H.run('window.__dialogLog.length') > vorher && H.run('!!window.eventChoiceOpen')) return letzter();
     H.step(2);
   }
@@ -172,14 +193,15 @@ test('Vor dem Kampf: der erhobene Hammer als Handwerk, Harren, dann nimmt die Es
   assert.ok(/Nur Deine Hände/.test(d.text), 'sie spricht den Plan nicht aus: ' + d.text);
   d = klick(0);
   assert.ok(/HARREN: Lene\./.test(d.text), 'Harren kommt nicht');
-  const harren = () => H.run(`(function () { var o = ${GSC}.children.getByName('finaleHarren'); return o ? { winkel: Math.round(o.angle) } : null; })()`);
+  const harren = () => H.run(`(function () { var o = ${GSC}.children.getByName('finaleHarren');
+    return o ? { liegt: window.Finale.harrenLiegt(o), bild: o.texture.key } : null; })()`);
   assert.ok(harren(), 'Harren steht nicht als Figur an der Esse');
   d = klick(0);
   assert.ok(/stösst sie ihn weg/.test(d.text) && /bewusst/.test(d.text), d.text);
   // Ihr Punkt ohne Rueckkehr liegt VOR der Besessenheit.
   assert.strictEqual(genommen(), false, 'die Esse nimmt sie schon, bevor sie ihn wegstoesst');
   assert.strictEqual(flag('harren_dead'), false, 'Harren stirbt schon, bevor man es gelesen hat');
-  assert.ok(Math.abs(harren().winkel) >= 80, 'Harren liegt nicht: ' + JSON.stringify(harren()));
+  assert.ok(harren().liegt, 'Harren liegt nicht: ' + JSON.stringify(harren()));
   assert.strictEqual(H.run(`!!${GSC}.children.getByName('finaleHammer')`), false, 'sie hat den Hammer schon vor dem Stoss');
   d = klick(0);
   assert.strictEqual(flag('harren_dead'), true, 'harren_dead nicht gesetzt');
@@ -199,6 +221,7 @@ test('Vor dem Kampf: der erhobene Hammer als Handwerk, Harren, dann nimmt die Es
   assert.strictEqual(JSON.stringify(boss()), JSON.stringify({ sichtbar: true, koerper: true, unverwundbar: false, kampf: true }),
     'aus der Elara an der Esse wird nicht der Boss');
   assert.strictEqual(H.run(`!!${GSC}.children.getByName('finaleElara')`), false, 'die Buehnen-Elara bleibt stehen');
+  assert.deepStrictEqual(tableaus, ['hammer', 'lene', 'stoss', 'esse'], 'die Tableaus vor dem Kampf');
 });
 
 test('Wer Harren schon hat sterben sehen, kommt direkt zum Kampf', () => {
@@ -228,7 +251,11 @@ function letzterSchlag() {
   zurEsse('__finaleLoesen');
   const h = haltenBis('fertig', '__finaleLoesen');
   esseHalten(false);
-  assert.ok(!h || h.phase === 'fertig', 'die Bindung loest sich nicht: ' + JSON.stringify(h));
+  assert.ok(!h || h.phase === 'fertig', 'die Bindung loest sich nicht: ' + JSON.stringify(h) + ' ' + H.run(`JSON.stringify({
+    pause: window.__GAME_PAUSE && window.__GAME_PAUSE.since != null, offen: !!window.eventChoiceOpen,
+    tableau: !!${GSC}.__finaleTableau, blase: !!${GSC}.__finaleBlase, zeitPause: ${GSC}.time.paused,
+    p: [player.x, player.y], h: ${GSC}.__finaleLoesen && [${GSC}.__finaleLoesen.x, ${GSC}.__finaleLoesen.y],
+    e: ${GSC}.input.keyboard.addKey('E', false).isDown })`));
   return naechsterDialog(zahl);
 }
 
@@ -271,6 +298,7 @@ test('Nach dem Kampf: ihre Klinge, der letzte Schlag als Handwerk, Mara verlangt
   assert.ok(Array.from(q.branka).indexOf('schattenrat_finale') < 0, 'Branka will sie noch einmal abnehmen');
   assert.strictEqual(q.wartet, false, 'Elara wartet nach dem entschiedenen Kampf erneut auf Tiefe 30');
   assert.strictEqual(q.nachKampf, false, 'das Finale sperrt nach dem Urteil weiter die Wellen');
+  assert.deepStrictEqual(tableaus, ['bruch', 'urteil', 'verschonen'], 'die Tableaus nach dem Kampf');
 });
 
 test('Nach dem Kampf: richten', () => {
@@ -288,6 +316,8 @@ test('Nach dem Kampf: richten', () => {
   H.step(2);
   assert.strictEqual(flag('elara_killed'), true);
   assert.strictEqual(flag('elara_spared'), false);
+  tableauWeg();
+  assert.deepStrictEqual(tableaus, ['bruch', 'urteil', 'richten']);
 });
 
 test('Nach dem Kampf: ist Maras Netz verbrannt, stellt sich die Frage ohne sie (Stufe 1b)', () => {
@@ -307,6 +337,9 @@ test('Nach dem Kampf: ist Maras Netz verbrannt, stellt sich die Frage ohne sie (
   H.run('window.__klick(0)');
   H.step(2);
   assert.strictEqual(flag('elara_spared'), true);
+  tableauWeg();
+  // Ohne Mara kein Bild von ihr; das Urteil faellt trotzdem.
+  assert.deepStrictEqual(tableaus, ['bruch', 'verschonen']);
 });
 
 test('Wer nach dem Sieg geht, findet Elara an der Esse wieder, ohne zweiten Kampf (Spielstand)', () => {
