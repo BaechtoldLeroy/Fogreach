@@ -27,6 +27,7 @@
   'use strict';
 
   var BODEN_BILDER = 16;
+  var BODEN_STAND = 2;             // bei jeder Aenderung der Bodenkacheln hochzaehlen
   var TIEFE_BODEN = -20;
 
   // Waldsaum ueber dem oberen Kartenrand, in Kachelzeilen. Die Kamera darf
@@ -201,14 +202,17 @@
       scene.load.image(key, pfad); n++;
     };
     var i;
-    for (i = 0; i < BODEN_BILDER; i++) nimm('hub_boden' + i, 'assets/hub/boden' + i + '.png');
+    // ?v= erst seit b512 (Bodenkacheln angeglichen, tools/bodenAngleichen.js):
+    // sonst zeigt ein Browser mit altem Cache die alten neben den neuen.
+    var V = '?v=' + BODEN_STAND;
+    for (i = 0; i < BODEN_BILDER; i++) nimm('hub_boden' + i, 'assets/hub/boden' + i + '.png' + V);
     SCHICHTEN.forEach(function (s) {
       for (var m = 1; m < 15; m++) {
-        nimm('hub_ueber_' + s.name + m, 'assets/hub/ueber_' + s.name + m + '.png');
+        nimm('hub_ueber_' + s.name + m, 'assets/hub/ueber_' + s.name + m + '.png' + V);
       }
     });
     for (i = 0; i < 1; i++) {
-      nimm('hub_flaeche_pflaster' + i, 'assets/hub/flaeche_pflaster' + i + '.png');
+      nimm('hub_flaeche_pflaster' + i, 'assets/hub/flaeche_pflaster' + i + '.png' + V);
     }
     BAU_BILDER.forEach(function (b) { nimm('hub_' + b, 'assets/hub/' + b + '.png'); });
     // Was die Karte nennt, wird geladen — keine zweite Liste, die veralten
@@ -383,23 +387,68 @@
     return liste;
   }
 
+  // Kantenlaenge des Nebelflecks. Gekachelt mit tileScale 2.5 wiederholt er
+  // sich alle 480 Weltpixel — kaum mehr als eine Bildschirmbreite.
+  var NEBEL_GROESSE = 192;
+
+  /**
+   * Deckkraft des Nebelflecks je Bildpunkt (0..1), NAHTLOS kachelbar.
+   *
+   * Bis b511 malte der Canvas die Schwaden als Verlaeufe einfach hinein; wer
+   * ueber den Rand ragte, wurde abgeschnitten. Als TileSprite gekachelt lief
+   * dann alle 320 Weltpixel eine gerade Kante durch den Nebel, senkrecht und
+   * waagrecht — "der Nebel verlaeuft quadratisch". Hier wird jede Schwade um
+   * den Rand herumgefuehrt: was rechts hinausragt, kommt links wieder herein.
+   *
+   * Reine Rechnung, damit ein Test die Naht pruefen kann.
+   */
+  function nebelFeld(S) {
+    var durch = new Float32Array(S * S);       // wie viel NICHT bedeckt ist
+    var i;
+    for (i = 0; i < durch.length; i++) durch[i] = 1;
+    // So viele Schwaden, dass im Mittel gut 40 % bedeckt sind — wie der
+    // alte Fleck, und es bleiben Luecken zwischen den Schwaden.
+    var anzahl = Math.round(18 * (S * S) / (128 * 128));
+    for (i = 0; i < anzahl; i++) {
+      var cx = streu(i, 1, 21) * S, cy = streu(i, 2, 21) * S;
+      var rr = (16 + streu(i, 3, 21) * 30) * S / 128;
+      var r0 = Math.ceil(rr);
+      var bx = Math.floor(cx), by = Math.floor(cy);
+      for (var dy = -r0; dy <= r0; dy++) {
+        var py = ((by + dy) % S + S) % S;
+        for (var dx = -r0; dx <= r0; dx++) {
+          // Abstand vom Mittelpunkt zur Mitte des Bildpunkts.
+          var ex = bx + dx + 0.5 - cx, ey = by + dy + 0.5 - cy;
+          var d = Math.sqrt(ex * ex + ey * ey) / rr;
+          if (d >= 1) continue;
+          // Quadratisch auslaufen, nicht linear: kein Knick am Rand der Schwade.
+          var t = 1 - d;
+          var a = 0.5 * t * t;
+          var px = ((bx + dx) % S + S) % S;
+          durch[py * S + px] *= (1 - a);
+        }
+      }
+    }
+    for (i = 0; i < durch.length; i++) durch[i] = 1 - durch[i];
+    return durch;
+  }
+
   /** Nebel: zwei langsam treibende Schleier ueber dem ganzen Platz. */
   function _nebel(scene, w, h) {
     var key = 'hub_nebelfleck';
     if (!scene.textures.exists(key)) {
-      var lw = scene.textures.createCanvas ? scene.textures.createCanvas(key, 128, 128) : null;
+      var S = NEBEL_GROESSE;
+      var lw = scene.textures.createCanvas ? scene.textures.createCanvas(key, S, S) : null;
       if (!lw) return [];
       var ctx = lw.getContext();
-      ctx.clearRect(0, 0, 128, 128);
-      for (var i = 0; i < 26; i++) {
-        var cx = streu(i, 1, 21) * 128, cy = streu(i, 2, 21) * 128;
-        var rr = 16 + streu(i, 3, 21) * 30;
-        var g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rr);
-        g.addColorStop(0, 'rgba(188,198,214,0.5)');
-        g.addColorStop(1, 'rgba(188,198,214,0)');
-        ctx.fillStyle = g;
-        ctx.beginPath(); ctx.arc(cx, cy, rr, 0, Math.PI * 2); ctx.fill();
+      if (!ctx || typeof ctx.createImageData !== 'function') return [];
+      var feld = nebelFeld(S);
+      var bild = ctx.createImageData(S, S);
+      for (var p = 0; p < feld.length; p++) {
+        bild.data[p * 4] = 188; bild.data[p * 4 + 1] = 198; bild.data[p * 4 + 2] = 214;
+        bild.data[p * 4 + 3] = Math.round(feld[p] * 255);
       }
+      ctx.putImageData(bild, 0, 0);
       lw.refresh();
     }
     var schleier = [];
@@ -754,7 +803,8 @@
     welt: welt, vorladen: vorladen, platzVorTuer: platzVorTuer,
     layoutUebernehmen: layoutUebernehmen, bauen: bauen, truheStellen: truheStellen, phasenAnker: phasenAnker,
     aktionsbox: aktionsbox, baeume: baeume, gebaeudeFlaechen: gebaeudeFlaechen, bildFlaeche: bildFlaeche,
-    _streu: streu, _festeFlaechen: _festeFlaechen, _artAn: artAn, _SCHICHTEN: SCHICHTEN
+    _streu: streu, _festeFlaechen: _festeFlaechen, _artAn: artAn, _SCHICHTEN: SCHICHTEN,
+    _ERDE: ERDE, nebelFeld: nebelFeld, NEBEL_GROESSE: NEBEL_GROESSE
   };
   if (typeof window !== 'undefined') window.HubNeuWelt = HubNeuWelt;
   if (typeof module !== 'undefined' && module.exports) module.exports = HubNeuWelt;
