@@ -341,12 +341,17 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
         });
       });
       if (needsItem && Math.random() < (qiDef.chance || 0.10)) {
+        // Eigenes Bild des Story-Gegenstands (window.STORY_SYMBOLE), sofern
+        // geladen; sonst bleibt es beim eingefaerbten Erz.
+        var _lootSzene = scene || (lootGroup && lootGroup.scene);
+        var _story = window.STORY_SYMBOLE && window.STORY_SYMBOLE[qiDef.key];
+        var storyBild = (_story && _lootSzene && _lootSzene.textures && _lootSzene.textures.exists(_story)) ? _story : null;
         var questItem = {
           type: 'quest_item',
           key: qiDef.key,
           name: qiDef.name,
           nameKey: qiDef.nameKey,
-          iconKey: qiDef.iconKey || 'itMat',
+          iconKey: storyBild || qiDef.iconKey || 'itMat',
           isQuestItem: true,
           questTarget: qiDef.target
         };
@@ -365,12 +370,15 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
         }
         var questLoot = lootGroup.create(x, y, questItem.iconKey || 'itMat');
         // Das Zeichen ist quadratisch; gestaucht auf 28x22 saehe es wie ein Ei aus.
-        if (qiDef.iconKey) questLoot.setDisplaySize(26, 26);
+        // Story-Bilder sind 48er-Gegenstandsbilder wie die Schriftstuecke (30).
+        if (storyBild) questLoot.setDisplaySize(30, 30);
+        else if (qiDef.iconKey) questLoot.setDisplaySize(26, 26);
         else questLoot.setDisplaySize(28, 22);
         questLoot.setData('item', questItem);
         questLoot.setData('questItem', true);
         questLoot.setDepth((window.WELT_TIEFEN ? window.WELT_TIEFEN.BODEN_BEUTE : 45));
-        questLoot.setTint(qiDef.tint);
+        // Das eigene Bild traegt seine Farben selbst; eingefaerbt wird nur das Erz.
+        if (!storyBild) questLoot.setTint(qiDef.tint);
         // Geschriebenes traegt sein eigenes Bild mit warmem Schein; ohne Bild
         // bleibt es beim eingefaerbten Erz.
         if (window.Schriftstuecke) window.Schriftstuecke.schmuecken(scene || questLoot.scene, questLoot, qiDef.target);
@@ -507,7 +515,17 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
         } catch (e) { /* keep original affixes on failure */ }
       }
     }
-    const loot = lootGroup.create(x, y, item.iconKey || 'itMat');
+    // Story-Lohn aus alten Spielstaenden traegt noch den alten iconKey.
+    const _storyBoden = item && item.key && window.STORY_SYMBOLE && window.STORY_SYMBOLE[item.key];
+    // Fehlt eine Story-Datei, traegt der neue Lohn einen iconKey ohne Textur:
+    // dann das Typ-Symbol (resolveItemIconKey) statt eines leeren Bilds.
+    const _tm = lootGroup.scene && lootGroup.scene.textures;
+    let _bodenBild = item.iconKey || 'itMat';
+    if (_storyBoden && _tm && _tm.exists(_storyBoden)) _bodenBild = _storyBoden;
+    else if (_tm && !_tm.exists(_bodenBild) && typeof resolveItemIconKey === 'function') {
+      _bodenBild = resolveItemIconKey(item) || 'itMat';
+    }
+    const loot = lootGroup.create(x, y, _bodenBild);
     loot.setDisplaySize(32, 24);
     loot.setData('item', item);
     // Zeitbasis gameNow, nicht scene.time.now: eine Pause soll die Frist

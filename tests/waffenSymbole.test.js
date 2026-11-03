@@ -40,6 +40,11 @@ const NAHKAMPF = {
 // darf die Zeile hier mit weg.
 const BEKANNTE_LUECKEN = new Set(['itAccessory']);
 
+// Story-Symbole (window.STORY_SYMBOLE) kommen nur aus Dateien
+// (tools/storyItemsBauen.js); fehlt eine, faellt resolveItemIconKey auf das
+// Typ-Symbol zurueck. tests/storyItemSymbole.test.js prueft sie.
+const NUR_AUS_DATEI = /^itStory[A-Z]/;
+
 // --- Hilfen ---------------------------------------------------------------
 
 // Führt createItemGraphics() gegen eine Graphics-Attrappe aus und liefert die
@@ -151,7 +156,8 @@ test('#117: Elaras Klinge traegt ein Schwert-Symbol, nicht mehr das Sammel-Icon'
   const m = src.match(/key: 'ELARAS_KLINGE'[^}]*?iconKey: '([A-Za-z0-9_]+)'/);
   assert.ok(m, 'ELARAS_KLINGE oder ihr iconKey nicht gefunden');
   const basen = waffenBasen();
-  const schwerter = [basen.WPN_EISENKLINGE.iconKey, basen.WPN_RICHTSCHWERT.iconKey];
+  // Seit den Story-Symbolen ein eigenes Schwertbild (itStoryElarasKlinge).
+  const schwerter = [basen.WPN_EISENKLINGE.iconKey, basen.WPN_RICHTSCHWERT.iconKey, 'itStoryElarasKlinge'];
   assert.ok(schwerter.includes(m[1]),
     'Elaras Klinge nutzt ' + m[1] + ' — erwartet eines von ' + schwerter.join('/'));
 });
@@ -159,7 +165,7 @@ test('#117: Elaras Klinge traegt ein Schwert-Symbol, nicht mehr das Sammel-Icon'
 test('#117: jeder verwendete iconKey wird auch gezeichnet — kein Verweis ins Leere', () => {
   const erzeugt = new Set(erzeugteSymbole());
   verwendeteSymbole().forEach((key) => {
-    if (BEKANNTE_LUECKEN.has(key)) return;
+    if (BEKANNTE_LUECKEN.has(key) || NUR_AUS_DATEI.test(key)) return;
     assert.ok(erzeugt.has(key),
       'iconKey ' + key + ' wird im Code vergeben, aber von createItemGraphics nie erzeugt');
   });

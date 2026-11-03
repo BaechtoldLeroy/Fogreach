@@ -756,7 +756,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         { type: 'boss_kill', target: 'zeremonienmeister', current: 0, required: 1 }
       ],
       // Stufe 1b (Story v6.1): eines der wenigen echten Nebelamulette des Rats.
-      rewards: { xp: 150, items: [{ key: 'RITUAL_AMULETT', basis: 'HD_SCHLANGENMASKE', tier: 2, name: 'Nebelamulett des Rats', nameKey: 'quest.reward.RITUAL_AMULETT', iconKey: 'itHeadSchlangenmaske', signatur: { armor: 0.12 } }] },
+      rewards: { xp: 150, items: [{ key: 'RITUAL_AMULETT', basis: 'HD_SCHLANGENMASKE', tier: 2, name: 'Nebelamulett des Rats', nameKey: 'quest.reward.RITUAL_AMULETT', iconKey: 'itStoryRitualamulett', signatur: { armor: 0.12 } }] },
       rewardTier: 'boss',
       prerequisites: ['elara_meeting'],
       requiredAct: 3,
@@ -855,7 +855,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       objectives: [
         { type: 'dialogue', target: 'elara_gift', current: 0, required: 1 }
       ],
-      rewards: { xp: 100, items: [{ key: 'ELARAS_KLINGE', basis: 'WPN_EISENKLINGE', tier: 3, name: 'Elaras Klinge', nameKey: 'quest.reward.ELARAS_KLINGE', iconKey: 'itSword', elaraGift: true, signatur: { crit: 0.15 } }] },
+      rewards: { xp: 100, items: [{ key: 'ELARAS_KLINGE', basis: 'WPN_EISENKLINGE', tier: 3, name: 'Elaras Klinge', nameKey: 'quest.reward.ELARAS_KLINGE', iconKey: 'itStoryElarasKlinge', elaraGift: true, signatur: { crit: 0.15 } }] },
       rewardTier: 'story',
       prerequisites: ['elara_ritual'],
       requiredAct: 3,

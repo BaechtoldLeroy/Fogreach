@@ -69,7 +69,8 @@
     stapel: 'schrift_stapel'
   };
   // Questziel (fetch-target) -> Art. Nur Geschriebenes; Druckplatte, Siegel,
-  // Splitter, Halsband, Gewicht und das Buendel bleiben, wie sie sind.
+  // Splitter, Halsband, Gewicht und Helmmarke tragen ihr eigenes Bild
+  // (window.STORY_SYMBOLE), das Buendel das Zeichen.
   var ZIEL_ART = {
     document: 'blatt',
     council_document: 'rolle',

@@ -171,7 +171,8 @@ test('Elaras Klinge wird auf Spielerstufe gewuerfelt: legendaer, fester Name, Ke
   assert.strictEqual(k.affixes.length, 3);
   assert.strictEqual(k.elaraGift, true);
   assert.strictEqual(k.displayName, 'Elaras Klinge');
-  assert.strictEqual(k.iconKey, 'itSword');
+  // Eigenes Bild seit den Story-Symbolen (tests/storyItemSymbole.test.js).
+  assert.strictEqual(k.iconKey, 'itStoryElarasKlinge');
   // Hohe Kritchance: 15 % Zielanteil, absolut auf Stufe 17 gespeichert.
   const krit = Math.round(W.LootSystem.affixPunkte(0.15, 17) * 10) / 10;
   assert.strictEqual(k.crit, krit);

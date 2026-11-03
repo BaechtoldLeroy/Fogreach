@@ -199,6 +199,24 @@ const FALLBACK_ITEM_ICONS = {
   material: 'itMat'
 };
 
+// Story- und Quest-Gegenstaende tragen ein eigenes Bild (tools/storyItemsBauen.js),
+// nach dem Item-Schluessel statt nach dem gespeicherten iconKey: alte
+// Spielstaende haben Elaras Klinge noch mit 'itSword' und das Ritualamulett
+// mit 'itHeadSchlangenmaske' gespeichert, die Quest-Funde lagen als
+// eingefaerbtes Erz (itMat) da. Brankas Schmiedestueck fehlt bewusst: es wird
+// aus einer beliebigen Basis gewuerfelt und braucht das Bild seiner Art.
+const STORY_SYMBOLE = Object.freeze({
+  HELMMARKE: 'itStoryHelmmarke',
+  VERIFICATION_SEAL: 'itStoryRatssiegel',
+  MEMORY_SHARD: 'itStoryPhiolensplitter',
+  HUNDEHALSBAND: 'itStoryHalsband',
+  EICHGEWICHT: 'itStoryEichgewicht',
+  QUEST_PLATE: 'itStoryDruckplatte',
+  RITUAL_AMULETT: 'itStoryRitualamulett',
+  ELARAS_KLINGE: 'itStoryElarasKlinge'
+});
+window.STORY_SYMBOLE = STORY_SYMBOLE;
+
 const UPGRADEABLE_TYPES = new Set(['weapon', 'offhand', 'head', 'body', 'boots']);
 
 let materialCounts = window.materialCounts;
@@ -333,6 +351,8 @@ function resolveItemIconKey(item) {
   const textures = getTextureManager();
   const hasTexture = (key) => !textures || (key && textures.exists(key));
   const genericIcons = new Set(['itMat', 'lootTexture', 'chest_small', 'chest_medium', 'chest_large', 'uiSlot']);
+  const story = item.key && STORY_SYMBOLE[item.key];
+  if (story && textures && textures.exists(story)) return story;
   if (item.iconKey && hasTexture(item.iconKey)) {
     if (item.type && item.type !== 'material' && genericIcons.has(item.iconKey)) {
       // prefer type-based fallback over generic chest/material icons

@@ -107,6 +107,13 @@
     'amuSchattenmantel', 'amuSchlaechterkrone', 'amuFrostsiegel', 'amuGlasherz',
     'amuZweiterAtem', 'amuBlutpakt'
   ]).concat([
+    // Story- und Quest-Gegenstaende (window.STORY_SYMBOLE in inventory.js,
+    // tools/storyItemsBauen.js). graphics.js zeichnet sie nicht; fehlt eine
+    // Datei, bleibt es beim alten Bild (eingefaerbtes Erz, Basis-Symbol).
+    'itStoryHelmmarke', 'itStoryRatssiegel', 'itStoryPhiolensplitter',
+    'itStoryHalsband', 'itStoryEichgewicht', 'itStoryDruckplatte',
+    'itStoryRitualamulett', 'itStoryElarasKlinge'
+  ]).concat([
     'obstacleTree', 'obstacleRock', 'prop_puddle', 'healthDrop',
     'xpDrop', 'projectileTexture',
   ]).concat([

@@ -255,11 +255,12 @@ describe('im Dungeon', () => {
     assert.strictEqual(toastStand(H).art, 'ui_symbol_quest');
   });
 
-  test('Nicht-Geschriebenes bleibt, wie es war (Ratssiegel)', () => {
+  test('Nicht-Geschriebenes ist kein Schriftstueck (Ratssiegel)', () => {
     aktiviere(H, 'verification_seal', 5);
     const f = legeQuestFund(H);
-    assert.strictEqual(f.key, 'itMat');
-    assert.strictEqual(f.tint, true);
+    // Eigenes Story-Bild statt Erz (tests/storyItemSymbole.test.js), kein Schein.
+    assert.strictEqual(f.key, 'itStoryRatssiegel');
+    assert.strictEqual(f.tint, false);
     assert.strictEqual(f.schein, null);
     H.run(`window.game.scene.getScene('GameScene')._activeEventToast = null`);
     aufheben(H);
