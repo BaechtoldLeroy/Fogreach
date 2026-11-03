@@ -53,7 +53,9 @@ describe('Vollbildwechsel im Dungeon', () => {
     })()`);
     H.step(3);
     const p = H.run(`({ x: player.x, y: player.y })`);
-    assert.ok(Math.abs(p.x - ziel.x) < 8 && Math.abs(p.y - ziel.y) < 8,
+    // Gegner duerfen ihn ein Stueck schubsen; die abgeschnittene Welt dagegen
+    // setzte ihn Hunderte Pixel zurueck (Hoehe 480 statt des Raums).
+    assert.ok(Math.abs(p.x - ziel.x) < 40 && Math.abs(p.y - ziel.y) < 40,
       'Spieler weggedrueckt: Ziel ' + JSON.stringify(ziel) + ', steht bei ' + JSON.stringify(p));
   });
 });

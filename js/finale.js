@@ -805,12 +805,24 @@
     }
   }
 
+  // Die Seiten halten die Spieluhr an, und mit ihr den Nebel-Tick (main.js
+  // update). Beginnt das Finale gleich beim Betreten des Raums, hat der Nebel
+  // noch nie getickt: die ganze Welt bliebe schwarz, bis die Wahl getroffen
+  // ist. Ein erzwungener Tick legt das Sichtfeld vorher frei.
+  function _sichtJetzt(scene) {
+    try {
+      if (typeof window.forceFogUpdate === 'function') window.forceFogUpdate();
+      if (typeof scene.updateFogOfWar === 'function') scene.updateFogOfWar();
+    } catch (e) {}
+  }
+
   // Gibt true zurueck, wenn die Szene laeuft (dann ruft sie `weiter` selbst
   // und startet den Kampf, ElaraKampf.starten). Bei false startet spawnBoss
   // den Kampf sofort.
   function vorKampf(scene, boss, weiter) {
     if (!scene || !_dialogDa()) return false;
     var schritt = _debugVorbereiten(scene, boss);
+    _sichtJetzt(scene);
     // Elara ist schon gefallen, aber der letzte Schlag fehlt (Lauf vorher
     // verlassen): gleich an die Esse, ohne zweiten Kampf.
     if (_flag('elara_besiegt') && !_flag('elara_spared') && !_flag('elara_killed')) {
