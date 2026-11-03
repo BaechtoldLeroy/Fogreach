@@ -182,6 +182,33 @@
   }
 
   // -------------------------------------------------------------------------
+  // Die Bilder (PixelLab, assets/kettenschloss/, tools/kettenschlossBilderBauen.js)
+  // -------------------------------------------------------------------------
+
+  // Schluessel -> Datei. Fehlt auch nur eines, zeichnet das Spiel das Schloss
+  // wie vorher als Flaechen: halb Bild, halb Kasten passt nicht zusammen.
+  var BILDER = {
+    ks_koerper: 'koerper', ks_dietrich: 'dietrich', ks_stift: 'stift',
+    ks_spanner: 'spanner', ks_kette: 'kette'
+  };
+  // Das Schlossbild ist breiter als die Leiste: der Schluesselkanal laeuft
+  // von x=31 bis 471 (= Leiste 440), Kanalmitte auf Zeile 23,5 von 40. So
+  // liegt der Kanal genau ueber der Strecke, die der Dietrich abfaehrt.
+  var BILD_KANAL = { breite: 502, rand: 31, leiste: 440, mitteY: 23.5, hoehe: 40 };
+
+  function bilderVorladen(scene) {
+    if (!scene || !scene.load || !scene.textures) return;
+    Object.keys(BILDER).forEach(function (k) {
+      if (!scene.textures.exists(k)) scene.load.image(k, 'assets/kettenschloss/' + BILDER[k] + '.png');
+    });
+  }
+
+  function bilderBereit(scene) {
+    if (!scene || !scene.textures) return false;
+    return Object.keys(BILDER).every(function (k) { return scene.textures.exists(k); });
+  }
+
+  // -------------------------------------------------------------------------
   // Die Spieloberfläche
   // -------------------------------------------------------------------------
 
@@ -299,7 +326,36 @@
     halten(scene.add.text(cx - 108, leisteY + 51, _t('lock.resist', 'Widerstand'), {
       fontFamily: 'monospace', fontSize: '11px', color: '#8d8798'
     }).setOrigin(1, 0.5));
+    // Die Bilder: Ketten und Stift hinter dem Schloss, der Spanner davor,
+    // darueber die Zeichenflaeche (Fehlgriff-Marken, Anzeiger, Restzeit), ganz
+    // vorn der Dietrich. Gleiche Tiefe -> die Reihenfolge des Anlegens zaehlt.
+    var bild = null;
+    if (bilderBereit(scene)) {
+      var sx = leisteB / BILD_KANAL.leiste;
+      var koerperB = BILD_KANAL.breite * sx;
+      var koerperL = cx - koerperB / 2;
+      bild = { ketten: [] };
+      // Zwei Kettenstuecke je Seite, das Schloss haengt dazwischen.
+      for (var kk = 0; kk < 2; kk++) {
+        bild.ketten.push(halten(scene.add.image(koerperL + 6 - kk * 54, leisteY - 3, 'ks_kette').setOrigin(1, 0.5)));
+        bild.ketten.push(halten(scene.add.image(koerperL + koerperB - 6 + kk * 54, leisteY - 3, 'ks_kette')
+          .setOrigin(0, 0.5).setFlipX(true)));
+      }
+      // Der Stift steckt im Schloss; nur Feder und Kopf ragen oben heraus.
+      bild.stift = halten(scene.add.image(cx, leisteY + 3, 'ks_stift').setOrigin(0.5, 1));
+      bild.koerper = halten(scene.add.image(cx, leisteY, 'ks_koerper')
+        .setOrigin(0.5, BILD_KANAL.mitteY / BILD_KANAL.hoehe)
+        .setDisplaySize(koerperB, BILD_KANAL.hoehe));
+      // Der Spanner haelt das Schloss unter Zug: der lange Schenkel liegt im
+      // linken Kanalende, der kurze haengt unter dem Schloss heraus.
+      bild.spanner = halten(scene.add.image(leisteX - 24, leisteY + 1, 'ks_spanner')
+        .setOrigin(0, 0).setFlipY(true));
+    }
     var gfx = halten(scene.add.graphics());
+    if (bild) {
+      // Spitze oben auf der Hoehe des alten Dietrichs (leisteY - 30), Griff unten.
+      bild.dietrich = halten(scene.add.image(cx, leisteY - 30, 'ks_dietrich').setOrigin(0.5, 0));
+    }
 
     // Was der Dietrich gerade spürt — in Worten. Der Balkenanzeiger allein
     // sagte niemandem, was zu tun ist.
@@ -327,25 +383,38 @@
       var stufe = widerstandStufe(pos, ziel, tol);
       gfx.clear();
 
-      // Das Schloss von der Seite
-      gfx.fillStyle(0x1a1620, 0.95);
-      gfx.fillRect(leisteX - 6, leisteY - 20, leisteB + 12, 40);
-      gfx.fillStyle(0x3a3446, 1);
-      gfx.fillRect(leisteX, leisteY - 16, leisteB, 32);
-      gfx.fillStyle(0x2a2634, 1);
-      for (var k = 1; k < 8; k++) gfx.fillRect(leisteX + (leisteB * k) / 8, leisteY - 16, 1, 32);
-
       // Der Dietrich. Er zittert, je stärker es greift — dieselbe Auskunft wie
       // die Anzeige, aber dort, wo der Blick ohnehin liegt.
       var ruettel = (Date.now() < ruettelBis) ? (Math.random() - 0.5) * 6 : 0;
       var px = leisteX + pos * leisteB + ruettel;
       var zitter = (stufe >= 4) ? (Math.random() - 0.5) * (stufe - 3) * 1.8 : 0;
-      gfx.fillStyle(0xe8e2d4, 1);
-      gfx.fillRect(px - 2, leisteY - 30, 4, 52);
-      gfx.fillStyle(0x8f7334, 1);
-      gfx.fillRect(px - 6, leisteY + 22, 12, 8);
-      gfx.fillStyle(stufe >= 5 ? 0xffd166 : 0x6b6478, 1);
-      gfx.fillRect(px - 3, leisteY - 34 + zitter, 6, 6);
+      if (bild) {
+        bild.dietrich.setPosition(px, leisteY - 30);
+        bild.stift.setPosition(px, leisteY + 3 + zitter);
+        // Greift er, leuchtet der Stift auf. Die Toenung wirkt nur unter
+        // WebGL, der Schein darueber auch im Canvas-Renderer.
+        if (stufe >= 5) {
+          bild.stift.setTint(0xffd166);
+          gfx.fillStyle(0xffd166, 0.35);
+          gfx.fillCircle(px, leisteY - 32 + zitter, 9);
+        } else {
+          bild.stift.clearTint();
+        }
+      } else {
+        // Rueckfall ohne Bilder: das Schloss von der Seite als Flaechen.
+        gfx.fillStyle(0x1a1620, 0.95);
+        gfx.fillRect(leisteX - 6, leisteY - 20, leisteB + 12, 40);
+        gfx.fillStyle(0x3a3446, 1);
+        gfx.fillRect(leisteX, leisteY - 16, leisteB, 32);
+        gfx.fillStyle(0x2a2634, 1);
+        for (var k = 1; k < 8; k++) gfx.fillRect(leisteX + (leisteB * k) / 8, leisteY - 16, 1, 32);
+        gfx.fillStyle(0xe8e2d4, 1);
+        gfx.fillRect(px - 2, leisteY - 30, 4, 52);
+        gfx.fillStyle(0x8f7334, 1);
+        gfx.fillRect(px - 6, leisteY + 22, 12, 8);
+        gfx.fillStyle(stufe >= 5 ? 0xffd166 : 0x6b6478, 1);
+        gfx.fillRect(px - 3, leisteY - 34 + zitter, 6, 6);
+      }
 
       // Marken der Fehlgriffe bei diesem Stift.
       for (var m = 0; m < marken.length; m++) {
@@ -563,6 +632,8 @@
       // Für die Tests: die Knöpfe und wo die Leiste liegt.
       knoepfe: { setzen: knopfSetzen, aufhoeren: knopfAufhoeren },
       leiste: { x: leisteX, y: leisteY, breite: leisteB },
+      // Die Bildobjekte; null, wenn das Schloss als Rueckfall gezeichnet wird.
+      bilder: bild,
       abbrechen: function () { schliesse(false, false); }
     };
   }
@@ -604,6 +675,10 @@
     seiteZumStift: seiteZumStift,
     dietrichSchritt: dietrichSchritt,
     belohnung: belohnung,
+    BILDER: BILDER,
+    BILD_KANAL: BILD_KANAL,
+    bilderVorladen: bilderVorladen,
+    bilderBereit: bilderBereit,
     spiele: spiele
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = window.Kettenschloss;

@@ -991,6 +991,10 @@ function preload() {
   if (window.Finale && typeof window.Finale.bilderVorladen === 'function') {
     try { window.Finale.bilderVorladen(this); } catch (e) { /* nicht fatal */ }
   }
+  // Das Kettenschloss-Minispiel: Schloss, Dietrich, Stift, Spanner, Kette.
+  if (window.Kettenschloss && typeof window.Kettenschloss.bilderVorladen === 'function') {
+    try { window.Kettenschloss.bilderVorladen(this); } catch (e) { /* nicht fatal */ }
+  }
   // #192: Elaras eingerichtete Kammer — die Requisiten.
   if (typeof window.versteckBilderVorladen === 'function') {
     try { window.versteckBilderVorladen(this); } catch (e) { /* nicht fatal */ }
