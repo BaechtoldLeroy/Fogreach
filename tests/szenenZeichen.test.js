@@ -112,12 +112,21 @@ test('Harren zeigt in Akt 3 "!" fuer das Wiedersehen, danach nicht mehr', () => 
 
 test('Nach dem Wiedersehen kommt Harrens Archiv-Auftrag mit seinem eigenen "!"', () => {
   stand(3, Object.assign({}, SPAETER, { espionage_archive: 'available' }));
+  // b512: das Archiv wird erst ab erreichter Tiefe 12 angeboten.
+  const ablage = `(window.SlotStorage || localStorage)`;
+  const tiefeVorher = H.run(`${ablage}.getItem('demonfall_maxDepth')`);
+  H.run(`${ablage}.setItem('demonfall_maxDepth', '12')`);
+  try {
   assert.strictEqual(zeichen('harren').regel, '!');
   assert.deepStrictEqual(reden('harren'), ['playWiedersehen']);
   assert.deepStrictEqual(Array.from(H.run(`window.questSystem.getAvailableQuests('harren').map(function (q) { return q.id; })`)),
     ['espionage_archive'], 'nach dem Wiedersehen bietet Harren das Archiv nicht an');
   assert.strictEqual(zeichen('harren').regel, '!', 'das Archiv-Angebot zeigt kein "!"');
   assert.deepStrictEqual(reden('harren'), [], 'das Wiedersehen kam ein zweites Mal');
+  } finally {
+    H.run(tiefeVorher === null ? `${ablage}.removeItem('demonfall_maxDepth')`
+      : `${ablage}.setItem('demonfall_maxDepth', ${JSON.stringify(tiefeVorher)})`);
+  }
 });
 
 test('In Akt 2 steht nichts an: kein Zeichen ueber Harren', () => {

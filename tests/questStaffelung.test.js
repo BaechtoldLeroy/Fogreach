@@ -29,7 +29,7 @@ const QS = globalThis.window.questSystem;
 const D = QS.QUEST_DEFINITIONS;
 
 const STAFFEL = {
-  espionage_archive: 12, thom_truth: 14, buerger_hund: 15, garde_night_escort: 16,
+  espionage_archive: 12, thom_truth: 14, buerger_hund: 13, garde_night_escort: 16,
   who_you_were: 17, espionage_informant: 23, branka_eichgewicht: 26
 };
 
@@ -129,7 +129,7 @@ function halsbandBeiTiefe(tiefe) {
 }
 
 test('Questgegenstände fallen erst ab der Mindesttiefe', () => {
-  assert.strictEqual(halsbandBeiTiefe(12), 0, 'Halsband auf Tiefe 12 (Quest ab 15)');
+  assert.strictEqual(halsbandBeiTiefe(12), 0, 'Halsband auf Tiefe 12 (Quest ab 13)');
   assert.ok(halsbandBeiTiefe(16) >= 1, 'kein Halsband auf Tiefe 16');
 });
 

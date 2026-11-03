@@ -20,6 +20,7 @@ function system(akt) {
     resetToAct0: () => { story.akt = 0; }
   };
   globalThis.window.DUNGEON_DEPTH = 99;
+  delete globalThis.window.Persistence;   // erreichte Tiefe 1, sofern ein Test nichts setzt
   loadGameModule('js/questSystem.js');
   return { qs: globalThis.window.questSystem, story };
 }
@@ -61,6 +62,8 @@ test('Akt 1: erst die Rettung, dann das Buendel, dann das Ratsdokument', () => {
 
 test('Das versiegelte Archiv kommt nach dem Wiedersehen, nicht nach dem Konvoi', () => {
   const { qs } = system(3);
+  // b512: das Archiv wird erst ab erreichter Tiefe 12 angeboten.
+  globalThis.window.Persistence = { getMaxDepth: () => 12 };
   stand(qs, { espionage_convoy: 'completed' });
   assert.ok(angebot(qs, 'harren').indexOf('espionage_archive') < 0, 'das Archiv kommt vor dem Wiedersehen');
   qs.setFlag('elara_ist_lene', true);

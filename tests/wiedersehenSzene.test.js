@@ -24,6 +24,8 @@ before(async () => {
   // Die Prolog-Karte eines frischen Spiels schliessen, falls sie offen ist.
   H.run(`(function () { var sc = ${HUB}; var k = sc.children.getByName('aktwechsel');
     if (k) { sc.input.keyboard.emit('keydown-ESC'); } sc._dialogOpen = false; })()`);
+  // b512: Harrens Archiv-Auftrag wird erst ab erreichter Tiefe 12 angeboten.
+  H.run(`(window.SlotStorage || localStorage).setItem('demonfall_maxDepth', '12')`);
   H.step(5);
 });
 after(async () => { if (H) await H.shutdown(); });

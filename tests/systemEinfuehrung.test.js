@@ -24,7 +24,8 @@ function frisch() {
   globalThis.window.DUNGEON_DEPTH = 99;
   // Stufe und Laufzaehler offen; die Sperren selbst pruefen eigene Tests.
   globalThis.window.playerLevel = 5;
-  globalThis.window.Persistence = { getMaxDepth: () => 3, hasSave: () => false };
+  // Tief genug fuer alle Angebotstiefen (b512: Einfuehrungen bis Tiefe 11).
+  globalThis.window.Persistence = { getMaxDepth: () => 30, hasSave: () => false };
   loadGameModule('js/questSystem.js');
   return globalThis.window.questSystem;
 }
@@ -41,7 +42,8 @@ beforeEach(() => { resetStore(); });
  */
 const EINFUEHRUNGEN = [
   { ziel: 'upgrade', quest: 'einfuehrung_schmiede', npc: 'branka', vorher: [] },
-  { ziel: 'edikt', quest: 'einfuehrung_presse', npc: 'thom', vorher: [] },
+  // b512: die Presse kommt nach Harrens Auftrag (Tiefe 4).
+  { ziel: 'edikt', quest: 'einfuehrung_presse', npc: 'thom', vorher: ['aldric_patrol', 'harren_daughter_investigation'] },
   { ziel: 'markt', quest: 'einfuehrung_markt', npc: 'mara', vorher: [] },
   // Zwei Ziele, in dieser Reihenfolge: erst der Punkt, dann die Taste.
   { ziel: 'talent', quest: 'einfuehrung_talente', npc: 'aldric', vorher: [], danach: ['loadout'] },
@@ -259,7 +261,7 @@ test('"Deine Akte" kommt nicht vor Aldrics erstem Auftrag', () => {
   assert.strictEqual(qs.getAvailableQuests('aldric').some((q) => q.id === 'einfuehrung_akte'), false);
 });
 
-test('Brankas Truhen-Auftrag kommt erst nach dem ersten ganz durchgespielten Lauf', () => {
+test('Brankas Truhen-Auftrag kommt erst ab erreichter Tiefe 7 (b512)', () => {
   const qs = frisch();
   let tiefe = 1;
   globalThis.window.Persistence = { getMaxDepth: () => tiefe, hasSave: () => false };
@@ -267,8 +269,10 @@ test('Brankas Truhen-Auftrag kommt erst nach dem ersten ganz durchgespielten Lau
   durchwinken(qs, 'einfuehrung_schmiede');
   const angeboten = () => qs.getAvailableQuests('branka').some((q) => q.id === 'einfuehrung_truhe');
   assert.strictEqual(angeboten(), false, 'vor dem ersten abgeschlossenen Lauf angeboten');
-  tiefe = 2;   // RunDepth.tryCompleteRun hebt die Grenze beim ersten Abschluss
-  assert.strictEqual(angeboten(), true, 'nach dem ersten Lauf nicht angeboten');
+  tiefe = 6;   // je abgeschlossener Lauf eine Tiefe (RunDepth.tryCompleteRun)
+  assert.strictEqual(angeboten(), false, 'schon auf Tiefe 6 angeboten');
+  tiefe = 7;
+  assert.strictEqual(angeboten(), true, 'auf Tiefe 7 nicht angeboten');
 });
 
 test('Brankas Truhen-Auftrag haengt an ihrer Schmiede-Einfuehrung', () => {

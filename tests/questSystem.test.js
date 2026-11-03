@@ -167,17 +167,20 @@ test('feature 050: Q1 completion unlocks Q2/Q3/Q4/Q5 simultaneously', () => {
   qs.updateQuestProgress('fetch', 'journal_fragment', 1);
   assert.strictEqual(qs.isQuestReadyToComplete('harren_daughter_investigation'), true);
   qs.completeQuest('harren_daughter_investigation');
-  // The three faction quests are available right away.
-  const map = {
-    aldric: 'magistrat_verification',
-    klerus_priester: 'klerus_purification',
-    stadtwache: 'garde_patrol_expansion'
-  };
-  Object.keys(map).forEach(function (npc) {
-    var avail = qs.getAvailableQuests(npc) || [];
-    assert.ok(avail.find(function (q) { return q.id === map[npc]; }),
-      npc + ' must offer ' + map[npc] + ' after Q1 done');
-  });
+  // b512: die drei Fraktionsauftraege kommen als Kette, je einer pro Besuch:
+  // Magistrat -> Garde -> Klerus.
+  const bietet = (npc, id) => (qs.getAvailableQuests(npc) || []).some(function (q) { return q.id === id; });
+  assert.ok(bietet('aldric', 'magistrat_verification'), 'aldric must offer magistrat_verification after Q1 done');
+  assert.ok(!bietet('stadtwache', 'garde_patrol_expansion'), 'Garde schon vor dem Magistrat');
+  qs.acceptQuest('magistrat_verification');
+  qs.updateQuestProgress('fetch', 'verification_seal', 1);
+  qs.completeQuest('magistrat_verification');
+  assert.ok(bietet('stadtwache', 'garde_patrol_expansion'), 'stadtwache must offer garde_patrol_expansion after Magistrat');
+  assert.ok(!bietet('klerus_priester', 'klerus_purification'), 'Klerus schon vor der Garde');
+  qs.acceptQuest('garde_patrol_expansion');
+  qs.updateQuestProgress('kill', 'enemy', 10);
+  qs.completeQuest('garde_patrol_expansion');
+  assert.ok(bietet('klerus_priester', 'klerus_purification'), 'klerus_priester must offer klerus_purification after Garde');
   // v6.1: Elara erst nach der Rettung (elaraMet), und zuerst das Buendel.
   const elaraIds = () => (qs.getAvailableQuests('elara') || []).map((q) => q.id);
   assert.deepStrictEqual(elaraIds().filter((id) => id === 'resistance_fetch_01' || id === 'widerstand_proof'), [],
@@ -318,10 +321,14 @@ test('feature 050: legacy prerequisites patched — branka_doubt + harren_rescue
   // getAvailableQuests for branka_doubt (requiredAct: 2, prerequisites: [])
   // and harren_rescue (requiredAct: 5, prerequisites: ['harren_daughter_investigation']).
   // The freshSystem stub returns getCurrentActIndex=99 so act-gating passes.
-  // branka_doubt should be available immediately (empty prereqs now).
-  var brankaAvail = qs.getAvailableQuests('branka') || [];
-  assert.ok(brankaAvail.find(function (q) { return q.id === 'branka_doubt'; }),
-    'branka_doubt must be offered after prerequisite patch (no longer needs branka_armor)');
+  // b512: branka_doubt haengt an der Beschlagnahme (council_seizure), nicht
+  // mehr an branka_armor.
+  const zweifel = () => (qs.getAvailableQuests('branka') || []).some(function (q) { return q.id === 'branka_doubt'; });
+  assert.ok(!zweifel(), 'branka_doubt schon vor der Beschlagnahme');
+  qs.acceptQuest('council_seizure');
+  qs.updateQuestProgress('fetch', 'seized_writings', 3);
+  assert.strictEqual(qs.completeQuest('council_seizure'), true);
+  assert.ok(zweifel(), 'branka_doubt must be offered after council_seizure');
 });
 
 test('feature 050: loadQuestSaveData silently drops unknown legacy quest IDs', () => {

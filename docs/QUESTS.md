@@ -1,6 +1,6 @@
 # Quest-Übersicht — Fogreach
 
-_Quest-Daten automatisch generiert aus_ `js/questSystem.js` _(QUEST_DEFINITIONS) — 51 Quests._  
+_Quest-Daten automatisch generiert aus_ `js/questSystem.js` _(QUEST_DEFINITIONS) — 58 Quests._  
 _Neu erzeugen:_ `node tools/genQuestDoc.js`
 
 ---
@@ -157,7 +157,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Der erste Schliff
 
-`einfuehrung_schmiede` · **NPC:** Schmiedemeisterin Branka · **Kette:** 1
+`einfuehrung_schmiede` · **NPC:** Schmiedemeisterin Branka · **Kette:** 1 · **Angebot ab Tiefe 5**
 
 > Geh in die Schmiede und baue dort an der Werkbank ein Ausrüstungsstück aus.
 
@@ -184,12 +184,12 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Eine Zeile, die bleibt
 
-`einfuehrung_presse` · **NPC:** Setzer Thom · **Kette:** 1
+`einfuehrung_presse` · **NPC:** Setzer Thom · **Kette:** 1 · **Angebot ab Tiefe 4**
 
 > Geh in die Druckerei und lass Setzer Thom dort ein Edikt drucken.
 
 - **Ziel:** `system` → `edikt` ×1
-- **Vorbedingung:** Säuberung der Keller
+- **Vorbedingung:** Die verschwundene Tochter
 - **Belohnung:** 10 XP (fest, Einführung — wächst nicht mit dem Stufenbedarf) · 2 Druckblätter
 
 **Angebot**
@@ -211,7 +211,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Was unter dem Tisch liegt
 
-`einfuehrung_markt` · **NPC:** Späherin Mara · **Kette:** 1
+`einfuehrung_markt` · **NPC:** Späherin Mara · **Kette:** 1 · **Angebot ab Tiefe 6**
 
 > Kauf Mara auf dem Schwarzmarkt etwas ab.
 
@@ -238,7 +238,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Wofür du taugst
 
-`einfuehrung_talente` · **NPC:** Ratsherr Aldric · **Kette:** 1
+`einfuehrung_talente` · **NPC:** Ratsherr Aldric · **Kette:** 1 · **Angebot ab Tiefe 2**
 
 > Setz einen Punkt im Talentbaum (T) und leg die neue Fähigkeit im Loadout (K) auf eine Taste.
 
@@ -267,7 +267,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Deine Akte
 
-`einfuehrung_akte` · **NPC:** Ratsherr Aldric · **Kette:** 1
+`einfuehrung_akte` · **NPC:** Ratsherr Aldric · **Kette:** 1 · **Angebot ab Tiefe 3**
 
 > Sieh Dir Deine Charakterwerte an (C oder Dein Porträt oben links).
 
@@ -398,7 +398,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Was sich lohnt aufzuheben
 
-`einfuehrung_truhe` · **NPC:** Schmiedemeisterin Branka · **Kette:** 2
+`einfuehrung_truhe` · **NPC:** Schmiedemeisterin Branka · **Kette:** 2 · **Angebot ab Tiefe 7**
 
 > Leg in der Truhe unter der Schmiede einen Gegenstand ab.
 
@@ -425,7 +425,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Was die Mauern wissen
 
-`einfuehrung_wissen` · **NPC:** Schmiedemeisterin Branka · **Kette:** 2
+`einfuehrung_wissen` · **NPC:** Schmiedemeisterin Branka · **Kette:** 2 · **Angebot ab Tiefe 8**
 
 > Bind bei Branka in der Archivschmiede ein Erinnerungsfragment in Metall (Wissensbaum).
 
@@ -452,7 +452,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Der Alte mit dem Karren
 
-`einfuehrung_amulett` · **NPC:** Späherin Mara · **Kette:** 2
+`einfuehrung_amulett` · **NPC:** Späherin Mara · **Kette:** 2 · **Angebot ab Tiefe 11**
 
 > Kauf dem wandernden Händler in der Tiefe etwas ab.
 
@@ -464,7 +464,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 > Da unten läuft ein Alter mit einem Karren herum. Frag mich nicht, wie er hineinkommt — ich weiss es nicht, und ich will es nicht wissen.
 > 
-> Kauf ihm etwas ab. Irgendetwas. Er führt Zeug, das über meinen Tisch nie gehen würde, und tiefer unten hängen Amulette an seinem Karren. Ich will nur, dass Du einmal bei ihm gestanden hast.
+> Kauf ihm etwas ab. Irgendetwas. Er führt Zeug, das über meinen Tisch nie gehen würde, und an seinem Karren hängen jetzt Amulette. Ich will nur, dass Du einmal bei ihm gestanden hast.
 
 **Unterwegs**
 
@@ -474,7 +474,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 > (Sie betrachtet es aus sicherem Abstand.) Du hast also bei ihm gekauft.
 > 
-> Geh wieder hin, wenn Du tiefer kommst. Was er dann führt, ändert einen ganzen Lauf — und was es Dir nimmt, merkst Du meistens später.
+> Geh wieder hin, wenn er Dir unten über den Weg läuft. Ein Amulett von seinem Karren ändert einen ganzen Lauf — und was es Dir nimmt, merkst Du meistens später.
 
 
 ## Aushang: Zweimal hinab
@@ -672,7 +672,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 > Reinige die unteren Kammern des Rathauskellers — besiege 3 Elite-Gegner. Die Ketzer-Anführer lauern erst ab Tiefe 3.
 
 - **Ziel:** `kill` → `elite_enemy` ×3
-- **Vorbedingung:** Die verschwundene Tochter
+- **Vorbedingung:** Patrouillen-Erweiterung
 - **Belohnung:** mind. 90 XP (bzw. 70 % des Stufenbedarfs, Story)
 
 **Angebot**
@@ -699,7 +699,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 > Demonstriere Kraft für die nächsten Patrouillen — besiege 10 Störer.
 
 - **Ziel:** `kill` → `enemy` ×10
-- **Vorbedingung:** Die verschwundene Tochter
+- **Vorbedingung:** Verifikation des Magistrats
 - **Belohnung:** mind. 75 XP (bzw. 70 % des Stufenbedarfs, Story)
 
 **Angebot**
@@ -776,7 +776,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 > Die Stadt stimmt ab: drei Edikte, eines gewinnt. Lass sie bei Thom drucken und häng sie an die Anschlagtafeln vor dem Rathaus.
 
 - **Ziel:** `observe` → `edikte_gedruckt` ×1; `observe` → `edikte_plakatiert` ×1
-- **Vorbedingung:** Die verschwundene Tochter
+- **Vorbedingung:** Patrouillen-Erweiterung **+** Eine Zeile, die bleibt
 - **Belohnung:** mind. 60 XP (bzw. 70 % des Stufenbedarfs, Story)
 
 **Angebot**
@@ -823,7 +823,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Elaras Geheimnis
 
-`elara_meeting` · **NPC:** Elara · **Kette:** 1
+`elara_meeting` · **NPC:** Elara · **Kette:** 1 · **Angebot ab Tiefe 9**
 
 > Finde 2 geheime Dokumente, die Elara versteckt hat.
 
@@ -885,7 +885,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 > Besiege 5 Elite-Gegner, um Beweise für Brankas Verdacht zu finden.
 
 - **Ziel:** `kill` → `elite_enemy` ×5
-- **Vorbedingung:** keine
+- **Vorbedingung:** Beschlagnahme
 - **Belohnung:** mind. 80 XP (bzw. 70 % des Stufenbedarfs, Story)
 
 **Angebot**
@@ -905,7 +905,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Überwachung
 
-`council_surveillance` · **NPC:** Ratsherr Aldric · **Kette:** 2
+`council_surveillance` · **NPC:** Ratsherr Aldric · **Kette:** 2 · **Angebot ab Tiefe 8**
 
 > Überwache die Kellergänge unter dem Rathaus für den Rat — durchsuche 3 Kammern.
 
@@ -932,7 +932,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Der Kettenmeister
 
-`mara_warning` · **NPC:** Späherin Mara · **Kette:** 2
+`mara_warning` · **NPC:** Späherin Mara · **Kette:** 2 · **Angebot ab Tiefe 9**
 
 > Besiege den Kettenmeister auf Tiefe 10, der den Weg zu den Siegelkammern des Rats bewacht.
 
@@ -960,7 +960,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 > Bring Branka 2 Verhörprotokolle aus den Kellern.
 
 - **Ziel:** `fetch` → `interrogation_record` ×2
-- **Vorbedingung:** Die Späherin
+- **Vorbedingung:** Zweifel der Schmiedin
 - **Belohnung:** mind. 80 XP (bzw. 70 % des Stufenbedarfs, Story) · 1 Wissens-Fragment(e)
 
 **Angebot**
@@ -978,9 +978,9 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Reinigung eines Bezirks
 
-`klerus_district_purge` · **NPC:** Klerus-Priester · **Kette:** 3 · **Angebot ab Tiefe 7** · **Fortschritt erst ab Tiefe 7**
+`klerus_district_purge` · **NPC:** Klerus-Priester · **Kette:** 3 · **Angebot ab Tiefe 11** · **Fortschritt erst ab Tiefe 11**
 
-> Reinige einen "befallenen" Bezirk — besiege 8 Gegner ab Tiefe 7 und bring die Namen.
+> Reinige einen "befallenen" Bezirk — besiege 8 Gegner ab Tiefe 11 und bring die Namen.
 
 - **Ziel:** `kill` → `enemy` ×8
 - **Vorbedingung:** keine
@@ -992,7 +992,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 **Unterwegs**
 
-> Noch nicht gereinigt. Die Befallenen zeigen sich in der Tiefe, ab Tiefe 7.
+> Noch nicht gereinigt. Die Befallenen zeigen sich in der Tiefe, ab Tiefe 11.
 
 **Abschluss**
 
@@ -1035,7 +1035,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Verbotene Wahrheiten
 
-`thom_truth` · **NPC:** Setzer Thom · **Kette:** 1 · **Fortschritt erst ab Tiefe 14**
+`thom_truth` · **NPC:** Setzer Thom · **Kette:** 1 · **Angebot ab Tiefe 14** · **Fortschritt erst ab Tiefe 14**
 
 > Finde 5 Druckplatten mit den verbotenen Wahrheiten über den Rat (ab Tiefe 14).
 
@@ -1064,21 +1064,21 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Ein Hund namens Bruno
 
-`buerger_hund` · **NPC:** buerger · **Kette:** 1 · **Fortschritt erst ab Tiefe 15**
+`buerger_hund` · **NPC:** buerger · **Kette:** 1 · **Angebot ab Tiefe 13** · **Fortschritt erst ab Tiefe 13**
 
-> Finde Brunos Halsband in den Kanälen unter der Stadt (ab Tiefe 15).
+> Finde Brunos Halsband in den Kanälen unter der Stadt (ab Tiefe 13).
 
 - **Ziel:** `fetch` → `hundehalsband` ×1
 - **Vorbedingung:** keine
-- **Belohnung:** mind. 80 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 40 Gold (wächst mit der Tiefe ab 15)
+- **Belohnung:** mind. 80 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 40 Gold (wächst mit der Tiefe ab 13)
 
 **Angebot**
 
-> Du gehst doch da runter. Mein Hund, Bruno, ist mir vor einer Woche in die Kanäle gelaufen. Er jagt Ratten, er kann nicht anders. Wenn Du tief unten, ab Tiefe 15, ein Halsband mit einer Messingmarke findest, dann bring es mir. Dann weiss ich wenigstens Bescheid.
+> Du gehst doch da runter. Mein Hund, Bruno, ist mir vor einer Woche in die Kanäle gelaufen. Er jagt Ratten, er kann nicht anders. Wenn Du tief unten, ab Tiefe 13, ein Halsband mit einer Messingmarke findest, dann bring es mir. Dann weiss ich wenigstens Bescheid.
 
 **Unterwegs**
 
-> Ein braunes Halsband, Messingmarke, "Bruno" eingeritzt. Tief unten, ab Tiefe 15.
+> Ein braunes Halsband, Messingmarke, "Bruno" eingeritzt. Tief unten, ab Tiefe 13.
 
 **Abschluss**
 
@@ -1087,7 +1087,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Die Ritualkammer
 
-`elara_ritual` · **NPC:** Elara · **Kette:** 2
+`elara_ritual` · **NPC:** Elara · **Kette:** 2 · **Angebot ab Tiefe 19**
 
 > Steige auf Tiefe 20 hinab und besiege den Zeremonienmeister, der die Ritualkammer des Rats hält.
 
@@ -1143,25 +1143,56 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Nachteskorte
 
-`garde_night_escort` · **NPC:** Stadtwache · **Kette:** 3 · **Fortschritt erst ab Tiefe 16**
+`garde_night_escort` · **NPC:** Stadtwache · **Kette:** 3 · **Angebot ab Tiefe 16** · **Fortschritt erst ab Tiefe 16**
 
-> Sichere verdeckt einen nächtlichen Transport — beobachte die Eskorten-Route (ab Tiefe 16).
+> Begleite verkleidet einen Transport des Rats durch die Umschlagstelle, von der Verladung bis zum Schacht (ab Tiefe 16).
 
-- **Ziel:** `observe` → `escort_route` ×1
+- **Ziel:** `observe` → `eskorte_verladung` ×1; `observe` → `eskorte_waage` ×1; `observe` → `eskorte_schacht` ×1
 - **Vorbedingung:** keine
 - **Belohnung:** mind. 90 XP (bzw. 40 % des Stufenbedarfs, Neben)
 
 **Angebot**
 
-> Heute Nacht geht ein Transport. Die Route führt tief hinab, ab Tiefe 16. Sicher sie, frag nicht, was drin ist. Loyalität zahlt sich aus.
+> Heute Nacht geht ein Transport hinab, ab Tiefe 16. Du gehst in Ratsuniform mit, von der Verladung bis zum Schacht, und bleibst neben dem Karren. Frag nicht, was drin ist. Frag nicht, wer trägt. (Er klopft auf seine Börse.) Loyalität zahlt sich aus. Meistens.
 
 **Unterwegs**
 
-> Der Transport rollt erst ab Tiefe 16. Halt die Route im Auge, bleib unauffällig.
+> Ab Tiefe 16, in der Umschlagstelle. Bleib beim Karren, von der Verladung bis zum Schacht. Wer zurückbleibt, fällt auf.
 
 **Abschluss**
 
-> Die Route ist sicher. (Und in deinem Kopf, Weg, Zeit und Fracht, bereit für Mara. Es waren keine Waffen. Es waren dieselben Phiolen wie im Konvoi.)
+> Verzeichnet und abgeliefert? Gut. (Er zählt Dir die Münzen hin.) Siehst Du, Loyalität zahlt sich aus.
+> 
+> (Was Du ihm nicht sagst: Jede Phiole trug einen Namen, und an der Waage liest ein Schreiber sie ab wie Ware. Einen davon kanntest Du. Die Träger am Schacht waren Geleerte, und keiner von ihnen kam wieder herauf. Das alles trägst Du zu Mara.)
+
+
+## Ein Edikt, das keiner bestellt hat
+
+`thom_gegenedikt` · **NPC:** Setzer Thom · **Kette:** 3 · **Angebot ab Tiefe 16**
+
+> Lass an der Presse ein riskantes Edikt drucken. Thom setzt es im Satz des Rats.
+
+- **Ziel:** `system` → `edikt_riskant` ×1
+- **Vorbedingung:** Verbotene Wahrheiten
+- **Belohnung:** mind. 110 XP (bzw. 40 % des Stufenbedarfs, Neben) · 3 Druckblätter
+
+**Angebot**
+
+> Der Rat druckt jede Woche, was die Stadt denken soll. Ich will einmal etwas drucken, das er nicht bestellt hat, und zwar so, dass es aussieht, als hätte er es. Dieselben Lettern, derselbe Satz, derselbe Rand.
+> 
+> (Er hebt einen Bogen hoch.) Ich habe nur eine Sorte Papier. Seine. Also bekommt die Stadt ein Gegen-Edikt im Gewand des Rats.
+> 
+> Such Dir an der Presse eines der riskanten Edikte aus. Es kostet Dich Druckblätter und Aufmerksamkeit beim Rat. Das ist der Preis.
+
+**Unterwegs**
+
+> Noch hängt nichts Riskantes. Such Dir an der Presse eines der riskanten Edikte aus, ich setze es im Satz des Rats.
+
+**Abschluss**
+
+> (Thom hält den frischen Bogen neben einen echten des Rats. Kein Unterschied, bis auf das, was darauf steht.)
+> 
+> Die Garde hat heute Morgen zwei davon abgerissen und vor drei anderen salutiert, weil sie nicht liest, was sie bewacht. (Er grinst.) Ein Schreiber im Rathaus sucht jetzt den Mann, der es bestellt hat. Er wird lange suchen.
 
 
 ## Die verseuchte Kammer
@@ -1193,7 +1224,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 ## Wer du warst
 
-`who_you_were` · **NPC:** Schmiedemeisterin Branka · **Kette:** 4 · **Fortschritt erst ab Tiefe 17**
+`who_you_were` · **NPC:** Schmiedemeisterin Branka · **Kette:** 4 · **Angebot ab Tiefe 17** · **Fortschritt erst ab Tiefe 17**
 
 > Bring Branka drei Splitter Deiner Phiole aus der Tiefe (ab Tiefe 17).
 
@@ -1247,6 +1278,70 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 > Sie hat die Meldung weggesteckt. Eine wahre Meldung, und niemand wird sie je lesen. "Nicht alles hilft", hat sie gesagt. Du schiebst den Gedanken beiseite. Noch.
 
 
+## Die schweigenden Brüder
+
+`klerus_brueder` · **NPC:** Klerus-Priester · **Kette:** 4 · **Angebot ab Tiefe 15** · **Fortschritt erst ab Tiefe 15**
+
+> Besiege 3 Beschwörer in der Tiefe (ab Tiefe 15). Der Klerus nennt sie vom Licht abgefallene Brüder.
+
+- **Ziel:** `kill` → `typ_13` ×3
+- **Vorbedingung:** Reinigung eines Bezirks (dazu eine Bedingung im Code, `gate`)
+- **Belohnung:** mind. 120 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 60 Gold (wächst mit der Tiefe ab 15)
+
+**Angebot**
+
+> Drei unserer Brüder sind vom Licht abgefallen. Sie sind hinabgestiegen und rufen dort unten, was kein Gebet je rufen sollte. Der Klerus spricht nicht über sie, und Du wirst es auch nicht tun.
+> 
+> Ab Tiefe 15 findest Du sie, Beschwörer nennt man sie jetzt. Bring mir ihre Siegelringe. Das Licht vergisst nicht, wer ihm dient.
+
+**Unterwegs**
+
+> Die Abgefallenen rufen noch. Beschwörer, ab Tiefe 15. Bring mir ihre Ringe.
+
+**Abschluss**
+
+> (Der Priester sieht auf Deine Hand, nicht in Dein Gesicht.) Die Ringe.
+> 
+> (Bei einem der Brüder lag ein Zettel, eng beschrieben, die Tinte verlaufen: "Die Glut wird schwach. Wer erneuert sie?" Du hast ihn eingesteckt. Einer der drei Ringe ist schwerer als die anderen und trägt das Zeichen des Hochpriesters.)
+
+**Entscheidung beim Abgeben**
+
+- _Alle Ringe abgeben_ (`klerus_ringe_abgeliefert`): PRIESTER: Das Licht dankt Dir. (Er lässt die Ringe in eine Lade fallen und schliesst ab. Von den drei Brüdern spricht danach niemand mehr.)
+- _Den schweren Ring Thom zustecken_ (`klerus_ring_thom`): (Du legst zwei Ringe auf den Tisch. Den schweren behältst Du in der Faust.) PRIESTER: Zwei? (Er zählt nach.) Der Dritte trug keinen, sagst Du. Das Licht wird ihn finden. (Am Abend legst Du den Ring auf Thoms Setzkasten. Er dreht ihn lange unter der Lampe und sagt nichts. Dann verschwindet der Ring in einer Lade.)
+
+
+## Ein Name auf dem Helm
+
+`wache_helm` · **NPC:** Stadtwache · **Kette:** 4 · **Angebot ab Tiefe 24** · **Fortschritt erst ab Tiefe 24**
+
+> Bring dem Hauptmann der Stadtwache die Helmmarke seines Sohnes. Einer der Anführer in der Tiefe trägt sie (ab Tiefe 24).
+
+- **Ziel:** `fetch` → `helmmarke` ×1
+- **Vorbedingung:** keine (dazu eine Bedingung im Code, `gate`)
+- **Belohnung:** mind. 150 XP (bzw. 40 % des Stufenbedarfs, Neben) · mind. 70 Gold (wächst mit der Tiefe ab 24)
+
+**Angebot**
+
+> (Er sieht sich um, bevor er spricht.) Ich habe Befehl, Dich festzunehmen. Ich habe auch einen Sohn. Er ging mit der Kettenwache hinab, vor zwei Wintern. Er hält den Weg, schreiben sie mir. Jeden Monat derselbe Satz.
+> 
+> Jeder Wächter trägt eine Marke am Helm, mit seinem Namen. Wenn Du unten einem begegnest, der führt, ab Tiefe 24, dann sieh nach. Ich will wissen, was er hält.
+
+**Unterwegs**
+
+> Eine Messingmarke am Helm, mit seinem Namen. Die Anführer da unten tragen sie, ab Tiefe 24.
+
+**Abschluss**
+
+> (Er nimmt die Marke und reibt mit dem Daumen über den Namen, bis er glänzt.)
+> 
+> (Der Mann, der sie trug, war ein Geleerter. Er hat sich kaum gewehrt. Er stand nur da, mitten im Gang, als hielte er tatsächlich etwas.)
+
+**Entscheidung beim Abgeben**
+
+- _Die Wahrheit sagen_ (`wachtmeister_wahrheit`): (Du sagst ihm, wie es war. Dass er leer war. Dass er sich kaum gewehrt hat.) HAUPTMANN: (lange nichts) Sie schreiben mir jeden Monat, er halte den Weg. (Er steckt die Marke ein.) Dann haben sie ihn mir genommen, lange bevor Du hinunterkamst.
+- _"Er ist im Dienst gefallen."_ (`wachtmeister_trost`): HAUPTMANN: Im Dienst. (Er nickt, mehrmals.) Dann hat er gehalten, was er halten sollte. (Er richtet sich auf, die Hand am Helm.) Danke, Archivschmied. Die Garde vergisst ihre Toten nicht.
+
+
 ## Der Bruch
 
 `bruch_confrontation` · **NPC:** Schmiedemeisterin Branka · **Kette:** 5 · **Angebot ab Tiefe 20** · **Fortschritt erst ab Tiefe 20**
@@ -1272,9 +1367,63 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 > (Branka zieht Dir eine Kapuze über und führt Dich durch die Kanäle, bis zu einem Spalt in der Kellerwand.) Elara wartet dort unten. Bei ihr findet Dich keiner. Geh. Ich halte die Schmiede offen.
 
 
+## Die Hand am Schloss
+
+`elara_schloesser` · **NPC:** Elara · **Kette:** 5 · **Angebot ab Tiefe 21** · **Fortschritt erst ab Tiefe 21**
+
+> Löse in der Tiefe 3 Kettenschlösser vollständig (ab Tiefe 21), ohne eines zu brechen.
+
+- **Ziel:** `observe` → `schloss_geloest` ×3
+- **Vorbedingung:** Die Ritualkammer (dazu eine Bedingung im Code, `gate`)
+- **Belohnung:** mind. 160 XP (bzw. 70 % des Stufenbedarfs, Story)
+
+**Angebot**
+
+> Die Esse hält eine Bindung wie ein Schloss. Löse drei, ohne eins zu brechen. Deine Hände sollen die Drehung kennen, bevor es ernst wird.
+> 
+> Unten hängen genug Kettenschlösser, ab Tiefe 21. Jeder Ring muss sitzen.
+
+**Unterwegs**
+
+> Drei Schlösser, ganz gelöst, ab Tiefe 21. Ein halbes zählt nicht. Deine Hände sollen es wissen, nicht nur Dein Kopf.
+
+**Abschluss**
+
+> (Sie nimmt Deine Hand und dreht sie einmal im Gelenk, langsam, als prüfe sie ein Werkzeug.)
+> 
+> Genau so. Am Ende ist es dieselbe Drehung, nur grösser.
+
+
+## Die Schmiede halten
+
+`branka_schmiede_halten` · **NPC:** Schmiedemeisterin Branka · **Kette:** 6 · **Angebot ab Tiefe 27** · **Fortschritt erst ab Tiefe 27**
+
+> Verteidige in 2 Räumen den Altar, bis die Zeit um ist (ab Tiefe 27). Dort kommt die Kettenwache herauf.
+
+- **Ziel:** `raum` → `defend` ×2
+- **Vorbedingung:** Der Bruch
+- **Belohnung:** mind. 170 XP (bzw. 40 % des Stufenbedarfs, Neben) · **Brankas Schmiedestück** (selten, auf Spielerstufe gewürfelt)
+
+**Angebot**
+
+> Seit dem Bruch sucht die Kettenwache meine Schmiede. Oben findet sie nichts, dafür sorge ich. Aber sie kommt von unten, durch die alten Zugänge, und die kann ich nicht halten, wenn ich am Amboss stehe.
+> 
+> Wo unten ein Altar steht, liegt ein Zugang darüber. Halt zwei davon für mich, ab Tiefe 27, bis keiner mehr kommt. Dann schmiede ich Dir etwas, das sich lohnt.
+
+**Unterwegs**
+
+> Zwei Altäre, ab Tiefe 27. Halt durch, bis keiner mehr kommt. Oben läuft der Blasebalg.
+
+**Abschluss**
+
+> (Branka legt Dir ein Stück auf den Amboss, noch warm.)
+> 
+> Die Zugänge sind still. Die Kettenwache sucht jetzt woanders, und ich hatte zwei Nächte Ruhe. Das hier ist daraus geworden. Trag es, und komm wieder herauf.
+
+
 ## Das versiegelte Archiv
 
-`espionage_archive` · **NPC:** Bürgermeister Harren · **Kette:** 7 · **Fortschritt erst ab Tiefe 12**
+`espionage_archive` · **NPC:** Bürgermeister Harren · **Kette:** 7 · **Angebot ab Tiefe 12** · **Fortschritt erst ab Tiefe 12**
 
 > Infiltriere verkleidet das Archiv des Rats (ab Tiefe 12), höre die Schreiber ab und birg den versiegelten Akt.
 
@@ -1299,6 +1448,33 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 > Du hast den Akt. "Vermisst, Fall geschlossen" — das Verschwinden seiner Tochter, sauber abgelegt, Datum, Siegel, Unterschrift. Und das Datum liegt vor dem Tag, an dem sie verschwand.
 > 
 > (Harren liest es zweimal.) Sie haben es geplant. Jemand im Rat hat Lenes Verschwinden abgeheftet, bevor es geschah.
+
+
+## Kreide an der Zellenwand
+
+`mara_kreide` · **NPC:** Späherin Mara · **Kette:** 7 · **Angebot ab Tiefe 18** · **Fortschritt erst ab Tiefe 18**
+
+> Lies 3 Kreidezeichen in der Tiefe (ab Tiefe 18). Maras verhaftete Leute haben sie an die Wände geschrieben.
+
+- **Ziel:** `observe` → `kreidezeichen` ×3
+- **Vorbedingung:** Der Kettenmeister (dazu eine Bedingung im Code, `gate`)
+- **Belohnung:** mind. 130 XP (bzw. 40 % des Stufenbedarfs, Neben) · 1 Wissens-Fragment(e)
+
+**Angebot**
+
+> Die Leute, die sie mir geholt haben, sassen unten in Zellen, bevor man sie weiterbrachte. Wir haben es immer so gehalten: Wer eingesperrt wird, schreibt an die Wand, was er weiss. Mit Kreide, klein, unten am Stein.
+> 
+> Ab Tiefe 18 liegen die Zellen. Lies, was sie geschrieben haben. Drei Zeichen, mehr verlange ich nicht. Ich muss wissen, was sie wussten.
+
+**Unterwegs**
+
+> Die Zeichen sind klein, unten am Stein, abseits der Wege. Ab Tiefe 18. Lies drei davon.
+
+**Abschluss**
+
+> (Mara lässt Dich jedes Zeichen zweimal aufsagen.) Nur sieben. (Sie zählt an den Fingern ab und hört bei sechs auf.) Sieben wussten den Treffpunkt, und einer davon hat geredet.
+> 
+> Sag das niemandem. Auch nicht denen, denen Du traust.
 
 
 ## Der Maulwurf
@@ -1403,6 +1579,38 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 > (Thom wischt sich die Hände am Kittel ab, als Du hereinkommst. Er fragt nicht, wie es unten war. Er sieht es Dir an.)
 > 
 > Die Esse ist zerbrochen. Draussen bleiben die Leute auf der Strasse stehen und sagen Namen, die sie seit Jahren nicht mehr gesagt haben. (Er klopft auf die Presse.) Jetzt glauben sie, was sie lesen, weil sie es selbst wieder wissen. Die Platten liegen bereit.
+
+
+## Die letzte Fuhre
+
+`mara_letzte_fuhre` · **NPC:** Späherin Mara · **Kette:** 2 · **Angebot ab Tiefe 28** · **Fortschritt erst ab Tiefe 28**
+
+> Erlege in 2 Räumen den Rudelführer (ab Tiefe 28). Einer von ihnen trägt die Phiolen der letzten Fuhre.
+
+- **Ziel:** `raum` → `hunt` ×2
+- **Vorbedingung:** Was der Rauch behält
+- **Belohnung:** mind. 180 XP (bzw. 40 % des Stufenbedarfs, Neben) · 1 Wissens-Fragment(e)
+
+**Angebot**
+
+> Die Esse ist hungrig, seit Elara unten ist. Jede Nacht geht eine Fuhre hinab, mehr als früher. Die von gestern ist noch nicht verbrannt. Die Phiolen liegen unten, ab Tiefe 28, und ein Rudelführer trägt sie mit sich herum.
+> 
+> Jag ihn. Erwischst Du den Falschen, jag den nächsten. Was in den Phiolen ist, gehört nicht der Esse.
+
+**Unterwegs**
+
+> Die Rudelführer halten die Gänge ab Tiefe 28. Zwei musst Du stellen, einer von ihnen trägt die Fuhre.
+
+**Abschluss**
+
+> (Du legst die Phiolen vor Mara auf den Tisch, ein Dutzend, das Wachs noch warm vom Tragen. Auf jeder steht ein Name.)
+> 
+> Noch nicht verbrannt. (Sie fasst keine an.) Zerschlägst Du sie, kommt heraus, was drin ist, und geht, wohin es will. Branka könnte es binden. Dann gehört es eine Weile dem Metall, aber es geht nichts verloren.
+
+**Entscheidung beim Abgeben**
+
+- _Unten zerschlagen_ (`phiolen_zerschlagen`): (Du trägst sie noch einmal hinab, an den Rand des Nebels, und zerschlägst sie dort, eine nach der anderen. Was darin war, steigt auf. Manches findet zurück. Manches verweht.) MARA: Wenigstens frisst die Esse es nicht.
+- _Zu Branka bringen_ (`phiolen_gebunden`): (Du bringst sie zu Branka. Sie legt sie neben den Amboss, eine nach der anderen, und liest jeden Namen laut.) BRANKA: Ich binde sie. Langsam. Keiner soll halb zurückkommen.
 
 
 ## Die letzte Wache

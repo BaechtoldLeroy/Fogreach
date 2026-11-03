@@ -72,6 +72,8 @@ describe('Im Hub', () => {
 
   test('Akte: Aldric bietet sie erst nach dem ersten Stufenaufstieg an', () => {
     H.run(STAND({ aldric_cleanup: 'completed', aldric_patrol: 'completed', einfuehrung_talente: 'completed' }));
+    // b512: angeboten ab erreichter Tiefe 3.
+    H.run(`(window.SlotStorage || localStorage).setItem('demonfall_maxDepth', '3')`);
     H.run('playerLevel = 1; window.playerLevel = 1');
     const vorher = gespraech('aldric');
     assert.notStrictEqual(vorher.quest, 'einfuehrung_akte', 'auf Stufe 1 angeboten');
@@ -241,12 +243,12 @@ describe('Im Hub', () => {
 
   // --- Truhe ----------------------------------------------------------------
 
-  test('Truhe: Branka bietet sie erst nach dem ersten abgeschlossenen Lauf an', () => {
+  test('Truhe: Branka bietet sie erst ab erreichter Tiefe 7 an (b512)', () => {
     H.run(STAND({ aldric_cleanup: 'completed', einfuehrung_schmiede: 'completed', einfuehrung_wissen: 'completed' }));
-    H.run(`(window.SlotStorage || localStorage).setItem('demonfall_maxDepth', '1')`);
+    H.run(`(window.SlotStorage || localStorage).setItem('demonfall_maxDepth', '6')`);
     const vorher = gespraech('branka');
-    assert.notStrictEqual(vorher.quest, 'einfuehrung_truhe', 'vor dem ersten Lauf angeboten');
-    H.run(`(window.SlotStorage || localStorage).setItem('demonfall_maxDepth', '2')`);
+    assert.notStrictEqual(vorher.quest, 'einfuehrung_truhe', 'schon auf Tiefe 6 angeboten');
+    H.run(`(window.SlotStorage || localStorage).setItem('demonfall_maxDepth', '7')`);
     const nachher = gespraech('branka');
     assert.strictEqual(nachher.quest, 'einfuehrung_truhe', JSON.stringify(nachher));
     assert.match(Array.from(nachher.texte).join('\n'), /Die Truhe unter der Schmiede gehört Dir/);

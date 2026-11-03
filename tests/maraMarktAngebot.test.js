@@ -30,9 +30,12 @@ const angebotBei = (tiefe) => H.run(`(function () {
   return window.questSystem.getAvailableQuests('mara').some(function (d) { return d.id === 'einfuehrung_markt'; });
 })()`);
 
-test('vor Tiefe 4 bietet Mara den Auftrag nicht an, ab Tiefe 4 schon', () => {
+// b512: Der Stand oeffnet auf Tiefe 4, die Einfuehrung kommt aber erst auf
+// Tiefe 7 (eine Einfuehrung je Hub-Besuch, angebotAb).
+test('vor Tiefe 6 bietet Mara den Auftrag nicht an, ab Tiefe 6 schon', () => {
   assert.strictEqual(angebotBei(3), false, 'angeboten, obwohl ihr Stand noch zu ist');
-  assert.strictEqual(angebotBei(4), true, 'ab Tiefe 4 nicht angeboten');
+  assert.strictEqual(angebotBei(5), false, 'schon auf Tiefe 5 angeboten');
+  assert.strictEqual(angebotBei(6), true, 'ab Tiefe 6 nicht angeboten');
 });
 
 test('der Kauf zaehlt auch, wenn der laufende Lauf flach ist', () => {

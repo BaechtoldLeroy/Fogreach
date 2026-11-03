@@ -35,7 +35,7 @@ const D = QS.QUEST_DEFINITIONS;
 const NEU = {
   brett_stoerer: 3, brett_kammern: 4, brett_anfuehrer: 10, brett_welle: 14, brett_aufruf: 16,
   brett_laeufe: 18, brett_zeugen: 22, bruch_confrontation: 20, verseuchte_kammer: 15,
-  elara_blade: 20, elara_second_truth: 20, klerus_district_purge: 7, thom_pamphlets: 27
+  elara_blade: 20, elara_second_truth: 20, klerus_district_purge: 11, thom_pamphlets: 27
 };
 
 /** Stand setzen: alle Auftraege mit requiredAct < von abgeschlossen. */

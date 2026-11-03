@@ -37,7 +37,8 @@ before(async () => {
     var sc = ${hub};
     // Der Einfuehrungs-Splash haengt sonst ueber allem.
     sc.input.keyboard.emit('keydown-ESC', {});
-    (window.SlotStorage || localStorage).setItem('demonfall_maxDepth', '6');
+    // b512: tief genug fuer Maras Karren (11) und Thoms Wahrheit (14).
+    (window.SlotStorage || localStorage).setItem('demonfall_maxDepth', '14');
     // Jede Seite, die gezeigt wird — gleich, wer sie aufruft.
     window.__seiten = [];
     var echt = sc._showDialoguePages;
@@ -276,8 +277,10 @@ function npcStand(npc) {
 });
 
 test('Edikte aushaengen: kein Aldric-Dialog, die Wahl kommt an', () => {
+  // b512: die Kampagne kommt nach Garde und Presse-Einfuehrung.
   stand({ aldric_cleanup: FERTIG, aldric_patrol: FERTIG, harren_daughter_investigation: FERTIG,
-    einfuehrung_talente: FERTIG, magistrat_verification: FERTIG }, 1);
+    einfuehrung_talente: FERTIG, magistrat_verification: FERTIG, garde_patrol_expansion: FERTIG,
+    einfuehrung_presse: FERTIG }, 1);
   zuNpc('aldric');
   assert.strictEqual(H.run(`window.questSystem.getAvailableQuests('aldric')[0].id`), 'faction_campaign');
   taste('E');

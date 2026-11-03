@@ -117,6 +117,9 @@
       rewardTier: 'einfuehrung',
       prerequisites: ['aldric_cleanup'],
       requiredAct: 0,
+      // Taktung (b512): eine Einfuehrung je Hub-Besuch, ueber die erreichte Tiefe.
+      // Erst ab Tiefe 5: dann liegt sicher ein Stueck zum Ausbauen im Gepaeck.
+      angebotAb: 5,
       dialogueOffer: 'Du trägst das, was Du unten gefunden hast, und Du trägst es, wie man ein Werkzeug trägt, das einem fremd ist.\n\nKomm mit in die Schmiede, die Tür gleich neben mir. Leg eines Deiner Stücke auf die Werkbank und drück auf „Ausbauen“ — dann wird es Deins. Diesmal geht es auf mich; danach kostet es Gold und Eisenbrocken, und Du machst es allein.',
       dialogueProgress: 'Du hast es noch nicht gemacht. Geh in die Schmiede, leg ein Stück auf die Werkbank und drück auf „Ausbauen“. Diesmal zahle ich.',
       dialogueComplete: '(Sie dreht es einmal ins Licht.) Siehst Du. Dasselbe Stück, nur nicht mehr dasselbe.\n\nJedes Mal, wenn Du hochkommst, kommst Du hier vorbei. Nicht weil ich das sage, sondern weil Du sonst mit dem runtergehst, was letzte Woche gereicht hat.'
@@ -133,8 +136,10 @@
       ],
       rewards: { xp: 10, druckblaetter: 2 },
       rewardTier: 'einfuehrung',
-      prerequisites: ['aldric_cleanup'],
+      prerequisites: ['harren_daughter_investigation'],
       requiredAct: 0,
+      // Taktung (b512): eine Einfuehrung je Hub-Besuch, ueber die erreichte Tiefe.
+      angebotAb: 4,
       dialogueOffer: 'Der Rat schreibt jede Woche vor, was die Stadt denken soll. Wir können dasselbe — kleiner, aber wir können es.\n\nDu hast Druckblätter dabei, ich sehe sie. Komm rein in die Druckerei, gleich neben mir, und such Dir ein Edikt aus — ich setze es. Es wirkt, solange es hängt, und es kostet Dich Aufmerksamkeit beim Rat. Beides sollst Du einmal gespürt haben, bevor es darauf ankommt.',
       dialogueProgress: 'Noch hängt nichts. Geh in die Druckerei, such Dir ein Edikt aus, ich setze es.',
       dialogueComplete: '(Er wischt sich die Finger am Kittel ab.) Jetzt steht es an jeder Ecke, und irgendwer liest es laut vor.\n\nMerk Dir nur eins: Jede Zeile, die wir drucken, legt der Rat auf seine Waage. Druck nicht mehr, als Du unten wieder gutmachen kannst.'
@@ -153,6 +158,8 @@
       rewardTier: 'einfuehrung',
       prerequisites: ['aldric_cleanup'],
       requiredAct: 0,
+      // Taktung (b512): eine Einfuehrung je Hub-Besuch, ueber die erreichte Tiefe.
+      angebotAb: 6,
       // Angeboten erst, wenn ihr Stand offen ist (Schwarzmarkt ab erreichter
       // Tiefe 4, LootSystem). Vorher stand die Tiefe als Hinweis im Text, und
       // ein minDepth fror den Kauf ein, solange der LAUFENDE Lauf flacher war —
@@ -185,6 +192,8 @@
       rewardTier: 'einfuehrung',
       prerequisites: ['aldric_cleanup'],
       requiredAct: 0,
+      // Taktung (b512): eine Einfuehrung je Hub-Besuch, ueber die erreichte Tiefe.
+      angebotAb: 2,
       dialogueOffer: 'Der Rat führt über jeden Bürger eine Akte, und in Deiner steht ein Wort, das mich stört: unbestimmt.\n\nDas lässt sich ändern. Du sammelst unten Erfahrung, und Erfahrung wird zu Punkten. Setz einen. Wut, Ketten oder Schatten — such es Dir aus. Der Rat schätzt Leute, die sich festlegen.\n\nUnd dann: Ein Werkzeug, das Du nicht griffbereit hast, ist kein Werkzeug. Leg es auf eine Taste.',
       dialogueProgress: 'Noch immer unbestimmt. Öffne den Baum und setz einen Punkt. Welchen, ist Deine Sache.',
       // Wenn der Punkt gesetzt ist, die Faehigkeit aber noch auf keiner Taste liegt.
@@ -208,6 +217,8 @@
       rewardTier: 'einfuehrung',
       prerequisites: ['aldric_cleanup'],
       requiredAct: 0,
+      // Taktung (b512): eine Einfuehrung je Hub-Besuch, ueber die erreichte Tiefe.
+      angebotAb: 3,
       gate: function () { return _spielerStufe() >= 2; },
       dialogueOffer: 'Der Rat führt eine Akte über Dich. Sieh nach, was darin steht.\n\nStärke, Geschick, Vitalität — das ist jetzt aktenkundig. Wer weiss, was über ihn geschrieben steht, kann sich danach richten. Die anderen werden danach gerichtet.',
       dialogueProgress: 'Du hast noch nicht hineingesehen. Die Akte liegt offen — C, oder Dein Porträt oben links.',
@@ -230,6 +241,8 @@
       rewardTier: 'einfuehrung',
       prerequisites: ['einfuehrung_schmiede'],
       requiredAct: 0,
+      // Taktung (b512): eine Einfuehrung je Hub-Besuch, ueber die erreichte Tiefe.
+      angebotAb: 7,
       gate: function () { return _laeufeAbgeschlossen(); },
       dialogueOffer: 'Du kommst mit vollen Taschen hoch und wirfst unten die Hälfte weg, weil kein Platz mehr ist. Das ist kein Abwägen, das ist Verschwendung.\n\nDie Truhe unter der Schmiede gehört Dir. Was Du erst in drei Läufen brauchst, gehört hinein — sie bleibt, auch wenn Du unten liegen bleibst. Leg ein Stück hinein, dann weisst Du, wie es geht.',
       dialogueProgress: 'Die Truhe ist noch leer. Geh zu ihr, unter der Schmiede, mach sie auf und zieh ein Stück hinüber.',
@@ -257,6 +270,8 @@
       // Voraussetzung oeffnet den Akt selbst, und der Akt-1-Bestand soll eine
       // Aussage ueber die GESCHICHTE bleiben, nicht ueber Einfuehrungen.
       requiredAct: 0,
+      // Taktung (b512): eine Einfuehrung je Hub-Besuch, ueber die erreichte Tiefe.
+      angebotAb: 8,
       dialogueOffer: 'Stahl allein schneidet die Lügen des Rates nicht. Das sage ich jedem, und jeder nickt und versteht es nicht.\n\nDu trägst ein Fragment bei Dir. Ein Stück von etwas, das jemand aufgeschrieben und der Rat verbrannt hat. Früher haben die Archivschmiede so etwas hier in Metall gebunden, damit die Stadt es nie verliert. Bind es in Metall, dann kann der Nebel es nicht nehmen. Ich zeig Dir, wie.',
       dialogueProgress: 'Das Fragment liegt noch bei Dir herum. Komm an den Amboss und bind es in Metall. Es wird nicht mehr wert, wenn Du wartest.',
       dialogueComplete: '(Sie sieht Dich einen Moment zu lange an.) Und? Nichts blitzt, nichts klingelt. So ist Wissen, wenn es hält.\n\nJedes Fragment, das Du unten findest, bindest Du hier. Der Rat sammelt sie auch, nur verbrennt er sie.'
@@ -264,8 +279,8 @@
     // Die Amulette fuehrt NUR der wandernde Haendler unten (ShopScene mit
     // _dungeonMerchant); Maras Stand hat sie nicht. Darum schickt sie einen
     // hinunter, statt selbst zu verkaufen. Keine Mindesttiefe: der Haendler
-    // ist ein Ereignis, kein Versprechen — ihr eigener Stand (Tiefe 4) haengt
-    // als Voraussetzung ohnehin davor.
+    // ist ein Ereignis, kein Versprechen. Angeboten erst ab Tiefe 11, wenn
+    // am Karren auch wirklich Amulette haengen (Tiefe 10, lootSystem).
     einfuehrung_amulett: {
       id: 'einfuehrung_amulett',
       title: 'Der Alte mit dem Karren',
@@ -280,9 +295,12 @@
       rewardTier: 'einfuehrung',
       prerequisites: ['einfuehrung_markt'],
       requiredAct: 0,
-      dialogueOffer: 'Da unten läuft ein Alter mit einem Karren herum. Frag mich nicht, wie er hineinkommt — ich weiss es nicht, und ich will es nicht wissen.\n\nKauf ihm etwas ab. Irgendetwas. Er führt Zeug, das über meinen Tisch nie gehen würde, und tiefer unten hängen Amulette an seinem Karren. Ich will nur, dass Du einmal bei ihm gestanden hast.',
+      // Taktung (b512): eine Einfuehrung je Hub-Besuch, ueber die erreichte Tiefe.
+      // Ab Tiefe 11: Amulette fuehrt der Karren erst ab Tiefe 10 (lootSystem depthMin).
+      angebotAb: 11,
+      dialogueOffer: 'Da unten läuft ein Alter mit einem Karren herum. Frag mich nicht, wie er hineinkommt — ich weiss es nicht, und ich will es nicht wissen.\n\nKauf ihm etwas ab. Irgendetwas. Er führt Zeug, das über meinen Tisch nie gehen würde, und an seinem Karren hängen jetzt Amulette. Ich will nur, dass Du einmal bei ihm gestanden hast.',
       dialogueProgress: 'Der Alte taucht auf, wenn er will. Lauf weiter runter, dann triffst Du ihn. Und nimm Gold mit — billig ist er nicht.',
-      dialogueComplete: '(Sie betrachtet es aus sicherem Abstand.) Du hast also bei ihm gekauft.\n\nGeh wieder hin, wenn Du tiefer kommst. Was er dann führt, ändert einen ganzen Lauf — und was es Dir nimmt, merkst Du meistens später.'
+      dialogueComplete: '(Sie betrachtet es aus sicherem Abstand.) Du hast also bei ihm gekauft.\n\nGeh wieder hin, wenn er Dir unten über den Weg läuft. Ein Amulett von seinem Karren ändert einen ganzen Lauf — und was es Dir nimmt, merkst Du meistens später.'
     },
     harren_daughter_investigation: {
       id: 'harren_daughter_investigation',
@@ -356,7 +374,7 @@
       ],
       rewards: { xp: 90 },
       rewardTier: 'story',
-      prerequisites: ['harren_daughter_investigation'],
+      prerequisites: ['garde_patrol_expansion'],
       requiredAct: 1,
       dialogueOffer: 'Du hast das Fragment gesehen, Archivschmied. Dann weisst Du, dass die Tochter nicht aus eigenem Willen geflohen ist. Sie wurde von einer dunklen Hand geführt, die unteren Kammern bersten vor solchen Schatten.\n\nReinige sie. Drei der Anführer dieser ketzerischen Präsenz lauern noch dort unten, tiefer als die ersten Gänge. Steige bis Tiefe 3 hinab. Fälle sie im Namen der Ordnung. Die Seele der Tochter wird es Dir danken, wenn das Licht sie wiederfindet.\n\nDie Reinigung ist eine geistliche Pflicht. Nimm sie an.',
       dialogueProgress: 'Die Anführer lauern tief — erst ab Tiefe 3. Steige hinab, finde sie, fälle sie. Jede Ketzerei, die du beendest, öffnet einen weiteren Pfad zur Reinheit.',
@@ -378,7 +396,7 @@
       ],
       rewards: { xp: 75 },
       rewardTier: 'story',
-      prerequisites: ['harren_daughter_investigation'],
+      prerequisites: ['magistrat_verification'],
       requiredAct: 1,
       dialogueOffer: 'Wenn eine Tochter aus dem Rathaus verschwinden kann, ist das ein Versagen der Garde — und das wird sich ändern. Ich brauche eine Patrouillen-Erweiterung. Heute. Geh in die unteren Kammern und demonstriere Kraft — zehn Störer fallen, das Edikt trägt sich von selbst durch die Strassen.\n\nFrag nicht, ob die Patrouillen schoner Lebensweise zuträglich sind. Frag nicht, wer entscheidet, wohin sie laufen. Loyalität ist die einzige Münze, die zählt. Das Edikt ist die Münze, die du in meine Hand legst.\n\nNimmst du den Auftrag an, Archivschmied?',
       dialogueProgress: 'Zehn Störer noch. Jeder gefallene Körper ist eine Zeile mehr im Bericht. Die Garde wartet auf das Ergebnis.',
@@ -485,6 +503,7 @@
       completionFlags: ['elara_trust'],
       prerequisites: [],
       requiredAct: 2,
+      angebotAb: 9,
       dialogueOffer: 'Du willst wissen, wofür wir das tun? Hier — lies das.\n\nFinde zwei Dokumente, die ich im Keller versteckt habe.',
       dialogueProgress: 'Die Dokumente sind gut versteckt. Suche weiter.',
       dialogueComplete: 'Jetzt siehst du es. Das tut der Rat mit denen, die verschwinden: Er braucht sie für seine Rituale. Namen, die niemand mehr ausspricht, weil sich niemand an sie erinnert.'
@@ -501,7 +520,7 @@
       ],
       rewards: { xp: 80 },
       rewardTier: 'story',
-      prerequisites: [],
+      prerequisites: ['council_seizure'],
       requiredAct: 2,
       dialogueOffer: 'Diese Rüstungen sind für Gefangene, nicht Soldaten. Hilf mir, Beweise zu finden.\n\nBesiege fünf Elite-Wachen und bring mir ihre Befehle.',
       dialogueProgress: 'Die Elite-Wachen tragen die Beweise bei sich. Kämpfe weiter.',
@@ -550,6 +569,7 @@
       rewardTier: 'story',
       prerequisites: ['council_seizure'],
       requiredAct: 2,
+      angebotAb: 8,
       dialogueOffer: 'Unten in den alten Gängen soll sich Gesindel zusammenrotten, heisst es. Durchkämm drei Kammern und melde, wer sich dort versammelt.\n\nBereit?',
       dialogueProgress: 'Noch nicht alle Kammern durchsucht. Sieh weiter nach.',
       dialogueComplete: 'Bericht angenommen.\n\n(Keine Verschwörer. Nur Menschen, die sich im Dunkeln verstecken — vor dem Rat, nicht gegen ihn.)'
@@ -566,7 +586,7 @@
       ],
       rewards: { xp: 80, fragments: 1 },
       rewardTier: 'story',
-      prerequisites: ['mara_contact'],
+      prerequisites: ['branka_doubt'],
       requiredAct: 2,
       dialogueOffer: 'Im Keller lagern Protokolle aus Verhören. Nicht von Dämonen — von Menschen. Bring mir zwei Abschriften. Vorsichtig.',
       dialogueProgress: 'Die Protokolle sind tief im Keller. Such weiter.',
@@ -660,6 +680,7 @@
       chain: 7,
       // #72: gestaffelt, damit Akt 3 nicht in einem Lauf erledigt ist.
       minDepth: 12,
+      angebotAb: 12,
       objectives: [
         { type: 'observe', target: 'archive_record', current: 0, required: 1 }
       ],
@@ -760,6 +781,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       rewardTier: 'boss',
       prerequisites: ['elara_meeting'],
       requiredAct: 3,
+      angebotAb: 19,
       // v6.1: Am Schacht zur Esse. Hier lehrt Elara Dich, wie man die Esse
       // "zerstoert": indem man ihre Bindung loest. In Wahrheit ist genau dieses
       // Loesen das Erneuern (Finale, js/finale.js). 'bindung_gelehrt' haelt
@@ -778,6 +800,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       chain: 1,
       // #72: gestaffelt.
       minDepth: 14,
+      angebotAb: 14,
       objectives: [
         { type: 'fetch', target: 'print_plate', current: 0, required: 5 }
       ],
@@ -806,6 +829,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       // Kettenmeisters (Tiefe 10) sichert die ersten harten Beweise.
       prerequisites: ['mara_contact', 'espionage_convoy'],
       requiredAct: 2,
+      angebotAb: 9,
       // Trigger -> Akt 3 (Die Enttarnung).
       advanceAct: 3,
       dialogueOffer: 'Auf Tiefe 10 hält der Kettenmeister den Weg. Früher war er Hauptmann der Garde, heute ist nur noch sein Befehl übrig. Er fesselt, wen er fangen will. Fäll ihn, dann sehen wir, was er bewacht.',
@@ -971,7 +995,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       ],
       rewards: { xp: 60 },
       rewardTier: 'story',
-      prerequisites: ['harren_daughter_investigation'],
+      prerequisites: ['garde_patrol_expansion', 'einfuehrung_presse'],
       requiredAct: 1,
       dialogueOffer: 'Diese Woche stimmt die Stadt ab. Drei Edikte, Magistrat, Klerus, Garde, und die Bürger wählen eines. Lass sie bei Thom drucken und häng sie an die Tafeln vor dem Rathaus. So sieht Ordnung aus, die gewählt ist.',
       dialogueProgress: 'Erst drucken, dann aushängen. Die Druckerei ist gleich über dem Platz.',
@@ -1152,11 +1176,12 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     buerger_hund: {
       id: 'buerger_hund',
       title: 'Ein Hund namens Bruno',
-      description: 'Finde Brunos Halsband in den Kanälen unter der Stadt (ab Tiefe 15).',
+      description: 'Finde Brunos Halsband in den Kanälen unter der Stadt (ab Tiefe 13).',
       npcId: 'buerger',
       type: 'fetch',
       chain: 1,
-      minDepth: 15,
+      minDepth: 13,
+      angebotAb: 13,
       objectives: [
         { type: 'fetch', target: 'hundehalsband', current: 0, required: 1 }
       ],
@@ -1164,8 +1189,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       rewardTier: 'neben',
       prerequisites: [],
       requiredAct: 3,
-      dialogueOffer: 'Du gehst doch da runter. Mein Hund, Bruno, ist mir vor einer Woche in die Kanäle gelaufen. Er jagt Ratten, er kann nicht anders. Wenn Du tief unten, ab Tiefe 15, ein Halsband mit einer Messingmarke findest, dann bring es mir. Dann weiss ich wenigstens Bescheid.',
-      dialogueProgress: 'Ein braunes Halsband, Messingmarke, "Bruno" eingeritzt. Tief unten, ab Tiefe 15.',
+      dialogueOffer: 'Du gehst doch da runter. Mein Hund, Bruno, ist mir vor einer Woche in die Kanäle gelaufen. Er jagt Ratten, er kann nicht anders. Wenn Du tief unten, ab Tiefe 13, ein Halsband mit einer Messingmarke findest, dann bring es mir. Dann weiss ich wenigstens Bescheid.',
+      dialogueProgress: 'Ein braunes Halsband, Messingmarke, "Bruno" eingeritzt. Tief unten, ab Tiefe 13.',
       dialogueComplete: 'Das ist seins. (Er dreht die Marke in der Hand.) Und weisst Du was? Bruno kam gestern Nacht allein nach Hause, dreckig bis zu den Ohren und sehr zufrieden. Ohne Halsband. Er hat es sich abgestreift, um durch ein Gitter zu passen. (Er lacht, zum ersten Mal, seit Du ihn kennst.)'
     },
     branka_eichgewicht: {
@@ -1190,12 +1215,12 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     klerus_district_purge: {
       id: 'klerus_district_purge',
       title: 'Reinigung eines Bezirks',
-      description: 'Reinige einen "befallenen" Bezirk — besiege 8 Gegner ab Tiefe 7 und bring die Namen.',
+      description: 'Reinige einen "befallenen" Bezirk — besiege 8 Gegner ab Tiefe 11 und bring die Namen.',
       npcId: 'klerus_priester',
       type: 'kill',
       chain: 3,
-      minDepth: 7,
-      angebotAb: 7,
+      minDepth: 11,
+      angebotAb: 11,
       objectives: [
         { type: 'kill', target: 'enemy', current: 0, required: 8 }
       ],
@@ -1204,7 +1229,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       prerequisites: [],
       requiredAct: 2,
       dialogueOffer: 'Ein Bezirk ist befallen. Reinige ihn. Wer das Licht scheut, hat etwas zu verbergen. Bring mir die Namen der Befallenen.',
-      dialogueProgress: 'Noch nicht gereinigt. Die Befallenen zeigen sich in der Tiefe, ab Tiefe 7.',
+      dialogueProgress: 'Noch nicht gereinigt. Die Befallenen zeigen sich in der Tiefe, ab Tiefe 11.',
       // v6.1: zwei Abschluesse. Die Wahl folgt auf diesen Text
       // (storyDialog.byQuest.klerus_district_purge): die Leute warnen
       // (namen_gewarnt) oder die Liste abliefern (namen_abgeliefert). Sie
@@ -1220,6 +1245,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       chain: 3,
       // #72: gestaffelt.
       minDepth: 16,
+      angebotAb: 16,
       // Die drei Stationen der Umschlagstelle (js/nachteskorte.js): die Zone
       // einer Station oeffnet sich, wenn der Karren dort haelt.
       objectives: [
@@ -1247,6 +1273,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       chain: 4,
       // #72: von 5 auf 17 — Akt 3 beginnt ohnehin erst auf Tiefe 10.
       minDepth: 17,
+      angebotAb: 17,
       // 'memory_shard' als Quest-Item-Drop von WP05 (loot.js) verdrahtet.
       objectives: [
         { type: 'fetch', target: 'memory_shard', current: 0, required: 3 }
@@ -1594,9 +1621,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.brett_zeugen.dialogueProgress': 'Four leaders from depth 22. The press is waiting for the names.',
       'quest.brett_zeugen.dialogueComplete': 'The next morning four names are in the paper. Two of them the city knows.',
       'quest.einfuehrung_amulett.description': 'Buy something from the wandering merchant in the depths.',
-      'quest.einfuehrung_amulett.dialogueOffer': "There is an old man wandering about down there with a cart. Do not ask me how he gets in - I do not know, and I do not want to know.\n\nBuy something off him. Anything. He carries stock that would never cross my table, and deeper down there are amulets hanging from that cart. I just want you to have stood in front of him once.",
+      'quest.einfuehrung_amulett.dialogueOffer': "There is an old man wandering about down there with a cart. Do not ask me how he gets in - I do not know, and I do not want to know.\n\nBuy something off him. Anything. He carries stock that would never cross my table, and now there are amulets hanging from that cart. I just want you to have stood in front of him once.",
       'quest.einfuehrung_amulett.dialogueProgress': 'The old man turns up when he feels like it. Keep going deeper and you will meet him. And bring gold - he is not cheap.',
-      'quest.einfuehrung_amulett.dialogueComplete': "(She studies it from a safe distance.) So you bought from him after all.\n\nGo back when you get deeper. What he carries down there changes a whole run - and what it takes from you, you usually notice later.",
+      'quest.einfuehrung_amulett.dialogueComplete': "(She studies it from a safe distance.) So you bought from him after all.\n\nGo back whenever he crosses your path down there. An amulet from his cart changes a whole run - and what it takes from you, you usually notice later.",
 
       'quest.einfuehrung_schmiede.title': 'The First Edge',
       'quest.einfuehrung_schmiede.description': 'Go into the Forge and upgrade a piece of equipment at the workbench.',
@@ -1836,9 +1863,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
 
       // #148: die beiden menschlichen Nebenquests
       'quest.buerger_hund.title': 'A Dog Named Bruno',
-      'quest.buerger_hund.description': "Find Bruno's collar in the canals beneath the city (from depth 15).",
-      'quest.buerger_hund.dialogueOffer': "You go down there, don't you. My dog, Bruno, ran off into the canals a week ago. He hunts rats, he can't help it. If you find a collar with a brass tag deep down, from depth 15, bring it to me. Then at least I'll know.",
-      'quest.buerger_hund.dialogueProgress': 'A brown collar, brass tag, "Bruno" scratched into it. Deep down, from depth 15.',
+      'quest.buerger_hund.description': "Find Bruno's collar in the canals beneath the city (from depth 13).",
+      'quest.buerger_hund.dialogueOffer': "You go down there, don't you. My dog, Bruno, ran off into the canals a week ago. He hunts rats, he can't help it. If you find a collar with a brass tag deep down, from depth 13, bring it to me. Then at least I'll know.",
+      'quest.buerger_hund.dialogueProgress': 'A brown collar, brass tag, "Bruno" scratched into it. Deep down, from depth 13.',
       'quest.buerger_hund.dialogueComplete': "That's his. (He turns the tag in his hand.) And you know what? Bruno came home on his own last night, filthy up to the ears and very pleased with himself. Without the collar. He slipped out of it to fit through a grate. (He laughs, for the first time since you've known him.)",
       'quest.branka_eichgewicht.title': 'The Standard Weight',
       'quest.branka_eichgewicht.description': "Bring Branka the guild's old standard weight from the depths (from depth 26).",
@@ -1861,9 +1888,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.faction_campaign.dialogueComplete': "Good. The votes are being counted, and the council announces the result in public, in the council hall. As it should be.",
 
       'quest.klerus_district_purge.title': "Purging a District",
-      'quest.klerus_district_purge.description': "Purge an \"infested\" district — defeat 8 enemies from depth 7 and bring back the names.",
+      'quest.klerus_district_purge.description': "Purge an \"infested\" district — defeat 8 enemies from depth 11 and bring back the names.",
       'quest.klerus_district_purge.dialogueOffer': "A district is infested. Purge it. Whoever shuns the Light has something to hide. Bring me the names of the infested.",
-      'quest.klerus_district_purge.dialogueProgress': "Not purged yet. The infested show themselves in the depths, from depth 7.",
+      'quest.klerus_district_purge.dialogueProgress': "Not purged yet. The infested show themselves in the depths, from depth 11.",
       'quest.klerus_district_purge.dialogueComplete': "You bring the names? (The priest holds out his hand for the list.)\n\n(The infested had faces. You knew none of them, and yet every one seemed familiar. Mara took a copy from you before you came here. The list is still in your hand.)",
 
       'quest.garde_night_escort.title': "Night Escort",

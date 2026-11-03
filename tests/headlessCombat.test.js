@@ -1200,6 +1200,10 @@ test('Elara vergibt ihre spaeteren Auftraege im Dungeon (#131)', () => {
     };
 
     window.storySystem.advanceToAct(2);
+    // b512: Treffen ab Tiefe 9, Ritualkammer ab 19 angeboten (angebotAb).
+    var ablage = window.SlotStorage || localStorage;
+    var tiefeVorher = ablage.getItem('demonfall_maxDepth');
+    ablage.setItem('demonfall_maxDepth', '19');
     var st = qs.getQuestSaveData();
     st.quests['harren_daughter_investigation'] = { status: 'completed', objectives: [] };
     st.quests['widerstand_proof'] = { status: 'completed', objectives: [] };
@@ -1237,6 +1241,8 @@ test('Elara vergibt ihre spaeteren Auftraege im Dungeon (#131)', () => {
     // 4) Akt 4 -> die Ritualkammer ist als naechstes faellig
     window.storySystem.advanceToAct(3);
     var f3 = faellig();
+    if (tiefeVorher === null) ablage.removeItem('demonfall_maxDepth');
+    else ablage.setItem('demonfall_maxDepth', tiefeVorher);
     return { raum: trefferRaum, f1: f1 && f1.id, modus1: f1 && f1.modus,
              dialogHatText: dialogTexte.length > 40,
              nachAnnahme: nachAnnahme, f2: f2 && f2.id, modus2: f2 && f2.modus,
