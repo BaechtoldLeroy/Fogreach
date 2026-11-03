@@ -3502,14 +3502,15 @@ function _maybeStartEspionage(scene, templateName, builtMeta) {
       if (!o) return;
       var ty = o.type;
       if (ty === 'altar' || ty === 'brazier' || ty === 'brazer' || ty === 'statue'
-          || ty === 'pillar' || ty === 'pillar_small' || ty === 'pillar_large') {
-        blockedTiles[(o.x || 0) + ',' + (o.y || 0)] = true;
+          || ty === 'pillar' || ty === 'pillar_small' || ty === 'pillar_large'
+          || ty === 'thron_rat' || ty === 'sarkophag') {
+        blockedTiles[Math.floor(o.x || 0) + ',' + Math.floor(o.y || 0)] = true;
       }
     });
     // Feste Koerper, die die Sicht nicht verdecken, den Weg aber schon.
     var wegHindernisse = {};
     (tpl.objects || []).forEach(function (o) {
-      if (o && /^(crate|barrel|chest|statue)/.test(String(o.type))) {
+      if (o && /^(crate|barrel|chest|statue|regal_|streckbank|zellentuer)/.test(String(o.type))) {
         wegHindernisse[Math.floor(o.x || 0) + ',' + Math.floor(o.y || 0)] = true;
       }
     });

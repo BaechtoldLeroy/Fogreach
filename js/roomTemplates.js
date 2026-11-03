@@ -1076,17 +1076,32 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     }
     // Mobile: cap decoration count for performance
     const isMobileProp = !!(scene.sys?.game?.device?.input?.touch);
-    const maxDecorations = isMobileProp
-      ? Math.min(tpl.decorations.length, Math.floor(tpl.decorations.length * 0.5))
-      : tpl.decorations.length;
+    // Die Story-Requisiten (Kreidekreis, Siegel, Wandketten) loest der
+    // Raumtext ein ("Kreidekreis, Ketten ...") — sie fallen der Mobil-Kappung
+    // nicht zum Opfer, nur die beliebige Fuell-Deko.
+    const _istStoryDeko = (t) => /^(deko_|wand_)/.test(String(t));
+    const storyDeko = tpl.decorations.filter(d => _istStoryDeko(d.type));
+    const fuellDeko = tpl.decorations.filter(d => !_istStoryDeko(d.type));
+    const fuellAnzahl = isMobileProp ? Math.floor(fuellDeko.length * 0.5) : fuellDeko.length;
+    const dekoListe = storyDeko.concat(fuellDeko.slice(0, fuellAnzahl));
     // Hinweis (#70): Deko NICHT in eine eigene welt-grosse RT backen — das kostete
     // ~19 MB Textur pro Raum und machte die Perf SCHLECHTER (Messung b40), weil es
     // nur ~20 Draws spart. Deko bleibt als Einzel-Images (wenige, depth -2/41).
-    for (let di = 0; di < maxDecorations; di++) {
-      const d = tpl.decorations[di];
+    for (let di = 0; di < dekoListe.length; di++) {
+      const d = dekoListe[di];
       if (!scene.textures.exists(d.type)) continue;
       const dpx = ox + gx(tpl, d.x) + T / 2;
       const dpy = oy + gy(tpl, d.y) + T / 2;
+      // Was an der Wand haengt (wand_*), sitzt mit dem Fuss an der Unterkante
+      // seiner Wandkachel: vor der Wand, hinter jedem Prop und ohne Koerper.
+      if (String(d.type).indexOf('wand_') === 0) {
+        const _tw = (typeof window.worldTexArgs === 'function') ? window.worldTexArgs(d.type) : [d.type, undefined];
+        const haenger = scene.add.image(dpx, oy + gy(tpl, d.y) + T, _tw[0], _tw[1])
+          .setOrigin(0.5, 1)
+          .setDepth(window.WELT_TIEFEN.WANDKANTE + 0.2);
+        templateWalls.push(haenger);
+        continue;
+      }
       // Subtle visual variety: randomize scale and alpha slightly
       const scaleVar = 0.85 + Math.random() * 0.3;  // 0.85–1.15
       const alphaVar = 0.55 + Math.random() * 0.25;  // 0.55–0.80
@@ -1318,7 +1333,8 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
       'pillar', 'pillar_small', 'pillar_large',
       'statue', 'statue_knight',
       'altar',
-      'crate', 'barrel', 'chest_small', 'chest_medium', 'chest_large'
+      'crate', 'barrel', 'chest_small', 'chest_medium', 'chest_large',
+      'regal_akten', 'regal_phiolen', 'thron_rat', 'sarkophag', 'streckbank', 'zellentuer'
     ]);
     const blockingObjectTiles = [];
     (tpl.objects || []).forEach((obj) => {
@@ -1667,7 +1683,9 @@ function spawnObstacle(x, y, key) {
   // kein Prop ihre Tiefe teilt. Hohe Architektur steht noch einmal davor, damit
   // eine Statue nicht von einem Fass geschnitten wird.
   var _lk = String(key).toLowerCase();
-  var _tall = _lk.indexOf('statue') === 0 || _lk.indexOf('pillar') === 0 || _lk.indexOf('altar') === 0;
+  var _tall = _lk.indexOf('statue') === 0 || _lk.indexOf('pillar') === 0 || _lk.indexOf('altar') === 0
+    || _lk.indexOf('regal_') === 0 || _lk.indexOf('thron') === 0 || _lk.indexOf('zellentuer') === 0
+    || _lk.indexOf('sarkophag') === 0;
   o.setDepth(_tall ? window.WELT_TIEFEN.PROP_HOCH : window.WELT_TIEFEN.PROP);
   // Bewusst NICHT nach Bildhoehe sortiert (#165, anders als Ereignisobjekte
   // und Deko-Saeulen): der Koerper eines Hindernisses ist genau so gross wie
@@ -1688,8 +1706,12 @@ function spawnObstacle(x, y, key) {
   // KULISSE statt Behälter: sie tragen den 'stone'-Tier, der nur etwas Gold gibt.
   // Wären sie 'minor', würden ~3-4 Props pro Raum Tränke und Ausrüstung
   // ausspucken — das ist ein Ökonomie-Eingriff, kein Zerstörungs-Feature.
+  // Story-Requisiten: Regale und Streckbank sind Holz wie Kiste und Fass
+  // ('minor', sie ersetzen in den Vorlagen genau solche), Thron, Sarkophag
+  // und Zellentuer sind Kulisse wie Altar und Feuerschale ('stone').
   const destructibleTypes = ['barrel', 'crate', 'chest_small', 'chest_medium', 'chest_large',
-    'rubble', 'statue', 'pillar', 'brazier', 'brazer', 'altar'];
+    'rubble', 'statue', 'pillar', 'brazier', 'brazer', 'altar',
+    'regal_', 'streckbank', 'thron', 'sarkophag', 'zellentuer'];
   const lowerKey = String(key).toLowerCase();
   const isDestructible = destructibleTypes.some(t => lowerKey.startsWith(t));
   if (isDestructible) {
@@ -1704,7 +1726,8 @@ function spawnObstacle(x, y, key) {
       o.setData('lootTier', 'small');
     } else if (lowerKey.startsWith('statue') || lowerKey.startsWith('pillar')
         || lowerKey.startsWith('brazier') || lowerKey.startsWith('brazer')
-        || lowerKey.startsWith('altar')) {
+        || lowerKey.startsWith('altar') || lowerKey.startsWith('thron')
+        || lowerKey.startsWith('sarkophag') || lowerKey.startsWith('zellentuer')) {
       o.setData('lootTier', 'stone');
     } else {
       o.setData('lootTier', 'minor'); // barrel, crate, rubble

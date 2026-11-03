@@ -76,26 +76,6 @@
       "y": 16
     },
     {
-      "type": "altar",
-      "x": 7,
-      "y": 9
-    },
-    {
-      "type": "altar",
-      "x": 28,
-      "y": 9
-    },
-    {
-      "type": "altar",
-      "x": 7,
-      "y": 23
-    },
-    {
-      "type": "altar",
-      "x": 28,
-      "y": 23
-    },
-    {
       "type": "rubble",
       "x": 11,
       "y": 7
@@ -179,6 +159,26 @@
       "type": "barrel",
       "x": 6,
       "y": 22
+    },
+    {
+      "type": "sarkophag",
+      "x": 7,
+      "y": 9
+    },
+    {
+      "type": "sarkophag",
+      "x": 28,
+      "y": 9
+    },
+    {
+      "type": "sarkophag",
+      "x": 7,
+      "y": 24
+    },
+    {
+      "type": "sarkophag",
+      "x": 28,
+      "y": 24
     }
   ],
   "spawns": {
@@ -252,5 +252,27 @@
         "intensity": 0.3
       }
     ]
-  }
+  },
+  "decorations": [
+    {
+      "type": "deko_siegel",
+      "x": 18,
+      "y": 6
+    },
+    {
+      "type": "deko_siegel",
+      "x": 18,
+      "y": 26
+    },
+    {
+      "type": "deko_siegel",
+      "x": 5,
+      "y": 16
+    },
+    {
+      "type": "deko_siegel",
+      "x": 30,
+      "y": 16
+    }
+  ]
 }

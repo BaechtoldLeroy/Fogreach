@@ -76,66 +76,6 @@
       "y": 27
     },
     {
-      "type": "crate",
-      "x": 3,
-      "y": 6
-    },
-    {
-      "type": "crate",
-      "x": 3,
-      "y": 7
-    },
-    {
-      "type": "crate",
-      "x": 7,
-      "y": 6
-    },
-    {
-      "type": "crate",
-      "x": 7,
-      "y": 7
-    },
-    {
-      "type": "crate",
-      "x": 11,
-      "y": 6
-    },
-    {
-      "type": "crate",
-      "x": 11,
-      "y": 7
-    },
-    {
-      "type": "crate",
-      "x": 3,
-      "y": 21
-    },
-    {
-      "type": "crate",
-      "x": 3,
-      "y": 22
-    },
-    {
-      "type": "crate",
-      "x": 7,
-      "y": 21
-    },
-    {
-      "type": "crate",
-      "x": 7,
-      "y": 22
-    },
-    {
-      "type": "crate",
-      "x": 11,
-      "y": 21
-    },
-    {
-      "type": "crate",
-      "x": 11,
-      "y": 22
-    },
-    {
       "type": "altar",
       "x": 12,
       "y": 14
@@ -199,6 +139,36 @@
       "type": "barrel",
       "x": 29,
       "y": 26
+    },
+    {
+      "type": "regal_akten",
+      "x": 2.5,
+      "y": 6
+    },
+    {
+      "type": "regal_akten",
+      "x": 6.5,
+      "y": 6
+    },
+    {
+      "type": "regal_akten",
+      "x": 10.5,
+      "y": 6
+    },
+    {
+      "type": "regal_akten",
+      "x": 2.5,
+      "y": 21
+    },
+    {
+      "type": "regal_akten",
+      "x": 6.5,
+      "y": 21
+    },
+    {
+      "type": "regal_akten",
+      "x": 10.5,
+      "y": 21
     }
   ],
   "spawns": {

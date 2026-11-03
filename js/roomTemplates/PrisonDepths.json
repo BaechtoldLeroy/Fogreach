@@ -66,23 +66,8 @@
     },
     {
       "type": "crate",
-      "x": 19,
-      "y": 10
-    },
-    {
-      "type": "crate",
       "x": 20,
       "y": 10
-    },
-    {
-      "type": "crate",
-      "x": 18,
-      "y": 11
-    },
-    {
-      "type": "crate",
-      "x": 20,
-      "y": 11
     },
     {
       "type": "barrel",
@@ -143,6 +128,46 @@
       "type": "brazier",
       "x": 30,
       "y": 19
+    },
+    {
+      "type": "streckbank",
+      "x": 19,
+      "y": 11.5
+    },
+    {
+      "type": "zellentuer",
+      "x": 5,
+      "y": 7.8
+    },
+    {
+      "type": "zellentuer",
+      "x": 14,
+      "y": 7.8
+    },
+    {
+      "type": "zellentuer",
+      "x": 19,
+      "y": 7.8
+    },
+    {
+      "type": "zellentuer",
+      "x": 28,
+      "y": 7.8
+    },
+    {
+      "type": "zellentuer",
+      "x": 7,
+      "y": 17.8
+    },
+    {
+      "type": "zellentuer",
+      "x": 12,
+      "y": 17.8
+    },
+    {
+      "type": "zellentuer",
+      "x": 21,
+      "y": 17.8
     }
   ],
   "spawns": {
@@ -228,5 +253,52 @@
         "intensity": 0.25
       }
     ]
-  }
+  },
+  "decorations": [
+    {
+      "type": "wand_ketten",
+      "x": 8,
+      "y": 1
+    },
+    {
+      "type": "wand_ketten",
+      "x": 14,
+      "y": 1
+    },
+    {
+      "type": "wand_ketten",
+      "x": 26,
+      "y": 1
+    },
+    {
+      "type": "wand_ketten",
+      "x": 32,
+      "y": 1
+    },
+    {
+      "type": "wand_ketten",
+      "x": 6,
+      "y": 5
+    },
+    {
+      "type": "wand_ketten",
+      "x": 20,
+      "y": 5
+    },
+    {
+      "type": "wand_ketten",
+      "x": 27,
+      "y": 5
+    },
+    {
+      "type": "wand_ketten",
+      "x": 13,
+      "y": 15
+    },
+    {
+      "type": "wand_ketten",
+      "x": 27,
+      "y": 15
+    }
+  ]
 }

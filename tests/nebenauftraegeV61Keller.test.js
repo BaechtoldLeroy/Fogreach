@@ -174,7 +174,7 @@ function kreideLesen() {
     H.run(`enterRoom(${GS}, ${raumNr++})`);
     H.step(2);
     const da = H.run(`(function () {
-      var o = ${GS}.children.list.filter(function (x) { return x.texture && x.texture.key === 'evt_kreide' && x.active; })[0];
+      var o = ${GS}.children.list.filter(function (x) { return x.texture && /^evt_kreide[0-9]?$/.test(x.texture.key) && x.active; })[0];
       if (!o) return false;
       enemies.getChildren().slice().forEach(function (e) { try { e.destroy(); } catch (x) {} });
       player.body.reset(o.x + 30, o.y);

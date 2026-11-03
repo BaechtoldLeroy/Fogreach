@@ -43,7 +43,13 @@ const SONDERMASS = {
   evt_treasure: [32, 32], evt_shrine: [32, 32], evt_opferstein: [32, 32],
   evt_fountain: [32, 32], evt_gamble: [32, 32], evt_cursed: [32, 32],
   evt_schloss: [32, 32], evt_lager: [32, 32], evt_falle: [32, 32], evt_nische: [32, 32],
-  zeichen_schattenrat: [64, 64]
+  zeichen_schattenrat: [64, 64],
+  // Kreidezeichen und Story-Requisiten: auf ihren Inhalt zugeschnitten
+  // (tools/requisitenStory/liste.json), der Koerper ist das Bild.
+  evt_kreide0: [32, 32], evt_kreide1: [32, 32], evt_kreide2: [32, 32],
+  regal_phiolen: [40, 53], regal_akten: [40, 57], thron_rat: [40, 57], zellentuer: [26, 42],
+  sarkophag: [60, 44], streckbank: [58, 44], deko_kreidekreis: [63, 48], deko_siegel: [49, 42],
+  wand_ketten: [26, 41]
 };
 
 test('zu jedem Namen gibt es eine Datei im richtigen Mass', async () => {

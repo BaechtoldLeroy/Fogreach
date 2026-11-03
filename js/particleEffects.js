@@ -31,7 +31,11 @@ const PARTIKEL_ZWECKE = {
 const OBJEKT_MATERIAL = [
   ['barrel', 'holz'], ['crate', 'holz'], ['chest', 'holz'],
   ['rubble', 'stein'], ['statue', 'stein'], ['pillar', 'stein'], ['altar', 'stein'],
-  ['brazier', 'metall'], ['brazer', 'metall']
+  ['brazier', 'metall'], ['brazer', 'metall'],
+  // Story-Requisiten (roomTemplates): Regal und Streckbank aus Holz,
+  // Sarkophag aus Stein, Thron und Zellentuer aus Eisen.
+  ['regal_', 'holz'], ['streckbank', 'holz'], ['sarkophag', 'stein'],
+  ['thron', 'metall'], ['zellentuer', 'metall']
 ];
 // Material -> Zwecke der Tafel und Toenung (nur die grauen Bilder nehmen sie an).
 const MATERIAL_BILD = {

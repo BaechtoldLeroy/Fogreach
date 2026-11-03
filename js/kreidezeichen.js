@@ -100,7 +100,21 @@
     } catch (e) { return false; }
   }
 
-  /** Ein Stein mit Kreidestrichen, wie die anderen Ereignisbilder 32x32. */
+  // Die Pixelbilder (assets/tiles, pixelTexturen.js laedt sie vor). Welches
+  // steht, folgt dem Fortschritt — das n-te Zeichen traegt das n-te Bild —,
+  // damit kein zusaetzlicher Zufallswurf den Raumaufbau verschiebt.
+  var BILDER = ['evt_kreide0', 'evt_kreide1', 'evt_kreide2'];
+
+  /** Das Bild fuer das n-te Zeichen; ohne geladene Bilder die Zeichnung. */
+  function bildFuer(scene, n) {
+    var tex = scene && scene.textures;
+    var da = BILDER.filter(function (k) { return tex && typeof tex.exists === 'function' && tex.exists(k); });
+    if (da.length) return da[Math.abs(n | 0) % da.length];
+    _textur(scene);
+    return TEX;
+  }
+
+  /** Rueckfall: ein Stein mit Kreidestrichen, wie die anderen Ereignisbilder 32x32. */
   function _textur(scene) {
     if (!scene || !scene.textures || scene.textures.exists(TEX) || !scene.make) return;
     var g = scene.make.graphics({ add: false });
@@ -174,9 +188,10 @@
         }
         if (!platz) platz = kandidaten[0] || null;
       }
-      _textur(scene);
+      var o = _ziel();
+      var bild = bildFuer(scene, o ? o.current : 0);
       var T = TEXTE[_sprache()];
-      ES.spawnEventObject(scene, TEX, 0x4a4553, 0xeae6da, T.label, function () { lesen(scene); },
+      ES.spawnEventObject(scene, bild, 0x4a4553, 0xeae6da, T.label, function () { lesen(scene); },
         platz ? { spawnAt: platz } : undefined);
       return platz || { x: NaN, y: NaN };
     } catch (e) { return null; }
@@ -187,6 +202,8 @@
     ZIEL: ZIEL,
     CHANCE: CHANCE,
     TEX: TEX,
+    BILDER: BILDER,
+    bildFuer: bildFuer,
     TEXTE: TEXTE,
     satz: satz,
     satzListe: satzListe,

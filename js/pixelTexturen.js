@@ -123,7 +123,17 @@
     // geladen werden, kommt das Zeichnen gar nicht erst dran.
     'evt_treasure', 'evt_shrine', 'evt_opferstein', 'evt_fountain',
     'evt_gamble', 'evt_cursed', 'evt_schloss', 'evt_lager', 'evt_falle',
-    'evt_nische'
+    'evt_nische',
+    // Das Kreidezeichen (kreidezeichen.js) in drei Fassungen; die
+    // gezeichnete evt_kreide bleibt Rueckfall.
+    'evt_kreide0', 'evt_kreide1', 'evt_kreide2'
+  ]).concat([
+    // Story-Requisiten: was die Raumtexte der Story-Raeume versprechen
+    // (Kreidekreis, Ketten, Phiolen, Akten, Zellen, Thron, Siegel). Kein
+    // Rueckfall in graphics.js — fehlt ein Bild, faellt das Objekt auf
+    // obstacleWall zurueck (roomTemplates.getFallbackTexture), Deko entfaellt.
+    'regal_phiolen', 'regal_akten', 'thron_rat', 'zellentuer', 'sarkophag',
+    'streckbank', 'deko_kreidekreis', 'deko_siegel', 'wand_ketten'
   ]);
 
   // Die Feuerschale flackert: neun Bilder, in denen nur die Flamme lebt.

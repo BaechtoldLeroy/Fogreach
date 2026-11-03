@@ -1,0 +1,14 @@
+[
+  { "quelle": "tools/rohbilder/storyrequisiten/phiolenregal1.png", "name": "regal_phiolen", "b": 40, "h": 53 },
+  { "quelle": "tools/rohbilder/storyrequisiten/aktenregal1.png", "name": "regal_akten", "b": 40, "h": 57 },
+  { "quelle": "tools/rohbilder/storyrequisiten/thron1.png", "name": "thron_rat", "b": 40, "h": 57 },
+  { "quelle": "tools/rohbilder/storyrequisiten/zellentuer1.png", "name": "zellentuer", "b": 26, "h": 42 },
+  { "quelle": "tools/rohbilder/storyrequisiten/sarkophag3.png", "name": "sarkophag", "b": 60, "h": 44 },
+  { "quelle": "tools/rohbilder/storyrequisiten/streckbank1.png", "name": "streckbank", "b": 58, "h": 44 },
+  { "quelle": "tools/rohbilder/storyrequisiten/kreidekreis2.png", "name": "deko_kreidekreis", "b": 63, "h": 48 },
+  { "quelle": "tools/rohbilder/storyrequisiten/siegel2.png", "name": "deko_siegel", "b": 49, "h": 42 },
+  { "quelle": "tools/rohbilder/storyrequisiten/wandketten2.png", "name": "wand_ketten", "b": 26, "h": 41 },
+  { "quelle": "tools/rohbilder/storyrequisiten/kreidek_00.png", "name": "evt_kreide0", "b": 32, "h": 32 },
+  { "quelle": "tools/rohbilder/storyrequisiten/kreidek_05.png", "name": "evt_kreide1", "b": 32, "h": 32 },
+  { "quelle": "tools/rohbilder/storyrequisiten/kreidek_03.png", "name": "evt_kreide2", "b": 32, "h": 32 }
+]

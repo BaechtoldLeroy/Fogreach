@@ -65,11 +65,6 @@
   ],
   "objects": [
     {
-      "type": "altar",
-      "x": 19,
-      "y": 3
-    },
-    {
       "type": "pillar_large",
       "x": 10,
       "y": 4
@@ -168,6 +163,11 @@
       "type": "brazier",
       "x": 24,
       "y": 24
+    },
+    {
+      "type": "thron_rat",
+      "x": 19,
+      "y": 3
     }
   ],
   "spawns": {
@@ -506,5 +506,37 @@
         ]
       }
     ]
-  }
+  },
+  "decorations": [
+    {
+      "type": "wand_ketten",
+      "x": 6,
+      "y": 1
+    },
+    {
+      "type": "wand_ketten",
+      "x": 13,
+      "y": 1
+    },
+    {
+      "type": "wand_ketten",
+      "x": 25,
+      "y": 1
+    },
+    {
+      "type": "wand_ketten",
+      "x": 32,
+      "y": 1
+    },
+    {
+      "type": "wand_ketten",
+      "x": 5,
+      "y": 17
+    },
+    {
+      "type": "wand_ketten",
+      "x": 32,
+      "y": 17
+    }
+  ]
 }

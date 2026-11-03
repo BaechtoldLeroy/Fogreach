@@ -140,41 +140,6 @@
     },
     {
       "type": "barrel",
-      "x": 4,
-      "y": 5
-    },
-    {
-      "type": "barrel",
-      "x": 4,
-      "y": 6
-    },
-    {
-      "type": "barrel",
-      "x": 4,
-      "y": 7
-    },
-    {
-      "type": "barrel",
-      "x": 4,
-      "y": 25
-    },
-    {
-      "type": "barrel",
-      "x": 4,
-      "y": 26
-    },
-    {
-      "type": "barrel",
-      "x": 31,
-      "y": 5
-    },
-    {
-      "type": "barrel",
-      "x": 31,
-      "y": 6
-    },
-    {
-      "type": "barrel",
       "x": 31,
       "y": 25
     },
@@ -187,6 +152,21 @@
       "type": "altar",
       "x": 18,
       "y": 16
+    },
+    {
+      "type": "regal_phiolen",
+      "x": 3,
+      "y": 6
+    },
+    {
+      "type": "regal_phiolen",
+      "x": 31,
+      "y": 5.5
+    },
+    {
+      "type": "regal_phiolen",
+      "x": 3,
+      "y": 25.5
     }
   ],
   "spawns": {
@@ -272,5 +252,47 @@
         "intensity": 0.4
       }
     ]
-  }
+  },
+  "decorations": [
+    {
+      "type": "deko_kreidekreis",
+      "x": 6,
+      "y": 16
+    },
+    {
+      "type": "deko_kreidekreis",
+      "x": 30,
+      "y": 16
+    },
+    {
+      "type": "wand_ketten",
+      "x": 6,
+      "y": 1
+    },
+    {
+      "type": "wand_ketten",
+      "x": 11,
+      "y": 1
+    },
+    {
+      "type": "wand_ketten",
+      "x": 21,
+      "y": 1
+    },
+    {
+      "type": "wand_ketten",
+      "x": 26,
+      "y": 1
+    },
+    {
+      "type": "wand_ketten",
+      "x": 14,
+      "y": 22
+    },
+    {
+      "type": "wand_ketten",
+      "x": 19,
+      "y": 22
+    }
+  ]
 }
