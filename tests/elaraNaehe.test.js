@@ -313,12 +313,19 @@ test('Die Klinge bekommt man in Akt 3 im Dungeon, in einem Gespraech', () => {
     if (!angebot) return { fehler: 'elara_blade wird in Akt 3 nicht angeboten' };
     _elaraAuftragsDialog(sc, { id: 'elara_blade', modus: 'angebot', quest: angebot }, 'Weiter', false);
     window.__klick(0);
-    var szene = window.__dialogText();
-    window.__durchklicken();
-    return { fertig: qs.getCompletedQuests().some(function (q) { return q.id === 'elara_blade'; }),
-             szene: szene, flag: qs.hasFlag('elara_klinge_erhalten') };
+    return {};
   })()`);
   assert.ok(!r.fehler, r.fehler);
+  // Seit b503 spielt die Szene auf Tableaus (js/elaraSzene.js); die Gravur
+  // steht dort als eigene Zeile auf ihrem Bild.
+  const SZ = `window.game.scene.getScene('GameScene').__elaraSzene`;
+  for (let i = 0; i < 300 && !H.run(`!!${SZ}`); i++) H.step(2);
+  assert.ok(H.run(`!!${SZ} && ${SZ}.id === 'klinge'`), 'die Klingen-Szene kam nicht');
+  r.szene = H.run(`window.ElaraSzene.schritte('klinge').map(function (s) { return s.text || ''; }).join(' ')`);
+  H.run(`${SZ}.beenden()`);
+  Object.assign(r, H.run(`(function () { var qs = window.questSystem;
+    return { fertig: qs.getCompletedQuests().some(function (q) { return q.id === 'elara_blade'; }),
+             flag: qs.hasFlag('elara_klinge_erhalten') }; })()`));
   assert.strictEqual(r.fertig, true, 'die Klinge wurde nicht in diesem Gespraech uebergeben');
   assert.ok(/eingraviert|engraved/.test(r.szene), 'die Klingen-Szene zeigt die Gravur nicht: ' + r.szene);
   assert.strictEqual(r.flag, true);

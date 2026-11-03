@@ -416,7 +416,21 @@
   }
 
   // --- 13.3 Elaras erster Riss -----------------------------------------------
+  // Seit b503 auf einem Tableau (js/elaraSzene.js): der Bote, das Blatt, das
+  // sie wegfaltet. Ohne Bild die Textfassung darunter. Der Trigger feuert in
+  // beiden Fassungen am Ende, auch nach ESC.
   function playElaraFirstCrack(scene, onDone) {
+    var ES = window.ElaraSzene;
+    var text = function () { _elaraFirstCrackText(scene, onDone); };
+    var ende = function () {
+      _fireObserve('erster_riss_gesehen');
+      if (typeof onDone === 'function') onDone();
+    };
+    if (ES && typeof ES.spielen === 'function' && ES.spielen(scene, 'riss', ende, text)) return;
+    text();
+  }
+
+  function _elaraFirstCrackText(scene, onDone) {
     var cam = scene.cameras.main;
     var cx = cam.width / 2, cy = cam.height / 2 - 20;
     // Die Lesepause laeuft erst, wenn der Text fertig geschrieben ist.

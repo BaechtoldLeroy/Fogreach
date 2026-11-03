@@ -317,14 +317,19 @@ describe('Im Hub', () => {
       return true;
     })()`);
     assert.ok(r);
-    H.step(2);
+    // Seit b503 spielt die Szene auf einem Tableau (js/elaraSzene.js): erst
+    // laden die Bilder, dann laeuft die Sperre gegen den ausloesenden Druck ab.
+    for (let i = 0; i < 300 && !H.run(`!!${HUB}.__elaraSzene`); i++) H.step(2);
+    assert.ok(H.run(`!!${HUB}.__elaraSzene`), 'die Szene kam nicht');
+    H.step(30);
+    assert.ok(H.run(`${HUB}.__elaraSzene.laeuft()`), 'die erste Zeile stand schon ganz da');
     // Der Spieler steht noch bei ihr: E haette ein Ziel. Unmittelbar vor dem
     // Druck gesetzt — jedes Bild rechnet das Ziel aus der Naehe neu aus.
     H.run(`${HUB}._activeInteractable = { type: 'npc', data: window.__elaraDaten }; 1`);
     taste(H, 'E');
     assert.strictEqual(H.run('window.__gespraeche'), 0, 'E hat das Gespraech ueber der Szene geoeffnet');
-    const wartet = H.run(`!!${HUB}.__szeneWartet`);
-    assert.ok(wartet, 'die Taste hat den Satz nicht zu Ende gezeigt (die Szene wartet nicht auf Weiter)');
-    H.run(`(function () { var sc = ${HUB}; sc._showNpcDialogue = sc._showNpcDialogueAlt; if (sc.__szeneWartet) sc.__szeneWartet.ausloesen(); })()`);
+    const z = H.run(`(function () { var z = ${HUB}.__elaraSzene; return z ? { schritt: z.schritt, ganz: z.text() === z.voll } : null; })()`);
+    assert.ok(z && z.schritt === 0 && z.ganz, 'die Taste hat den Satz nicht zu Ende gezeigt: ' + JSON.stringify(z));
+    H.run(`(function () { var sc = ${HUB}; sc._showNpcDialogue = sc._showNpcDialogueAlt; if (sc.__elaraSzene) sc.__elaraSzene.beenden(); })()`);
   });
 });

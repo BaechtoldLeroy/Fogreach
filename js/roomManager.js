@@ -4295,6 +4295,9 @@ function _versteckBetreten(scene, w, h) {
   if (besuch === 'bruch_nacht' && window.BruchNachtSzene && scene.load) {
     try { window.BruchNachtSzene.vorladen(scene); } catch (e) {}
   }
+  if (besuch === 'werkstatt' && window.ElaraSzene && scene.load) {
+    try { window.ElaraSzene.vorladen(scene, 'werkstatt'); } catch (e) {}
+  }
   if (!besuch || !window.EventSystem || typeof window.EventSystem.spawnEventObject !== 'function') return;
   var opts = { figurHoehe: ELARA_FIGUR_HOEHE };
   if (neu) opts.spawnAt = VERSTECK_ELARA_PLATZ;
@@ -4328,6 +4331,16 @@ function _elaraSzene(scene, key, amEnde) {
   if (!def || !scene || !window.EventSystem || typeof window.EventSystem.showEventChoiceDialog !== 'function') { fertig(); return; }
   if (qs && typeof qs.hasFlag === 'function' && qs.hasFlag(def.flag)) { fertig(); return; }
   if (qs && typeof qs.setFlag === 'function') qs.setFlag(def.flag);
+  // Hammer und Klinge spielen seit b503 auf Tableaus (js/elaraSzene.js);
+  // fehlen die Bilder oder das Modul, bleibt es bei den Textseiten unten.
+  var ES = window.ElaraSzene;
+  if (ES && ES.SZENEN && ES.SZENEN[key] && ES.spielen(scene, key, fertig, function () { _elaraSzenenText(scene, def, fertig); })) return;
+  _elaraSzenenText(scene, def, fertig);
+}
+
+/** Die Textfassung einer Elara-Szene: Seite fuer Seite ueber dem Raum. */
+function _elaraSzenenText(scene, def, fertig) {
+  if (!window.EventSystem || typeof window.EventSystem.showEventChoiceDialog !== 'function') { fertig(); return; }
   var seiten = def.seiten();
   var weiterLabel = _elaraT('Weiter', 'Continue');
   var i = 0;
@@ -4875,6 +4888,12 @@ function _spawnElaraSprite(scene, stage, platz) {
   if (!scene || !window.EventSystem || typeof window.EventSystem.spawnEventObject !== 'function') return;
   const isEn = (window.i18n && typeof window.i18n.getLanguage === 'function' && window.i18n.getLanguage() === 'en');
   const promptLabel = isEn ? 'Elara' : 'Elara';
+  // Die Tableaus der Klinge und des ersten Risses laden, solange sie wartet.
+  const tableau = stage && stage.modus === 'angebot'
+    ? ({ elara_blade: 'klinge', elara_second_truth: 'riss' })[stage.id] : null;
+  if (tableau && window.ElaraSzene && scene.load) {
+    try { window.ElaraSzene.vorladen(scene, tableau); } catch (e) {}
+  }
   // Subtle violet glow to match the Widerstand-faction colour key.
   // Groesse an der Figur gemessen, wie im Versteck (#192).
   window.EventSystem.spawnEventObject(scene, 'elara_right0', 0xffffff, 0x8866cc, promptLabel, function () {

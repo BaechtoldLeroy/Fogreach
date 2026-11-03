@@ -653,7 +653,12 @@
     return null;
   }
 
-  /** Laedt die Kettenwache nach, falls die Szene (der Hub) sie nicht hat. */
+  // Die gemalten Hintergruende des Rueckblicks (PixelLab, 384x192): die
+  // Ratskammer bei Nacht und der Kellerboden von oben. Fehlt eins, zeichnet
+  // der Rueckblick an seiner Stelle die frueheren Formen.
+  var KULISSE = { jetzt: 'rueckblick_kammer', vergangenheit: 'rueckblick_keller' };
+
+  /** Laedt Kettenwache und Kulissen nach, falls die Szene (der Hub) sie nicht hat. */
   function laden(scene, fertig) {
     var tex = scene && scene.textures, ld = scene && scene.load;
     var einmal = function () { if (fertig) { var f = fertig; fertig = null; f(); } };
@@ -663,6 +668,12 @@
       var k = 'chainguard_' + r;
       if (tex.exists(k)) return;
       ld.image(k, 'assets/enemy/chainguard/' + r + '.png');
+      fehlt++;
+    });
+    Object.keys(KULISSE).forEach(function (n) {
+      var k = KULISSE[n];
+      if (tex.exists(k)) return;
+      ld.image(k, 'assets/sprites/rueckblick/' + k + '.png');
       fehlt++;
     });
     if (!fehlt) { einmal(); return; }
@@ -791,8 +802,21 @@
       // --- Die Gegenwart: der Waechter neben den beiden --------------------
       var fuss = Math.round(h * 0.66);
       var jetzt = [];
-      var licht = neu(scene.add.ellipse(b / 2 + 150, fuss - 42, 170, 210, 0xffd08a, 0.08).setDepth(T + 1));
-      jetzt.push(licht);
+      // Die Ratskammer bei Nacht, bildfuellend; ohne Bild ein Lichtschein im Dunkel.
+      if (scene.textures && scene.textures.exists(KULISSE.jetzt)) {
+        // Die Fusslinie der Figuren liegt auf dem Boden VOR dem Tisch (86 %
+        // der Bildhoehe), sonst standen sie im Bild auf der Tischplatte. Gross
+        // genug, dass Boden bis an den unteren Balken und Gewoelbe bis an den
+        // oberen reichen.
+        var kammer = neu(scene.add.image(b / 2, fuss, KULISSE.jetzt).setOrigin(0.5, 0.86).setDepth(T + 1).setName('rueckblickKulisse_jetzt'));
+        kammer.setScale(Math.max(b / kammer.width, (fuss - obenH) / (kammer.height * 0.86),
+          (h - untenH - fuss) / (kammer.height * 0.14)));
+        jetzt.push(kammer);
+        zustand.kulisse = KULISSE.jetzt;
+      } else {
+        jetzt.push(neu(scene.add.ellipse(b / 2 + 150, fuss - 42, 170, 210, 0xffd08a, 0.08).setDepth(T + 1)));
+        zustand.kulisse = null;
+      }
       var al = neu(_figur(scene, 'aldric_right0', b / 2 - 190, fuss, 58 * 1.5));
       var el = neu(_figur(scene, 'elara_right0', b / 2 - 80, fuss, ELARA_HOEHE * 1.5));
       [al, el].forEach(function (x) { if (x) { x.setDepth(T + 2).setTint(0x3a3646); jetzt.push(x); } });
@@ -828,19 +852,31 @@
         var mitte = { x: b / 2, y: obenH + (h - obenH - untenH) / 2 };
         var box = neu(scene.add.container(mitte.x, mitte.y).setDepth(T + 5));
         var feldH = h - obenH - untenH;
-        var boden = scene.add.graphics();
-        var k = 40;
-        for (var gy = -Math.ceil(feldH / 2 / k) - 1; gy <= Math.ceil(feldH / 2 / k); gy++) {
-          for (var gx = -Math.ceil(b / 2 / k) - 1; gx <= Math.ceil(b / 2 / k); gx++) {
-            var hell = ((gx + gy) & 1) ? 0x2e2d31 : 0x353439;
-            boden.fillStyle(hell, 1);
-            boden.fillRect(gx * k + ((gy & 1) ? k / 2 : 0), gy * k, k - 2, k - 2);
+        var boden;
+        if (scene.textures && scene.textures.exists(KULISSE.vergangenheit)) {
+          // Der Kellerboden von oben, entsaettigt wie die Figuren und etwas
+          // gedaempft, damit die grauen Wachen davor lesbar bleiben.
+          boden = scene.add.image(0, 0, KULISSE.vergangenheit).setName('rueckblickKulisse_vergangenheit');
+          boden.setScale(Math.max(b / boden.width, feldH / boden.height));
+          _grau(boden);
+          boden.setAlpha(0.6);
+          zustand.kulisseVergangenheit = KULISSE.vergangenheit;
+        } else {
+          boden = scene.add.graphics();
+          var k = 40;
+          for (var gy = -Math.ceil(feldH / 2 / k) - 1; gy <= Math.ceil(feldH / 2 / k); gy++) {
+            for (var gx = -Math.ceil(b / 2 / k) - 1; gx <= Math.ceil(b / 2 / k); gx++) {
+              var hell = ((gx + gy) & 1) ? 0x2e2d31 : 0x353439;
+              boden.fillStyle(hell, 1);
+              boden.fillRect(gx * k + ((gy & 1) ? k / 2 : 0), gy * k, k - 2, k - 2);
+            }
           }
-        }
-        // Rand ins Dunkel.
-        for (var s = 0; s < 6; s++) {
-          boden.lineStyle(26, 0x050407, 0.18 + s * 0.12);
-          boden.strokeEllipse(0, 0, b * (1.25 - s * 0.06), feldH * (1.5 - s * 0.07));
+          // Rand ins Dunkel.
+          for (var s = 0; s < 6; s++) {
+            boden.lineStyle(26, 0x050407, 0.18 + s * 0.12);
+            boden.strokeEllipse(0, 0, b * (1.25 - s * 0.06), feldH * (1.5 - s * 0.07));
+          }
+          zustand.kulisseVergangenheit = null;
         }
         box.add(boden);
         var r = Math.min(150, feldH * 0.4);

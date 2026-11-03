@@ -790,6 +790,8 @@ class HubSceneV2 extends Phaser.Scene {
     if (window.WiedersehenSzene) window.WiedersehenSzene.vorschau(this);
     // Debug ?epilog=<variante>: den Epilog als Bildfolge ansehen.
     if (window.EpilogSzene) window.EpilogSzene.vorschau(this);
+    // Debug ?elaraszene=werkstatt|klinge|riss: Elaras Tableaus ansehen.
+    if (window.ElaraSzene) window.ElaraSzene.vorschau(this);
   }
 
   createPrompt() {

@@ -255,6 +255,26 @@ ohne den Dungeon und ohne den Spielstand anzufassen:
 ?debug=1&bruchnacht=1
 ```
 
+Seit b503 spielen auch der Hammer (Werkstatt-Besuch), die Klinge
+(`elara_blade`) und Elaras erster Riss (`elara_second_truth`, im Hub wie im
+Keller) auf Tableaus (js/elaraSzene.js, Bilder in
+`assets/sprites/elaraszenen/`). Nur ansehen, ohne Spielstand:
+
+| Flagge | Wirkung |
+|---|---|
+| `?elaraszene=werkstatt` | Dein alter Hammer: Elara schiebt ihn Dir hin |
+| `?elaraszene=klinge` | die Klinge, dann die Gravur am Heft (drei Ringe, ineinander) |
+| `?elaraszene=riss` | der Bote, das Blatt, das sie wegfaltet, mit der Wahl aus storyDialog |
+
+Erste Taste zeigt den Satz ganz, die naechste blaettert, die Wahl nimmt nur
+Klicks, ESC oder "Überspringen" springt zur Wahl und beendet erst danach. Im
+echten Keller: `?versteck=werkstatt`, `?auftrag=elara_blade`,
+`?auftrag=elara_second_truth`.
+
+```
+?debug=1&autostart=1&elaraszene=klinge
+```
+
 ### Elaras Rettung und der Rueckblick (Story-Kern v6.1)
 
 | Flagge | Wirkung |
@@ -274,6 +294,11 @@ ueberspringt nur ESC oder der Knopf, und auch dann erst bis zu Elaras Zeile.
 Die Maulwurf-Szene beginnt immer mit den drei Bildern (js/zettelSzene.js):
 die erste Taste zeigt den Satz ganz, die naechste blaettert weiter, ESC
 beendet die Bilder. Danach Rueckblick und Ring wie oben.
+
+Der Rueckblick steht seit b503 auf zwei gemalten Hintergruenden
+(`assets/sprites/rueckblick/`): die Ratskammer bei Nacht (Gegenwart) und der
+Kellerboden von oben, entsaettigt (Vergangenheit). Fehlt ein Bild, zeichnet
+er an der Stelle die frueheren Formen.
 
 ```
 ?debug=1&dungeon=3&rettung=sofort

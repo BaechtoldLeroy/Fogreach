@@ -103,9 +103,12 @@ test('Zweiter Besuch: nach elara_meeting die Werkstatt-Szene im Versteck', () =>
   const r = versteckBetreten();
   assert.strictEqual(r.besuch, 'werkstatt');
   H.run(`window._versteckSzeneSpielen(window.game.scene.getScene('GameScene'), 'werkstatt')`);
-  const text = H.run(`window.__dialogLog[0] || ''`);
-  assert.ok(/Hammer/.test(text) && /aufgehoben/.test(text), 'nicht die Werkstatt-Szene (v6.1: Dein alter Hammer): ' + text);
-  H.run('window.__durchklicken()');
+  // Seit b503 auf einem Tableau (js/elaraSzene.js, eigener Test elaraSzene).
+  const SZ = `window.game.scene.getScene('GameScene').__elaraSzene`;
+  for (let i = 0; i < 300 && !H.run(`!!${SZ}`); i++) H.step(2);
+  const text = H.run(`${SZ} ? ${SZ}.id + ': ' + window.ElaraSzene.schritte(${SZ}.id).map(function (s) { return s.text || ''; }).join(' ') : ''`);
+  assert.ok(/^werkstatt/.test(text) && /Hammer/.test(text) && /aufgehoben/.test(text), 'nicht die Werkstatt-Szene (v6.1: Dein alter Hammer): ' + text);
+  H.run(`${SZ}.beenden()`);
   assert.strictEqual(H.run(`window.questSystem.hasFlag('elara_camp_seen')`), true);
 });
 

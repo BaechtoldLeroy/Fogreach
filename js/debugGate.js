@@ -92,6 +92,7 @@
     'versteck', 'sonder', 'akt', 'stark',
     'sitzung',          // nur noch Vorschau: sitzung=oeffentlich | geheim
     'gegnerlauf',
+    'elaraszene',       // Elaras Tableaus ansehen: elaraszene=werkstatt|klinge|riss (js/elaraSzene.js)
     'trailer', 'einstellung',  // Trailer-Modus (js/trailerModus.js)
     'quer',             // Trailer im Querformat 960x480 statt hochkant (trailer=1&quer=1)
     'aktprobe',         // Akt-Zwischenszene ansehen: aktprobe=1..6 | epilog
