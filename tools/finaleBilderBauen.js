@@ -8,6 +8,9 @@
  * Figuren (Charaktere aus dem Hub, Richtung suedost = "nach rechts"):
  *   harren/        rot, gehen0..7 (Vorlage sad-walk), fall0..6 (falling-back-death)
  *   mara/          rot, gehen0..5 (walking-6-frames)
+ *   Beide gehen dazu in den uebrigen sieben Richtungen (dieselbe Vorlage,
+ *   dieselbe Animationsgruppe): gehen_<r>0..N, r = s sw w nw n no o;
+ *   gehen0..N ohne Kuerzel bleibt suedost.
  *   elara/         rot, besessen0..8 (v3, 92 px)
  *   elara_kniend/  rot (Zustand "Kniend"), atmen0..4 (v3, 88 px)
  *   ->  assets/sprites/finale/figuren/<figur>/<bild>.png
@@ -36,11 +39,18 @@ const sharp = require('sharp');
 const ROH = path.join(__dirname, 'rohbilder', 'finale');
 const ASSETS = path.join(__dirname, '..', 'assets');
 const TABLEAUS = ['hammer', 'lene', 'stoss', 'esse', 'bruch', 'urteil', 'verschonen', 'richten'];
+// Die Gehrichtungen neben suedost (Kuerzel wie GEH_RICHTUNGEN in js/finale.js).
+const RICHTUNGEN = ['s', 'sw', 'w', 'nw', 'n', 'no', 'o'];
+function gehen(n) {
+  const raus = [];
+  for (let i = 0; i < n; i++) raus.push(['gehen' + i, 'gehen' + i]);
+  RICHTUNGEN.forEach((r) => { for (let i = 0; i < n; i++) raus.push(['gehen_' + r + i, 'gehen_' + r + i]); });
+  return raus;
+}
 // Figur -> [Rohbild, Zielname]
 const FIGUREN = {
-  harren: [['rot', 'stand']].concat([0, 1, 2, 3, 4, 5, 6, 7].map((i) => ['gehen' + i, 'gehen' + i]),
-    [2, 3, 4, 5, 6].map((i, k) => ['fall' + i, 'fall' + k])),
-  mara: [['rot', 'stand']].concat([0, 1, 2, 3, 4, 5].map((i) => ['gehen' + i, 'gehen' + i])),
+  harren: [['rot', 'stand']].concat(gehen(8), [2, 3, 4, 5, 6].map((i, k) => ['fall' + i, 'fall' + k])),
+  mara: [['rot', 'stand']].concat(gehen(6)),
   elara: [['rot', 'stand']].concat([1, 2, 3, 4, 5, 6, 7, 8].map((i, k) => ['besessen' + i, 'besessen' + k])),
   elara_kniend: [['rot', 'stand']].concat([1, 2, 3, 4].map((i, k) => ['atmen' + i, 'atmen' + k]))
 };

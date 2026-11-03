@@ -72,6 +72,9 @@ describe('Die Dateien', () => {
 function lage(H) {
   return H.run(`(function () { var sc = ${GSC}, t = sc.__finaleTableau, d = sc.__finaleBlase;
     var key = function (n) { var o = sc.children.getByName(n); return o && o.active ? o.texture.key : null; };
+    // Wo die Figur steht und welche Animation laeuft (fuer die Gehrichtung).
+    var zug = function (n) { var o = sc.children.getByName(n); if (!o || !o.active) return null;
+      var a = o.anims && o.anims.isPlaying && o.anims.currentAnim; return { x: o.x, y: o.y, anim: a ? a.key : null, flip: o.flipX }; };
     var bild = t && t.bild;
     var alle = [];
     if (t) (function sammle(o) { alle.push(o); if (o.list) o.list.forEach(sammle); })(t.container);
@@ -83,6 +86,7 @@ function lage(H) {
       text: t ? t.text : null, kamB: sc.cameras.main.width,
       blase: d ? d.text : null, offen: !!window.eventChoiceOpen,
       pause: !!(window.__GAME_PAUSE && window.__GAME_PAUSE.since != null),
+      hz: zug('finaleHarren'), mz: zug('finaleMara'),
       harren: key('finaleHarren'), elara: key('finaleElara'), elaraFall: key('finaleElaraFall'), mara: key('finaleMara'),
       harrenTot: window.questSystem.hasFlag('harren_dead'), genommen: !!sc.__quelleNahmSie,
       gerichtet: window.questSystem.hasFlag('elara_killed'), verschont: window.questSystem.hasFlag('elara_spared')
@@ -98,11 +102,18 @@ const taste = (H, k) => H.run(`${GSC}.input.keyboard.emit('keydown', { key: '${k
 function durch(H, bei, ende, wahl) {
   const gesehen = { harren: new Set(), elara: new Set(), elaraFall: new Set(), mara: new Set() };
   const tableaus = [];
+  // Schritte, in denen Harren bzw. Mara sich bewegten: Weg, Animation, Bild.
+  const schritte = { harren: [], mara: [] }, vorher = {};
   for (let i = 0; i < 6000; i++) {
     H.step(1);
     const l = lage(H);
     Object.keys(gesehen).forEach((k) => { if (l[k]) gesehen[k].add(l[k]); });
-    if (ende(l)) return { gesehen, tableaus, l };
+    [['harren', l.hz], ['mara', l.mz]].forEach(([n, z]) => {
+      const v = vorher[n];
+      if (z && v && Math.hypot(z.x - v.x, z.y - v.y) > 0.5) schritte[n].push({ dx: z.x - v.x, dy: z.y - v.y, anim: z.anim, flip: z.flip, bild: l[n] });
+      vorher[n] = z;
+    });
+    if (ende(l)) return { gesehen, tableaus, schritte, l };
     if (l.tableau && tableaus[tableaus.length - 1] !== l.tableau) {
       tableaus.push(l.tableau);
       if (bei) bei(l.tableau, l);
@@ -114,7 +125,23 @@ function durch(H, bei, ende, wahl) {
       H.lab.blaseTippen(n > 1 ? (wahl || 0) : 0);
     }
   }
-  return { gesehen, tableaus, l: lage(H) };
+  return { gesehen, tableaus, schritte, l: lage(H) };
+}
+
+/**
+ * Jeder Schritt, den die Figur geht, laeuft in der Animation der Richtung,
+ * in die sie sich bewegt (nicht in den Suedost-Bildern, gespiegelt). Das
+ * letzte Stueck (zum Ziel gesetzt, schon im Standbild) zaehlt nicht, ebenso
+ * Schritte, deren Animation `ohne` trifft (etwa das Fallen).
+ */
+function gehtInRichtung(H, schritte, figur, ohne) {
+  const gehend = schritte.filter((s) => !/_stand$/.test(s.bild || '') && !(ohne && ohne.test(s.anim || '')));
+  assert.ok(gehend.length >= 5, figur + ' bewegt sich kaum gehend: ' + JSON.stringify(schritte.slice(0, 5)));
+  const falsch = gehend.filter((s) => {
+    const r = H.run(`window.Finale.gehRichtung(${s.dx}, ${s.dy})`);
+    return s.anim !== 'finale_' + figur + '_gehen_' + r || s.flip;
+  });
+  assert.deepStrictEqual(falsch.slice(0, 3), [], figur + ' geht nicht in Bewegungsrichtung');
 }
 
 describe('Vor dem Kampf (?finale=harren)', () => {
@@ -178,7 +205,8 @@ describe('Vor dem Kampf (?finale=harren)', () => {
 
   test('Harren geht und faellt, Elara verwandelt sich: mit eigenen Bildern', () => {
     const h = [...lauf.gesehen.harren], e = [...lauf.gesehen.elara];
-    assert.ok(h.filter((k) => /^finale_fig_harren_gehen\d$/.test(k)).length >= 4, 'Harren geht nicht: ' + h);
+    assert.ok(h.filter((k) => /^finale_fig_harren_gehen(_[a-z]+)?\d$/.test(k)).length >= 4, 'Harren geht nicht: ' + h);
+    gehtInRichtung(H, lauf.schritte.harren, 'harren', /_fall/);
     assert.ok(h.filter((k) => /^finale_fig_harren_fall\d$/.test(k)).length >= 3, 'Harren faellt nicht: ' + h);
     assert.ok(e.indexOf('finale_fig_elara_stand') >= 0, 'Elara steht nicht als eigene Figur: ' + e);
     assert.ok(e.filter((k) => /^finale_fig_elara_besessen\d$/.test(k)).length >= 5, 'keine Verwandlung: ' + e);
@@ -223,7 +251,8 @@ describe('Nach dem Kampf (?finale=urteil), Richten', () => {
   test('Elara kniet als eigene Figur und atmet, Mara geht herein und steht beim Urteil', () => {
     const k = [...lauf.gesehen.elaraFall], m = [...lauf.gesehen.mara];
     assert.ok(k.filter((x) => /^finale_fig_elara_kniend_atmen\d$/.test(x)).length >= 3, 'die Kniende atmet nicht: ' + k);
-    assert.ok(m.filter((x) => /^finale_fig_mara_gehen\d$/.test(x)).length >= 3, 'Mara geht nicht: ' + m);
+    assert.ok(m.filter((x) => /^finale_fig_mara_gehen(_[a-z]+)?\d$/.test(x)).length >= 3, 'Mara geht nicht: ' + m);
+    gehtInRichtung(H, lauf.schritte.mara, 'mara', null);
     assert.strictEqual(bei.urteil.mara, 'finale_fig_mara_stand', 'Mara steht beim Urteil nicht: ' + bei.urteil.mara);
     // Die Kniende ist kleiner als eine Stehende, aber nicht gestaucht.
     const r = H.run(`(function () { var o = ${GSC}.children.getByName('finaleElaraFall');

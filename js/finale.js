@@ -380,9 +380,10 @@
   // ursprung: Mitte der stehenden Figur im Ausschnitt; hoehe: ihre Hoehe in
   // Bildpunkten (daraus die Groesse neben dem Spieler).
   var FIGUR_ORDNER = 'assets/sprites/finale/figuren/';
+  // richtungen: Bewegungen, die es in allen acht Richtungen gibt (gehen).
   var FIGUREN = {
-    harren: { bilder: { gehen: 8, fall: 5 }, ursprung: [0.492, 0.492], hoehe: 58 },
-    mara: { bilder: { gehen: 6 }, ursprung: [0.515, 0.5], hoehe: 62 },
+    harren: { bilder: { gehen: 8, fall: 5 }, richtungen: { gehen: true }, ursprung: [0.492, 0.483], hoehe: 58 },
+    mara: { bilder: { gehen: 6 }, richtungen: { gehen: true }, ursprung: [0.472, 0.492], hoehe: 62 },
     elara: { bilder: { besessen: 8 }, ursprung: [0.5, 0.508], hoehe: 63 },
     elara_kniend: { bilder: { atmen: 4 }, ursprung: [0.5, 0.524], hoehe: 59 }
   };
@@ -393,14 +394,26 @@
   };
   // Die Kniende ist kleiner als die Stehende (Anteil der Menschenhoehe).
   var KNIEND_ANTEIL = 0.74;
+  // Die acht Gehrichtungen, im Uhrzeigersinn ab Osten (y waechst nach unten).
+  // Suedost sind die ersten Bilder des Finales und tragen kein Kuerzel.
+  var GEH_RICHTUNGEN = ['o', 'so', 's', 'sw', 'w', 'nw', 'n', 'no'];
+  function _bildName(art, r) { return (r && r !== 'so') ? art + '_' + r : art; }
+  /** In welche der acht Richtungen fuehrt der Schritt (dx, dy)? Rein. */
+  function gehRichtung(dx, dy) {
+    var i = Math.round(Math.atan2(dy, dx) / (Math.PI / 4));
+    return GEH_RICHTUNGEN[((i % 8) + 8) % 8];
+  }
   function figurKey(figur, bild) { return 'finale_fig_' + figur + '_' + bild; }
   function figurBilder() {
     var raus = [];
     Object.keys(FIGUREN).forEach(function (f) {
       raus.push([figurKey(f, 'stand'), FIGUR_ORDNER + f + '/stand.png']);
-      var b = FIGUREN[f].bilder;
+      var b = FIGUREN[f].bilder, rt = FIGUREN[f].richtungen || {};
       Object.keys(b).forEach(function (n) {
-        for (var i = 0; i < b[n]; i++) raus.push([figurKey(f, n + i), FIGUR_ORDNER + f + '/' + n + i + '.png']);
+        (rt[n] ? GEH_RICHTUNGEN : [null]).forEach(function (r) {
+          var name = _bildName(n, r);
+          for (var i = 0; i < b[n]; i++) raus.push([figurKey(f, name + i), FIGUR_ORDNER + f + '/' + name + i + '.png']);
+        });
       });
     });
     return raus;
@@ -418,17 +431,23 @@
     if (!A || typeof A.create !== 'function') return;
     Object.keys(FIGUR_TAKT).forEach(function (k) {
       var key = 'finale_' + k;
-      if (A.exists(key)) return;
       var teil = k.lastIndexOf('_');
       var figur = k.slice(0, teil), art = k.slice(teil + 1);
       var n = FIGUREN[figur] && FIGUREN[figur].bilder[art];
       if (!n) return;
-      var frames = [];
-      for (var i = 0; i < n; i++) {
-        if (!scene.textures.exists(figurKey(figur, art + i))) return;
-        frames.push({ key: figurKey(figur, art + i) });
-      }
-      A.create({ key: key, frames: frames, frameRate: FIGUR_TAKT[k][0], repeat: FIGUR_TAKT[k][1], yoyo: art === 'atmen' });
+      // Ohne Kuerzel (suedost) wie bisher; mit Richtungen je eine eigene Animation.
+      var rt = (FIGUREN[figur].richtungen || {})[art];
+      [null].concat(rt ? GEH_RICHTUNGEN : []).forEach(function (r) {
+        var name = r ? key + '_' + r : key;
+        if (A.exists(name)) return;
+        var frames = [];
+        for (var i = 0; i < n; i++) {
+          var bild = figurKey(figur, _bildName(art, r) + i);
+          if (!scene.textures.exists(bild)) return;
+          frames.push({ key: bild });
+        }
+        A.create({ key: name, frames: frames, frameRate: FIGUR_TAKT[k][0], repeat: FIGUR_TAKT[k][1], yoyo: art === 'atmen' });
+      });
     });
   }
   /** Eine eigene Figur als Sprite (Mitte bei x, y), oder null ohne Bild. */
@@ -450,6 +469,25 @@
     if (!s.scene.anims || !s.scene.anims.exists(key)) return false;
     s.play(key);
     return true;
+  }
+  /**
+   * Die Figur geht nach (zx, zy): mit den Bildern der Richtung, in die sie
+   * laeuft (vorher glitt sie nach Norden rueckwaerts in den Suedost-Bildern).
+   * Ohne Richtungsbilder die alte Gehfigur, nach links gespiegelt; ein
+   * Standbild wird nur gespiegelt. Den Weg selbst legt der Aufrufer zurueck.
+   */
+  function _gehen(s, zx, zy) {
+    if (!s || !s.scene) return false;
+    var r = gehRichtung(zx - s.x, zy - s.y);
+    var figur = s.getData && s.getData('finaleFigur');
+    var key = 'finale_' + figur + '_gehen_' + r;
+    if (figur && s.anims && s.scene.anims && s.scene.anims.exists(key)) {
+      s.setFlipX(false);
+      s.play(key);
+      return true;
+    }
+    s.setFlipX(zx < s.x);
+    return _bewegung(s, 'gehen');
   }
   /** Zurueck ins Standbild (nach dem Gehen). */
   function _stehen(s) {
@@ -666,8 +704,8 @@
       if (b.harren) b.harren.setTint(0xa8a8b0).setAlpha(0.92);
     }
     if (b.harren) {
-      b.harren.setFlipX(weg.start.x > weg.ziel.x).setName('finaleHarren');
-      _bewegung(b.harren, 'gehen');
+      b.harren.setName('finaleHarren');
+      _gehen(b.harren, weg.ziel.x, weg.ziel.y);
       scene.tweens.add({ targets: b.harren, x: weg.ziel.x, y: weg.ziel.y, duration: HARREN_WEG_MS, ease: 'Sine.easeInOut' });
       // Sein Ruf als kleine Blase ueber ihm, waehrend er geht.
       var harren = b.harren;
@@ -1022,8 +1060,7 @@
     if (m && p) {
       m.setName('finaleMara');
       var zx = p.x - 50, zy = p.y - 10;
-      m.setFlipX(zx < m.x);
-      _bewegung(m, 'gehen');
+      _gehen(m, zx, zy);
       scene.tweens.add({ targets: m, x: zx, y: zy, duration: MARA_WEG_MS, ease: 'Sine.easeInOut',
         onComplete: function () { _stehen(m); if (m.scene && p) m.setFlipX(p.x < m.x); } });
       if (m !== alt) scene.events.once('shutdown', function () { _weg(m); });
@@ -1154,6 +1191,7 @@
   window.Finale = { konvoi: konvoi, wahlSeite: _konvoiSeite, vorKampf: vorKampf, nachKampf: nachKampf, laeuftNachKampf: laeuftNachKampf,
     vorKampfSeiten: vorKampfSeiten, nachKampfSeiten: nachKampfSeiten, DEBUG_SCHRITTE: DEBUG_SCHRITTE,
     harrenWeg: harrenWeg, treppenFrei: _treppenFrei, harrenLiegt: harrenLiegt,
-    FIGUREN: FIGUREN, figurKey: figurKey, figurBilder: figurBilder, bilderVorladen: bilderVorladen,
+    FIGUREN: FIGUREN, GEH_RICHTUNGEN: GEH_RICHTUNGEN, gehRichtung: gehRichtung,
+    figurSprite: _figurSprite, gehen: _gehen, stehen: _stehen, figurKey: figurKey, figurBilder: figurBilder, bilderVorladen: bilderVorladen,
     KLINGE_BILD: KLINGE_BILD, klingeTextur: _klingeTextur };
 })();
