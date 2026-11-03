@@ -308,6 +308,41 @@
    * fertig() kommt nach DAUER (ueber die Spieluhr, nicht ueber Tweens).
    */
   var ZERBRECHEN_MS = 3200;
+
+  // Der Daemon, der der Esse entweicht: PixelLab-Bildstreifen
+  // (assets/finale/daemon.png, Rohbilder tools/rohbilder/finale/daemon/),
+  // eine Rauchgestalt, die wabert. Fehlt das Bild, die alte Zeichnung.
+  var DAEMON_BILD = 'esse_daemon';
+  var DAEMON_ANIM = 'esse_daemon_wabern';
+  var DAEMON_RAHMEN = { w: 128, h: 128 };
+  var DAEMON_FPS = 10;
+  var DAEMON_HEBUNG = 40;   // px ueber dem Mittelpunkt der Tweens
+
+  function daemonLeib(scene) {
+    if (scene.textures && scene.textures.exists(DAEMON_BILD)) {
+      // Der Schweif haengt noch im Schlot, der Leib ragt darueber auf (statt
+      // die Esse zu verdecken); beim Fall schrumpft er in den Schlot zurueck.
+      var bild = scene.add.sprite(0, -DAEMON_HEBUNG, DAEMON_BILD, 0).setName('esseDaemonBild');
+      var bilder = scene.textures.get(DAEMON_BILD).frameTotal - 1;   // ohne __BASE
+      if (bilder > 1 && scene.anims) {
+        if (!scene.anims.exists(DAEMON_ANIM)) {
+          scene.anims.create({ key: DAEMON_ANIM, frames: scene.anims.generateFrameNumbers(DAEMON_BILD, { start: 0, end: bilder - 1 }),
+            frameRate: DAEMON_FPS, repeat: -1 });
+        }
+        bild.play(DAEMON_ANIM);
+      }
+      return bild;
+    }
+    var leib = scene.add.graphics();
+    leib.fillStyle(0x7a4ad0, 0.35); leib.fillEllipse(0, 0, 150, 200);
+    leib.fillStyle(0x1c0f2a, 0.9); leib.fillEllipse(0, 0, 120, 170);
+    leib.fillStyle(0x3a2258, 0.75); leib.fillEllipse(0, -30, 90, 90);
+    leib.lineStyle(3, 0xb48cff, 0.9); leib.strokeEllipse(0, 0, 120, 170);
+    leib.fillStyle(0xff5a2a, 1); leib.fillCircle(-18, -38, 8); leib.fillCircle(18, -38, 8);
+    leib.fillStyle(0xffd28a, 1); leib.fillCircle(-18, -38, 3); leib.fillCircle(18, -38, 3);
+    return leib;
+  }
+
   function zerbrechen(scene, fertig, halt) {
     var e = ort(scene);
     var teile = [];
@@ -349,14 +384,7 @@
     // einmal aufrichtet und dann in die Tiefe faellt.
     // Ueber den Figuren (Spieler 100): er soll ueber allem aufragen, bevor er faellt.
     var daemon = scene.add.container(e.x, e.y - 30).setDepth(102).setName('esseDaemon');
-    var leib = scene.add.graphics();
-    leib.fillStyle(0x7a4ad0, 0.35); leib.fillEllipse(0, 0, 150, 200);
-    leib.fillStyle(0x1c0f2a, 0.9); leib.fillEllipse(0, 0, 120, 170);
-    leib.fillStyle(0x3a2258, 0.75); leib.fillEllipse(0, -30, 90, 90);
-    leib.lineStyle(3, 0xb48cff, 0.9); leib.strokeEllipse(0, 0, 120, 170);
-    leib.fillStyle(0xff5a2a, 1); leib.fillCircle(-18, -38, 8); leib.fillCircle(18, -38, 8);
-    leib.fillStyle(0xffd28a, 1); leib.fillCircle(-18, -38, 3); leib.fillCircle(18, -38, 3);
-    daemon.add(leib);
+    daemon.add(daemonLeib(scene));
     daemon.setAlpha(0).setScale(0.6);
     scene.tweens.add({ targets: daemon, alpha: 1, scale: 1.1, y: e.y - 45, duration: 700, ease: 'Quad.easeOut',
       onComplete: function () {
@@ -423,6 +451,9 @@
       if (!scene.textures.exists(key)) scene.load.image(key, 'assets/finale/' + key + '.png');
     });
     if (!scene.textures.exists(HAMMER_BILD)) scene.load.image(HAMMER_BILD, 'assets/finale/hammer.png');
+    if (!scene.textures.exists(DAEMON_BILD)) {
+      scene.load.spritesheet(DAEMON_BILD, 'assets/finale/daemon.png', { frameWidth: DAEMON_RAHMEN.w, frameHeight: DAEMON_RAHMEN.h });
+    }
   }
 
   /** Stellt die Esse als Bild samt Sockelkoerper auf; null, wenn das Bild fehlt. */
@@ -480,7 +511,7 @@
   window.FinaleHandwerk = {
     REICHWEITE: REICHWEITE, DAUER_MS: DAUER_MS, ERKENNEN_BEI: ERKENNEN_BEI, ZERBRECHEN_MS: ZERBRECHEN_MS,
     ort: ort, halten: halten, zerbrechen: zerbrechen, haeltGedrueckt: haeltGedrueckt,
-    hammerTextur: hammerTextur, HAMMER_BILD: HAMMER_BILD, HAMMER_HOEHE: HAMMER_HOEHE, tonSchnitt: tonSchnitt,
+    hammerTextur: hammerTextur, HAMMER_BILD: HAMMER_BILD, DAEMON_BILD: DAEMON_BILD, DAEMON_ANIM: DAEMON_ANIM, HAMMER_HOEHE: HAMMER_HOEHE, tonSchnitt: tonSchnitt,
     ESSE_BILDER: ESSE_BILDER, ESSE_KOERPER: ESSE_KOERPER, ESSE_SOCKEL: ESSE_SOCKEL, ESSE_TIEFE: ESSE_TIEFE, FLACKER_MUSTER: FLACKER_MUSTER, FLACKER_MS: FLACKER_MS,
     bilderVorladen: bilderVorladen, esseAufstellen: esseAufstellen, esseZustand: esseZustand
   };

@@ -240,6 +240,45 @@ test('Letzter Schlag (loesen): lodernd an der Esse, nach dem Schlag zerbrochen; 
   assert.ok(ende.koerper, 'die Truemmer haben keinen Koerper');
 });
 
+// Der Daemon, der der Esse entweicht (Spielerwunsch zu b511): ein PixelLab-
+// Bildstreifen, der wabert, statt der gezeichneten Rauchellipsen.
+test('Zerbrechen: der Daemon entweicht als wabernder Bildstreifen und ist danach weg', () => {
+  // Ohne Finale-Stand: sonst oeffnet die Arena die Seiten und haelt die Uhr an.
+  stand({});
+  arenaBetreten();
+  assert.strictEqual(H.run('!!window.eventChoiceOpen'), false, 'ein Dialog haelt die Uhr an');
+  H.run(`(function () { var sc = ${GSC}; window.__zerbrochenFertig = false;
+    window.FinaleHandwerk.zerbrechen(sc, function () { window.__zerbrochenFertig = true; }, null); })()`);
+  H.step(2);
+  const daemon = () => H.run(`(function () { var sc = ${GSC};
+    var d = sc.children.list.filter(function (o) { return o.active && o.name === 'esseDaemon'; })[0];
+    if (!d) return null;
+    return { kinder: d.list.map(function (k) { return { typ: k.type, key: k.texture ? k.texture.key : null,
+      bild: k.frame ? k.frame.name : null, anim: k.anims && k.anims.currentAnim ? k.anims.currentAnim.key : null }; }),
+      y: d.y }; })()`);
+  const d0 = daemon();
+  assert.ok(d0, 'kein Daemon beim Zerbrechen');
+  assert.strictEqual(d0.kinder.length, 1, JSON.stringify(d0.kinder));
+  const k = d0.kinder[0];
+  assert.notStrictEqual(k.typ, 'Graphics', 'der Daemon ist noch gezeichnet (Textur geladen? ' + H.run(`${GSC}.textures.exists('esse_daemon')`) + ')');
+  assert.strictEqual(k.typ, 'Sprite');
+  assert.strictEqual(k.key, H.run('window.FinaleHandwerk.DAEMON_BILD'));
+  assert.strictEqual(k.anim, H.run('window.FinaleHandwerk.DAEMON_ANIM'));
+  // Er wabert: ueber eine Weile mehrere Bilder.
+  const bilder = new Set([k.bild]);
+  for (let i = 0; i < 30; i++) { H.step(2); const d = daemon(); if (d) bilder.add(d.kinder[0].bild); }
+  assert.ok(bilder.size >= 3, 'der Daemon steht still: ' + Array.from(bilder).join(','));
+  // Nach den Faellen davor greift das Finale das Zerbrechen auf und blendet
+  // Seiten ein (Uhr steht): wegtippen.
+  for (let i = 0; i < 400 && !H.run('window.__zerbrochenFertig'); i++) {
+    if (H.run('!!window.eventChoiceOpen')) H.run('window.__knopf()');
+    H.step(2);
+  }
+  assert.ok(H.run('window.__zerbrochenFertig'), 'das Zerbrechen endet nicht: ' + H.run(`JSON.stringify({ dialog: !!window.eventChoiceOpen,
+    pause: !!(window.__GAME_PAUSE && window.__GAME_PAUSE.since != null), uhr: ${GSC}.time.paused, jetzt: ${GSC}.time.now, daemon: !!${GSC}.children.getByName('esseDaemon') })`));
+  assert.strictEqual(daemon(), null, 'der Daemon bleibt nach dem Zerbrechen stehen');
+});
+
 test('Nach dem Urteil steht die Esse zerbrochen, ohne Glut', () => {
   stand({ harren_dead: true, elara_besiegt: true, elara_spared: true });
   arenaBetreten();

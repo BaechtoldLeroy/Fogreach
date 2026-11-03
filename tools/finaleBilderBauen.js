@@ -28,7 +28,11 @@
  *                              drei ineinandergreifende Ketten (das Zeichen)
  *                              auf der Klinge ueber der Parierstange.
  *
- *   node tools/finaleBilderBauen.js
+ * Der Daemon an der Esse (create_image_pro 128x128, animate_image 8 Bilder):
+ *   daemon/wabern1..8.png  ->  assets/finale/daemon.png (Streifen, je 128x128)
+ *
+ *   node tools/finaleBilderBauen.js          (alles)
+ *   node tools/finaleBilderBauen.js daemon   (nur der Daemon)
  */
 'use strict';
 
@@ -145,8 +149,31 @@ function gravur(b) {
   });
 }
 
+// Der Daemon, der der Esse entweicht (js/finaleHandwerk.js, DAEMON_*):
+// daemon/wabern1..N.png (animate_image auf create_image_pro, 128x128; wabern0
+// ist das Ausgangsbild und schliesst die Schleife nicht sauber) ->
+// ein waagrechter Streifen assets/finale/daemon.png, Bild fuer Bild 128x128
+// (ungeschnitten: so bleibt der Schwerpunkt ueber alle Bilder gleich).
+async function daemon() {
+  const ordner = path.join(ROH, 'daemon');
+  const dateien = [];
+  for (let i = 1; fs.existsSync(path.join(ordner, 'wabern' + i + '.png')); i++) dateien.push(path.join(ordner, 'wabern' + i + '.png'));
+  if (!dateien.length) { console.log('FEHLT', ordner); return; }
+  const S = 128;
+  const teile = await Promise.all(dateien.map(async (d, i) => ({
+    input: await sharp(d).ensureAlpha().resize(S, S, { fit: 'contain', kernel: 'nearest', background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toBuffer(),
+    left: i * S, top: 0
+  })));
+  await sharp({ create: { width: S * dateien.length, height: S, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+    .composite(teile).png({ compressionLevel: 9 }).toFile(path.join(ASSETS, 'finale', 'daemon.png'));
+  console.log('daemon.png'.padEnd(13), (S * dateien.length) + 'x' + S, 'Bilder', dateien.length);
+}
+
 (async () => {
+  // node tools/finaleBilderBauen.js daemon: nur den Daemon neu legen.
+  if (process.argv[2] === 'daemon') { await daemon(); return; }
   for (const t of TABLEAUS) await tableau(t);
+  await daemon();
   for (const f of Object.keys(FIGUREN)) await figur(f);
   await objekt('hammer_objekt_roh.png', 'hammer.png');
   await objekt('klinge_objekt_roh.png', 'klinge.png', gravur);
