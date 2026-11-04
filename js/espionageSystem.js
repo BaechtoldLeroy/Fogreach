@@ -770,10 +770,12 @@
           a._stopT -= dt;
         } else if (Math.abs(wp.x - a.x) < 4 && Math.abs(wp.y - a.y) < 4) {
           a._pauseT += dt;
-          if (a._pauseT >= (T.pause || 0)) { a._pauseT = 0; a._wpIndex = (a._wpIndex + 1) % a.patrol.length; }
+          if (a._pauseT >= (T.pause || 0)) { a._pauseT = 0; a._wpIndex = (a._wpIndex + 1) % a.patrol.length; a._weg = null; }
           if (T.watcher) a._facing += Math.sin(a._scanT += dt) * 0.6 * dt;   // beim Innehalten umsehen
         } else {
-          _walkTo(a, wp.x, wp.y, T.speed, dt);
+          // Nach einer Meldung steht der Melder bei der Wache, oft hinter einer
+          // Wand von seinem Weg: geradeaus zurueck blieb er an ihr haengen.
+          _laufeZu(a, wp.x, wp.y, T.speed, dt);
         }
       } else if (T.watcher) {
         // Am Pult: meist der Blick aufs Papier (kurzer Kegel), dann und wann
