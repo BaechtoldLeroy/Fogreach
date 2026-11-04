@@ -516,8 +516,8 @@
         var hdist = Math.sqrt(hdx * hdx + hdy * hdy);
         if (hdist > 0.001) g._facing = Math.atan2(hdy, hdx);
         if (hdist > GUARD_CONTACT) {
-          var hstep = Math.min((g.speed || DEF_SPEED) * GUARD_CHASE_MULT * dt, hdist);
-          _moveGuard(g, g.x + (hdx / hdist) * hstep, g.y + (hdy / hdist) * hstep);
+          _laufeZu(g, p.x, p.y, (g.speed || DEF_SPEED) * GUARD_CHASE_MULT, dt);
+          if (hdist > 0.001) g._facing = Math.atan2(hdy, hdx);
         }
         g._atkCd = Math.max(0, (g._atkCd || 0) - dt);
         if (hdist <= GUARD_CONTACT && g._atkCd <= 0) {
@@ -534,11 +534,13 @@
         if (_misstrauischHalten(g, sieht, state.detection > 0.02, p, dt)) continue;
       }
       // Einem Geraeusch oder Ruf nachgehen: hin, umsehen, dann zurueck an die Arbeit.
+      // Alle Wege der Wache laufen ueber die Wegsuche: Geraeusch, Ruf und der
+      // Rueckweg liegen oft hinter einer Wand, geradeaus klebte sie dort fest.
       if (g._invest) {
         var iv = g._invest;
         iv.t -= dt;
         var ivx = iv.x - g.x, ivy = iv.y - g.y;
-        if (ivx * ivx + ivy * ivy > 46 * 46) _walkTo(g, iv.x, iv.y, (g.speed || DEF_SPEED) * 1.1, dt);
+        if (ivx * ivx + ivy * ivy > 46 * 46) _laufeZu(g, iv.x, iv.y, (g.speed || DEF_SPEED) * 1.1, dt);
         else g._facing = Math.atan2(ivy, ivx) + Math.sin(iv.t * 2.5) * 0.8;
         if (iv.t <= 0) {
           g._invest = null;
@@ -553,14 +555,12 @@
         var dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < 4) {
           g._pauseT += dt;
-          if (g._pauseT >= g.pause) { g._pauseT = 0; g._wpIndex = (g._wpIndex + 1) % g.patrol.length; }
+          if (g._pauseT >= g.pause) { g._pauseT = 0; g._wpIndex = (g._wpIndex + 1) % g.patrol.length; g._weg = null; }
         } else {
-          var step = Math.min(g.speed * dt, dist);
-          _moveGuard(g, g.x + (dx / dist) * step, g.y + (dy / dist) * step);
-          g._facing = Math.atan2(dy, dx);
+          _laufeZu(g, t.x, t.y, g.speed, dt);
         }
       } else if ((g.x - g._homeX) * (g.x - g._homeX) + (g.y - g._homeY) * (g.y - g._homeY) > 16) {
-        _walkTo(g, g._homeX, g._homeY, g.speed || DEF_SPEED, dt);   // nach dem Nachsehen zurueck auf den Posten
+        _laufeZu(g, g._homeX, g._homeY, g.speed || DEF_SPEED, dt);   // nach dem Nachsehen zurueck auf den Posten
       } else {
         // stationär: Blick schwenkt hin und her (Sichtkegel sweept)
         g._scanT += dt;
@@ -828,7 +828,7 @@
     if (a._state === 'chase') {
       if (!p || pHome > T.leash * 1.8) { a._state = 'idle'; }
       else {
-        if (pd > VERMIN_BITE_R * 0.8) _walkTo(a, p.x, p.y, T.speed, dt);
+        if (pd > VERMIN_BITE_R * 0.8) _laufeZu(a, p.x, p.y, T.speed, dt);
         if (pd <= VERMIN_BITE_R && a._biteCd <= 0) {
           a._biteCd = T.bite;
           try { if (typeof window !== 'undefined' && typeof window.applyPlayerDamage === 'function') window.applyPlayerDamage(T.damage, scene); } catch (_) {}
@@ -836,7 +836,7 @@
       }
     } else {
       if (p && pd <= T.aggro && pHome <= T.leash * 1.8) { a._state = 'chase'; }
-      else if (hx * hx + hy * hy > 30 * 30) { _walkTo(a, a._homeX, a._homeY, T.speed * 0.6, dt); }
+      else if (hx * hx + hy * hy > 30 * 30) { _laufeZu(a, a._homeX, a._homeY, T.speed * 0.6, dt); }
       else {
         // Unruhiges Scharren in der Ecke.
         a._wanderT -= dt;
