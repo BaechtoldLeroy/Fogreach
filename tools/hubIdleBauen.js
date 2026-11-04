@@ -159,10 +159,10 @@ const AUSWAHL = [
   ['klerus', 'assets/sprites/klerus.png', 'klerus', 'v1_f'],
   ['garde', 'assets/sprites/garde.png', 'garde', 'v2_f'],
   ['buerger', 'assets/sprites/buerger.png', 'buerger', 'v2_f'],
-  ['patrouille', 'assets/sprites/patrouille.png', 'patrouille', 'v2_f'],
-  ['vorleser_frau', 'assets/sprites/vorleser_frau.png', 'vorleser_frau', 'v2_f'],
+  ['patrouille', 'assets/sprites/patrouille.png', 'patrouille', 'v3_f'],   // v3: suedost wie die anderen
+  ['vorleser_frau', 'assets/sprites/vorleser_frau.png', 'vorleser_frau', 'v1_f'],
   ['vorleser_alter', 'assets/sprites/vorleser_alter.png', 'vorleser_alter', 'v1_f'],
-  ['vorleser_junge', 'assets/sprites/vorleser_junge.png', 'vorleser_junge', 'v2_f'],
+  ['vorleser_junge', 'assets/sprites/vorleser_junge.png', 'vorleser_junge', 'v1_f'],
   // Epilog-Buerger: Standbild = rot_south-east zugeschnitten (tools/hubBauen.js), wie die anderen.
   ['buerger_baeckerin', 'assets/sprites/buerger_baeckerin.png', 'buerger_baeckerin', 'v1_f'],
   ['buerger_zimmermann', 'assets/sprites/buerger_zimmermann.png', 'buerger_zimmermann', 'v1_f'],
