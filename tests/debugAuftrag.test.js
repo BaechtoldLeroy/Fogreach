@@ -243,7 +243,11 @@ test('Mit ?dungeon=N steht der Stand, bevor der Keller beginnt; Schloss loesen, 
 test('?kreide=1 stellt in jedem Raum ein Kreidezeichen, ohne die Flagge entscheidet der Wurf', () => {
   K.run(`window.DebugAuftrag.standSetzen('mara_kreide')`);
   const wurf = (such) => mitAdresse(K, such, null, `
-    var echt = Math.random; Math.random = function () { return 0.99; };
+    // Nur der Chancenwurf faellt fest daneben; die Platzsuche danach wuerfelt
+    // echt (seit b521 gibt es auf belegtem Platz kein Zeichen, und mit festem
+    // Wurf zoege sie 40 Mal denselben Punkt).
+    var echt = Math.random, erster = true;
+    Math.random = function () { if (erster) { erster = false; return 0.99; } return echt(); };
     try { return !!window.Kreidezeichen.vielleichtSpawnen(${GS}); } finally { Math.random = echt; }`).r;
   assert.strictEqual(wurf('?debug=1&kreide=1'), true, 'mit ?kreide=1 kein Zeichen');
   assert.strictEqual(wurf('?debug=1'), false, 'ohne Flagge trotz Fehlwurf ein Zeichen');
