@@ -272,6 +272,10 @@ class HubSceneV2 extends Phaser.Scene {
     ['vorleser_frau', 'vorleser_alter', 'vorleser_junge'].forEach((k) => {
       if (!tex.exists(k)) this.load.image(k, 'assets/sprites/' + k + '.png');
     });
+    // Epilog: die Leute aus der Stadt, die statt Klerus und Garde dastehen.
+    ['buerger_baeckerin', 'buerger_zimmermann', 'buerger_alte', 'buerger_maedchen'].forEach((k) => {
+      if (!tex.exists(k)) this.load.image(k, 'assets/sprites/' + k + '.png');
+    });
     ['aldric', 'elara', 'harren'].forEach((npc) => {
       ['left0','left1','left2','right0','right1','right2'].forEach((frame) => {
         const key = npc + '_' + frame;

@@ -162,7 +162,12 @@ const AUSWAHL = [
   ['patrouille', 'assets/sprites/patrouille.png', 'patrouille', 'v2_f'],
   ['vorleser_frau', 'assets/sprites/vorleser_frau.png', 'vorleser_frau', 'v2_f'],
   ['vorleser_alter', 'assets/sprites/vorleser_alter.png', 'vorleser_alter', 'v1_f'],
-  ['vorleser_junge', 'assets/sprites/vorleser_junge.png', 'vorleser_junge', 'v2_f']
+  ['vorleser_junge', 'assets/sprites/vorleser_junge.png', 'vorleser_junge', 'v2_f'],
+  // Epilog-Buerger: Standbild = rot_south zugeschnitten (tools/hubBauen.js).
+  ['buerger_baeckerin', 'assets/sprites/buerger_baeckerin.png', 'buerger_baeckerin', 'v1_f'],
+  ['buerger_zimmermann', 'assets/sprites/buerger_zimmermann.png', 'buerger_zimmermann', 'v1_f'],
+  ['buerger_alte', 'assets/sprites/buerger_alte.png', 'buerger_alte', 'v1_f'],
+  ['buerger_maedchen', 'assets/sprites/buerger_maedchen.png', 'buerger_maedchen', 'v1_f']
 ];
 
 module.exports = { bauen, AUSWAHL };

@@ -180,7 +180,7 @@ test('Vor dem Bruch gelten noch die Zeilen der Enttarnung', () => {
   assert.ok(/sucht Dich noch nicht/.test(zeilen('branka').join(' | ')));
 });
 
-test('Klerus, Wachtmeister und Buerger haben Zeilen fuer den Bruch und den Epilog', () => {
+test('Klerus, Wachtmeister und Buerger haben Zeilen fuer den Bruch, im Epilog sprechen die Buerger', () => {
   stand(4, { mara_assault: 'available', the_reckoning: 'available', schattenrat_finale: 'available' }, { enttarnt: true });
   const klerus = zeilen('klerus_priester').join(' | ');
   assert.ok(/Besessenheit/.test(klerus), 'Klerus im Bruch: ' + klerus);
@@ -190,9 +190,11 @@ test('Klerus, Wachtmeister und Buerger haben Zeilen fuer den Bruch und den Epilo
   assert.ok(/sie suchen Dich/.test(buerger.join(' | ')), 'Buerger im Bruch: ' + buerger.join(' | '));
   assert.ok(!buerger.some((z) => /\[Auswahl\]/.test(z)), 'der Buerger fragt noch, ob Du im Rathaus aus und ein gehst');
   stand(4, {}, { enttarnt: true, story_ending: true });
-  assert.ok(/Reinigung/.test(zeilen('klerus_priester').join(' | ')), 'Klerus im Epilog');
-  assert.ok(/Gewohnheit/.test(zeilen('stadtwache').join(' | ')), 'Wachtmeister im Epilog');
+  // Klerus und Wachtmeister stehen im Epilog nicht mehr auf dem Platz
+  // (tests/epilogBuerger.test.js); statt ihrer sprechen Leute aus der Stadt.
   assert.ok(/BÜRGER: /.test(zeilen('buerger').join(' | ')), 'Buerger im Epilog');
+  assert.ok(/Laterne/.test(zeilen('epilog_alte').join(' | ')), 'Alte Frau im Epilog');
+  assert.ok(/Ketten vom Brunnen/.test(zeilen('epilog_zimmermann').join(' | ')), 'Zimmermann im Epilog');
 });
 
 test('Mara heisst "Späherin Mara"', () => {

@@ -27,7 +27,11 @@
     ['patrouille', 'patrouille'],
     ['vorleser_frau', 'vorleser_frau'],
     ['vorleser_alter', 'vorleser_alter'],
-    ['vorleser_junge', 'vorleser_junge']
+    ['vorleser_junge', 'vorleser_junge'],
+    ['buerger_baeckerin', 'buerger_baeckerin'],
+    ['buerger_zimmermann', 'buerger_zimmermann'],
+    ['buerger_alte', 'buerger_alte'],
+    ['buerger_maedchen', 'buerger_maedchen']
   ];
   const BILDER = 8;
   // Ruhiger Takt: eine Schleife dauert rund 1,6 s.

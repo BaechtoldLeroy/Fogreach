@@ -90,13 +90,24 @@
         '(Der Bürger steht auf dem Platz und liest laut aus einem frischen Blatt.)',
         'BÜRGER: "...und hier stehen die Namen. Alle. Lies mit, wenn Du kannst."'
       ],
-      klerus_priester: [
-        '(Er hält ein frisches Blatt und liest es zum dritten Mal.) Hier steht mein Name. Neben dem Wort Reinigung.',
-        'Ich habe gepredigt, was man mir gab. Ich weiss nicht mehr, was ich davon geglaubt habe.'
+      // Klerus, Stadtwache und Patrouillen stehen im Epilog nicht mehr auf
+      // dem Platz (hubLayout hiddenInPhase, _patrouillenAufstellen). Statt
+      // ihrer stehen Leute aus der Stadt da (hubLayout epilog_*).
+      epilog_baeckerin: [
+        'Der Ofen brennt wieder die ganze Nacht. Ohne Ratsmarke, ohne Liste. Wer Hunger hat, bekommt Brot.',
+        'Früher stand auf jedem Laib das Siegel des Rates. Jetzt steht nur noch drauf, was drin ist: Mehl und Wasser.'
       ],
-      stadtwache: [
-        'Keine Befehle mehr aus dem Rathaus. Die Männer stehen trotzdem jeden Morgen hier. Aus Gewohnheit.',
-        'Ich habe Leute in den Keller gebracht. Jetzt erinnere ich mich wieder an ihre Gesichter.'
+      epilog_zimmermann: [
+        'Die Ketten vom Brunnen haben wir abgeschlagen. Das Eisen wird zu Nägeln. Es gibt viel zu bauen.',
+        'Ich habe Türen vernagelt, auf Befehl. Jetzt mache ich sie wieder auf. Eine nach der anderen.'
+      ],
+      epilog_alte: [
+        'Ich trage die Laterne aus Gewohnheit. Dabei sieht man heute bis ans andere Ende des Platzes.',
+        'In Thoms Blatt steht der Name meines Sohnes. Dreissig Jahre wusste ich nicht, dass ich ihn vergessen hatte.'
+      ],
+      epilog_maedchen: [
+        'Ich kann schon lesen! Na ja, fast. Die Bäckerin bringt es mir bei, mit Thoms Blättern.',
+        'Mutter sagt, früher war der Nebel so dick, dass man die Rathaustreppe nicht sah. Ich sehe sie. Jede Stufe.'
       ]
     }
   };
@@ -124,10 +135,14 @@
       'hub.phase.broken.buerger.1': 'I saw nothing. That is what I tell everyone who asks.',
       'hub.phase.epilogue.buerger.0': '(The citizen stands on the square and reads aloud from a fresh sheet.)',
       'hub.phase.epilogue.buerger.1': 'CITIZEN: "...and here are the names. All of them. Read along if you can."',
-      'hub.phase.epilogue.klerus_priester.0': '(He holds a fresh sheet and reads it for the third time.) My name is on it. Next to the word purification.',
-      'hub.phase.epilogue.klerus_priester.1': 'I preached what I was given. I no longer know how much of it I believed.',
-      'hub.phase.epilogue.stadtwache.0': 'No more orders from the town hall. The men still stand here every morning. Out of habit.',
-      'hub.phase.epilogue.stadtwache.1': 'I took people down into the cellar. Now I remember their faces again.'
+      'hub.phase.epilogue.epilog_baeckerin.0': 'The oven burns all night again. No council token, no list. Whoever is hungry gets bread.',
+      'hub.phase.epilogue.epilog_baeckerin.1': 'Every loaf used to carry the council seal. Now it only says what is in it: flour and water.',
+      'hub.phase.epilogue.epilog_zimmermann.0': 'We knocked the chains off the fountain. The iron becomes nails. There is a lot to build.',
+      'hub.phase.epilogue.epilog_zimmermann.1': 'I nailed doors shut, on orders. Now I open them again. One after another.',
+      'hub.phase.epilogue.epilog_alte.0': 'I carry the lantern out of habit. Today you can see to the far end of the square.',
+      'hub.phase.epilogue.epilog_alte.1': "My son's name is in Thom's sheet. For thirty years I did not know that I had forgotten him.",
+      'hub.phase.epilogue.epilog_maedchen.0': "I can read already! Well, almost. The baker is teaching me, with Thom's sheets.",
+      'hub.phase.epilogue.epilog_maedchen.1': 'Mother says the fog used to be so thick you could not see the town hall stairs. I can see them. Every step.'
     });
   })();
 

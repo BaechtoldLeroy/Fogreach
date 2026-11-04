@@ -21,6 +21,10 @@ if (window.i18n) {
     'hub.npc.klerus_priester.name': 'Priester des Klerus',
     'hub.npc.stadtwache.name': 'Hauptmann der Stadtwache',
     'hub.npc.buerger.name': 'Ratloser Bürger',
+    'hub.npc.epilog_baeckerin.name': 'Bäckerin',
+    'hub.npc.epilog_zimmermann.name': 'Zimmermann',
+    'hub.npc.epilog_alte.name': 'Alte Frau mit Laterne',
+    'hub.npc.epilog_maedchen.name': 'Mädchen',
     // Default greeting lines (shown when no quest is active). Quest-aware
     // lines come from storySystem NPC_DIALOGUE.
     'hub.npc.aldric.line.0': 'Willkommen zurück, Archivschmied. Der Rat schätzt Deine Dienste.',
@@ -46,6 +50,10 @@ if (window.i18n) {
     'hub.npc.klerus_priester.name': 'Priest of the Clergy',
     'hub.npc.stadtwache.name': 'City Watch Captain',
     'hub.npc.buerger.name': 'Bewildered Citizen',
+    'hub.npc.epilog_baeckerin.name': 'Baker',
+    'hub.npc.epilog_zimmermann.name': 'Carpenter',
+    'hub.npc.epilog_alte.name': 'Old Woman with Lantern',
+    'hub.npc.epilog_maedchen.name': 'Girl',
     'hub.npc.aldric.line.0': 'Welcome back, Archivesmith. The council values your service.',
     'hub.npc.aldric.line.1': 'Fogreach is safe as long as the council watches. Do not forget that.',
     'hub.npc.aldric.line.2': 'You have talent. The council could use someone like you, in the long run.',
@@ -276,6 +284,8 @@ window.HUB_HITBOXES = {
       // ~102px display height that 0.10 produced from the original.
       hoehe: 58,   // der Klerus — hochgewachsen, mit Mitra
       visibleFromAct: 'auftrag',
+      // Im Epilog ist der Rat enttarnt: kein Klerus mehr auf dem Platz.
+      hiddenInPhase: ['epilogue'],
       lines: [
         'Die Ordnung des Kettenrats ist heilig. Wer sie befragt, befragt das Licht selbst.',
         'Ketzerei beginnt mit der falschen Frage. Halte Deine Lippen rein.',
@@ -292,6 +302,8 @@ window.HUB_HITBOXES = {
       // 92 / 408 ≈ 0.225.
       hoehe: 58,   // die Stadtwache — gepanzert und aufrecht
       visibleFromAct: 'auftrag',
+      // Im Epilog keine Garde mehr (die Patrouillen fehlen dort ebenso).
+      hiddenInPhase: ['epilogue'],
       lines: [
         'Die Patrouillen wachsen jeden Monat. So muss es sein, die Stadt ist unruhig.',
         'Loyalität ist die einzige Münze, die zwischen den Strassen Bestand hat. Frag nicht warum.',
@@ -315,6 +327,46 @@ window.HUB_HITBOXES = {
       lines: [
         'Verzeih. Du gehst im Rathaus aus und ein, Du musst es doch wissen.'
       ]
+    },
+    // Epilog: Leute aus der Stadt statt Klerus und Garde. Nur mit
+    // story_ending; ihre Zeilen stehen in HubPhase.npcFlavorByPhase.epilogue,
+    // die Plaetze in hubNeuKarte.npcs. Bilder: PixelLab, Blick nach Sueden
+    // wie die Vorleser (tools/rohbilder/hubidle/buerger_*).
+    {
+      id: 'epilog_baeckerin',
+      name: 'Bäckerin',
+      x: 0, y: 0,
+      texture: 'buerger_baeckerin',
+      hoehe: 52,
+      visibleAfterFlag: 'story_ending',
+      lines: []
+    },
+    {
+      id: 'epilog_zimmermann',
+      name: 'Zimmermann',
+      x: 0, y: 0,
+      texture: 'buerger_zimmermann',
+      hoehe: 54,
+      visibleAfterFlag: 'story_ending',
+      lines: []
+    },
+    {
+      id: 'epilog_alte',
+      name: 'Alte Frau mit Laterne',
+      x: 0, y: 0,
+      texture: 'buerger_alte',
+      hoehe: 50,   // alt und etwas gebeugt
+      visibleAfterFlag: 'story_ending',
+      lines: []
+    },
+    {
+      id: 'epilog_maedchen',
+      name: 'Mädchen',
+      x: 0, y: 0,
+      texture: 'buerger_maedchen',
+      hoehe: 42,   // ein Kind
+      visibleAfterFlag: 'story_ending',
+      lines: []
     }
   ]
 };

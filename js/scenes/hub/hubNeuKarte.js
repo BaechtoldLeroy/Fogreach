@@ -119,7 +119,14 @@
       { id: 'mara',            x: 10.2, y: 10.6 },  // tief im Winkel zwischen Wald und Werkstatt
       { id: 'harren',          x: 11.6, y: 21.1 },  // abseits, bei den Baenken
       { id: 'buerger',         x: 24.3, y: 21.0 },  // beim Marktstand
-      { id: 'elara',           x: 10.4, y: 22.6 }   // am Rand, wenn sie je kommt
+      { id: 'elara',           x: 10.4, y: 22.6 },  // am Rand, wenn sie je kommt
+      // Nur im Epilog (story_ending): Leute aus der Stadt. Zwei nehmen die
+      // Plaetze von Klerus und Garde ein, sonst je gut drei Kacheln von jeder Figur
+      // und Tuer; die Patrouillenplaetze bleiben frei (tests/patrouilleSprite).
+      { id: 'epilog_alte',       x: 16.8, y: 10.9 },  // wo der Klerus stand, am Fuss der Treppe
+      { id: 'epilog_zimmermann', x: 23.2, y: 10.9 },  // wo die Stadtwache stand, am Fuss der Treppe
+      { id: 'epilog_baeckerin',  x: 28.5, y: 12.5 },  // oestlicher Platz, zwischen Treppe und Druckerei
+      { id: 'epilog_maedchen',   x: 17.2, y: 21.2 }   // an der Suedstrasse, nah am Ankunftspunkt
     ],
 
     // Die beiden Anschlagtafeln des Rates. Sie gehoeren zur Phasen-
