@@ -461,14 +461,14 @@
     });
     var sent = list.slice(0, n);
     sent.forEach(function (g) { g._invest = { x: x, y: y, t: INVESTIGATE_T }; });
-    return sent.length;
+    return sent;
   }
 
   // Kampfgeraeusch bei (x,y): Wachen in Hoerweite gehen nachsehen, wer Augen
   // hat, dreht sich hin, und der Verdacht steigt, sobald es jemand hoert.
   function _noise(x, y) {
     state.noises.push({ x: x, y: y, t: 0 });
-    var heard = _sendGuards(x, y, 99, NOISE_R);
+    var heard = _sendGuards(x, y, 99, NOISE_R).length;
     if (heard > 0) _bark(_nearestGuard(x, y), 'laerm');
     state.actors.forEach(function (a) {
       if (!a || a.knocked || !ACTOR_TYPES[a.type].watcher) return;
@@ -540,7 +540,11 @@
         var ivx = iv.x - g.x, ivy = iv.y - g.y;
         if (ivx * ivx + ivy * ivy > 46 * 46) _walkTo(g, iv.x, iv.y, (g.speed || DEF_SPEED) * 1.1, dt);
         else g._facing = Math.atan2(ivy, ivx) + Math.sin(iv.t * 2.5) * 0.8;
-        if (iv.t <= 0) g._invest = null;
+        if (iv.t <= 0) {
+          g._invest = null;
+          // Nichts gefunden: zurueck an die Arbeit, die Verkleidung taeuscht sie wieder.
+          if (g._gerufenWachsam) { g.alert = false; g._gerufenWachsam = false; }
+        }
         continue;
       }
       if (g.patrol && g.patrol.length > 1) {
@@ -678,10 +682,17 @@
   }
 
   // Ein Schreiber/Diener hat genug gesehen: er ruft die Wache.
+  // Spieler meldeten: "wenn der Schreiber einen entdeckt hat, passiert nichts".
+  // Verkleidet verfliegt der Verdacht in einem Augenblick, und eine blaue Wache
+  // sieht nicht durch die Verkleidung. Wer gerufen wurde, weiss, wen er sucht:
+  // solange sie nachsieht, ist sie wachsam (roter Kegel). Steht man dann noch
+  // da, erkennt sie einen; wer rechtzeitig verschwindet, kommt davon.
   function _watcherCalls(a, p, scene) {
     a._notice = 0; a._cool = WATCHER_COOLDOWN; a._markT = 2;
     _bark(a, 'ruf_' + a.type);
-    _sendGuards(p.x, p.y, 2, 420);
+    _sendGuards(p.x, p.y, 2, 420).forEach(function (g) {
+      if (!g.alert) { g.alert = true; g._gerufenWachsam = true; }
+    });
     state.detection = Math.min(1, state.detection + WATCHER_ALARM);
     if (state.detection >= 1) { _expose(); _entdeckt(scene); }
   }
@@ -692,7 +703,7 @@
     // Der Ratsbote meldet nur: die Wache wird wachsam, der Verdacht steigt.
     if (ACTOR_TYPES[a.type].warns) {
       _bark(a, 'bote_meldet');
-      if (a._target && !a._target.knocked) a._target.alert = true;
+      if (a._target && !a._target.knocked) { a._target.alert = true; a._target._gerufenWachsam = false; }
       a._target = null;
       if (!state.exposed) {
         state.detection = Math.min(1, state.detection + BOTE_ALARM);
