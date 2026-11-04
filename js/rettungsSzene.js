@@ -657,6 +657,8 @@
   // Ratskammer bei Nacht und der Kellerboden von oben. Fehlt eins, zeichnet
   // der Rueckblick an seiner Stelle die frueheren Formen.
   var KULISSE = { jetzt: 'rueckblick_kammer', vergangenheit: 'rueckblick_keller' };
+  // Menschengroesse vorn in der Ratskammer, in Bildpunkten der Kulisse (Tuer ~72).
+  var KAMMER_MENSCH_PX = 68;
 
   /** Laedt Kettenwache und Kulissen nach, falls die Szene (der Hub) sie nicht hat. */
   function laden(scene, fertig) {
@@ -802,6 +804,8 @@
       // --- Die Gegenwart: der Waechter neben den beiden --------------------
       var fuss = Math.round(h * 0.66);
       var jetzt = [];
+      // Ohne Kulisse wie bisher anderthalbfach; mit ihr am gemalten Raum gemessen.
+      var gross = 1.5;
       // Die Ratskammer bei Nacht, bildfuellend; ohne Bild ein Lichtschein im Dunkel.
       if (scene.textures && scene.textures.exists(KULISSE.jetzt)) {
         // Die Fusslinie der Figuren liegt auf dem Boden VOR dem Tisch (86 %
@@ -813,14 +817,19 @@
           (h - untenH - fuss) / (kammer.height * 0.14)));
         jetzt.push(kammer);
         zustand.kulisse = KULISSE.jetzt;
+        // So gross wie Menschen in diesem Raum: der Waechter misst 68 Bildpunkte
+        // der Kulisse, die Tischkante liegt ihnen damit auf Bauchhoehe.
+        gross = kammer.scaleY * KAMMER_MENSCH_PX / WACHE_HOEHE;
       } else {
         jetzt.push(neu(scene.add.ellipse(b / 2 + 150, fuss - 42, 170, 210, 0xffd08a, 0.08).setDepth(T + 1)));
         zustand.kulisse = null;
       }
-      var al = neu(_figur(scene, 'aldric_right0', b / 2 - 190, fuss, 58 * 1.5));
-      var el = neu(_figur(scene, 'elara_right0', b / 2 - 80, fuss, ELARA_HOEHE * 1.5));
+      // Die Abstaende wachsen mit, damit die groesseren Figuren sich nicht decken.
+      var dx = gross > 1.5 ? 1.35 : 1;
+      var al = neu(_figur(scene, 'aldric_right0', b / 2 - 190 * dx, fuss, 58 * gross));
+      var el = neu(_figur(scene, 'elara_right0', b / 2 - 80 * dx, fuss, ELARA_HOEHE * gross));
       [al, el].forEach(function (x) { if (x) { x.setDepth(T + 2).setTint(0x3a3646); jetzt.push(x); } });
-      var wj = neu(_figur(scene, 'chainguard_left0', b / 2 + 150, fuss, WACHE_HOEHE * 1.5));
+      var wj = neu(_figur(scene, 'chainguard_left0', b / 2 + 150 * dx, fuss, WACHE_HOEHE * gross));
       if (wj) {
         wj.setDepth(T + 3);
         jetzt.push(wj);

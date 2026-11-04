@@ -282,6 +282,28 @@ describe('Der Rueckblick in der Ratskammer', () => {
     // Die Gegenwart: der Waechter mit dem roten Busch.
     assert.strictEqual(rb().phase, 'jetzt');
     assert.ok(H.run(`!!(${HUB}.__rueckblick.buschJetzt && ${HUB}.__rueckblick.buschJetzt.scene)`), 'kein Helmbusch in der Ratskammer');
+    // b505: Die Figuren waren neben dem gemalten Tisch Zwerge (~28 Bildpunkte
+    // der Kulisse, die Tuer misst 72). Menschengross, ohne sich zu decken.
+    const kammer = H.run(`(function () {
+      var sc = ${HUB}, r = sc.__rueckblick, k = sc.children.getByName('rueckblickKulisse_jetzt');
+      var f = r.teile.filter(function (o) { return o.type === 'Image' && o.active && o.texture && /^(aldric|elara|chainguard)_/.test(o.texture.key); });
+      return { b: sc.cameras.main.width, figuren: f.map(function (o) {
+        var m = window.figurGrenzen(sc, o.texture.key), x0 = o.x - o.width * o.originX * o.scaleX;
+        return { key: o.texture.key, px: o.scaleY * m.boundsHeight / k.scaleY,
+          links: x0 + m.minX * o.scaleX, rechts: x0 + (m.maxX + 1) * o.scaleX };
+      }) };
+    })()`);
+    assert.strictEqual(kammer.figuren.length, 3, 'nicht alle drei Figuren in der Ratskammer');
+    kammer.figuren.forEach((f) => {
+      assert.ok(f.px >= 55, f.key + ' ist neben dem Tisch zu klein: ' + f.px.toFixed(1) + ' Bildpunkte der Kulisse');
+      assert.ok(f.px <= 80, f.key + ' ist groesser als die Tuer: ' + f.px.toFixed(1));
+      assert.ok(f.links >= 0 && f.rechts <= kammer.b, f.key + ' ragt aus dem Bild');
+    });
+    const reihe = kammer.figuren.slice().sort((a, c) => a.links - c.links);
+    for (let i = 1; i < reihe.length; i++) {
+      assert.ok(reihe[i].links >= reihe[i - 1].rechts - 8,
+        reihe[i - 1].key + ' und ' + reihe[i].key + ' decken sich');
+    }
 
     weiter();
     assert.strictEqual(bisWarten(), 'wartet');
