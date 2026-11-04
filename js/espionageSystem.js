@@ -74,6 +74,7 @@
   var NOTICE_DECAY = 0.45;          // /s, wenn die Figur Dich nicht (mehr) sieht
   var NOTICE_MARK = 0.12;           // ab hier steht das "?" ueber der Figur
   var UNDISGUISED_MULT = 1.6;       // ohne Verkleidung bemerken sie Dich schneller
+  var JAGD_NACH_MELDUNG = 15;       // s: so lange sucht die gemeldete Wache ohne Sicht
   var WATCHER_COOLDOWN = 5;         // s Ruhe nach einem Ruf
   var INFORMER_MAX_RUN = 7;         // s: Sicherung, falls die Wegsuche keinen Weg findet: dann ruft er
   var INFORMER_REPORT_R = 40;       // so nah muss er an die Wache
@@ -713,7 +714,10 @@
       return;
     }
     _bark(a, 'meldet');
-    if (a._target && !a._target.knocked) a._target.hostile = true;
+    // Die gemeldete Wache weiss, wo Du bist, und sucht Dich eine Weile, auch
+    // ohne Sicht (sie steht oft im Nachbarraum). Ohne das gab sie nach 4 s
+    // auf ("der Spaeher meldet sich, aber die Wache laeuft nicht zum Charakter").
+    if (a._target && !a._target.knocked) { a._target.hostile = true; a._target._jagdT = JAGD_NACH_MELDUNG; }
     a._target = null;
     if (!state.exposed) { _expose(); _entdeckt(scene); }
   }
@@ -1053,6 +1057,7 @@
         for (var ci = 0; ci < state.guards.length; ci++) {
           var cg = state.guards[ci];
           if (!cg || cg.knocked || !cg.hostile) continue;
+          if (cg._jagdT > 0) { cg._jagdT -= dt; cg._calmT = 0; continue; }
           if (_coneIntensity(cg, px, py) > 0.02) { cg._calmT = 0; continue; }
           cg._calmT = (cg._calmT || 0) + dt;
           var rr = (cg.range || DEF_VISION);
