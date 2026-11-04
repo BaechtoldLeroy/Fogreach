@@ -54,7 +54,7 @@
     let n = 0;
     FIGUREN.forEach(function (f, i) {
       if (scene.textures.exists(streifen(i))) return;
-      scene.load.image(streifen(i), 'assets/sprites/hubidle/' + f[1] + '_idle.png?v=1');
+      scene.load.image(streifen(i), 'assets/sprites/hubidle/' + f[1] + '_idle.png?v=2');
       n++;
     });
     return n;

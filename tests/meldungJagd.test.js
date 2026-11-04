@@ -56,3 +56,36 @@ test('nach der Meldung kommt die Wache aus dem Nachbarraum zum Spieler', async (
   assert.ok(da, 'die Wache kommt nicht: ' + H.run(`JSON.stringify({ wache: [Math.round(window.__ziel.x), Math.round(window.__ziel.y)],
     feindselig: window.__ziel.hostile, spieler: [Math.round(player.x), Math.round(player.y)] })`));
 });
+
+// Gemeldet (b524): "die Wache reagiert noch immer nicht, wenn ich erkannt
+// werde". Der Ratsbote machte die Wache nur wachsam, sie ging weiter ihre
+// Runde. Jetzt sieht sie nach, wo er Dich gesehen hat, und die Nachsehzeit
+// laeuft erst dort (der Weg aus dem Nachbarraum dauerte laenger als 5 s).
+test('nach der Meldung des Ratsboten sieht die Wache nach, wo er Dich gesehen hat, und greift an', async () => {
+  H.run(`(function () {
+    var s = window.EspionageSystem.getState(), tpl = window.RoomTemplates.TEMPLATES.CouncilWarehouse;
+    var T = tpl.size.tile, g0 = tpl.espionage.guards[0];
+    var ox = s.guards[0]._homeX - g0.x * T, oy = s.guards[0]._homeY - g0.y * T;
+    var P = function (x, y) { return { x: ox + x * T, y: oy + y * T }; };
+    s.exposed = false; s.detection = 0; s.disguised = true;
+    s.guards.forEach(function (g) {
+      g.knocked = g._homeX < ox + 15 * T && g._homeY < oy + 12 * T;
+      g.hostile = false; g.alert = false; g._invest = null; g._jagdT = 0; g.x = g._homeX; g.y = g._homeY; g._weg = null;
+    });
+    s.actors.forEach(function (o) { if (o.type === 'spitzel') o.knocked = true; });
+    var a = s.actors.filter(function (o) { return o.type === 'ratsbote'; })[0];
+    var ecke = P(12.5, 10.5);
+    window.__platz = P(3.5, 3.5);
+    a.knocked = false; a.x = ecke.x; a.y = ecke.y; a._weg = null;
+    a._state = 'report'; a._runT = 0; a._target = null; a._cool = 0; a._notice = 0;
+    a._gesehenBei = { x: window.__platz.x, y: window.__platz.y };
+    window.__a = a; window.__ziel = null;
+  })()`);
+  const STEH = 'player.setPosition(window.__platz.x, window.__platz.y); player.body && player.body.reset(player.x, player.y);';
+  const gemeldet = await bis(`(function () { var a = window.__a; if (a._target) window.__ziel = a._target; return a._state === 'rest'; })()`, 600, 2, STEH);
+  assert.ok(gemeldet && H.run('!!window.__ziel'), 'der Ratsbote meldet nicht');
+  assert.ok(H.run('window.__ziel.alert'), 'die Wache ist nicht wachsam');
+  const da = await bis(`(function () { var z = window.__ziel; return z.hostile && Math.hypot(z.x - player.x, z.y - player.y) < 60; })()`, 250, 6, STEH);
+  assert.ok(da, 'die Wache kommt nicht: ' + H.run(`JSON.stringify({ wache: [Math.round(window.__ziel.x), Math.round(window.__ziel.y)],
+    feindselig: window.__ziel.hostile, nachsehen: !!window.__ziel._invest, spieler: [Math.round(player.x), Math.round(player.y)] })`));
+});

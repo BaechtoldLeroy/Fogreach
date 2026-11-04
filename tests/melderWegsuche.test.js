@@ -87,7 +87,7 @@ async function laufen(H, typ, start) {
     var a = s.actors.filter(function (o) { return o.type === ${JSON.stringify(typ)}; })[0]
       || s.actors.filter(function (o) { return o.type === 'schreiber'; })[0];
     a.type = ${JSON.stringify(typ)};
-    s.guards.forEach(function (g) { g.alert = false; g.hostile = false; });
+    s.guards.forEach(function (g) { g.alert = false; g.hostile = false; g._invest = null; });
     s.detection = 0; s.exposed = ${typ === 'spitzel' ? 'true' : 'false'};
     a.knocked = false; a.x = ${start.x}; a.y = ${start.y};
     a._state = 'report'; a._runT = 0; a._target = null; a._cool = 0; a._notice = 0;
@@ -113,7 +113,7 @@ async function laufen(H, typ, start) {
   return JSON.parse(H.run(`(function () {
     var a = window.__melder, z = a.__ziel, s = window.EspionageSystem.getState();
     var r = { runT: a._runT, abstand: z ? Math.hypot(z.x - a.x, z.y - a.y) : -1, spur: window.__spur.length };
-    s.guards.forEach(function (g) { g.alert = false; g.hostile = false; });
+    s.guards.forEach(function (g) { g.alert = false; g.hostile = false; g._invest = null; });
     s.exposed = false; s.detection = 0; a._state = 'idle'; a._cool = 0; a.__ziel = null;
     return JSON.stringify(Object.assign(r, { fertig: ${fertig} }));
   })()`));
@@ -154,7 +154,7 @@ RAEUME.forEach((raum) => {
         const start = JSON.parse(H.run(startAusSeed(SEEDS[0])));
         H.run(`(function () {
           var s = window.EspionageSystem.getState(), a = s.actors.filter(function (o) { return o.type === 'ratsbote'; })[0];
-          s.guards.forEach(function (g) { g.alert = false; g.hostile = false; }); s.detection = 0; s.exposed = false;
+          s.guards.forEach(function (g) { g.alert = false; g.hostile = false; g._invest = null; }); s.detection = 0; s.exposed = false;
           a.knocked = false; a.quiet = false; a.x = ${start.x}; a.y = ${start.y};
           a._state = 'report'; a._runT = 0; a._target = null; a._cool = 0; a._weg = null;
           window.__melder = a; player.setPosition(40, 40);

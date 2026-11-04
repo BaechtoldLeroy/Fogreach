@@ -87,6 +87,7 @@
   var VERMIN_BITE_R = 26;
   var NOISE_R = 300;                // Hoerweite eines Kampfgeraeuschs
   var NOISE_SUSPICION = 0.2;
+  var INVESTIGATE_WEG_MAX = 20;     // s: laenger laeuft keine Wache zu einem Ort
   var INVESTIGATE_T = 5;            // s: so lange sieht eine Wache nach
   var BARK_T = 2.2;                 // s: so lange steht ein Ausruf
 
@@ -538,10 +539,18 @@
       // Rueckweg liegen oft hinter einer Wand, geradeaus klebte sie dort fest.
       if (g._invest) {
         var iv = g._invest;
-        iv.t -= dt;
         var ivx = iv.x - g.x, ivy = iv.y - g.y;
-        if (ivx * ivx + ivy * ivy > 46 * 46) _laufeZu(g, iv.x, iv.y, (g.speed || DEF_SPEED) * 1.1, dt);
-        else g._facing = Math.atan2(ivy, ivx) + Math.sin(iv.t * 2.5) * 0.8;
+        // Die Nachsehzeit laeuft erst am Ort; der Weg dorthin zaehlt nicht
+        // (bis b524 gab eine Wache aus dem Nachbarraum nach 5 s unterwegs auf).
+        // Kommt sie nicht hin, gibt sie nach WEG_MAX auf.
+        if (ivx * ivx + ivy * ivy > 46 * 46) {
+          iv.weg = (iv.weg || 0) + dt;
+          _laufeZu(g, iv.x, iv.y, (g.speed || DEF_SPEED) * 1.1, dt);
+          if (iv.weg > INVESTIGATE_WEG_MAX) iv.t = 0;
+        } else {
+          iv.t -= dt;
+          g._facing = Math.atan2(ivy, ivx) + Math.sin(iv.t * 2.5) * 0.8;
+        }
         if (iv.t <= 0) {
           g._invest = null;
           // Nichts gefunden: zurueck an die Arbeit, die Verkleidung taeuscht sie wieder.
@@ -705,7 +714,16 @@
     // Der Ratsbote meldet nur: die Wache wird wachsam, der Verdacht steigt.
     if (ACTOR_TYPES[a.type].warns) {
       _bark(a, 'bote_meldet');
-      if (a._target && !a._target.knocked) { a._target.alert = true; a._target._gerufenWachsam = false; }
+      if (a._target && !a._target.knocked) {
+        a._target.alert = true; a._target._gerufenWachsam = false;
+        // Die Wache geht nachsehen, wo der Bote Dich gesehen hat. Bis b524
+        // wurde sie nur wachsam und ging weiter ihre Runde ("die Wache
+        // reagiert noch immer nicht"). Sieht sie Dich dort, greift sie an
+        // (wachsame Wachen mit Sicht werden feindselig).
+        var hin = a._gesehenBei || _player();
+        if (hin) a._target._invest = { x: hin.x, y: hin.y, t: INVESTIGATE_T };
+      }
+      a._gesehenBei = null;
       a._target = null;
       if (!state.exposed) {
         state.detection = Math.min(1, state.detection + BOTE_ALARM);
@@ -812,6 +830,7 @@
         if (a._notice >= 1) {
           if (T.informer) {
             a._state = 'report'; a._runT = 0; a._weg = null; a._target = _nearestGuard(a.x, a.y);
+            a._gesehenBei = { x: p.x, y: p.y };
             _bark(a, 'erkannt');
           } else {
             _watcherCalls(a, p, scene);

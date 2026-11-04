@@ -263,18 +263,18 @@ class HubSceneV2 extends Phaser.Scene {
     if (!tex.exists('klerus'))            this.load.image('klerus', 'assets/sprites/klerus.png');
     if (!tex.exists('garde'))             this.load.image('garde', 'assets/sprites/garde.png');
     // #168: Die Patrouille im eigenen Sprite (Kettenrat-Patrouille).
-    if (!tex.exists('patrouille')) this.load.image('patrouille', 'assets/sprites/patrouille.png');
+    if (!tex.exists('patrouille')) this.load.image('patrouille', 'assets/sprites/patrouille.png?v=2');
     // Feature 063 (#66): der ratlose Bürger (ab Akt 2). Fehlt die Datei noch,
     // fängt das Spawn-System es mit dem Platzhalter ab (der 404 im Loader ist
     // dann erwartbar, bis assets/sprites/buerger.png vorliegt).
     if (!tex.exists('buerger'))           this.load.image('buerger', 'assets/sprites/buerger.png?v=2');
     // #161: die Vorleser im Epilog — eigene Figuren, nicht der Ratlose Buerger.
     ['vorleser_frau', 'vorleser_alter', 'vorleser_junge'].forEach((k) => {
-      if (!tex.exists(k)) this.load.image(k, 'assets/sprites/' + k + '.png');
+      if (!tex.exists(k)) this.load.image(k, 'assets/sprites/' + k + '.png?v=2');
     });
     // Epilog: die Leute aus der Stadt, die statt Klerus und Garde dastehen.
     ['buerger_baeckerin', 'buerger_zimmermann', 'buerger_alte', 'buerger_maedchen'].forEach((k) => {
-      if (!tex.exists(k)) this.load.image(k, 'assets/sprites/' + k + '.png');
+      if (!tex.exists(k)) this.load.image(k, 'assets/sprites/' + k + '.png?v=2');
     });
     ['aldric', 'elara', 'harren'].forEach((npc) => {
       ['left0','left1','left2','right0','right1','right2'].forEach((frame) => {
