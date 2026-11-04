@@ -386,7 +386,7 @@ StartScene.prototype.preload = function () {
     "DieQuelle", "ElarasVersteck"
   ];
   for (const name of templateNames) {
-    this.load.json(name, `js/roomTemplates/${name}.json?v=078`);
+    this.load.json(name, `js/roomTemplates/${name}.json?v=079`);
   }
 };
 

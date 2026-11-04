@@ -2331,10 +2331,7 @@ function handlePlayerDeath(scene) {
     return;
   }
 
-  if (gameOverText) {
-    gameOverText.setText(_HUD_T('hud.dead'));
-    gameOverText.setVisible(true);
-  }
+  // Der rote "DU BIST GESTORBEN"-Text entfaellt: das Ende zeigt die Laufuebersicht.
 
   if (scene && !scene.namePrompted) {
     scene.namePrompted = true;

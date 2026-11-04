@@ -3338,7 +3338,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       leer: 'annahme.warnung.bruch.leer'
     },
     espionage_informant: {
-      betrifft: function (def) { return def.entfaelltBeiMaulwurf === true || def.id === 'mara_kreide'; },
+      // Nur die Kreide: Elaras Schloesser (entfaelltBeiMaulwurf) zu nennen
+      // verriete vorab, wer der Verraeter ist (Spielerwunsch).
+      betrifft: function (def) { return def.id === 'mara_kreide'; },
       schonGeschehen: function () { return !!questFlags.mole_evidence; },
       text: 'annahme.warnung.maulwurf'
     }

@@ -3348,10 +3348,8 @@ function applyPlayerDamage(rawDamage, scene, attacker) {
       player.setTint(0xff0000);
       player.setVelocity(0);
       enemies.clear(true, true);
-      if (gameOverText) {
-        gameOverText.setText((window.i18n && typeof window.i18n.t === 'function') ? window.i18n.t('hud.dead') : 'DU BIST GESTORBEN\nZurück zur Stadt...');
-        gameOverText.setVisible(true);
-      }
+      // Kein roter "DU BIST GESTORBEN"-Text mehr: das Ende des Laufs zeigt die
+      // Laufuebersicht (Spielerwunsch).
       if (typeof handlePlayerDeath === 'function') {
         handlePlayerDeath(scene);
       }

@@ -213,12 +213,13 @@ test('Bruch: das Angebot nennt, was beim Rat liegen bleibt, und genau das entfae
   assert.ok(en.endsWith('(If you do this, the town hall is closed to you. The council gives you no more assignments after that.)'), en.slice(-160));
 });
 
-test('Maulwurf: das Angebot nennt Elaras Schloesser und die Kreide, solange sie offen sind', () => {
+test('Maulwurf: das Angebot nennt die Kreide, solange sie offen ist, aber nie Elaras Schloesser (verriete den Verraeter)', () => {
   stand(3, { espionage_informant: 'available', the_reckoning: 'available',
     elara_schloesser: 'active', mara_kreide: 'available' });
   const text = angebot('espionage_informant');
-  assert.ok(text.endsWith('\n\n(Findest Du den Verräter, bleibt danach liegen: „Kreide an der Zellenwand“ und „Die Hand am Schloss“. Was Du dort noch tun willst, tu vorher.)'),
+  assert.ok(text.endsWith('\n\n(Findest Du den Verräter, bleibt danach liegen: „Kreide an der Zellenwand“. Was Du dort noch tun willst, tu vorher.)'),
     'Warnung fehlt oder falsch: ' + text.slice(-200));
+  assert.ok(!text.includes('Hand am Schloss'), 'die Warnung verraet Elara');
   // Mit dem Maulwurf: die Schloesser entfallen, die Kreide wird nicht mehr angeboten.
   H.run(`window.questSystem.setFlag('mole_evidence')`);
   assert.strictEqual(status('elara_schloesser'), 'entfallen');
