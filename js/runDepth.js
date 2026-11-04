@@ -107,6 +107,22 @@
   // Call at run start (roomManager.initDungeonRun) to re-arm the latch.
   function markRunStarted() {
     _completedThisRun = false;
+    _letzterLauf = null;
+  }
+
+  // Was der letzte Lauf mit der Grenze gemacht hat, fuer die Laufuebersicht im
+  // Hub: { grund, vorher, nachher, tor }. grund: 'gewachsen' | 'nicht_fertig'
+  // (Tod/Portal) | 'unter_grenze' (nicht an der Grenze gestartet) | 'tor'
+  // (ein Boss-Tor haelt, tor = sein Eintrag aus BOSS_TORE). Ohne Persistence
+  // bleibt es null.
+  var _letzterLauf = null;
+  function _grenze() {
+    var P = (typeof window !== 'undefined') ? window.Persistence : null;
+    return (P && typeof P.getMaxDepth === 'function') ? P.getMaxDepth() : null;
+  }
+  function _merken(grund, vorher, nachher, tor) {
+    if (typeof vorher !== 'number') return;
+    _letzterLauf = { grund: grund, vorher: vorher, nachher: nachher, tor: tor || null };
   }
 
   // FR-02: bump MAX_DEPTH by exactly 1 on the first completion of a run.
@@ -120,7 +136,10 @@
   // bleibt gleich. `startDepth` weggelassen -> Alt-Verhalten (bump), damit
   // bestehende Aufrufer/Tests ohne Tiefe unverändert +1 bekommen.
   function tryCompleteRun(reason, startDepth) {
-    if (!isCompletionReason(reason)) return null;
+    if (!isCompletionReason(reason)) {
+      if (!_completedThisRun) { var _g = _grenze(); _merken('nicht_fertig', _g, _g); }
+      return null;
+    }
     if (_completedThisRun) return null;
     _completedThisRun = true;
     if (typeof window !== 'undefined' && window.Persistence
@@ -128,6 +147,7 @@
       if (typeof startDepth === 'number'
           && typeof window.Persistence.getMaxDepth === 'function'
           && startDepth < window.Persistence.getMaxDepth()) {
+        _merken('unter_grenze', window.Persistence.getMaxDepth(), window.Persistence.getMaxDepth());
         return null; // Wiederholung unterhalb der Grenze -> keine Progression
       }
       // Boss-Tore: der Bump auf eine Boss-Tiefe bleibt gesperrt, solange der
@@ -138,18 +158,24 @@
         // Das Kettenmeister-Tor bleibt ueber _gateOpen ansprechbar, damit die
         // vorhandene Test-Injektion (_setGateForTest) weiter greift.
         if (_jetzt === KETTENMEISTER_GATE_DEPTH && !_gateOpen()) {
+          _merken('tor', _jetzt, _jetzt, BOSS_TORE[0]);
           return null;
         }
-        if (_jetzt !== KETTENMEISTER_GATE_DEPTH && _torBei(_jetzt)) {
+        var _haelt = (_jetzt !== KETTENMEISTER_GATE_DEPTH) ? _torBei(_jetzt) : null;
+        if (_haelt) {
+          _merken('tor', _jetzt, _jetzt, _haelt);
           return null;
         }
       }
-      return window.Persistence.bumpMaxDepth();
+      var _vor = _grenze();
+      var _neu = window.Persistence.bumpMaxDepth();
+      _merken('gewachsen', _vor, (typeof _neu === 'number') ? _neu : _grenze());
+      return _neu;
     }
     return null; // persistence wiring lands in WP03
   }
 
-  function _resetForTest() { _completedThisRun = false; _gateOpen = _defaultGateOpen; }
+  function _resetForTest() { _completedThisRun = false; _letzterLauf = null; _gateOpen = _defaultGateOpen; }
   // Test-Hook: Gate-Funktion injizieren (undefined -> Default = questSystem lesen).
   function _setGateForTest(fn) { _gateOpen = (typeof fn === 'function') ? fn : _defaultGateOpen; }
 
@@ -158,6 +184,8 @@
     nextRoomDepth: nextRoomDepth,
     markRunStarted: markRunStarted,
     tryCompleteRun: tryCompleteRun,
+    /** Was der letzte Lauf mit der Grenze gemacht hat (s. _merken) — oder null. */
+    letzterLauf: function () { return _letzterLauf; },
     // Fuer UI/Hinweise (z. B. Hinabstiegs-Dialog): ist die Tiefe-10-Sperre offen?
     isKettenmeisterGateOpen: function () { return _gateOpen(); },
     KETTENMEISTER_GATE_DEPTH: KETTENMEISTER_GATE_DEPTH,

@@ -296,7 +296,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 `harren_daughter_investigation` · **NPC:** Bürgermeister Harren · **Kette:** 1
 
-> Finde das Tagebuchfragment der Bürgermeistertochter im Rathauskeller.
+> Finde das Tagebuchfragment der Bürgermeistertochter im Rathauskeller. Einer der Gegner dort unten trägt es bei sich.
 
 - **Ziel:** `fetch` → `journal_fragment` ×1
 - **Vorbedingung:** Säuberung der Keller **+** Keller-Patrouille
@@ -318,7 +318,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 > Du hast es. Alle drei Ratsfraktionen stehen darin, mit Namen. Lene ist nicht einfach geflohen, Archivschmied. Jemand hat sie verschwinden lassen.
 > 
-> Du wirst gleich von allen Seiten Aufträge bekommen. Nimm sie an. Hör Dir alles an. Dann komm zurück zu mir.
+> Jetzt werden sie Dich der Reihe nach rufen: zuerst Aldric für den Magistrat, dann die Garde, dann der Klerus. Nimm ihre Aufträge an. Hör Dir alles an. Dann komm zurück zu mir.
 
 
 ## Aushang: Die leeren Kammern
@@ -608,7 +608,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 `resistance_fetch_01` · **NPC:** Elara · **Kette:** 0
 
-> Hol das versiegelte Bündel aus dem Keller. Niemand darf es sehen, und öffne es nicht.
+> Hol das versiegelte Bündel aus dem Keller. Einer der Gegner trägt es bei sich. Niemand darf es sehen, und öffne es nicht.
 
 - **Ziel:** `fetch` → `sealed_bundle` ×1
 - **Vorbedingung:** Die verschwundene Tochter (dazu eine Bedingung im Code, `gate`)
@@ -622,7 +622,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 **Unterwegs**
 
-> Das Bündel liegt irgendwo da unten. Sieh Dich um, und lass es zu.
+> Das Bündel hat einer von denen da unten eingesteckt. Nimm es ihm ab, und lass es zu.
 
 **Abschluss**
 
@@ -635,7 +635,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 `magistrat_verification` · **NPC:** Ratsherr Aldric · **Kette:** 2
 
-> Beschaffe das ratsgesiegelte Verifikationsdokument für den Magistrat.
+> Beschaffe das ratsgesiegelte Verifikationsdokument für den Magistrat. Einer der Gegner im Keller trägt es bei sich.
 
 - **Ziel:** `fetch` → `verification_seal` ×1
 - **Vorbedingung:** Die verschwundene Tochter
@@ -645,13 +645,13 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 > Du hast das Fragment gesehen. Gut. Dann weisst du auch, dass die Tochter neu klassifiziert werden muss — von "geflohen" zu "vermisste Person von Interesse". Eine reine Verwaltungsangelegenheit, verstehst du. Akten müssen ordnungsgemäss geführt werden.
 > 
-> Das ratsgesiegelte Verifikationsdokument liegt in der versunkenen Registratur — dort unten, wo der Nebel die alten Akten verschluckt hat. Steig hinab, birg das Ratssiegel und bring es mir. Was dir dabei begegnet, ist nicht mein Ressort. Der Magistrat trägt die Verantwortung, nicht der Bürger.
+> Das ratsgesiegelte Verifikationsdokument ist unten im Keller abhandengekommen, dort, wo der Nebel die alten Akten verschluckt. Einer von dem Gesindel dort trägt es jetzt bei sich. Nimm ihm das Ratssiegel ab und bring es mir. Was dir dabei begegnet, ist nicht mein Ressort. Der Magistrat trägt die Verantwortung, nicht der Bürger.
 > 
 > Nimmst du den Auftrag an?
 
 **Unterwegs**
 
-> Das Ratssiegel liegt noch da unten in der versunkenen Registratur. Steig weiter hinab und birg es. Ohne das Dokument ist die Neuklassifizierung nicht rechtskräftig.
+> Das Ratssiegel trägt noch einer von denen da unten bei sich. Nimm es ihm ab. Ohne das Dokument ist die Neuklassifizierung nicht rechtskräftig.
 
 **Abschluss**
 
@@ -723,7 +723,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 `widerstand_proof` · **NPC:** Elara · **Kette:** 2
 
-> Finde ein verstecktes Ratsdokument im Rathauskeller, ein paar Räume tiefer.
+> Finde ein verstecktes Ratsdokument im Rathauskeller, ein paar Räume tiefer. Liegt es nicht offen da, trägt es einer der Gegner bei sich.
 
 - **Ziel:** `fetch` → `council_document` ×1
 - **Vorbedingung:** Die verschwundene Tochter **+** Das versiegelte Bündel
@@ -739,7 +739,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 **Unterwegs**
 
-> Das Dokument liegt ein paar Räume tiefer. Es ist klein, aber das Siegel darauf wird dir den Atem nehmen.
+> Das Dokument ist ein paar Räume tiefer. Liegt es nicht offen da, hat es einer von ihnen eingesteckt. Es ist klein, aber das Siegel darauf wird dir den Atem nehmen.
 
 **Abschluss**
 
@@ -825,7 +825,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 `elara_meeting` · **NPC:** Elara · **Kette:** 1 · **Angebot ab Tiefe 9**
 
-> Finde 2 geheime Dokumente, die Elara versteckt hat.
+> Finde 2 geheime Dokumente, die Elara versteckt hat. Die Gegner im Keller haben sie aufgelesen.
 
 - **Ziel:** `fetch` → `document` ×2
 - **Vorbedingung:** keine
@@ -835,11 +835,11 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 > Du willst wissen, wofür wir das tun? Hier — lies das.
 > 
-> Finde zwei Dokumente, die ich im Keller versteckt habe.
+> Finde zwei Dokumente, die ich im Keller versteckt habe. Das Gesindel dort unten hat sie aufgelesen, nimm sie ihm ab.
 
 **Unterwegs**
 
-> Die Dokumente sind gut versteckt. Suche weiter.
+> Die Dokumente haben die da unten eingesteckt. Nimm sie ihnen ab.
 
 **Abschluss**
 
@@ -850,7 +850,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 `council_seizure` · **NPC:** Ratsherr Aldric · **Kette:** 1
 
-> Beschlagnahme die "subversiven Schriften" — sammle 3 Bündel aus den Kellern.
+> Beschlagnahme die "subversiven Schriften" — sammle 3 Bündel aus den Kellern. Das Gesindel dort trägt sie bei sich.
 
 - **Ziel:** `fetch` → `seized_writings` ×3
 - **Vorbedingung:** keine
@@ -864,7 +864,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 **Unterwegs**
 
-> Noch nicht alle Schriften sichergestellt. Such weiter.
+> Noch nicht alle Schriften sichergestellt. Das Gesindel unten trägt sie bei sich.
 
 **Abschluss**
 
@@ -957,7 +957,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 `branka_transcripts` · **NPC:** Schmiedemeisterin Branka · **Kette:** 3
 
-> Bring Branka 2 Verhörprotokolle aus den Kellern.
+> Bring Branka 2 Verhörprotokolle aus den Kellern. Die Gegner dort tragen Abschriften bei sich.
 
 - **Ziel:** `fetch` → `interrogation_record` ×2
 - **Vorbedingung:** Zweifel der Schmiedin
@@ -969,7 +969,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 **Unterwegs**
 
-> Die Protokolle sind tief im Keller. Such weiter.
+> Die da unten tragen Abschriften der Protokolle bei sich. Such weiter.
 
 **Abschluss**
 
@@ -1037,7 +1037,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 `thom_truth` · **NPC:** Setzer Thom · **Kette:** 1 · **Angebot ab Tiefe 14** · **Fortschritt erst ab Tiefe 14**
 
-> Finde 5 Druckplatten mit den verbotenen Wahrheiten über den Rat (ab Tiefe 14).
+> Finde 5 Druckplatten mit den verbotenen Wahrheiten über den Rat (ab Tiefe 14). Die Gegner dort tragen sie bei sich.
 
 - **Ziel:** `fetch` → `print_plate` ×5
 - **Vorbedingung:** keine
@@ -1051,7 +1051,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 **Unterwegs**
 
-> Die Druckplatten liegen tief im Rathauskeller, ab Tiefe 14. Suche weiter.
+> Die Druckplatten tragen die da unten bei sich, ab Tiefe 14. Suche weiter.
 
 **Abschluss**
 
@@ -1066,7 +1066,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 `buerger_hund` · **NPC:** buerger · **Kette:** 1 · **Angebot ab Tiefe 13** · **Fortschritt erst ab Tiefe 13**
 
-> Finde Brunos Halsband in den Kanälen unter der Stadt (ab Tiefe 13).
+> Finde Brunos Halsband in den Kanälen unter der Stadt (ab Tiefe 13). Einer der Gegner dort hat es aufgelesen.
 
 - **Ziel:** `fetch` → `hundehalsband` ×1
 - **Vorbedingung:** keine
@@ -1170,7 +1170,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 `thom_gegenedikt` · **NPC:** Setzer Thom · **Kette:** 3 · **Angebot ab Tiefe 16**
 
-> Lass an der Presse ein riskantes Edikt drucken. Thom setzt es im Satz des Rats.
+> Lass an der Presse ein riskantes Edikt drucken (kostet Druckblätter und bringt Verdacht des Rats). Thom setzt es im Satz des Rats.
 
 - **Ziel:** `system` → `edikt_riskant` ×1
 - **Vorbedingung:** Verbotene Wahrheiten
@@ -1182,7 +1182,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 > 
 > (Er hebt einen Bogen hoch.) Ich habe nur eine Sorte Papier. Seine. Also bekommt die Stadt ein Gegen-Edikt im Gewand des Rats.
 > 
-> Such Dir an der Presse eines der riskanten Edikte aus. Es kostet Dich Druckblätter und Aufmerksamkeit beim Rat. Das ist der Preis.
+> Such Dir an der Presse eines der riskanten Edikte aus. Es kostet Dich fünf Druckblätter und bringt Dir fünf Punkte Verdacht beim Rat. Das ist der Preis.
 
 **Unterwegs**
 
@@ -1226,7 +1226,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 `who_you_were` · **NPC:** Schmiedemeisterin Branka · **Kette:** 4 · **Angebot ab Tiefe 17** · **Fortschritt erst ab Tiefe 17**
 
-> Bring Branka drei Splitter Deiner Phiole aus der Tiefe (ab Tiefe 17).
+> Bring Branka drei Splitter Deiner Phiole aus der Tiefe (ab Tiefe 17). Die Gegner dort haben sie aufgelesen.
 
 - **Ziel:** `fetch` → `memory_shard` ×3
 - **Vorbedingung:** Zweifel der Schmiedin
@@ -1240,7 +1240,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 **Unterwegs**
 
-> Die Splitter liegen tief, ab Tiefe 17. Such weiter.
+> Die Splitter haben die da unten aufgelesen, ab Tiefe 17. Such weiter.
 
 **Abschluss**
 
@@ -1282,7 +1282,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 `klerus_brueder` · **NPC:** Klerus-Priester · **Kette:** 4 · **Angebot ab Tiefe 15** · **Fortschritt erst ab Tiefe 15**
 
-> Besiege 3 Beschwörer in der Tiefe (ab Tiefe 15). Der Klerus nennt sie vom Licht abgefallene Brüder.
+> Besiege 3 Beschwörer in der Tiefe (ab Tiefe 15): Sie halten Abstand und rufen Nebelwichte herbei. Der Klerus nennt sie vom Licht abgefallene Brüder.
 
 - **Ziel:** `kill` → `typ_13` ×3
 - **Vorbedingung:** Reinigung eines Bezirks (dazu eine Bedingung im Code, `gate`)
@@ -1314,7 +1314,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 `wache_helm` · **NPC:** Stadtwache · **Kette:** 4 · **Angebot ab Tiefe 24** · **Fortschritt erst ab Tiefe 24**
 
-> Bring dem Hauptmann der Stadtwache die Helmmarke seines Sohnes. Einer der Anführer in der Tiefe trägt sie (ab Tiefe 24).
+> Bring dem Hauptmann der Stadtwache die Helmmarke seines Sohnes. Einer der Anführer in der Tiefe trägt sie (Elite-Gegner, goldener Name; ab Tiefe 24).
 
 - **Ziel:** `fetch` → `helmmarke` ×1
 - **Vorbedingung:** keine (dazu eine Bedingung im Code, `gate`)
@@ -1617,7 +1617,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 `mara_assault` · **NPC:** Späherin Mara · **Kette:** 3
 
-> Dring bis Welle 30 vor. Dort unten führt Mara Dich zu Aldric.
+> Dring bis Tiefe 30 vor. Dort unten führt Mara Dich zu Aldric.
 
 - **Ziel:** `wave` → `reach_wave` ×30; `observe` → `aldric_gefunden` ×1
 - **Vorbedingung:** Die Esse
@@ -1627,11 +1627,11 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 > Aldric ist nach dem Bruch der Esse in die Tiefe geflohen, mit dem Rest seiner Kettenwache. Oben steht sein Name schon auf jedem Blatt. Unten weiss er vielleicht nicht einmal mehr, dass es seiner ist.
 > 
-> Dring bis Welle 30 vor. Ich finde ihn, und dann bringe ich Dich zu ihm. Bist Du dabei?
+> Dring bis Tiefe 30 vor. Ich finde ihn, und dann bringe ich Dich zu ihm. Bist Du dabei?
 
 **Unterwegs**
 
-> Die Kettenwache hält sich noch in der Tiefe. Dring weiter vor, bis Welle 30. Dort warte ich auf Dich.
+> Die Kettenwache hält sich noch in der Tiefe. Dring weiter vor, bis Tiefe 30. Dort warte ich auf Dich.
 
 **Abschluss**
 
@@ -1644,7 +1644,7 @@ Bosse spawnen an Tier-Gates (Tiefe = Vielfaches von 10, ab Akt 2), der Nachhall 
 
 `branka_eichgewicht` · **NPC:** Schmiedemeisterin Branka · **Kette:** 5 · **Fortschritt erst ab Tiefe 26**
 
-> Bring Branka das alte Eichgewicht der Zunft aus der Tiefe (ab Tiefe 26).
+> Bring Branka das alte Eichgewicht der Zunft aus der Tiefe (ab Tiefe 26). Einer der Gegner dort trägt es bei sich.
 
 - **Ziel:** `fetch` → `eichgewicht` ×1
 - **Vorbedingung:** keine

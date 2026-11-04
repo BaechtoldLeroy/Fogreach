@@ -43,6 +43,12 @@ const GROSS = {
   enemiesKilled: 1234567, elitesKilled: 123456, bossesKilled: 12, roomsEntered: 99999
 };
 
+// Mit Grenzzeile (zwei Zeilen: "bleibt" + Tor-Hinweis) unter den Plaketten.
+const MIT_GRENZE = Object.assign({}, VOLL, {
+  grenze: { grund: 'tor', vorher: 19, nachher: 19, tor: { tiefe: 19, questId: 'elara_ritual', titel: 'Die Ritualkammer' } }
+});
+const NEUE_GRENZE = Object.assign({}, KNAPP, { grenze: { grund: 'gewachsen', vorher: 3, nachher: 4, tor: null } });
+
 async function hub(search) {
   const H = await launch({ search: search || '?autostart=1&debug=1', renderer: 'canvas' });
   await H.waitForScene('HubSceneV2', { maxRounds: 600 });
@@ -174,10 +180,10 @@ describe('Laufzusammenfassung im Messing-Stil', () => {
   test('keine Schriftzeichen-Symbole, keine eckigen Klammern; ueberlappungsfrei (DE + EN, Erfolg + Tod, grosse Zahlen)', () => {
     for (const lang of ['de', 'en']) {
       for (const tod of [false, true]) {
-        for (const w of [VOLL, KNAPP, GROSS]) {
+        for (const w of [VOLL, KNAPP, GROSS, MIT_GRENZE, NEUE_GRENZE]) {
           oeffnen(H, w, tod, lang);
           run(H, UEBERSPRINGEN);
-          const was = lang + (tod ? ' Tod' : ' Erfolg') + (w === VOLL ? ' voll' : w === KNAPP ? ' knapp' : ' gross');
+          const was = lang + (tod ? ' Tod' : ' Erfolg') + (w === VOLL ? ' voll' : w === KNAPP ? ' knapp' : w === GROSS ? ' gross' : ' mit Grenze');
           const texte = run(H, ALLE_TEXTE);
           for (const t of texte) {
             assert.ok(!SYMBOL_RE.test(t), was + ': Symbolzeichen in "' + t + '"');
@@ -195,6 +201,12 @@ describe('Laufzusammenfassung im Messing-Stil', () => {
       run(H, UEBERSPRINGEN);
       H.step(2);
       alleLesbar(kontraste(H, TEXTE_IN(DLG + '.list')), tod ? 'Tod' : 'Erfolg');
+      for (const w of [MIT_GRENZE, NEUE_GRENZE]) {
+        oeffnen(H, w, tod, 'de');
+        run(H, UEBERSPRINGEN);
+        H.step(2);
+        alleLesbar(kontraste(H, TEXTE_IN(DLG + '.list')), (tod ? 'Tod' : 'Erfolg') + ' mit Grenze');
+      }
     }
   });
 

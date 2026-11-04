@@ -253,6 +253,29 @@ describe('Tiefenwahl: Messing', () => {
 
   test('Klick, Ziffern, Enter und ESC waehlen wie vorher', () => verhalten(H));
 
+  test('Notizzeile "zaehlt hier nicht": ueberlappungsfrei und lesbar (DE + EN)', () => {
+    // Zwei laufende Auftraege, die erst ab 17 bzw. 24 zaehlen.
+    run(H, `(function () { var qs = window.questSystem, st = qs.getQuestSaveData();
+      window.__altStand = JSON.stringify(st);
+      ['who_you_were', 'wache_helm'].forEach(function (id) { var d = qs.QUEST_DEFINITIONS[id];
+        st.quests[id] = { status: 'active', objectives: d.objectives.map(function (o) {
+          return { type: o.type, target: o.target, current: 0, required: o.required }; }) }; });
+      qs.loadQuestSaveData(st); })()`);
+    try {
+      for (const sprache of ['de', 'en']) {
+        run(H, `window.i18n.setLanguage('${sprache}')`);
+        oeffnen(H, 22, 2);
+        const notizen = run(H, `${OPTS}.list.filter(function (o) { return o.name === 'waveNotiz'; }).map(function (o) { return o.text; })`);
+        assert.ok(notizen.length >= 3, sprache + ': Notizen fehlen: ' + JSON.stringify(notizen));
+        ueberlappungsfrei(H, sprache + ' mit Notiz');
+        alleLesbar(kontraste(H, TEXTE_IN(`${DLG}.list`)), sprache + ' Tiefenwahl mit Notiz');
+        zu(H);
+      }
+    } finally {
+      run(H, `window.i18n.setLanguage('de'); window.questSystem.loadQuestSaveData(JSON.parse(window.__altStand))`);
+    }
+  });
+
   test('Kontrast aller Texte mind. 4,5:1 (auch Boss-Zeilen)', () => {
     oeffnen(H, 22, 2);
     alleLesbar(kontraste(H, TEXTE_IN(`${DLG}.list`)), 'Tiefenwahl');

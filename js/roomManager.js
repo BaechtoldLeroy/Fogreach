@@ -1757,6 +1757,9 @@ function enterRoom(scene, roomId) {
   // dafür in Frage kommt (ab Raum 3, Notfallabwurf im Finalraum).
   _maybeSpawnRunAmulet(scene, roomId);
 
+  // Einmal je Lauf: laufende Auftraege, die auf dieser Tiefe nicht zaehlen.
+  _zuFlachMelden(scene);
+
   // #113: ein verborgener Fund abseits des Wegs — als LETZTES, weil er die
   // Treppenposition braucht (die Strecke Eingang->Treppe ist der Weg, von dem
   // er wegliegen soll).
@@ -1909,6 +1912,29 @@ function shouldPlaceRunAmuletHere(roomsEntered, roomIndex, totalRooms) {
 // (decided in initDungeonRun). Chance + depth gating already happened; here we
 // only pick the room (shouldPlaceRunAmuletHere) and place the drop near the
 // player on a walkable tile. Defensive: a failure must never break room entry.
+/**
+ * Einmal je Lauf (im ersten Raum) ein Hinweis, wenn laufende Auftraege auf
+ * dieser Tiefe eingefroren sind (Mindesttiefe darueber, questSystem.minDepth).
+ * Sonst wundert man sich, warum Kills und Funde nicht zaehlen.
+ */
+function _zuFlachMelden(scene) {
+  var rs = window.runStats;
+  if (!rs || rs._zuFlachGemeldet || !scene) return;
+  rs._zuFlachGemeldet = true;
+  var qs = window.questSystem;
+  var text = (qs && typeof qs.zuFlachText === 'function')
+    ? qs.zuFlachText(Math.max(1, window.DUNGEON_DEPTH || 1)) : '';
+  if (!text) return;
+  var zeigen = function () {
+    if (window.EventSystem && typeof window.EventSystem.showToast === 'function') {
+      try { window.EventSystem.showToast(scene, text); } catch (e) { /* nie den Raum brechen */ }
+    }
+  };
+  // Nach dem Raumaufbau, damit der Toast nicht unter anderen verschwindet.
+  if (scene.time && typeof scene.time.delayedCall === 'function') scene.time.delayedCall(1800, zeigen);
+  else zeigen();
+}
+
 function _maybeSpawnRunAmulet(scene, roomIndex) {
   try {
     var amulet = window._pendingRunAmulet;

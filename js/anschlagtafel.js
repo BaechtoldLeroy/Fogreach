@@ -10,7 +10,7 @@
 //                          haengt ihren Aufruf darueber.
 //   epilogue               Nur noch die gedruckte Wahrheit, kein Auftrag mehr.
 //
-// Welcher der beiden Rats-Aushaenge haengt, entscheidet die erreichte Tiefe.
+// Welcher Rats-Aushang haengt (immer genau einer), entscheidet die erreichte Tiefe.
 // Die steigt mit jedem abgeschlossenen Lauf, der Aushang wechselt also von
 // Lauf zu Lauf — Vorbeischauen lohnt sich.
 //
@@ -91,7 +91,7 @@
 
   if (window.i18n && typeof window.i18n.register === 'function') {
     window.i18n.register('de', {
-      'brett.zeile.council.0': 'Drei Aushänge, drei Farben, ein Kasten für den Lohn. Daneben eine Preisliste für Brot, zweimal durchgestrichen.',
+      'brett.zeile.council.0': 'Ein Aushang des Rats und ein Kasten für den Lohn. Jedes Mal, wenn Du tiefer warst als zuvor, hängt ein anderer. Daneben eine Preisliste für Brot, zweimal durchgestrichen.',
       'brett.zeile.council.1': 'Ganz unten, klein und handgeschrieben: "Wer meine Tochter gesehen hat, melde sich in der Gasse hinter der Schmiede."',
       'brett.zeile.doubleAgent.0': 'Die Aushänge sind frisch, aber es steht immer weniger darauf. Zwei Zeilen Wahlkampf, dann das Siegel.',
       'brett.zeile.doubleAgent.1': 'Unter dem Rand des Klerus-Plakats lugt ein Zettel hervor, den niemand gedruckt hat. Er ist noch feucht.',
@@ -101,7 +101,7 @@
       'brett.zeile.epilogue.1': 'Ein Kind hat unten in die Ecke ein Wort gekritzelt. Es ist kein Name, es ist ein Datum.'
     });
     window.i18n.register('en', {
-      'brett.zeile.council.0': 'Three notices, three colors, one box for the pay. Beside them a price list for bread, crossed out twice.',
+      'brett.zeile.council.0': 'One council notice and a box for the pay. Each time you have been deeper than before, a different one hangs here. Beside it a price list for bread, crossed out twice.',
       'brett.zeile.council.1': 'At the very bottom, small and handwritten: "Whoever has seen my daughter, come to the alley behind the forge."',
       'brett.zeile.doubleAgent.0': 'The notices are fresh, but there is less and less on them. Two lines of campaign, then the seal.',
       'brett.zeile.doubleAgent.1': "Under the edge of the Clergy's poster a slip of paper peeks out that nobody printed. It is still damp.",

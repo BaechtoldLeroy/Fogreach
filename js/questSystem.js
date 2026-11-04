@@ -305,7 +305,7 @@
     harren_daughter_investigation: {
       id: 'harren_daughter_investigation',
       title: 'Die verschwundene Tochter',
-      description: 'Finde das Tagebuchfragment der Bürgermeistertochter im Rathauskeller.',
+      description: 'Finde das Tagebuchfragment der Bürgermeistertochter im Rathauskeller. Einer der Gegner dort unten trägt es bei sich.',
       npcId: 'harren',
       type: 'fetch',
       chain: 1,
@@ -330,12 +330,12 @@
       advanceAct: 1,
       dialogueOffer: 'Meine Tochter ist verschwunden. Aldric sagt, sie sei geflohen. Der Klerus spricht von Besessenheit. Die Garde redet von Pflichtversäumnis.\n\nIch glaube keinem der drei, bevor ich nicht ihre eigenen Worte gelesen habe. Bring mir das Tagebuchfragment, das sie zurückgelassen hat. Du findest es im Rathauskeller — irgendwo, wo der Rat nicht hingeschaut hat.\n\nVertrau niemandem, bis du es selbst gesehen hast.',
       dialogueProgress: 'Such weiter — das Fragment ist da unten. Aldric, Klerus und Garde streiten sich oben, weil sie alle eine andere Version hören wollen. Du findest die echte.',
-      dialogueComplete: 'Du hast es. Alle drei Ratsfraktionen stehen darin, mit Namen. Lene ist nicht einfach geflohen, Archivschmied. Jemand hat sie verschwinden lassen.\n\nDu wirst gleich von allen Seiten Aufträge bekommen. Nimm sie an. Hör Dir alles an. Dann komm zurück zu mir.'
+      dialogueComplete: 'Du hast es. Alle drei Ratsfraktionen stehen darin, mit Namen. Lene ist nicht einfach geflohen, Archivschmied. Jemand hat sie verschwinden lassen.\n\nJetzt werden sie Dich der Reihe nach rufen: zuerst Aldric für den Magistrat, dann die Garde, dann der Klerus. Nimm ihre Aufträge an. Hör Dir alles an. Dann komm zurück zu mir.'
     },
     magistrat_verification: {
       id: 'magistrat_verification',
       title: 'Verifikation des Magistrats',
-      description: 'Beschaffe das ratsgesiegelte Verifikationsdokument für den Magistrat.',
+      description: 'Beschaffe das ratsgesiegelte Verifikationsdokument für den Magistrat. Einer der Gegner im Keller trägt es bei sich.',
       npcId: 'aldric',
       type: 'fetch',
       chain: 2,
@@ -352,8 +352,8 @@
       rewardTier: 'story',
       prerequisites: ['harren_daughter_investigation'],
       requiredAct: 1,
-      dialogueOffer: 'Du hast das Fragment gesehen. Gut. Dann weisst du auch, dass die Tochter neu klassifiziert werden muss — von "geflohen" zu "vermisste Person von Interesse". Eine reine Verwaltungsangelegenheit, verstehst du. Akten müssen ordnungsgemäss geführt werden.\n\nDas ratsgesiegelte Verifikationsdokument liegt in der versunkenen Registratur — dort unten, wo der Nebel die alten Akten verschluckt hat. Steig hinab, birg das Ratssiegel und bring es mir. Was dir dabei begegnet, ist nicht mein Ressort. Der Magistrat trägt die Verantwortung, nicht der Bürger.\n\nNimmst du den Auftrag an?',
-      dialogueProgress: 'Das Ratssiegel liegt noch da unten in der versunkenen Registratur. Steig weiter hinab und birg es. Ohne das Dokument ist die Neuklassifizierung nicht rechtskräftig.',
+      dialogueOffer: 'Du hast das Fragment gesehen. Gut. Dann weisst du auch, dass die Tochter neu klassifiziert werden muss — von "geflohen" zu "vermisste Person von Interesse". Eine reine Verwaltungsangelegenheit, verstehst du. Akten müssen ordnungsgemäss geführt werden.\n\nDas ratsgesiegelte Verifikationsdokument ist unten im Keller abhandengekommen, dort, wo der Nebel die alten Akten verschluckt. Einer von dem Gesindel dort trägt es jetzt bei sich. Nimm ihm das Ratssiegel ab und bring es mir. Was dir dabei begegnet, ist nicht mein Ressort. Der Magistrat trägt die Verantwortung, nicht der Bürger.\n\nNimmst du den Auftrag an?',
+      dialogueProgress: 'Das Ratssiegel trägt noch einer von denen da unten bei sich. Nimm es ihm ab. Ohne das Dokument ist die Neuklassifizierung nicht rechtskräftig.',
       // v6.1: zwei Abschluesse, Siegel abliefern oder unbemerkt beschaedigen.
       // Die Wahl folgt auf diesen Text (storyDialog.byQuest.magistrat_verification)
       // und setzt verification_sealed bzw. verification_refused. Die Namen der
@@ -405,7 +405,7 @@
     widerstand_proof: {
       id: 'widerstand_proof',
       title: 'Das Ratsdokument',
-      description: 'Finde ein verstecktes Ratsdokument im Rathauskeller, ein paar Räume tiefer.',
+      description: 'Finde ein verstecktes Ratsdokument im Rathauskeller, ein paar Räume tiefer. Liegt es nicht offen da, trägt es einer der Gegner bei sich.',
       // Elara kommt nicht in den Hub; abgegeben wird, wenn sie unten
       // auftaucht (roomManager, ELARA_AUFTRAEGE). Der Hinweis sagt das,
       // sobald der Auftrag fertig ist (getAbgabeHinweis).
@@ -425,7 +425,7 @@
       prerequisites: ['harren_daughter_investigation', 'resistance_fetch_01'],
       requiredAct: 1,
       dialogueOffer: 'Du hast mir das Bündel gebracht und es nicht geöffnet. Gut. Dann kann ich Dir zeigen, was ich gesehen habe, bevor Du weiter ihre Aufträge erledigst.\n\nIch will, dass DU siehst, was ich gesehen habe, bevor du weiter ihre Aufträge erledigst. Unten im Rathauskeller liegt ein Dokument, das die drei Ratsfraktionen nie zusammen unterzeichnet haben sollten — und doch ist ihr Siegel darauf. Alle drei.\n\nBring es mir. Dann reden wir.',
-      dialogueProgress: 'Das Dokument liegt ein paar Räume tiefer. Es ist klein, aber das Siegel darauf wird dir den Atem nehmen.',
+      dialogueProgress: 'Das Dokument ist ein paar Räume tiefer. Liegt es nicht offen da, hat es einer von ihnen eingesteckt. Es ist klein, aber das Siegel darauf wird dir den Atem nehmen.',
       dialogueComplete: 'Drei Siegel. Eine Unterschrift. Magistrat, Klerus, Garde — sie behaupten in der Öffentlichkeit, sie wären Rivalen. Hinter verschlossenen Türen stimmen sie überein. Geh zu Harren. Er wartet auf den Moment, in dem du das verstehst.'
     },
     council_collusion_reveal: {
@@ -489,7 +489,7 @@
     elara_meeting: {
       id: 'elara_meeting',
       title: 'Elaras Geheimnis',
-      description: 'Finde 2 geheime Dokumente, die Elara versteckt hat.',
+      description: 'Finde 2 geheime Dokumente, die Elara versteckt hat. Die Gegner im Keller haben sie aufgelesen.',
       abgabeHinweis: 'Bring Elara die beiden Dokumente. Sie findet Dich im Keller.',
       npcId: 'elara',
       type: 'fetch',
@@ -504,8 +504,8 @@
       prerequisites: [],
       requiredAct: 2,
       angebotAb: 9,
-      dialogueOffer: 'Du willst wissen, wofür wir das tun? Hier — lies das.\n\nFinde zwei Dokumente, die ich im Keller versteckt habe.',
-      dialogueProgress: 'Die Dokumente sind gut versteckt. Suche weiter.',
+      dialogueOffer: 'Du willst wissen, wofür wir das tun? Hier — lies das.\n\nFinde zwei Dokumente, die ich im Keller versteckt habe. Das Gesindel dort unten hat sie aufgelesen, nimm sie ihm ab.',
+      dialogueProgress: 'Die Dokumente haben die da unten eingesteckt. Nimm sie ihnen ab.',
       dialogueComplete: 'Jetzt siehst du es. Das tut der Rat mit denen, die verschwinden: Er braucht sie für seine Rituale. Namen, die niemand mehr ausspricht, weil sich niemand an sie erinnert.'
     },
     branka_doubt: {
@@ -536,7 +536,7 @@
     council_seizure: {
       id: 'council_seizure',
       title: 'Beschlagnahme',
-      description: 'Beschlagnahme die "subversiven Schriften" — sammle 3 Bündel aus den Kellern.',
+      description: 'Beschlagnahme die "subversiven Schriften" — sammle 3 Bündel aus den Kellern. Das Gesindel dort trägt sie bei sich.',
       npcId: 'aldric',
       type: 'fetch',
       chain: 1,
@@ -552,7 +552,7 @@
       prerequisites: [],
       requiredAct: 2,
       dialogueOffer: 'Im Keller hortet Gesindel subversive Schriften gegen den Rat. Beschlagnahme sie — drei Bündel. Lies sie nicht. Bring sie.\n\nNimmst du den Auftrag an?',
-      dialogueProgress: 'Noch nicht alle Schriften sichergestellt. Such weiter.',
+      dialogueProgress: 'Noch nicht alle Schriften sichergestellt. Das Gesindel unten trägt sie bei sich.',
       dialogueComplete: 'Gib her.\n\n(Bevor du sie abgibst, fällt dein Blick auf eine Zeile. Es sind keine Pamphlete. Es sind Gesuche — Bürger, die nach verschwundenen Angehörigen fragen.)'
     },
     council_surveillance: {
@@ -577,7 +577,7 @@
     branka_transcripts: {
       id: 'branka_transcripts',
       title: 'Verbotene Abschriften',
-      description: 'Bring Branka 2 Verhörprotokolle aus den Kellern.',
+      description: 'Bring Branka 2 Verhörprotokolle aus den Kellern. Die Gegner dort tragen Abschriften bei sich.',
       npcId: 'branka',
       type: 'fetch',
       chain: 3,
@@ -589,7 +589,7 @@
       prerequisites: ['branka_doubt'],
       requiredAct: 2,
       dialogueOffer: 'Im Keller lagern Protokolle aus Verhören. Nicht von Dämonen — von Menschen. Bring mir zwei Abschriften. Vorsichtig.',
-      dialogueProgress: 'Die Protokolle sind tief im Keller. Such weiter.',
+      dialogueProgress: 'Die da unten tragen Abschriften der Protokolle bei sich. Such weiter.',
       dialogueComplete: 'Lies das. "Befragt bis zum Geständnis." Der Rat verhört Bürger wie Beschworene. Das ist kein Schutz — das ist Jagd.'
     },
     // Feature 062: umbenannt von 'ritual_chamber'. Kein advanceAct mehr — der
@@ -736,7 +736,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     resistance_fetch_01: {
       id: 'resistance_fetch_01',
       title: 'Das versiegelte Bündel',
-      description: 'Hol das versiegelte Bündel aus dem Keller. Niemand darf es sehen, und öffne es nicht.',
+      description: 'Hol das versiegelte Bündel aus dem Keller. Einer der Gegner trägt es bei sich. Niemand darf es sehen, und öffne es nicht.',
       abgabeHinweis: 'Bring Elara das Bündel. Sie findet Dich im Keller.',
       npcId: 'elara',
       // #155/#156: Vorher "kill enemy x5" — der Auftrag sprach von einem Buendel,
@@ -757,7 +757,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       requiredAct: 1,
       gate: function () { return !!questFlags.elaraMet; },
       dialogueOffer: 'Du stehst noch. Gut. Dann kannst Du mir gleich einen Gefallen tun.\n\nIrgendwo hier unten liegt ein Bündel, versiegelt. Bring es mir, ohne dass jemand es sieht. Und öffne es nicht. Danach reden wir über den Rat.',
-      dialogueProgress: 'Das Bündel liegt irgendwo da unten. Sieh Dich um, und lass es zu.',
+      dialogueProgress: 'Das Bündel hat einer von denen da unten eingesteckt. Nimm es ihm ab, und lass es zu.',
       dialogueComplete: 'Du hast es. Und Du hast es nicht geöffnet. Gut. Jetzt weiss ich, dass ich Dir trauen kann.\n\n(Auf dem Wachs des Siegels: drei Ketten, ineinander verschlungen. Du hast dieses Zeichen noch nie gesehen.)'
     },
 
@@ -794,7 +794,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     thom_truth: {
       id: 'thom_truth',
       title: 'Verbotene Wahrheiten',
-      description: 'Finde 5 Druckplatten mit den verbotenen Wahrheiten über den Rat (ab Tiefe 14).',
+      description: 'Finde 5 Druckplatten mit den verbotenen Wahrheiten über den Rat (ab Tiefe 14). Die Gegner dort tragen sie bei sich.',
       npcId: 'thom',
       type: 'fetch',
       chain: 1,
@@ -809,7 +809,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       prerequisites: [],
       requiredAct: 3,
       dialogueOffer: 'Ich habe genug gedruckt, was der Rat will. Zeit für die Wahrheit.\n\nFinde fünf Druckplatten, tief im Keller, ab Tiefe 14 — sie enthalten die echte Geschichte.',
-      dialogueProgress: 'Die Druckplatten liegen tief im Rathauskeller, ab Tiefe 14. Suche weiter.',
+      dialogueProgress: 'Die Druckplatten tragen die da unten bei sich, ab Tiefe 14. Suche weiter.',
       dialogueComplete: 'Fantastisch! Diese Platten enthalten Beweise, die der Rat vernichten wollte. Die Wahrheit geht in Druck.'
     },
     mara_warning: {
@@ -897,7 +897,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     mara_assault: {
       id: 'mara_assault',
       title: 'Die letzte Wache',
-      description: 'Dring bis Welle 30 vor. Dort unten führt Mara Dich zu Aldric.',
+      description: 'Dring bis Tiefe 30 vor. Dort unten führt Mara Dich zu Aldric.',
       npcId: 'mara',
       type: 'wave',
       chain: 3,
@@ -914,8 +914,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       rewardTier: 'boss',
       prerequisites: ['schattenrat_finale'],
       requiredAct: 4,
-      dialogueOffer: 'Aldric ist nach dem Bruch der Esse in die Tiefe geflohen, mit dem Rest seiner Kettenwache. Oben steht sein Name schon auf jedem Blatt. Unten weiss er vielleicht nicht einmal mehr, dass es seiner ist.\n\nDring bis Welle 30 vor. Ich finde ihn, und dann bringe ich Dich zu ihm. Bist Du dabei?',
-      dialogueProgress: 'Die Kettenwache hält sich noch in der Tiefe. Dring weiter vor, bis Welle 30. Dort warte ich auf Dich.',
+      dialogueOffer: 'Aldric ist nach dem Bruch der Esse in die Tiefe geflohen, mit dem Rest seiner Kettenwache. Oben steht sein Name schon auf jedem Blatt. Unten weiss er vielleicht nicht einmal mehr, dass es seiner ist.\n\nDring bis Tiefe 30 vor. Ich finde ihn, und dann bringe ich Dich zu ihm. Bist Du dabei?',
+      dialogueProgress: 'Die Kettenwache hält sich noch in der Tiefe. Dring weiter vor, bis Tiefe 30. Dort warte ich auf Dich.',
       dialogueProgressNext: 'Ich habe ihn gefunden, ganz unten. Steig noch einmal hinab, ich führe Dich hin.',
       dialogueComplete: 'Er ist leer. Der Mann, der andere hat leeren lassen. (Mara sieht lange in die Flamme ihrer Lampe.) Ich dachte, ich würde mich freuen.\n\nDie Kettenwache ist zerschlagen. Die Gänge unter der Stadt gehören wieder niemandem. Das ist mehr, als diese Stadt lange hatte.'
     },
@@ -1176,7 +1176,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     buerger_hund: {
       id: 'buerger_hund',
       title: 'Ein Hund namens Bruno',
-      description: 'Finde Brunos Halsband in den Kanälen unter der Stadt (ab Tiefe 13).',
+      description: 'Finde Brunos Halsband in den Kanälen unter der Stadt (ab Tiefe 13). Einer der Gegner dort hat es aufgelesen.',
       npcId: 'buerger',
       type: 'fetch',
       chain: 1,
@@ -1196,7 +1196,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     branka_eichgewicht: {
       id: 'branka_eichgewicht',
       title: 'Das Eichgewicht',
-      description: 'Bring Branka das alte Eichgewicht der Zunft aus der Tiefe (ab Tiefe 26).',
+      description: 'Bring Branka das alte Eichgewicht der Zunft aus der Tiefe (ab Tiefe 26). Einer der Gegner dort trägt es bei sich.',
       npcId: 'branka',
       type: 'fetch',
       chain: 5,
@@ -1267,7 +1267,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     who_you_were: {
       id: 'who_you_were',
       title: 'Wer du warst',
-      description: 'Bring Branka drei Splitter Deiner Phiole aus der Tiefe (ab Tiefe 17).',
+      description: 'Bring Branka drei Splitter Deiner Phiole aus der Tiefe (ab Tiefe 17). Die Gegner dort haben sie aufgelesen.',
       npcId: 'branka',
       type: 'fetch',
       chain: 4,
@@ -1289,7 +1289,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       // v6.1: Splitter Deiner Phiole, nicht einer Akte. Was Branka daraus
       // bindet, kann der Nebel nicht mehr nehmen, auch Elara im Finale nicht.
       dialogueOffer: 'Unten haben Leute Scherben gefunden. Dickes Glas, und in jede ist ein Zeichen geritzt. Deins. (Sie sieht Dich lange an.) Das war eine Phiole, Archivschmied. Was in ihr war, warst Du.\n\nBring mir drei Splitter aus der Tiefe. Was noch an ihnen haftet, binden wir hier an Metall. Dann kann der Nebel es Dir nicht wieder nehmen.',
-      dialogueProgress: 'Die Splitter liegen tief, ab Tiefe 17. Such weiter.',
+      dialogueProgress: 'Die Splitter haben die da unten aufgelesen, ab Tiefe 17. Such weiter.',
       dialogueComplete: 'Da bist Du. (Die Splitter liegen auf dem Amboss, und mit jedem Schlag kommt etwas zurück: eine Werkstatt, Siegel, Druckplatten für den Rat. Und ein Nein.)\n\nDu hast für sie geschmiedet. Das Zeichen der drei Ketten ist von Dir. Ich habe Dich daran arbeiten sehen. Dann hast Du verstanden, wofür, und Dich geweigert. Es war kein Unfall. Sie haben Dich geleert, weil sie Dich brauchten, nicht weil Du ihnen gefährlich warst.\n\n(Sie legt den Hammer weg.) Hör mir zu. Was wir hier gebunden haben, bleibt Dir. Aber Du bist nicht mehr leer, und der Nebel dort unten merkt das. Je mehr Du weisst, wer Du bist, desto mehr hat er Dir zu nehmen.'
     },
     elara_second_truth: {
@@ -1334,7 +1334,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     klerus_brueder: {
       id: 'klerus_brueder',
       title: 'Die schweigenden Brüder',
-      description: 'Besiege 3 Beschwörer in der Tiefe (ab Tiefe 15). Der Klerus nennt sie vom Licht abgefallene Brüder.',
+      description: 'Besiege 3 Beschwörer in der Tiefe (ab Tiefe 15): Sie halten Abstand und rufen Nebelwichte herbei. Der Klerus nennt sie vom Licht abgefallene Brüder.',
       npcId: 'klerus_priester',
       type: 'kill',
       chain: 4,
@@ -1364,7 +1364,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     thom_gegenedikt: {
       id: 'thom_gegenedikt',
       title: 'Ein Edikt, das keiner bestellt hat',
-      description: 'Lass an der Presse ein riskantes Edikt drucken. Thom setzt es im Satz des Rats.',
+      description: 'Lass an der Presse ein riskantes Edikt drucken (kostet Druckblätter und bringt Verdacht des Rats). Thom setzt es im Satz des Rats.',
       npcId: 'thom',
       type: 'system',
       chain: 3,
@@ -1377,7 +1377,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       rewardTier: 'neben',
       prerequisites: ['thom_truth'],
       requiredAct: 3,
-      dialogueOffer: 'Der Rat druckt jede Woche, was die Stadt denken soll. Ich will einmal etwas drucken, das er nicht bestellt hat, und zwar so, dass es aussieht, als hätte er es. Dieselben Lettern, derselbe Satz, derselbe Rand.\n\n(Er hebt einen Bogen hoch.) Ich habe nur eine Sorte Papier. Seine. Also bekommt die Stadt ein Gegen-Edikt im Gewand des Rats.\n\nSuch Dir an der Presse eines der riskanten Edikte aus. Es kostet Dich Druckblätter und Aufmerksamkeit beim Rat. Das ist der Preis.',
+      dialogueOffer: 'Der Rat druckt jede Woche, was die Stadt denken soll. Ich will einmal etwas drucken, das er nicht bestellt hat, und zwar so, dass es aussieht, als hätte er es. Dieselben Lettern, derselbe Satz, derselbe Rand.\n\n(Er hebt einen Bogen hoch.) Ich habe nur eine Sorte Papier. Seine. Also bekommt die Stadt ein Gegen-Edikt im Gewand des Rats.\n\nSuch Dir an der Presse eines der riskanten Edikte aus. Es kostet Dich fünf Druckblätter und bringt Dir fünf Punkte Verdacht beim Rat. Das ist der Preis.',
       dialogueProgress: 'Noch hängt nichts Riskantes. Such Dir an der Presse eines der riskanten Edikte aus, ich setze es im Satz des Rats.',
       dialogueComplete: '(Thom hält den frischen Bogen neben einen echten des Rats. Kein Unterschied, bis auf das, was darauf steht.)\n\nDie Garde hat heute Morgen zwei davon abgerissen und vor drei anderen salutiert, weil sie nicht liest, was sie bewacht. (Er grinst.) Ein Schreiber im Rathaus sucht jetzt den Mann, der es bestellt hat. Er wird lange suchen.'
     },
@@ -1436,7 +1436,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     wache_helm: {
       id: 'wache_helm',
       title: 'Ein Name auf dem Helm',
-      description: 'Bring dem Hauptmann der Stadtwache die Helmmarke seines Sohnes. Einer der Anführer in der Tiefe trägt sie (ab Tiefe 24).',
+      description: 'Bring dem Hauptmann der Stadtwache die Helmmarke seines Sohnes. Einer der Anführer in der Tiefe trägt sie (Elite-Gegner, goldener Name; ab Tiefe 24).',
       npcId: 'stadtwache',
       type: 'fetch',
       chain: 4,
@@ -1580,6 +1580,12 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     _autoDe['quest.tracker.short_suffix'] = '..';
     // #53: Quest-Abschluss-Toast (DE ist Quelle).
     _autoDe['quest.toast.completed'] = 'Quest-Ziel erfüllt: {title}';
+    // Wo der fertige Auftrag abgegeben wird (Elara: eigener abgabeHinweis).
+    _autoDe['quest.toast.abgabe'] = 'Abgabe bei {npc}';
+    _autoDe['quest.toast.abgabe_brett'] = 'Abgabe an der Anschlagtafel';
+    // Laufende Auftraege, die auf dieser Tiefe nicht weiterkommen (minDepth).
+    _autoDe['quest.tiefe.zu_flach'] = 'Zu flach für: {liste}';
+    _autoDe['quest.tiefe.eintrag'] = '„{titel}“ (ab Tiefe {n})';
     window.i18n.register('de', _autoDe);
 
     // English overrides — partial; missing keys gracefully fall back to DE.
@@ -1664,6 +1670,10 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
 
       'quest.tracker.short_suffix': '..',
       'quest.toast.completed': 'Objective complete: {title}',
+      'quest.toast.abgabe': 'Turn in to {npc}',
+      'quest.toast.abgabe_brett': 'Turn in at the notice board',
+      'quest.tiefe.zu_flach': 'Too shallow for: {liste}',
+      'quest.tiefe.eintrag': '"{titel}" (from depth {n})',
       // Akt 0 — Aldric warmup (tutorial extension)
       'quest.aldric_cleanup.title': 'Cellar Cleanup',
       'quest.aldric_cleanup.dialogueIntro.0': 'The Archivesmith. I was told you were back on your feet.\n\nDo you remember me? … No. Of course not.',
@@ -1673,22 +1683,22 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.aldric_patrol.description': 'Clear 3 rooms in the cellars to secure all corridors.',
       // Akt 1 — Vertical Slice chain (feature 050)
       'quest.harren_daughter_investigation.title': 'The Vanished Daughter',
-      'quest.harren_daughter_investigation.description': 'Find the mayor\'s daughter\'s journal fragment in the Town Hall Cellar.',
+      'quest.harren_daughter_investigation.description': 'Find the mayor\'s daughter\'s journal fragment in the Town Hall Cellar. One of the enemies down there carries it.',
       'quest.magistrat_verification.title': 'Magistrate Verification',
-      'quest.magistrat_verification.description': 'Obtain the council-sealed verification document for the Magistrate.',
+      'quest.magistrat_verification.description': 'Obtain the council-sealed verification document for the Magistrate. One of the enemies in the cellar carries it.',
       'quest.klerus_purification.title': 'Purification of the Lower Chambers',
       'quest.klerus_purification.description': 'Cleanse the lower chambers of the Town Hall Cellar — defeat 3 elite enemies. The heretic leaders only lurk from depth 3.',
       'quest.garde_patrol_expansion.title': 'Patrol Expansion',
       'quest.garde_patrol_expansion.description': 'Demonstrate force for the new patrols — defeat 10 trespassers.',
       'quest.widerstand_proof.title': "The Council Document",
-      'quest.widerstand_proof.description': "Find a hidden council document in the Town Hall Cellar, a few rooms deeper.",
+      'quest.widerstand_proof.description': "Find a hidden council document in the Town Hall Cellar, a few rooms deeper. If it is not lying in the open, one of the enemies carries it.",
       'quest.widerstand_proof.abgabeHinweis': 'Take the council document to Elara. She will find you in the cellar.',
       'quest.council_collusion_reveal.title': 'The Secret Meeting',
       'quest.council_collusion_reveal.description': 'Watch the public council session. Then eavesdrop on the secret session in the council chamber beneath the town hall.',
       'quest.mara_contact.title': 'The Scout',
       'quest.mara_contact.description': 'Scout three Council cellar rooms for Mara.',
       'quest.elara_meeting.title': "Elara's Secret",
-      'quest.elara_meeting.description': 'Find 2 secret documents Elara has hidden.',
+      'quest.elara_meeting.description': 'Find 2 secret documents Elara has hidden. The enemies in the cellar have picked them up.',
       'quest.elara_meeting.abgabeHinweis': 'Take both documents to Elara. She will find you in the cellar.',
       'quest.branka_doubt.title': "The Smith's Doubt",
       'quest.branka_doubt.description': "Defeat 5 elite enemies to find evidence for Branka's suspicions.",
@@ -1696,7 +1706,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.elara_ritual.description': "Descend to depth 20 and defeat the Master of Ceremonies who holds the council's ritual chamber.",
       'quest.elara_ritual.abgabeHinweis': 'Elara is waiting for you in the cellar.',
       'quest.thom_truth.title': 'Forbidden Truths',
-      'quest.thom_truth.description': "Find 5 print plates with the forbidden truths about the council (from depth 14).",
+      'quest.thom_truth.description': "Find 5 print plates with the forbidden truths about the council (from depth 14). The enemies down there carry them.",
       'quest.mara_warning.title': "The Chainmaster",
       'quest.mara_warning.description': 'Defeat the Chainmaster at depth 10, who guards the way to the council\'s seal chambers.',
       'quest.thom_pamphlets.title': 'The Pamphlets',
@@ -1705,7 +1715,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.elara_blade.description': "Elara has had a special blade forged for you.",
       'quest.elara_blade.abgabeHinweis': 'Elara is waiting for you in the cellar.',
       'quest.mara_assault.title': "The Last Watch",
-      'quest.mara_assault.description': "Reach wave 30. Down there Mara leads you to Aldric.",
+      'quest.mara_assault.description': "Reach depth 30. Down there Mara leads you to Aldric.",
       // Feature 062: umbenannt harren_rescue -> schattenrat_finale; final_truth
       // entfernt (-> the_reckoning). Neue/umbenannte Quests ohne EN fallen über
       // die i18n-Kaskade auf Deutsch zurück (Deutsch = Source-of-Truth).
@@ -1729,10 +1739,10 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       // === Akt 1 Vertical Slice (feature 050) — quest dialogues ===
       'quest.harren_daughter_investigation.dialogueOffer': "My daughter has vanished. Aldric says she fled. The Clergy speaks of possession. The Guard talks of dereliction of duty.\n\nI trust none of the three until I have read her own words. Bring me the journal fragment she left behind. You will find it in the Town Hall Cellar — somewhere the council did not look.\n\nTrust no one until you have seen it yourself.",
       'quest.harren_daughter_investigation.dialogueProgress': 'Keep searching — the fragment is down there. Aldric, the Clergy and the Guard quarrel upstairs because each wants its own version. You will find the real one.',
-      'quest.harren_daughter_investigation.dialogueComplete': "You have it. All three council factions are in it, by name. Lene did not simply flee, Archivesmith. Someone made her disappear.\n\nYou will get work from every side now. Take it. Listen to everything. Then come back to me.",
+      'quest.harren_daughter_investigation.dialogueComplete': "You have it. All three council factions are in it, by name. Lene did not simply flee, Archivesmith. Someone made her disappear.\n\nNow they will call on you one after another: first Aldric for the Magistrate, then the Guard, then the Clergy. Take their work. Listen to everything. Then come back to me.",
 
-      'quest.magistrat_verification.dialogueOffer': 'You have seen the fragment. Good. Then you also know that the daughter must be reclassified — from "fled" to "missing person of interest". A pure administrative matter, you understand. Records must be kept properly.\n\nThe council-sealed verification document lies in the sunken registry — down there, where the fog swallowed the old records. Descend, recover the Council Seal, and bring it to me. Whatever you meet down there is not my department. The Magistrate carries the responsibility, not the citizen.\n\nDo you accept?',
-      'quest.magistrat_verification.dialogueProgress': 'The Council Seal is still down there in the sunken registry. Descend further and recover it. Without the document the reclassification is not legally binding.',
+      'quest.magistrat_verification.dialogueOffer': 'You have seen the fragment. Good. Then you also know that the daughter must be reclassified — from "fled" to "missing person of interest". A pure administrative matter, you understand. Records must be kept properly.\n\nThe council-sealed verification document went missing down in the cellar, where the fog swallows the old records. One of the rabble down there carries it now. Take the Council Seal from him and bring it to me. Whatever you meet down there is not my department. The Magistrate carries the responsibility, not the citizen.\n\nDo you accept?',
+      'quest.magistrat_verification.dialogueProgress': 'One of them down there still carries the Council Seal. Take it from him. Without the document the reclassification is not legally binding.',
       'quest.magistrat_verification.dialogueComplete': "(Aldric holds out his hand without looking up from his files.) The seal, Archivesmith. The reclassification is waiting.\n\n(The wax in your hand is still soft. One press of the thumb and it will no longer hold. Nobody would notice, except someone who makes seals.)",
 
       'quest.klerus_purification.dialogueOffer': "You have seen the fragment, Archivesmith. Then you know the daughter did not flee of her own will. She was led by a dark hand — the lower chambers teem with such shadows.\n\nPurify them. Three leaders of this heretical presence still lurk down there, deeper than the first passages — descend to depth 3. Strike them down in the name of Order. The daughter's soul will thank you — if the Light finds her again.\n\nPurification is a sacred duty. Accept it.",
@@ -1744,7 +1754,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.garde_patrol_expansion.dialogueComplete': "The report is written. Ten troublemakers fewer, and the Guard can propose more patrols to the council. No one else will vanish — or at least no one who matters. The Guard remembers who answers quickly.",
 
       'quest.widerstand_proof.dialogueOffer': "You brought me the bundle and did not open it. Good. Then I can show you what I have seen, before you go on running their errands.\n\nI want YOU to see what I have seen. Down in the Town Hall Cellar lies a document the three council factions should never have signed together - and yet their seal is on it. All three.\n\nBring it to me. Then we talk.",
-      'quest.widerstand_proof.dialogueProgress': "The document lies a few rooms deeper. It is small, but the seal upon it will take your breath away.",
+      'quest.widerstand_proof.dialogueProgress': "The document is a few rooms deeper. If it is not lying in the open, one of them has pocketed it. It is small, but the seal upon it will take your breath away.",
       'quest.widerstand_proof.dialogueComplete': 'Three seals. One signature. Magistrate, Clergy, Guard — in public they pretend to be rivals. Behind closed doors they agree. Go to Harren. He has been waiting for the moment you would understand.',
 
       'quest.council_collusion_reveal.dialogueOffer': 'Today the council announces the result of the vote, in public, in the council hall. Magistrate, Clergy, Guard, before all the citizens. Go and listen. And then follow them in the night, when they think nobody is watching.',
@@ -1758,8 +1768,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.mara_contact.dialogueProgress': 'Not enough seen yet. Three rooms — and burn each one into your memory.',
       'quest.mara_contact.dialogueComplete': "Three rooms, the same in each: empty cells, fresh chains, lists of names. The missing don't vanish by chance — the Council makes them vanish, and every faction covers for the others.\n\nNow I know you're still the one you were. My network is open to you — there's work only someone no one remembers can do. Like you.",
 
-      'quest.elara_meeting.dialogueOffer': "You want to know what we do this for? Here — read this.\n\nFind two documents I hid in the cellar.",
-      'quest.elara_meeting.dialogueProgress': 'The documents are well hidden. Keep searching.',
+      'quest.elara_meeting.dialogueOffer': "You want to know what we do this for? Here — read this.\n\nFind two documents I hid in the cellar. The rabble down there picked them up; take them back.",
+      'quest.elara_meeting.dialogueProgress': 'The ones down there have pocketed the documents. Take them back.',
       'quest.elara_meeting.dialogueComplete': 'Now you see it. This is what the council does with the ones who disappear: it needs them for its rituals. Names nobody says any more, because nobody remembers them.',
 
       'quest.branka_doubt.dialogueOffer': 'This armor is for prisoners, not soldiers. Help me find proof.\n\nDefeat five elite guards and bring me their orders.',
@@ -1768,9 +1778,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
 
       // Feature 055 — Akt 2 (Obedience vs. Memory)
       'quest.council_seizure.title': 'Confiscation',
-      'quest.council_seizure.description': 'Confiscate the "subversive writings" — collect 3 bundles from the cellars.',
+      'quest.council_seizure.description': 'Confiscate the "subversive writings" — collect 3 bundles from the cellars. The rabble down there carries them.',
       'quest.council_seizure.dialogueOffer': 'Rabble in the cellars is hoarding subversive writings against the council. Confiscate them — three bundles. Do not read them. Bring them.\n\nWill you take the task?',
-      'quest.council_seizure.dialogueProgress': 'Not all writings secured yet. Keep looking.',
+      'quest.council_seizure.dialogueProgress': 'Not all writings secured yet. The rabble below carries them.',
       'quest.council_seizure.dialogueComplete': "Hand them over.\n\n(Before you turn them in, your eye catches a line. These are not pamphlets. They are petitions — citizens asking after vanished kin.)",
 
       'quest.council_surveillance.title': 'Surveillance',
@@ -1780,9 +1790,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.council_surveillance.dialogueComplete': 'Report accepted.\n\n(No conspirators. Only people hiding in the dark — from the council, not against it.)',
 
       'quest.branka_transcripts.title': 'Forbidden Transcripts',
-      'quest.branka_transcripts.description': 'Bring Branka 2 interrogation records from the cellars.',
+      'quest.branka_transcripts.description': 'Bring Branka 2 interrogation records from the cellars. The enemies down there carry copies.',
       'quest.branka_transcripts.dialogueOffer': 'The cellars hold records from interrogations. Not of demons — of people. Bring me two transcripts. Carefully.',
-      'quest.branka_transcripts.dialogueProgress': 'The records are deep in the cellar. Keep searching.',
+      'quest.branka_transcripts.dialogueProgress': 'The ones down there carry copies of the records. Keep searching.',
       'quest.branka_transcripts.dialogueComplete': 'Read this. "Questioned until confession." The council interrogates citizens like the summoned. That is not protection — it is a hunt.',
 
       // Feature 062: umbenannt ritual_chamber -> verseuchte_kammer.
@@ -1819,7 +1829,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.elara_ritual.dialogueProgress': "The Master of Ceremonies still holds the chamber. You will find him at depth 20. As long as he lives, you cannot reach the shaft.",
       'quest.elara_ritual.dialogueComplete': "The Master of Ceremonies has fallen. (Behind him the shaft. Far below a glow, red as a furnace, and from it the smoke rises, grey and thick.)\n\nThat is it. The Furnace. It burns what is in the vials: memories. Its smoke is the fog.\n\nYou cannot smash it. You have to loosen its binding, the way you loosen a seal. One strike in the right place, in the right direction. Your hands know how. I will show you the spot when the time comes.\n\nTake this amulet. It shields you from the fog when you go deeper.",
       'quest.thom_truth.dialogueOffer': "I've printed enough of what the council wants. Time for the truth.\n\nFind five print plates, deep in the cellar, from depth 14 — they hold the real history.",
-      'quest.thom_truth.dialogueProgress': "The print plates lie deep in the Town Hall Cellar, from depth 14. Keep searching.",
+      'quest.thom_truth.dialogueProgress': "The ones down there carry the print plates, from depth 14. Keep searching.",
       'quest.thom_truth.dialogueComplete': 'Fantastic! These plates contain proof the council wanted to destroy. The truth goes to print.',
 
       'quest.mara_warning.dialogueOffer': "At depth 10 the Chainmaster holds the way. He used to be a captain of the guard; now only his order is left. He binds whoever he wants to catch. Bring him down, and we will see what he guards.",
@@ -1834,8 +1844,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.elara_blade.dialogueProgress': "The blade waits for you.",
       'quest.elara_blade.dialogueComplete': "May it protect you. No matter what comes.",
 
-      'quest.mara_assault.dialogueOffer': "Aldric fled into the depths after the Furnace broke, with what is left of his Chain Guard. Up here his name is already on every sheet. Down there he may not even know any more that it is his.\n\nReach wave 30. I will find him, and then I will take you to him. Are you in?",
-      'quest.mara_assault.dialogueProgress': "The Chain Guard still holds out in the depths. Press on, to wave 30. I will wait for you there.",
+      'quest.mara_assault.dialogueOffer': "Aldric fled into the depths after the Furnace broke, with what is left of his Chain Guard. Up here his name is already on every sheet. Down there he may not even know any more that it is his.\n\nReach depth 30. I will find him, and then I will take you to him. Are you in?",
+      'quest.mara_assault.dialogueProgress': "The Chain Guard still holds out in the depths. Press on, to depth 30. I will wait for you there.",
 
       'quest.mara_assault.dialogueProgressNext': "I found him, all the way down. Go down once more, I will lead you to him.",
       'quest.mara_assault.dialogueComplete': "He is empty. The man who had others emptied. (Mara stares into the flame of her lamp for a long time.) I thought I would be glad.\n\nThe Chain Guard is broken. The tunnels beneath the city belong to no one again. That is more than this city has had in a long time.",
@@ -1863,22 +1873,22 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
 
       // #148: die beiden menschlichen Nebenquests
       'quest.buerger_hund.title': 'A Dog Named Bruno',
-      'quest.buerger_hund.description': "Find Bruno's collar in the canals beneath the city (from depth 13).",
+      'quest.buerger_hund.description': "Find Bruno's collar in the canals beneath the city (from depth 13). One of the enemies down there has picked it up.",
       'quest.buerger_hund.dialogueOffer': "You go down there, don't you. My dog, Bruno, ran off into the canals a week ago. He hunts rats, he can't help it. If you find a collar with a brass tag deep down, from depth 13, bring it to me. Then at least I'll know.",
       'quest.buerger_hund.dialogueProgress': 'A brown collar, brass tag, "Bruno" scratched into it. Deep down, from depth 13.',
       'quest.buerger_hund.dialogueComplete': "That's his. (He turns the tag in his hand.) And you know what? Bruno came home on his own last night, filthy up to the ears and very pleased with himself. Without the collar. He slipped out of it to fit through a grate. (He laughs, for the first time since you've known him.)",
       'quest.branka_eichgewicht.title': 'The Standard Weight',
-      'quest.branka_eichgewicht.description': "Bring Branka the guild's old standard weight from the depths (from depth 26).",
+      'quest.branka_eichgewicht.description': "Bring Branka the guild's old standard weight from the depths (from depth 26). One of the enemies down there carries it.",
       'quest.branka_eichgewicht.dialogueOffer': "The two traders outside my workshop have been arguing for days about whose scales lie. Every morning, loudly, at my door. The guild's old standard weight lies somewhere down there, from depth 26, ever since the guild broke up. Bring it to me and I'll put an end to it. Please.",
       'quest.branka_eichgewicht.dialogueProgress': 'A brass cylinder with the guild stamp. From depth 26. And hurry, they have already started twice today.',
       'quest.branka_eichgewicht.dialogueComplete': "That's it. (She sets it on both scales.) Both wrong. By exactly the same amount. (She sighs.) Now they're arguing about who said it first. But more quietly. Thank you.",
 
       // #87: bisher ohne englische Fassung
       'quest.resistance_fetch_01.title': "The Sealed Bundle",
-      'quest.resistance_fetch_01.description': "Fetch the sealed bundle from the cellar. No one may see it, and do not open it.",
+      'quest.resistance_fetch_01.description': "Fetch the sealed bundle from the cellar. One of the enemies carries it. No one may see it, and do not open it.",
       'quest.resistance_fetch_01.dialogueOffer': "You are still standing. Good. Then you can do me a favor right away.\n\nSomewhere down here lies a bundle, sealed. Bring it to me without anyone seeing it. And do not open it. After that we talk about the council.",
       'quest.resistance_fetch_01.abgabeHinweis': 'Take the bundle to Elara. She will find you in the cellar.',
-      'quest.resistance_fetch_01.dialogueProgress': "The bundle lies somewhere down there. Look around, and leave it closed.",
+      'quest.resistance_fetch_01.dialogueProgress': "One of them down there has pocketed the bundle. Take it from him, and leave it closed.",
       'quest.resistance_fetch_01.dialogueComplete': "You have it. And you did not open it. Good. Now I know I can trust you.\n\n(On the wax of the seal: three chains, intertwined. You have never seen this sign before.)",
 
       'quest.faction_campaign.title': "Edict of the Week",
@@ -1900,9 +1910,9 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.garde_night_escort.dialogueComplete': "Recorded and delivered? Good. (He counts the coins out for you.) You see, loyalty pays.\n\n(What you do not tell him: every vial bore a name, and at the scale a scribe reads them off like goods. You knew one of them. The porters at the shaft were emptied people, and none of them came back up. You carry all of it to Mara.)",
 
       'quest.who_you_were.title': "Who You Were",
-      'quest.who_you_were.description': "Bring Branka three shards of your vial from the depths (from depth 17).",
+      'quest.who_you_were.description': "Bring Branka three shards of your vial from the depths (from depth 17). The enemies down there have picked them up.",
       'quest.who_you_were.dialogueOffer': "People found shards down there. Thick glass, and a sign is scratched into every one. Yours. (She looks at you for a long time.) That was a vial, Archivesmith. What was inside it was you.\n\nBring me three shards from the depths. Whatever still clings to them, we bind to metal here. Then the fog cannot take it from you again.",
-      'quest.who_you_were.dialogueProgress': "The shards lie deep, from depth 17. Keep searching.",
+      'quest.who_you_were.dialogueProgress': "The ones down there have picked up the shards, from depth 17. Keep searching.",
       'quest.who_you_were.dialogueComplete': "There you are. (The shards lie on the anvil, and with every strike something comes back: a workshop, seals, printing plates for the council. And a no.)\n\nYou forged for them. The sign of the three chains is yours. I watched you work on it. Then you understood what for, and you refused. It was no accident. They emptied you because they needed you, not because you were dangerous to them.\n\n(She puts the hammer down.) Listen to me. What we bound here stays yours. But you are not empty any more, and the fog down there notices. The more you know who you are, the more it has to take from you.",
 
       'quest.elara_second_truth.title': "Elara's Second Truth",
@@ -1920,14 +1930,14 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
 
       // v6.1: Nebenauftraege der Akte 3 und 4.
       'quest.klerus_brueder.title': 'The Silent Brothers',
-      'quest.klerus_brueder.description': 'Defeat 3 Summoners in the depths (from depth 15). The Clergy calls them brothers who fell from the Light.',
+      'quest.klerus_brueder.description': 'Defeat 3 Summoners in the depths (from depth 15): they keep their distance and call up Fog Wisps. The Clergy calls them brothers who fell from the Light.',
       'quest.klerus_brueder.dialogueOffer': 'Three of our brothers have fallen from the Light. They went down and call up things down there that no prayer should ever call. The Clergy does not speak of them, and neither will you.\n\nFrom depth 15 you will find them, Summoners they are called now. Bring me their signet rings. The Light does not forget who serves it.',
       'quest.klerus_brueder.dialogueProgress': 'The fallen are still calling. Summoners, from depth 15. Bring me their rings.',
       'quest.klerus_brueder.dialogueComplete': '(The priest looks at your hand, not at your face.) The rings.\n\n(One of the brothers had a note on him, closely written, the ink smudged: "The embers grow weak. Who renews them?" You pocketed it. One of the three rings is heavier than the others and bears the sign of the High Priest.)',
 
       'quest.thom_gegenedikt.title': 'An Edict Nobody Ordered',
-      'quest.thom_gegenedikt.description': 'Have a risky edict printed at the press. Thom sets it in the council\'s type.',
-      'quest.thom_gegenedikt.dialogueOffer': 'Every week the council prints what the city is supposed to think. For once I want to print something it never ordered, and make it look as if it had. Same letters, same setting, same margin.\n\n(He holds up a sheet.) I only have one kind of paper. Theirs. So the city gets a counter-edict dressed as the council.\n\nPick one of the risky edicts at the press. It costs you print sheets and the council\'s attention. That is the price.',
+      'quest.thom_gegenedikt.description': 'Have a risky edict printed at the press (costs print sheets and raises council suspicion). Thom sets it in the council\'s type.',
+      'quest.thom_gegenedikt.dialogueOffer': 'Every week the council prints what the city is supposed to think. For once I want to print something it never ordered, and make it look as if it had. Same letters, same setting, same margin.\n\n(He holds up a sheet.) I only have one kind of paper. Theirs. So the city gets a counter-edict dressed as the council.\n\nPick one of the risky edicts at the press. It costs you five print sheets and earns you five points of council suspicion. That is the price.',
       'quest.thom_gegenedikt.dialogueProgress': 'Nothing risky is hanging yet. Pick one of the risky edicts at the press, and I will set it in the council\'s type.',
       'quest.thom_gegenedikt.dialogueComplete': '(Thom holds the fresh sheet next to a genuine one of the council\'s. No difference, except for what it says.)\n\nThis morning the Guard tore down two of them and saluted three others, because it does not read what it guards. (He grins.) A scribe at the town hall is now looking for the man who ordered it. He will be looking for a long time.',
 
@@ -1945,7 +1955,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       'quest.elara_schloesser.dialogueComplete': '(She takes your hand and turns it once at the wrist, slowly, as if testing a tool.)\n\nExactly like that. In the end it is the same turn, only bigger.',
 
       'quest.wache_helm.title': 'A Name on the Helmet',
-      'quest.wache_helm.description': 'Bring the City Watch captain his son\'s helmet tag. One of the leaders in the depths carries it (from depth 24).',
+      'quest.wache_helm.description': 'Bring the City Watch captain his son\'s helmet tag. One of the leaders in the depths carries it (elite enemy, golden name; from depth 24).',
       'quest.wache_helm.dialogueOffer': '(He looks around before he speaks.) I have orders to arrest you. I also have a son. He went down with the Chain Guard, two winters ago. He holds the way, they write to me. Every month the same sentence.\n\nEvery guard wears a tag on his helmet, with his name. If you meet one down there who leads, from depth 24, take a look. I want to know what he is holding.',
       'quest.wache_helm.dialogueProgress': 'A brass tag on the helmet, with his name. The leaders down there wear them, from depth 24.',
       'quest.wache_helm.dialogueComplete': '(He takes the tag and rubs his thumb over the name until it shines.)\n\n(The man who wore it was one of the emptied. He barely fought back. He just stood there, in the middle of the passage, as if he really were holding something.)',
@@ -2204,21 +2214,42 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
   }
 
   function getAvailableQuests(npcId) {
-    var currentAct = _getCurrentActIndex();
     return Object.keys(QUEST_DEFINITIONS).filter(function (id) {
+      return _angebotsHindernis(id, npcId) === null;
+    }).map(function (id) { return QUEST_DEFINITIONS[id]; });
+  }
+
+  /**
+   * Die kleinste Angebotstiefe (angebotAb) unter den Auftraegen dieser Figur,
+   * die NUR noch auf die erreichte Tiefe warten — sonst null. Fuer "Komm
+   * wieder, wenn Du tiefer warst" im Gespraech.
+   */
+  function wartetAufTiefe(npcId) {
+    var min = null;
+    Object.keys(QUEST_DEFINITIONS).forEach(function (id) {
+      if (_angebotsHindernis(id, npcId) !== 'tiefe') return;
+      var t = angebotsTiefe(QUEST_DEFINITIONS[id]);
+      if (min === null || t < min) min = t;
+    });
+    return min;
+  }
+
+  // Warum wird dieser Auftrag (bei dieser Figur) nicht angeboten? null = er
+  // wird angeboten, 'tiefe' = nur die erreichte Tiefe fehlt, 'sonst' = etwas
+  // anderes (Zustand, Akt, Vorbedingung, Tor). Die Tiefe wird zuletzt
+  // geprueft, damit 'tiefe' wirklich "nur noch die Tiefe" heisst.
+  function _angebotsHindernis(id, npcId) {
       var def = QUEST_DEFINITIONS[id];
       var state = questState[id];
-      if (!state || state.status !== 'available') return false;
-      if (def.npcId !== npcId) return false;
+      if (!state || state.status !== 'available') return 'sonst';
+      if (def.npcId !== npcId) return 'sonst';
       // Check act requirement
-      if (typeof def.requiredAct === 'number' && currentAct < def.requiredAct) return false;
-      // Angebotstiefe: erst, wenn die erreichte Tiefe so weit ist.
-      if (_erreichteTiefe() < angebotsTiefe(def)) return false;
+      if (typeof def.requiredAct === 'number' && _getCurrentActIndex() < def.requiredAct) return 'sonst';
       // Check prerequisites
       if (Array.isArray(def.prerequisites) && def.prerequisites.length > 0) {
         for (var i = 0; i < def.prerequisites.length; i++) {
           var preState = questState[def.prerequisites[i]];
-          if (!preState || preState.status !== 'completed') return false;
+          if (!preState || preState.status !== 'completed') return 'sonst';
         }
       }
       // Optional gate predicate (feature 045). When set, the quest is only
@@ -2226,15 +2257,16 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       // offer-list refresh, so the quest appears/disappears dynamically.
       if (typeof def.gate === 'function') {
         try {
-          if (!def.gate()) return false;
+          if (!def.gate()) return 'sonst';
         } catch (_) {
           // Defensive: a throwing gate shouldn't crash the dialog. Hide the
           // quest until the gate is fixed.
-          return false;
+          return 'sonst';
         }
       }
-      return true;
-    }).map(function (id) { return QUEST_DEFINITIONS[id]; });
+      // Angebotstiefe: erst, wenn die erreichte Tiefe so weit ist.
+      if (_erreichteTiefe() < angebotsTiefe(def)) return 'tiefe';
+      return null;
   }
 
   function getActiveQuests(npcId) {
@@ -2270,6 +2302,37 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     var def = (typeof questOrId === 'string') ? QUEST_DEFINITIONS[questOrId]
       : (questOrId && QUEST_DEFINITIONS[questOrId.id]) || questOrId;
     return (def && (def.turnInNpcId || def.npcId)) || null;
+  }
+
+  /**
+   * Was fuer ein Auftrag das ist, fuer die Zeile unter dem Titel im Angebot:
+   * 'aushang' (Anschlagtafel), 'einfuehrung', 'neben' oder 'story'
+   * (rewardTier story/boss/finale).
+   */
+  function getAuftragsArt(questOrId) {
+    var def = (typeof questOrId === 'string') ? QUEST_DEFINITIONS[questOrId]
+      : (questOrId && QUEST_DEFINITIONS[questOrId.id]) || questOrId;
+    if (!def) return 'neben';
+    if (def.npcId === 'anschlagtafel') return 'aushang';
+    if (def.rewardTier === 'einfuehrung') return 'einfuehrung';
+    return istStoryAuftrag(def) ? 'story' : 'neben';
+  }
+
+  /**
+   * "Abgabe bei ..." fuer einen fertigen Auftrag: der eigene abgabeHinweis
+   * (Elara im Keller), sonst die Figur, die ihn abnimmt.
+   */
+  function abgabeZeile(questOrId) {
+    var def = (typeof questOrId === 'string') ? QUEST_DEFINITIONS[questOrId]
+      : (questOrId && QUEST_DEFINITIONS[questOrId.id]) || questOrId;
+    if (!def) return '';
+    if (def.abgabeHinweis) return getQuestField(def, 'abgabeHinweis');
+    var npc = abgabeNpc(def);
+    if (!npc || !window.i18n || typeof window.i18n.t !== 'function') return '';
+    if (npc === 'anschlagtafel') return window.i18n.t('quest.toast.abgabe_brett');
+    var key = 'hub.npc.' + npc + '.name';
+    var name = (typeof window.i18n.has === 'function' && window.i18n.has(key)) ? window.i18n.t(key) : '';
+    return name ? window.i18n.t('quest.toast.abgabe', { npc: name }) : '';
   }
 
   /**
@@ -2413,6 +2476,34 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     var d = (typeof tiefe === 'number') ? tiefe
       : (typeof window !== 'undefined' && typeof window.DUNGEON_DEPTH === 'number') ? window.DUNGEON_DEPTH : 1;
     return d >= m;
+  }
+
+  /**
+   * Laufende, noch nicht erfuellte Auftraege, die auf dieser Tiefe nicht
+   * zaehlen (Mindesttiefe darueber) — nach Tiefe sortiert.
+   * @returns {Array<{id:string, titel:string, tiefe:number}>}
+   */
+  function eingefroreneAuftraege(tiefe) {
+    var aus = [];
+    Object.keys(questState).forEach(function (id) {
+      var st = questState[id];
+      if (!st || st.status !== 'active' || !QUEST_DEFINITIONS[id]) return;
+      if (tiefeErreicht(id, tiefe) || isQuestReadyToComplete(id)) return;
+      aus.push({ id: id, titel: getQuestField(QUEST_DEFINITIONS[id], 'title'), tiefe: _mindestTiefe(id) });
+    });
+    aus.sort(function (a, b) { return a.tiefe - b.tiefe; });
+    return aus;
+  }
+
+  /** "Zu flach für: ..." fuer diese Tiefe, oder '' wenn nichts einfriert. */
+  function zuFlachText(tiefe) {
+    var liste = eingefroreneAuftraege(tiefe);
+    if (!liste.length || !window.i18n || typeof window.i18n.t !== 'function') return '';
+    return window.i18n.t('quest.tiefe.zu_flach', {
+      liste: liste.map(function (q) {
+        return window.i18n.t('quest.tiefe.eintrag', { titel: q.titel, n: q.tiefe });
+      }).join(', ')
+    });
   }
 
   function updateQuestProgress(type, target, amount) {
@@ -3082,7 +3173,7 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
       var msg = (window.i18n && typeof window.i18n.t === 'function')
         ? window.i18n.t('quest.toast.completed', { title: title })
         : ('Quest-Ziel erfüllt: ' + title);
-      var hinweis = getAbgabeHinweis(def.id);
+      var hinweis = abgabeZeile(def);
       if (hinweis) msg += '\n' + hinweis;
       // #197: waehrend einer Spionage-Mission wird der Text zur
       // letzten Seite der Abhoer-Szene statt eines Toasts.
@@ -3419,6 +3510,12 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     updateQuestProgress: updateQuestProgress,
     tiefeErreicht: tiefeErreicht,
     angebotsTiefe: angebotsTiefe,
+    wartetAufTiefe: wartetAufTiefe,
+    mindestTiefe: _mindestTiefe,
+    eingefroreneAuftraege: eingefroreneAuftraege,
+    zuFlachText: zuFlachText,
+    getAuftragsArt: getAuftragsArt,
+    abgabeZeile: abgabeZeile,
     onWaveCompleted: onWaveCompleted,
     onLaufEnde: onLaufEnde,
     onDungeonCompleted: onDungeonCompleted,

@@ -21,8 +21,39 @@ if (window.i18n) {
     'hub.dialog.npc_quest.greeting_returning.harren.2': '(Er sieht müde aus, aber wacher als zuletzt.) Nach "{title}" wage ich wieder zu fragen. Hör mich an.',
     'hub.dialog.npc_quest.greeting_returning.mara.1': 'Sieh an. "{title}" hat geklappt, und keiner hat nach Dir gefragt. So mag ich das. Ich hab noch was.',
     'hub.dialog.npc_quest.greeting_returning.mara.2': '(Sie zählt etwas unter dem Tisch.) "{title}" war saubere Arbeit. Ich vergesse so etwas nicht — ich schreibe es nur nicht auf.',
-    'hub.dialog.npc_quest.task_header': 'Aufgabe {chain}/3: {title}\n{description}{rewards}',
-    'hub.dialog.npc_quest.info_text': '{description}\n\nDiese Aufgabe ist Teil einer Questkette ({chain}/3) für {npc}.{rewards}',
+    // Titel, darunter wer den Auftrag gibt und welche Art er ist (statt einer
+    // Kettennummer "x/3", die laengst nicht mehr stimmte).
+    'hub.dialog.npc_quest.task_header': '{title}\n{herkunft}\n\n{description}{rewards}',
+    'hub.dialog.npc_quest.info_text': '{description}\n\n{herkunft}. {art_text}{rewards}',
+    'hub.dialog.npc_quest.herkunft': 'Auftrag von {npc} · {art}',
+    'hub.dialog.npc_quest.herkunft_brett': 'Aushang an der Anschlagtafel',
+    'hub.dialog.npc_quest.art.story': 'Story',
+    'hub.dialog.npc_quest.art.neben': 'Nebenauftrag',
+    'hub.dialog.npc_quest.art.einfuehrung': 'Einführung',
+    'hub.dialog.npc_quest.art_text.story': 'Ein Story-Auftrag: Er bringt die Geschichte voran.',
+    'hub.dialog.npc_quest.art_text.neben': 'Ein Nebenauftrag: Er bringt Lohn, aber die Geschichte wartet nicht auf ihn.',
+    'hub.dialog.npc_quest.art_text.einfuehrung': 'Eine Einführung: Sie zeigt Dir einen Teil der Stadt, den Du noch nicht benutzt hast.',
+    'hub.dialog.npc_quest.art_text.aushang': 'Ein Aushang: freiwillige Arbeit gegen Lohn. Abgegeben wird hier am Brett.',
+    // Zusatzzeilen im Gespraech ohne Auftrag (_flavorZusatz).
+    'hub.npc.komm_wieder': 'Ich hätte noch etwas für Dich. Komm wieder, wenn Du bis Tiefe {n} hinabsteigen kannst.',
+    'hub.aldric.jagd': '(Aldric schlägt die Akte zu, bevor Du etwas sagen kannst.) Für Gefälligkeiten habe ich keine Zeit, Archivschmied. Nicht, solange die Druckerei so laut ist. Erst muss der Verdacht des Rats sinken.',
+    'hub.harren.sitzung_fehlt': 'Bevor ich Dich zur Ratssitzung schicke, will ich hören, was jede Seite von Dir wollte. Noch offen: {liste}.',
+    'hub.harren.sitzung_eintrag': '„{titel}“ ({npc})',
+    // Einmal, sobald zum ersten Mal ein "?" ueber einer Figur steht.
+    'hub.zeichen.legende': 'Über den Köpfen: ? = Auftrag abgeben, … = läuft noch, ! = neuer Auftrag',
+    // Hinabstieg: ein Boss-Tor haelt die Grenze (alle Tore, nicht nur Tiefe 9).
+    'hub.descent.tor': 'Tiefer geht es erst, wenn „{titel}“ läuft.',
+    'hub.descent.tor.stadt': 'Den Auftrag gibt Dir {npc} in der Stadt.',
+    'hub.descent.tor.keller': 'Den Auftrag gibt Dir Elara, sie findet Dich im Keller.',
+    'hub.descent.wartet': 'Wartet auf mehr Tiefe:',
+    'hub.descent.wartet_eintrag': '· {titel} (ab Tiefe {n})',
+    'hub.descent.zaehlt_nicht': '„{titel}“ zählt hier nicht (ab {n})',
+    'hub.descent.zaehlen_nicht': '„{titel}“ und {k} weitere zählen hier nicht (ab {n})',
+    // Laufuebersicht: was der Lauf mit der Tiefengrenze gemacht hat.
+    'hub.lauf.grenze.neu': 'Neue Grenze: Tiefe {n}',
+    'hub.lauf.grenze.bleibt': 'Die Grenze bleibt bei Tiefe {n}.',
+    'hub.lauf.grenze.grund.nicht_fertig': 'Nur ein Lauf bis zum letzten Raum schiebt sie weiter.',
+    'hub.lauf.grenze.grund.unter_grenze': 'Nur ein Lauf, der an der Grenze beginnt („An die Grenze“), schiebt sie weiter.',
     'hub.dialog.npc_quest.progress_text': '{dialogue}\n\nFortschritt: {progress} ({pct}%)',
     'hub.dialog.npc_quest.reward_intro': 'Hier ist deine Belohnung:\n\n{rewards}\n\nNimm sie — du hast sie dir verdient.',
     'hub.dialog.npc_quest.reward_label': '\n\nBelohnung: {rewards}',
@@ -88,8 +119,33 @@ if (window.i18n) {
     'hub.dialog.npc_quest.greeting_returning.harren.2': '(He looks tired, but more awake than last time.) After "{title}" I dare to ask again. Hear me out.',
     'hub.dialog.npc_quest.greeting_returning.mara.1': 'Well, well. "{title}" worked, and nobody asked about you. That is how I like it. I have something else.',
     'hub.dialog.npc_quest.greeting_returning.mara.2': '(She counts something under the table.) "{title}" was clean work. I do not forget such things — I just do not write them down.',
-    'hub.dialog.npc_quest.task_header': 'Task {chain}/3: {title}\n{description}{rewards}',
-    'hub.dialog.npc_quest.info_text': '{description}\n\nThis task is part of a quest chain ({chain}/3) for {npc}.{rewards}',
+    'hub.dialog.npc_quest.task_header': '{title}\n{herkunft}\n\n{description}{rewards}',
+    'hub.dialog.npc_quest.info_text': '{description}\n\n{herkunft}. {art_text}{rewards}',
+    'hub.dialog.npc_quest.herkunft': 'Task from {npc} · {art}',
+    'hub.dialog.npc_quest.herkunft_brett': 'Notice on the notice board',
+    'hub.dialog.npc_quest.art.story': 'Story',
+    'hub.dialog.npc_quest.art.neben': 'Side task',
+    'hub.dialog.npc_quest.art.einfuehrung': 'Introduction',
+    'hub.dialog.npc_quest.art_text.story': 'A story task: it moves the story forward.',
+    'hub.dialog.npc_quest.art_text.neben': 'A side task: it pays, but the story does not wait for it.',
+    'hub.dialog.npc_quest.art_text.einfuehrung': 'An introduction: it shows you a part of the city you have not used yet.',
+    'hub.dialog.npc_quest.art_text.aushang': 'A notice: voluntary work for pay. You turn it in here at the board.',
+    'hub.npc.komm_wieder': 'I would have something else for you. Come back once you can descend to depth {n}.',
+    'hub.aldric.jagd': '(Aldric shuts the file before you can say anything.) I have no time for favours, Archivesmith. Not while the printing house is this loud. First the council\'s suspicion has to come down.',
+    'hub.harren.sitzung_fehlt': 'Before I send you to the council session, I want to hear what each side wanted from you. Still open: {liste}.',
+    'hub.harren.sitzung_eintrag': '"{titel}" ({npc})',
+    'hub.zeichen.legende': 'Above their heads: ? = turn in a task, … = still running, ! = new task',
+    'hub.descent.tor': 'You can only go deeper once "{titel}" is under way.',
+    'hub.descent.tor.stadt': '{npc} gives you that task in the city.',
+    'hub.descent.tor.keller': 'Elara gives you that task; she finds you in the cellar.',
+    'hub.descent.wartet': 'Waiting for more depth:',
+    'hub.descent.wartet_eintrag': '· {titel} (from depth {n})',
+    'hub.descent.zaehlt_nicht': '"{titel}" does not count here (from {n})',
+    'hub.descent.zaehlen_nicht': '"{titel}" and {k} more do not count here (from {n})',
+    'hub.lauf.grenze.neu': 'New limit: depth {n}',
+    'hub.lauf.grenze.bleibt': 'The limit stays at depth {n}.',
+    'hub.lauf.grenze.grund.nicht_fertig': 'Only a run cleared to the last room pushes it further.',
+    'hub.lauf.grenze.grund.unter_grenze': 'Only a run that starts at the limit ("To the Limit") pushes it further.',
     'hub.dialog.npc_quest.progress_text': '{dialogue}\n\nProgress: {progress} ({pct}%)',
     'hub.dialog.npc_quest.reward_intro': 'Here is your reward:\n\n{rewards}\n\nTake it — you have earned it.',
     'hub.dialog.npc_quest.reward_label': '\n\nReward: {rewards}',
@@ -1288,6 +1344,79 @@ class HubSceneV2 extends Phaser.Scene {
     return !!(qs && typeof qs.istStoryAuftrag === 'function' && qs.istStoryAuftrag(q));
   }
 
+  /** 'story' | 'neben' | 'einfuehrung' | 'aushang' (questSystem.getAuftragsArt). */
+  _auftragsArt(q) {
+    const qs = window.questSystem;
+    return (qs && typeof qs.getAuftragsArt === 'function') ? qs.getAuftragsArt(q) : 'neben';
+  }
+
+  /** "Auftrag von Aldric · Story" bzw. "Aushang an der Anschlagtafel". */
+  _herkunftZeile(q, npcData) {
+    const art = this._auftragsArt(q);
+    if (art === 'aushang') return _HUB_T('hub.dialog.npc_quest.herkunft_brett');
+    return _HUB_T('hub.dialog.npc_quest.herkunft', {
+      npc: (npcData && npcData.name) || '', art: _HUB_T('hub.dialog.npc_quest.art.' + art)
+    });
+  }
+
+  /**
+   * Zeilen nach dem Flavor-Gespraech, die sagen, warum gerade nichts kommt:
+   * ein Auftrag, der nur noch auf die Tiefe wartet; Aldric, der wegen des
+   * Verdachts keine Nebenauftraege gibt; Harren vor der geheimen Sitzung,
+   * solange Vorarbeit fehlt.
+   */
+  _flavorZusatz(npcId) {
+    const qs = window.questSystem;
+    if (!qs || !npcId || npcId === 'anschlagtafel') return [];
+    const aus = [];
+    const aldricZu = npcId === 'aldric' && window.HubPhase
+      && typeof window.HubPhase.aldricBlocksQuests === 'function'
+      && window.HubPhase.aldricBlocksQuests(this._hubPhase);
+    if (aldricZu) return aus;
+    if (npcId === 'aldric' && this._aldricJagd()
+        && (qs.getAvailableQuests('aldric') || []).some((q) => !this._istStoryAuftrag(q))) {
+      aus.push(_HUB_T('hub.aldric.jagd'));
+    }
+    if (npcId === 'harren') {
+      const fehlt = this._sitzungFehlt();
+      if (fehlt.length) {
+        aus.push(_HUB_T('hub.harren.sitzung_fehlt', {
+          liste: fehlt.map((f) => _HUB_T('hub.harren.sitzung_eintrag', f)).join(', ')
+        }));
+      }
+    }
+    const tiefe = (typeof qs.wartetAufTiefe === 'function') ? qs.wartetAufTiefe(npcId) : null;
+    if (typeof tiefe === 'number') aus.push(_HUB_T('hub.npc.komm_wieder', { n: tiefe }));
+    return aus;
+  }
+
+  /** Verdacht der Druckerei auf Jagd (ab 20): Aldric gibt nur noch Story. */
+  _aldricJagd() {
+    return !!(window.PrintingHouse && typeof window.PrintingHouse.getRetaliationTier === 'function'
+      && window.PrintingHouse.getRetaliationTier() === 'active_hunt');
+  }
+
+  /**
+   * Akt 1: Was vor "Die geheime Sitzung" noch fehlt — [{titel, npc}], leer,
+   * wenn sie schon angeboten wird, laeuft oder vorbei ist.
+   */
+  _sitzungFehlt() {
+    const qs = window.questSystem;
+    const def = qs && qs.QUEST_DEFINITIONS && qs.QUEST_DEFINITIONS.council_collusion_reveal;
+    if (!def || typeof qs.getCompletedQuests !== 'function') return [];
+    const fertig = new Set((qs.getCompletedQuests() || []).map((q) => q.id));
+    if (fertig.has(def.id) || !fertig.has('harren_daughter_investigation')) return [];
+    if ((qs.getActiveQuests() || []).some((q) => q.id === def.id)) return [];
+    return (def.prerequisites || []).filter((id) => !fertig.has(id)).map((id) => {
+      const q = qs.QUEST_DEFINITIONS[id];
+      const npcKey = 'hub.npc.' + (q && q.npcId) + '.name';
+      return {
+        titel: (typeof qs.getQuestTitle === 'function' && qs.getQuestTitle(q)) || (q && q.title) || id,
+        npc: (window.i18n && window.i18n.has && window.i18n.has(npcKey)) ? _HUB_T(npcKey) : ''
+      };
+    });
+  }
+
   /**
    * Was diese Figur JETZT anbieten darf. Aldric verweigert nach dem Bruch
    * alles (Feature 064, Phase 'broken'). Steht der Verdacht der Druckerei auf
@@ -1301,9 +1430,7 @@ class HubSceneV2 extends Phaser.Scene {
     const alle = qs.getAvailableQuests(npcId) || [];
     if (npcId !== 'aldric') return alle;
     if (window.HubPhase && window.HubPhase.aldricBlocksQuests(this._hubPhase)) return [];
-    const jagd = !!(window.PrintingHouse && typeof window.PrintingHouse.getRetaliationTier === 'function'
-      && window.PrintingHouse.getRetaliationTier() === 'active_hunt');
-    return jagd ? alle.filter((q) => this._istStoryAuftrag(q)) : alle;
+    return this._aldricJagd() ? alle.filter((q) => this._istStoryAuftrag(q)) : alle;
   }
 
   /**
@@ -1389,6 +1516,21 @@ class HubSceneV2 extends Phaser.Scene {
     return null;
   }
 
+  /** Einmal je Spielstand: was ?, … und ! ueber den Koepfen heissen. */
+  _zeichenLegende() {
+    const qs = window.questSystem;
+    if (!qs || typeof qs.hasFlag !== 'function' || qs.hasFlag('zeichen_legende_gesehen')) return;
+    qs.setFlag('zeichen_legende_gesehen');
+    const zeigen = () => {
+      if (this.sys && this.sys.isActive && !this.sys.isActive()) return;
+      if (window.EventSystem && typeof window.EventSystem.showToast === 'function') {
+        try { window.EventSystem.showToast(this, _HUB_T('hub.zeichen.legende')); } catch (e) {}
+      }
+    };
+    if (this.time && typeof this.time.delayedCall === 'function') this.time.delayedCall(900, zeigen);
+    else zeigen();
+  }
+
   _zeichenSetzen(indikator, zeichen) {
     if (!indikator) return;
     if (zeichen === '?') indikator.setText('?').setColor('#88ff88').setVisible(true);
@@ -1406,7 +1548,9 @@ class HubSceneV2 extends Phaser.Scene {
         if (questIndicator) questIndicator.setVisible(false);
         return;
       }
-      this._zeichenSetzen(questIndicator, this._questZeichen(data.id));
+      const zeichen = this._questZeichen(data.id);
+      this._zeichenSetzen(questIndicator, zeichen);
+      if (zeichen === '?') this._zeichenLegende();
       // Keep position above sprite
       questIndicator.x = sprite.x;
     });
@@ -1629,11 +1773,14 @@ class HubSceneV2 extends Phaser.Scene {
     const aus = [];
     (qs.getActiveQuests() || []).forEach((q) => {
       const def = q && qs.QUEST_DEFINITIONS[q.id];
-      if (!def || typeof def.minDepth !== 'number' || def.minDepth <= (tiefste || 1)) return;
+      // Die wirksame Mindesttiefe: ein laufender Auftrag behaelt die, mit der
+      // er angenommen wurde (questSystem._mindestTiefe), nicht def.minDepth.
+      const ab = (typeof qs.mindestTiefe === 'function') ? qs.mindestTiefe(q.id) : (def && def.minDepth);
+      if (!def || typeof ab !== 'number' || ab <= (tiefste || 1)) return;
       const key = 'quest.' + q.id + '.title';
       const titel = (window.i18n && typeof window.i18n.has === 'function' && window.i18n.has(key))
         ? window.i18n.t(key) : (def.title || q.id);
-      aus.push({ titel: titel, tiefe: def.minDepth });
+      aus.push({ titel: titel, tiefe: ab });
     });
     aus.sort((a, b) => a.tiefe - b.tiefe);
     return aus.slice(0, 3);
@@ -1919,8 +2066,8 @@ class HubSceneV2 extends Phaser.Scene {
         pages.push(this._storyChoicePage(_sdOffer));
       }
 
-      // Choice page
-      const chainNum = questData.chain || 1;
+      // Choice page: Titel, darunter Geber und Art (_herkunftZeile).
+      const herkunft = this._herkunftZeile(questData, npcData);
       // Mit den Werten, die der Spieler bei der Abgabe JETZT bekaeme.
       const rewardParts = (qs && typeof qs.lohnTeile === 'function')
         ? qs.lohnTeile(qs.getQuestLohn(questData.id)) : [];
@@ -1928,7 +2075,7 @@ class HubSceneV2 extends Phaser.Scene {
 
       pages.push({
         text: _HUB_T('hub.dialog.npc_quest.task_header', {
-          chain: chainNum, title: questData.title, description: questData.description, rewards: rewardStr
+          herkunft: herkunft, title: questData.title, description: questData.description, rewards: rewardStr
         }),
         choices: [
           { label: _HUB_T('hub.dialog.choice.accept'), action: 'accept' },
@@ -1940,7 +2087,8 @@ class HubSceneV2 extends Phaser.Scene {
       // Info page (shown if "Mehr erfahren" is chosen)
       pages.push({
         text: _HUB_T('hub.dialog.npc_quest.info_text', {
-          description: questData.description, chain: chainNum, npc: npcData.name, rewards: rewardStr
+          description: questData.description, herkunft: herkunft, rewards: rewardStr,
+          art_text: _HUB_T('hub.dialog.npc_quest.art_text.' + this._auftragsArt(questData))
         }),
         choices: [
           { label: _HUB_T('hub.dialog.choice.accept'), action: 'accept' },
@@ -2014,6 +2162,8 @@ class HubSceneV2 extends Phaser.Scene {
       bodyLines.forEach(line => {
         pages.push({ text: line, choices: null });
       });
+      // Warum gerade kein Auftrag kommt: Tiefe, Verdacht, fehlende Vorarbeit.
+      this._flavorZusatz(npcId).forEach((line) => pages.push({ text: line, choices: null }));
 
       // Feature 063: Brankas Hub-Auftakt ("Du siegelst Akten, an die Du Dich
       // nicht erinnerst") als EINMALIGE Auswahl — kein Quest-Dialog, deshalb
@@ -3638,11 +3788,13 @@ class HubSceneV2 extends Phaser.Scene {
     // #72: Laufende Auftraege, die erst ab einer groesseren Tiefe weitergehen,
     // stehen im Kopf des Dialogs — sonst sucht man sie in zu flachen Laeufen.
     const _wartend = this._wartendeAuftraege(lastKnown);
-    const _istEnDlg = !!(window.i18n && window.i18n.getLanguage && window.i18n.getLanguage() === 'en');
     const _wartendText = _wartend.length
-      ? (_istEnDlg ? 'Waiting for more depth:' : 'Wartet auf mehr Tiefe:') + '\n'
-        + _wartend.map((w) => '· ' + w.titel + (_istEnDlg ? ' (from depth ' : ' (ab Tiefe ') + w.tiefe + ')').join('\n')
+      ? _HUB_T('hub.descent.wartet') + '\n'
+        + _wartend.map((w) => _HUB_T('hub.descent.wartet_eintrag', { titel: w.titel, n: w.tiefe })).join('\n')
       : '';
+    // Je Option: laufende Auftraege, die auf dieser Tiefe nicht zaehlen.
+    options.forEach((o) => { o.notiz = this._zaehltNichtNotiz(o.depth); });
+    const _mitNotiz = options.some((o) => o.notiz);
 
     // Messing-Stil wie die Story-Wahlen (#182): Platte aus ui_rahmen, Optionen
     // auf Messingfeldern mit Medaillon und Tiefen-Plakette, Abbrechen als
@@ -3678,14 +3830,10 @@ class HubSceneV2 extends Phaser.Scene {
     // Variante C: An der Kettenmeister-Tiefensperre (Grenze 9, Quest noch nicht
     // angenommen) einen Hinweis zeigen — sonst wirkt der Tiefen-Deckel wie ein
     // Bug ("warum komme ich nicht tiefer?").
-    const _gateDepth = (window.RunDepth && window.RunDepth.KETTENMEISTER_GATE_DEPTH) || 9;
-    if (lastKnown === _gateDepth && window.RunDepth
-        && typeof window.RunDepth.isKettenmeisterGateOpen === 'function'
-        && !window.RunDepth.isKettenmeisterGateOpen()) {
-      const gateHint = this.add.text(0, 0,
-        _istEnDlg
-          ? 'Going deeper is not safe yet — wait until Mara tells you more.'
-          : 'Tiefer zu steigen ist noch nicht sicher — warte, bis Mara Dir mehr verrät.', {
+    // #131: das gilt fuer jedes Boss-Tor (9, 19, 24, 29), mit dem Auftrag,
+    // der es oeffnet, und wo man ihn bekommt.
+    if (_sperre) {
+      const gateHint = this.add.text(0, 0, this._torHinweis(_sperre), {
         fontFamily: 'monospace', fontSize: 13, color: '#e0b080',
         wordWrap: { width: bwVoll }, align: 'center'
       }).setOrigin(0.5, 0);
@@ -3705,7 +3853,9 @@ class HubSceneV2 extends Phaser.Scene {
     // Der Viewport zeigt nur ganze Zeilen; passen nicht alle Optionen (bis zu
     // 3 Abstiegs- + 3 Boss-Optionen) auf den Schirm, wird die Liste scrollbar
     // (Mausrad / Ziehen), statt das Panel ueber den Rand wachsen zu lassen.
-    const optionH = 60;
+    // Mit Notizzeile ("zaehlt hier nicht") werden alle Zeilen etwas hoeher.
+    const optionH = _mitNotiz ? 76 : 60;
+    const notizDy = _mitNotiz ? 8 : 0;
     const optionGap = 8;
     const footerH = 66;
     const rowH = optionH + optionGap;
@@ -3885,7 +4035,7 @@ class HubSceneV2 extends Phaser.Scene {
       const textW = textR - textL;
 
       // Titelzeile; ein Boss auf dieser Tiefe steht in Gold dahinter.
-      const titel = this.add.text(textL, oy - 11, opt.label || _HUB_T(opt.key), {
+      const titel = this.add.text(textL, oy - 11 - notizDy, opt.label || _HUB_T(opt.key), {
         fontFamily: 'serif', fontSize: 19, color: opt.boss ? '#ffd27a' : '#f2e9d8'
       }).setOrigin(0, 0.5);
       titel.setName('waveTitel');
@@ -3893,7 +4043,7 @@ class HubSceneV2 extends Phaser.Scene {
       einpassen(titel, opt.bossMark ? textW * 0.55 : textW, 14);
       if (opt.bossMark) {
         const bossX = textL + titel.width + 10;
-        const bossT = this.add.text(bossX, oy - 11, opt.bossMark, {
+        const bossT = this.add.text(bossX, oy - 11 - notizDy, opt.bossMark, {
           fontFamily: 'serif', fontSize: 16, color: '#ffd27a'
         }).setOrigin(0, 0.5);
         bossT.setName('waveBossName');
@@ -3903,7 +4053,15 @@ class HubSceneV2 extends Phaser.Scene {
 
       // Hinweiszeile: Boss-Lauf als Satz, sonst Stratum + Gefahr/Beute als
       // Pixel-Punkte (statt Pfeilzeichen), gefuellt je Stratum.
-      const hy = oy + 13;
+      const hy = oy + 13 - notizDy;
+      if (opt.notiz) {
+        const nz = this.add.text(textL, oy + 24, opt.notiz, {
+          fontFamily: 'monospace', fontSize: 11, color: '#e0b080'
+        }).setOrigin(0, 0.5);
+        nz.setName('waveNotiz');
+        optsC.add(nz);
+        einpassen(nz, textW, 9);
+      }
       if (opt.boss) {
         const h = this.add.text(textL, hy, _HUB_T('hub.descent.bossrun'), {
           fontFamily: 'monospace', fontSize: 12, color: '#ffce8a'
@@ -5007,7 +5165,16 @@ class HubSceneV2 extends Phaser.Scene {
     const kopfH = 48, zierH = 16, plakH = 54, zelleH = 42, zelleGap = 8, fussH = 66;
     const zeilenN = Math.ceil(werte.length / 2);
     const rasterH = zeilenN * zelleH + (zeilenN - 1) * zelleGap;
-    const panelH = pad + kopfH + zierH + plakH + 12 + rasterH + fussH;
+    // Was der Lauf mit der Tiefengrenze gemacht hat, unter den Plaketten.
+    const grenzText = this._grenzZeile(summary);
+    const grenzT = grenzText ? this.add.text(0, 0, grenzText, {
+      fontFamily: 'monospace', fontSize: 13, align: 'center', lineSpacing: 2,
+      color: (summary.grenze && summary.grenze.nachher > summary.grenze.vorher) ? '#9fe39f' : '#e0b080',
+      wordWrap: { width: innerW - 20 }
+    }).setOrigin(0.5, 0) : null;
+    if (grenzT) grenzT.setName('laufGrenze');
+    const grenzH = grenzT ? grenzT.height + 10 : 0;
+    const panelH = pad + kopfH + zierH + plakH + 12 + grenzH + rasterH + fussH;
     const top = -panelH / 2;
 
     UR.platte(this, 0, 0, panelW, panelH, 0, 0.6).forEach((t) => container.add(t));
@@ -5123,7 +5290,11 @@ class HubSceneV2 extends Phaser.Scene {
     // Raster: zwei Spalten Messingfelder, Zahlen rechtsbuendig in Monospace
     // (tabellarisch); eine ungerade letzte Zelle steht mittig.
     const zelleW = Math.floor((innerW - zelleGap) / 2);
-    const rasterTop = top + pad + kopfH + zierH + plakH + 12;
+    if (grenzT) {
+      grenzT.y = top + pad + kopfH + zierH + plakH + 8;
+      container.add(grenzT);
+    }
+    const rasterTop = top + pad + kopfH + zierH + plakH + 12 + grenzH;
     const zaehler = [];
     werte.forEach((w, i) => {
       const allein = i === werte.length - 1 && werte.length % 2 === 1;
@@ -5219,6 +5390,44 @@ class HubSceneV2 extends Phaser.Scene {
   }
 
   // Rueckfall ohne Messing-Bilder: der schlichte gezeichnete Kasten.
+  /**
+   * "Neue Grenze: Tiefe N" oder "Die Grenze bleibt bei Tiefe N." mit dem
+   * Grund (RunDepth.letzterLauf, von leaveDungeonForHub in summary.grenze).
+   */
+  _grenzZeile(summary) {
+    const g = summary && summary.grenze;
+    if (!g || typeof g.vorher !== 'number') return '';
+    if (g.nachher > g.vorher) return _HUB_T('hub.lauf.grenze.neu', { n: g.nachher });
+    const bleibt = _HUB_T('hub.lauf.grenze.bleibt', { n: g.nachher });
+    if (g.grund === 'tor' && g.tor) return bleibt + '\n' + this._torHinweis(g.tor);
+    if (g.grund === 'nicht_fertig' || g.grund === 'unter_grenze') {
+      return bleibt + '\n' + _HUB_T('hub.lauf.grenze.grund.' + g.grund);
+    }
+    return bleibt;
+  }
+
+  /** Boss-Tor (RunDepth.BOSS_TORE): welcher Auftrag fehlt und wo es ihn gibt. */
+  _torHinweis(tor) {
+    const qs = window.questSystem;
+    const def = qs && qs.QUEST_DEFINITIONS && qs.QUEST_DEFINITIONS[tor.questId];
+    const titel = (def && typeof qs.getQuestTitle === 'function' && qs.getQuestTitle(def)) || tor.titel;
+    const satz = _HUB_T('hub.descent.tor', { titel: titel });
+    if (!def) return satz;
+    if (def.npcId === 'elara') return satz + ' ' + _HUB_T('hub.descent.tor.keller');
+    const npcKey = 'hub.npc.' + def.npcId + '.name';
+    const npc = (window.i18n && window.i18n.has && window.i18n.has(npcKey)) ? _HUB_T(npcKey) : '';
+    return npc ? satz + ' ' + _HUB_T('hub.descent.tor.stadt', { npc: npc }) : satz;
+  }
+
+  /** "„Wer Du warst“ zählt hier nicht (ab 17)" fuer eine Abstiegstiefe, oder ''. */
+  _zaehltNichtNotiz(tiefe) {
+    const qs = window.questSystem;
+    const liste = (qs && typeof qs.eingefroreneAuftraege === 'function') ? qs.eingefroreneAuftraege(tiefe) : [];
+    if (!liste.length) return '';
+    if (liste.length === 1) return _HUB_T('hub.descent.zaehlt_nicht', { titel: liste[0].titel, n: liste[0].tiefe });
+    return _HUB_T('hub.descent.zaehlen_nicht', { titel: liste[0].titel, k: liste.length - 1, n: liste[0].tiefe });
+  }
+
   _showRunSummaryKasten(summary, labels, werte, isDeath, abgestiegen, durationStr) {
     const cam = this.cameras.main;
     const cw = cam.width, ch = cam.height;
@@ -5263,6 +5472,16 @@ class HubSceneV2 extends Phaser.Scene {
       container.add(val);
       rowY += rowGap;
     });
+
+    const grenzText = this._grenzZeile(summary);
+    if (grenzText) {
+      const gt = this.add.text(0, panelH / 2 - 62, grenzText, {
+        fontFamily: 'monospace', fontSize: 13, color: '#e0b080', align: 'center',
+        wordWrap: { width: panelW - 40 }
+      }).setOrigin(0.5, 1);
+      gt.setName('laufGrenze');
+      container.add(gt);
+    }
 
     const closeBtn = this.add.text(0, panelH / 2 - 32, labels.close, {
       fontFamily: 'monospace', fontSize: 18, color: '#ffffff',

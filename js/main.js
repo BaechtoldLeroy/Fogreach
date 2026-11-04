@@ -2155,7 +2155,10 @@ function leaveDungeonForHub(scene, options = {}) {
       enemiesKilled: rs.enemiesKilled,
       elitesKilled: rs.elitesKilled,
       bossesKilled: rs.bossesKilled,
-      roomsEntered: rs.roomsEntered
+      roomsEntered: rs.roomsEntered,
+      // Ob und warum die Tiefengrenze gewachsen ist (RunDepth.letzterLauf).
+      grenze: (window.RunDepth && typeof window.RunDepth.letzterLauf === 'function')
+        ? window.RunDepth.letzterLauf() : null
     };
     window.runStats = null;
   }
