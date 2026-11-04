@@ -1771,7 +1771,10 @@ window.breakDestructibleObstacle = breakDestructibleObstacle;
 function update(time, delta) {
   // Espionage-Stealth-Tick (Feature 055) — komplett no-op außerhalb einer
   // aktiven Espionage-Mission; defensiv, darf den Loop nie brechen.
-  if (window.EspionageSystem && window.EspionageSystem.isActive()) {
+  // Steht die Spieluhr (Auftrags-Einfuehrung, Gespraech, Dialog), steht auch
+  // die Spionage: sonst entdeckt der Spaeher Dich, waehrend Du noch liest.
+  const uhrSteht = !!(window.__GAME_PAUSE && window.__GAME_PAUSE.since != null);
+  if (!uhrSteht && window.EspionageSystem && window.EspionageSystem.isActive()) {
     try { window.EspionageSystem.update(this, time, delta); } catch (e) {}
   }
   // Nachteskorte: der Transport faehrt (no-op ohne laufende Eskorte).

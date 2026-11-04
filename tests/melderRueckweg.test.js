@@ -144,15 +144,17 @@ RAEUME.forEach((raum) => {
     if (raum.kurz === 'lager') {
       test('gemeldeter Fall: Spitzel meldet im Nachbarraum und findet zurueck', async () => {
         // Weg oben links, Spitzel an der Ecke (12.5, 10.5): die naechste Wache
-        // steht im Mittelraum hinter der Trennwand (Spalte 15). Die Wache des
-        // Raums oben links ist ausser Gefecht, sonst haengt es an ihrem Gang.
+        // steht im Mittelraum hinter der Trennwand (Spalte 15). Die Wachen
+        // links davon sind ausser Gefecht, sonst haengt es an ihrem Gang.
         H.run(`(function () {
           var s = window.EspionageSystem.getState(), M = window.__rueck;
           var a = s.actors.filter(function (o) { return o.type === 'spitzel'; })[0];
           var P = function (x, y) { return { x: M.ox + x * M.T, y: M.oy + y * M.T }; };
           a.patrol = [P(3.5, 3.5), P(12.5, 3.5), P(12.5, 10.5), P(3.5, 10.5)];
           var ecke = P(12.5, 10.5);
-          s.guards.forEach(function (g) { g.knocked = g._homeX < M.ox + 15 * M.T && g._homeY < M.oy + 12 * M.T; });
+          // Alle Wachen links der Trennwand aus: sonst ist je nach ihrem Gang
+          // die von links unten naeher als die im Mittelraum.
+          s.guards.forEach(function (g) { g.knocked = g._homeX < M.ox + 15 * M.T; });
           a.knocked = false; a.quiet = false; a.x = ecke.x; a.y = ecke.y;
           a._wpIndex = 3; a._pauseT = 0; a._stopT = 0; a._weg = null;
           a._state = 'report'; a._runT = 0; a._target = null; a._cool = 0; a._notice = 0;
