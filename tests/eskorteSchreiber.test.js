@@ -3,9 +3,9 @@
 // Spieler meldeten: "wenn der Schreiber einen entdeckt hat, passiert nichts".
 // Er rief zwar, aber verkleidet verflog der Verdacht in einem Augenblick, und
 // die blauen Wachen, die nachsehen kamen, sahen nicht durch die Verkleidung.
-// Jetzt sind die gerufenen Wachen wachsam, solange sie nachsehen: wer stehen
-// bleibt, fliegt auf; wer rechtzeitig verschwindet, kommt davon, und die
-// Wachen sind danach wieder getaeuscht.
+// b522 machte die gerufenen Wachen wachsam; wer weiterging, merkte vom Ruf
+// trotzdem nichts ("Schreiber funktioniert noch immer nicht"). Jetzt
+// enttarnt der Ruf sofort, und der Transport wartet.
 
 const { test, before, after, describe } = require('node:test');
 const assert = require('node:assert');
@@ -40,27 +40,17 @@ describe('Nachteskorte: der Schreiber entdeckt Dich', () => {
   });
   after(async () => { if (H) await H.shutdown(); });
 
-  test('wer rechtzeitig verschwindet, kommt davon; die Wachen sind danach wieder getaeuscht', async () => {
+  test('der Ruf enttarnt sofort, auch wer gleich weitergeht; der Transport wartet', async () => {
     assert.ok(H.run(`!!${SCHREIBER}`), 'kein Schreiber in der Umschlagstelle');
-    const blau = H.run("window.EspionageSystem.getState().guards.map(function (g) { return !!g.alert; }).join()");
+    assert.strictEqual(H.run('window.EspionageSystem.isDetected()'), false, 'schon vorher enttarnt');
     assert.ok(await bis(H, GERUFEN, 600, VOR_DEM_PULT), 'der Schreiber ruft nicht');
-    const gerufen = H.run(`window.EspionageSystem.getState().guards.filter(function (g) { return g._invest; })
-      .map(function (g) { return !!g.alert; })`);
-    assert.ok(gerufen.length > 0, 'keine Wache geht nachsehen');
-    assert.ok(Array.from(gerufen).every(Boolean), 'die gerufenen Wachen sind nicht wachsam');
-    // Weg in die Ecke (ausser Sicht), bis keine mehr nachsieht.
-    assert.ok(await bis(H, "!window.EspionageSystem.getState().guards.some(function (g) { return g._invest; })", 900,
-      'window.player.setPosition(72, 72)'), 'die Wachen sehen ewig nach');
-    assert.strictEqual(H.run('window.EspionageSystem.isDetected()'), false, 'trotz Flucht enttarnt');
-    assert.strictEqual(H.run("window.EspionageSystem.getState().guards.map(function (g) { return !!g.alert; }).join()"), blau,
-      'die gerufenen Wachen bleiben wachsam');
-  });
-
-  test('wer stehen bleibt, den erkennen die gerufenen Wachen: enttarnt, der Transport wartet', async () => {
-    H.run('window.EspionageSystem.getState().barks.length = 0');
-    assert.ok(await bis(H, GERUFEN, 900, VOR_DEM_PULT), 'der Schreiber ruft kein zweites Mal');
-    assert.ok(await bis(H, 'window.EspionageSystem.isDetected()', 600, VOR_DEM_PULT), 'nach dem Ruf passiert nichts');
-    assert.ok(H.run("window.EspionageSystem.getState().guards.some(function (g) { return g.hostile; })"), 'keine Wache greift an');
+    // Gleich nach dem Ruf weg in die Ecke: b522 liess einen damit davonkommen,
+    // und der Spieler merkte vom Ruf nichts.
+    H.run('window.player.setPosition(72, 72)');
+    H.step(2); await flush();
+    assert.strictEqual(H.run('window.EspionageSystem.isDetected()'), true, 'nach dem Ruf passiert nichts');
+    const gerufen = H.run(`window.EspionageSystem.getState().guards.filter(function (g) { return g._invest; }).length`);
+    assert.ok(gerufen > 0, 'keine Wache geht nachsehen');
     // Enttarnt faehrt der Karren nicht weiter (js/nachteskorte.js).
     const vorher = H.run(`(function () { var s = window.Nachteskorte.getState(); s.phase = 'fahren'; s.ziel = 1; return s.pos.x + ',' + s.pos.y; })()`);
     for (let i = 0; i < 30; i++) { H.run(VOR_DEM_PULT); H.step(2); await flush(); }

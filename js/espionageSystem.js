@@ -74,7 +74,6 @@
   var NOTICE_DECAY = 0.45;          // /s, wenn die Figur Dich nicht (mehr) sieht
   var NOTICE_MARK = 0.12;           // ab hier steht das "?" ueber der Figur
   var UNDISGUISED_MULT = 1.6;       // ohne Verkleidung bemerken sie Dich schneller
-  var WATCHER_ALARM = 0.5;          // Ruf eines Schreibers/Dieners: Verdacht +0.5
   var WATCHER_COOLDOWN = 5;         // s Ruhe nach einem Ruf
   var INFORMER_MAX_RUN = 7;         // s: Sicherung, falls die Wegsuche keinen Weg findet: dann ruft er
   var INFORMER_REPORT_R = 40;       // so nah muss er an die Wache
@@ -693,8 +692,10 @@
     _sendGuards(p.x, p.y, 2, 420).forEach(function (g) {
       if (!g.alert) { g.alert = true; g._gerufenWachsam = true; }
     });
-    state.detection = Math.min(1, state.detection + WATCHER_ALARM);
-    if (state.detection >= 1) { _expose(); _entdeckt(scene); }
+    // b522 liess nur wachsame Wachen nachsehen; wer weiterging, merkte davon
+    // nichts ("Schreiber funktioniert noch immer nicht"). Der Ruf enttarnt:
+    // er hat Dich lange genug angesehen, um Dich zu kennen.
+    if (!state.exposed) { _expose(); _entdeckt(scene); }
   }
 
   // Der Spitzel ist bei der Wache angekommen (oder hat lange genug gerannt).
