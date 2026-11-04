@@ -473,7 +473,10 @@
   }
 
   /** Nebel: zwei langsam treibende Ebenen, eine am Boden, eine vor den Figuren. */
-  function _nebel(scene, w, h) {
+  function _nebel(scene, w, h, oben) {
+    // oben (<= 0): so weit sieht die Kamera ueber den Kartenrand. Ohne das
+    // endete der Nebel ueber dem Rathaus mit einer harten Kante bei y = 0.
+    oben = Math.min(0, oben || 0);
     var key = 'hub_nebelfleck';
     if (!scene.textures.exists(key)) {
       var S = NEBEL_GROESSE;
@@ -492,7 +495,7 @@
     }
     var schleier = [];
     NEBEL_EBENEN.forEach(function (e, i) {
-      var ts = scene.add.tileSprite(0, 0, w, h, key).setOrigin(0, 0);
+      var ts = scene.add.tileSprite(0, oben, w, h - oben, key).setOrigin(0, 0);
       // Untere Ebene: dichte Baenke am Boden. Obere: duenne Fetzen davor.
       ts.setAlpha(e[0]).setDepth(i === 0 ? TIEFE_NEBEL : TIEFE_NEBEL_OBEN);
       ts.tileScaleX = e[1]; ts.tileScaleY = e[1];
@@ -796,7 +799,7 @@
     });
 
     var W = welt();
-    erg.nebel = _nebel(scene, W.breite, W.hoehe);
+    erg.nebel = _nebel(scene, W.breite, W.hoehe, W.oben);
     return erg;
   }
 

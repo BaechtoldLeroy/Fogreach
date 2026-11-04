@@ -42,3 +42,19 @@ test('die obere Nebelebene liegt ueber Spieler, NPCs und Haeusern, unter der Bed
   assert.ok(r.ebenen[1] > r.spieler, 'Nebel hinter dem Spieler');
   assert.ok(r.ebenen[1] < 1000, 'Nebel ueber Markern und Bedienung');
 });
+
+// Gemeldet (b526): "der Nebel hat oben beim Rathaus noch einen harten Cut".
+// Die Kamera sieht ueber den Kartenrand hinaus (Rathausdach), der Nebel
+// begann aber erst bei y = 0.
+test('der Nebel reicht ueberall so weit, wie die Kamera sieht', () => {
+  const r = JSON.parse(H.run(`(function () { var sc = ${HUB}, b = sc.cameras.main.getBounds();
+    return JSON.stringify({ kam: [b.x, b.y, b.right, b.bottom], nebel: (sc._bodenNebel || []).map(function (n) {
+      return [n.x, n.y, n.x + n.width, n.y + n.height]; }) });
+  })()`));
+  assert.ok(r.kam[1] < 0, 'Testannahme: die Kamera sieht ueber den Kartenrand');
+  assert.strictEqual(r.nebel.length, 2);
+  for (const n of r.nebel) {
+    assert.ok(n[0] <= r.kam[0] && n[1] <= r.kam[1] && n[2] >= r.kam[2] && n[3] >= r.kam[3],
+      'Nebel ' + JSON.stringify(n) + ' deckt die Kamera ' + JSON.stringify(r.kam) + ' nicht');
+  }
+});
