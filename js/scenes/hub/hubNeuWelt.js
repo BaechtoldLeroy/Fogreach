@@ -42,6 +42,10 @@
   // auf dem Pflaster und die Haeuser ragten heraus; das sieht richtig aus
   // und bleibt so, jetzt aber mit Absicht.
   var TIEFE_NEBEL = TIEFE_BODEN + 3;
+  // Die obere Nebelebene treibt UEBER Figuren und Haeusern (alle y-sortiert,
+  // Tiefe = Fuss-y, der Platz ist 768 px hoch), aber unter Markern (1000)
+  // und Bedienung. Gemeldet: "der Nebel liegt hinter den NPCs und Gebaeuden".
+  var TIEFE_NEBEL_OBEN = 900;
 
   // Die drei Grenzen, fuer die tools/uebergangBauen.js Kacheln gebaut hat.
   // oben sagt, welche Arten als "obere" gelten; flaeche sind die Kacheln
@@ -468,7 +472,7 @@
     });
   }
 
-  /** Nebel: zwei langsam treibende Ebenen ueber dem Boden, unter allen Figuren. */
+  /** Nebel: zwei langsam treibende Ebenen, eine am Boden, eine vor den Figuren. */
   function _nebel(scene, w, h) {
     var key = 'hub_nebelfleck';
     if (!scene.textures.exists(key)) {
@@ -489,7 +493,8 @@
     var schleier = [];
     NEBEL_EBENEN.forEach(function (e, i) {
       var ts = scene.add.tileSprite(0, 0, w, h, key).setOrigin(0, 0);
-      ts.setAlpha(e[0]).setDepth(TIEFE_NEBEL + i);
+      // Untere Ebene: dichte Baenke am Boden. Obere: duenne Fetzen davor.
+      ts.setAlpha(e[0]).setDepth(i === 0 ? TIEFE_NEBEL : TIEFE_NEBEL_OBEN);
       ts.tileScaleX = e[1]; ts.tileScaleY = e[1];
       // Die Ebenen gegeneinander versetzen, sonst liegen ihre Baenke anfangs
       // genau uebereinander.
@@ -846,7 +851,7 @@
     aktionsbox: aktionsbox, baeume: baeume, gebaeudeFlaechen: gebaeudeFlaechen, bildFlaeche: bildFlaeche,
     _streu: streu, _festeFlaechen: _festeFlaechen, _artAn: artAn, _SCHICHTEN: SCHICHTEN,
     _ERDE: ERDE, nebelFeld: nebelFeld, NEBEL_GROESSE: NEBEL_GROESSE, _nebel: _nebel,
-    nebelFuerPhase: nebelFuerPhase, NEBEL_EBENEN: NEBEL_EBENEN, NEBEL_FARBE: NEBEL_FARBE
+    nebelFuerPhase: nebelFuerPhase, NEBEL_EBENEN: NEBEL_EBENEN, NEBEL_FARBE: NEBEL_FARBE, TIEFE_NEBEL_OBEN: TIEFE_NEBEL_OBEN
   };
   if (typeof window !== 'undefined') window.HubNeuWelt = HubNeuWelt;
   if (typeof module !== 'undefined' && module.exports) module.exports = HubNeuWelt;

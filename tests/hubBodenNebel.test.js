@@ -170,9 +170,11 @@ test('die Deckung kommt in der Nebeltextur an, die Baenke sind auf dem Boden deu
   for (const ts of erg) {
     assert.strictEqual(ts.key, 'hub_nebelfleck');
     assert.ok(ts.w >= 1280 && ts.h >= 768, 'Nebel deckt den Platz nicht');
-    // Ueber dem Boden, unter allem, was steht (Baeume ab -8, Figuren nach y).
-    assert.ok(ts.depth > -20 && ts.depth < -8, 'Nebeltiefe ' + ts.depth);
   }
+  // Die dichte Ebene liegt ueber dem Boden, unter allem, was steht (Baeume
+  // ab -8, Figuren nach y); die duenne treibt davor (b520, hubNebelVorne).
+  assert.ok(erg[0].depth > -20 && erg[0].depth < -8, 'Bodennebel-Tiefe ' + erg[0].depth);
+  assert.strictEqual(erg[1].depth, W.TIEFE_NEBEL_OBEN);
   // Wie stark hebt eine dichte Bank (Fleck 1 in beiden Ebenen) den hellsten
   // Boden (Pflaster, Luma 50) an? b512: 1-(1-0.13)(1-0.09) = 0.21 -> +35, mit
   // dem Mittel des Flecks auf dem Schirm nur gut +11: unsichtbar.

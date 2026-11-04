@@ -874,7 +874,7 @@ class HubSceneV2 extends Phaser.Scene {
         color: '#ffffff',
         backgroundColor: '#000000aa',
         padding: { x: 6, y: 3 }
-      }).setOrigin(0.5, 1).setDepth(200).setVisible(false);
+      }).setOrigin(0.5, 1).setDepth(950).setVisible(false);
       
       this.entranceLabels.push({ zone, label: labelText, data: e });
       
@@ -1025,7 +1025,7 @@ class HubSceneV2 extends Phaser.Scene {
         color: '#ffdd88',
         backgroundColor: '#000000cc',
         padding: { x: 4, y: 2 }
-      }).setOrigin(0.5, 1).setDepth(201).setVisible(false);
+      }).setOrigin(0.5, 1).setDepth(951).setVisible(false);
 
       // Hide NPCs that should not appear in the current act
       if (!isVisible) {
