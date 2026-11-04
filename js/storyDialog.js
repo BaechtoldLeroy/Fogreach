@@ -219,6 +219,15 @@
     // unten an der Quelle, nach dem Kampf — js/finale.js.)
   };
 
+  // Wahlen, die Finale oder Epilog lesen: Knoepfe getoent und darunter
+  // "(Das wird man sich merken.)" (DialogChoice). Welche Antwort was bewirkt,
+  // bleibt offen; nur dass es zaehlt, soll man vorher wissen. Die Liste der
+  // getroffenen Wahlen steht im Journal (storySystem, ENTSCHEIDUNGEN).
+  ['magistrat_verification', 'council_seizure', 'klerus_district_purge',
+    'klerus_brueder', 'wache_helm', 'mara_letzte_fuhre'].forEach(function (id) {
+    byQuest[id].choices.forEach(function (c) { c.folgenreich = true; });
+  });
+
   // #87: Die deutschen Texte oben sind die Quelle. Jedes Feld wird an einen
   // Key gebunden (storydialog.<id>.prompt, storydialog.<id>.<n>.label/.response)
   // und liefert danach die aktive Sprache.

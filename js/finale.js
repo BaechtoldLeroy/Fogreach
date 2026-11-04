@@ -161,6 +161,10 @@
       fontFamily: 'serif', fontSize: '16px', color: '#efe6d2', align: 'center', lineSpacing: 4,
       wordWrap: { width: pw - 88 }   // Luft zum Messingrand (im Browser zu knapp)
     }).setOrigin(0.5, 0).setName('konvoiText');
+    // Folgenreiche Wahl: derselbe leise Hinweis wie in DialogChoice.
+    var merken = cfg.merken ? scene.add.text(cx, 0, _t('(Das wird man sich merken.)', '(This will be remembered.)'), {
+      fontFamily: 'serif', fontSize: '13px', fontStyle: 'italic', color: '#c9b27a'
+    }).setOrigin(0.5, 0).setName('konvoiMerken') : null;
 
     // Knoepfe: nebeneinander, wenn sie passen, sonst untereinander (Handy hochkant).
     var knoepfe = wahlen.map(function (w, i) {
@@ -187,13 +191,15 @@
 
     // Hoehe aus dem Inhalt, mittig auf dem Schirm.
     var RAND = 24;
-    var innen = kopf.height + 4 + titel.height + 14 + rede.height + 20 + blockH + (hinweis ? 10 + hinweis.height : 0);
+    var innen = kopf.height + 4 + titel.height + 14 + rede.height + 20 + blockH + (hinweis ? 10 + hinweis.height : 0)
+      + (merken ? merken.height + 10 : 0);
     var ph = Math.min(h - 16, innen + RAND * 2);
     var oben = Math.max(8, (h - ph) / 2);
     var y = oben + RAND;
     kopf.setY(y); y += kopf.height + 4;
     titel.setY(y); y += titel.height + 14;
     rede.setY(y); y += rede.height + 20;
+    if (merken) { merken.setY(y - 10); y += merken.height + 10; }
     if (nebeneinander) {
       var x = cx - reihe / 2;
       knoepfe.forEach(function (k) { k.setPosition(x + k.width / 2, y + knopfH / 2); x += k.width + LUECKE; });
@@ -208,6 +214,7 @@
     if (platte) platte.forEach(function (t) { box.add(t); });
     else box.add(scene.add.rectangle(cx, oben + ph / 2, pw, ph, 0x1c191f, 0.97).setStrokeStyle(2, 0xd9b867, 1));
     box.add([kopf, titel, rede]);
+    if (merken) box.add(merken);
     if (hinweis) box.add(hinweis);
 
     var zustand = { text: cfg.text, wahlen: wahlen.map(function (w) { return w.label; }), box: box, knoepfe: knoepfe, messing: !!platte };
@@ -293,7 +300,7 @@
     _konvoiSeite(scene, { text: _t(
       '(Am Karren stemmen zwei Wachen eine Kiste von der Ladefläche. Darin, in Stroh gebettet, Phiolen, jede mit dem Wachs des Rats versiegelt. Auf einem Etikett steht ein Name, den Du kennst, und Du weisst nicht, woher.)\n\n(Der Kutscher sieht auf Deine Hand an der Klinge, als ahne er, dass unter der Uniform keiner von ihnen steckt.)',
       '(At the cart two guards heave a crate off the bed. Inside, bedded in straw, vials, each sealed with the council\'s wax. One label bears a name you know, and you do not know from where.)\n\n(The driver looks at your hand on the blade, as if he sensed there is none of them under that uniform.)'
-    ), wahlen: [
+    ), merken: true, wahlen: [
       {
         label: _t('Still bleiben', 'Stay silent'),
         callback: function () {

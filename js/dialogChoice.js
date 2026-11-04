@@ -82,6 +82,24 @@
   // --- Aufbau des Panels -----------------------------------------------------
 
   var PANEL_BREITE = 540;
+  // Folgenreiche Wahl (storyDialog: folgenreich): warmer Messington statt des
+  // Rots, das "dieser Weg verbrennt etwas" heisst (Konvoi-Klinge). Hier wiegt
+  // jede Antwort, keine ist die falsche.
+  var TON_FOLGE = '#4a3a1c';
+
+  function _folgenreich(visible) {
+    return visible.some(function (c) { return !!(c && c.folgenreich); });
+  }
+
+  function _knopfTon(choice) {
+    return (choice && choice.ton) || (choice && choice.folgenreich ? TON_FOLGE : null);
+  }
+
+  function _merkenText() {
+    var I = (typeof window !== 'undefined') ? window.i18n : null;
+    if (I && typeof I.has === 'function' && I.has('dialog.choice.merken')) return I.t('dialog.choice.merken');
+    return _istEn() ? '(This will be remembered.)' : '(Das wird man sich merken.)';
+  }
   // Mobile: jede Trefferflaeche mind. 44 px hoch (Fingerbreite).
   var KNOPF_MIN_H = 44;
 
@@ -147,12 +165,20 @@
       inhalt.push([rede, y, false]);
       y += rede.height + 14;
     }
+    if (_folgenreich(visible)) {
+      var merken = scene.add.text(-innen / 2, 0, _merkenText(), {
+        fontFamily: 'serif', fontSize: 13, fontStyle: 'italic', color: '#c9b27a'
+      }).setName('dialogChoiceMerken');
+      inhalt.push([merken, y - 6, false]);
+      y += merken.height + 8;
+    }
 
     visible.forEach(function (choice, i) {
       var b = knopf(choice.label, innen, '#f4efe2', 15);
       b.on('pointerup', function () { waehlen(choice, i); });
       b.setName('dialogChoiceKnopf');
-      inhalt.push([b, y, true]);
+      b.__ton = _knopfTon(choice);
+      inhalt.push([b, y, true, b.__ton]);
       y += b.height + abstand;
     });
     if (allowCancel) {
@@ -190,8 +216,9 @@
     var pad = 20;
     var rowH = 40;
     var promptH = config && config.prompt ? 60 : 0;
+    var merkenH = _folgenreich(visible) ? 24 : 0;
     var cancelRows = allowCancel ? 1 : 0;
-    var panelHeight = pad * 2 + promptH + (visible.length + cancelRows) * rowH;
+    var panelHeight = pad * 2 + promptH + merkenH + (visible.length + cancelRows) * rowH;
 
     var g = scene.add.graphics();
     g.fillStyle(0x0c0c11, 0.96).fillRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 14);
@@ -207,11 +234,20 @@
       container.add(promptText);
       topY += promptH;
     }
+    if (merkenH) {
+      var merken = scene.add.text(-panelWidth / 2 + pad, topY - 4, _merkenText(), {
+        fontFamily: 'serif', fontSize: 13, fontStyle: 'italic', color: '#c9b27a'
+      });
+      merken.name = 'dialogChoiceMerken';
+      container.add(merken);
+      topY += merkenH;
+    }
 
     visible.forEach(function (choice, i) {
       var by = topY + i * rowH;
       var btnBg = scene.add.graphics();
-      btnBg.fillStyle(0x1c1c24, 0.95).fillRoundedRect(-panelWidth / 2 + pad, by, panelWidth - pad * 2, rowH - 8, 8);
+      var ton = _knopfTon(choice);
+      btnBg.fillStyle(ton ? parseInt(ton.slice(1), 16) : 0x1c1c24, 0.95).fillRoundedRect(-panelWidth / 2 + pad, by, panelWidth - pad * 2, rowH - 8, 8);
       var label = scene.add.text(-panelWidth / 2 + pad + 12, by + 6, choice.label, {
         fontFamily: 'monospace', fontSize: 15, color: '#e6dcc2',
         wordWrap: { width: panelWidth - pad * 2 - 24 }
@@ -220,6 +256,8 @@
         .setOrigin(0.5, 0.5).setPosition(0, by + (rowH - 8) / 2);
       zone.setInteractive({ useHandCursor: true });
       zone.on('pointerup', function () { waehlen(choice, i); });
+      zone.name = 'dialogChoiceKnopf';
+      zone.__ton = ton;
       container.add(btnBg);
       container.add(label);
       container.add(zone);
@@ -354,11 +392,12 @@
     applyChoice: applyChoice,
     present: present,
     toPage: toPage,
+    TON_FOLGE: TON_FOLGE,
     sprecherTeilen: sprecherTeilen
   };
 
   if (window.i18n && typeof window.i18n.register === 'function') {
-    window.i18n.register('de', { 'dialog.choice.cancel': 'Abbrechen (ESC)' });
-    window.i18n.register('en', { 'dialog.choice.cancel': 'Cancel (ESC)' });
+    window.i18n.register('de', { 'dialog.choice.cancel': 'Abbrechen (ESC)', 'dialog.choice.merken': '(Das wird man sich merken.)' });
+    window.i18n.register('en', { 'dialog.choice.cancel': 'Cancel (ESC)', 'dialog.choice.merken': '(This will be remembered.)' });
   }
 })();

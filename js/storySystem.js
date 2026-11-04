@@ -395,6 +395,175 @@
       'story.journal.schliessen': 'J / ESC: close'
     });
   }
+
+  // ---- Journal: Ziele, Geber, naechster Schritt, Entscheidungen ----
+  // Jedes Ziel eines Auftrags als eigene Zeile. Die Beschriftung kommt aus
+  // Art und Ziel (type:target); ein Ziel mit eigenem `label` in der
+  // Quest-Definition geht vor. Funde tragen den Namen des Fundstuecks (loot).
+  var ZIEL_FUND = {
+    journal_fragment: 'JOURNAL_FRAGMENT', verification_seal: 'VERIFICATION_SEAL',
+    council_document: 'COUNCIL_DOCUMENT', document: 'QUEST_DOC',
+    seized_writings: 'SEIZED_WRITINGS', interrogation_record: 'INTERROGATION_RECORD',
+    sealed_bundle: 'SEALED_BUNDLE', print_plate: 'QUEST_PLATE',
+    hundehalsband: 'HUNDEHALSBAND', eichgewicht: 'EICHGEWICHT',
+    memory_shard: 'MEMORY_SHARD', helmmarke: 'HELMMARKE'
+  };
+  var ZIEL_DE = {
+    'kill:enemy': 'Gegner besiegt',
+    'kill:elite_enemy': 'Elite-Gegner besiegt',
+    'kill:typ_13': 'Beschwörer besiegt',
+    'explore:room': 'Räume geräumt',
+    'explore:room_lauf': 'Räume in einem Lauf, ohne Sturz',
+    'system:upgrade': 'Ein Stück an der Werkbank ausgebaut',
+    'system:edikt': 'Ein Edikt gedruckt',
+    'system:markt': 'Bei Mara gekauft',
+    'system:talent': 'Einen Talentpunkt gesetzt',
+    'system:loadout': 'Die Fähigkeit auf eine Taste gelegt',
+    'system:charakterwerte': 'Die Charakterwerte angesehen',
+    'system:truhe': 'Etwas in der Truhe abgelegt',
+    'system:wissen': 'Ein Fragment in Metall gebunden',
+    'system:haendler': 'Beim wandernden Händler gekauft',
+    'system:edikt_riskant': 'Ein riskantes Edikt gedruckt',
+    'observe:oeffentliche_sitzung': 'Die öffentliche Sitzung gesehen',
+    'observe:collusion_reveal_seen': 'Die geheime Sitzung belauscht',
+    'observe:convoy_intel': 'Den Konvoi abgehört',
+    'observe:archive_record': 'Den versiegelten Akt geborgen',
+    'observe:informant_id': 'Den Maulwurf enttarnt',
+    'observe:aldric_gefunden': 'Aldric gefunden',
+    'observe:edikte_gedruckt': 'Die Edikte bei Thom gedruckt',
+    'observe:edikte_plakatiert': 'Die Edikte an der Tafel ausgehängt',
+    'observe:eskorte_verladung': 'An der Verladung',
+    'observe:eskorte_waage': 'An der Waage',
+    'observe:eskorte_schacht': 'Am Schacht',
+    'observe:erster_riss_gesehen': 'Elara angehört',
+    'observe:kreidezeichen': 'Kreidezeichen gelesen',
+    'observe:schloss_geloest': 'Kettenschlösser ganz gelöst',
+    'boss_kill:zeremonienmeister': 'Den Zeremonienmeister besiegt',
+    'boss_kill:kettenmeister': 'Den Kettenmeister besiegt',
+    'boss_kill:nachhall': 'Den Nachhall bezwungen',
+    'boss_kill:schattenrat': 'An der Esse bestanden',
+    'dungeon_run:dungeon_complete': 'Läufe abgeschlossen',
+    'dialogue:elara_gift': 'Elaras Geschenk angenommen',
+    'dialogue:press_decision': 'An der Presse entschieden',
+    'wave:reach_wave': 'Welle erreicht',
+    'raum:hunt': 'Rudelführer erlegt',
+    'raum:defend': 'Den Altar gehalten'
+  };
+  var ZIEL_EN = {
+    'kill:enemy': 'Enemies defeated',
+    'kill:elite_enemy': 'Elite enemies defeated',
+    'kill:typ_13': 'Summoners defeated',
+    'explore:room': 'Rooms cleared',
+    'explore:room_lauf': 'Rooms in one run, without falling',
+    'system:upgrade': 'Upgraded an item at the workbench',
+    'system:edikt': 'Printed an edict',
+    'system:markt': 'Bought from Mara',
+    'system:talent': 'Spent a talent point',
+    'system:loadout': 'Put the ability on a key',
+    'system:charakterwerte': 'Looked at your character sheet',
+    'system:truhe': 'Stored something in the chest',
+    'system:wissen': 'Bound a fragment in metal',
+    'system:haendler': 'Bought from the wandering trader',
+    'system:edikt_riskant': 'Printed a risky edict',
+    'observe:oeffentliche_sitzung': 'Watched the public session',
+    'observe:collusion_reveal_seen': 'Overheard the secret session',
+    'observe:convoy_intel': 'Overheard the convoy',
+    'observe:archive_record': 'Recovered the sealed file',
+    'observe:informant_id': 'Unmasked the mole',
+    'observe:aldric_gefunden': 'Found Aldric',
+    'observe:edikte_gedruckt': "Printed the edicts at Thom's",
+    'observe:edikte_plakatiert': 'Posted the edicts on the board',
+    'observe:eskorte_verladung': 'At the loading bay',
+    'observe:eskorte_waage': 'At the scale',
+    'observe:eskorte_schacht': 'At the shaft',
+    'observe:erster_riss_gesehen': 'Listened to Elara',
+    'observe:kreidezeichen': 'Chalk marks read',
+    'observe:schloss_geloest': 'Chain locks fully loosened',
+    'boss_kill:zeremonienmeister': 'Defeated the Master of Ceremonies',
+    'boss_kill:kettenmeister': 'Defeated the Chainmaster',
+    'boss_kill:nachhall': 'Overcame the Echo',
+    'boss_kill:schattenrat': 'Stood firm at the Furnace',
+    'dungeon_run:dungeon_complete': 'Runs completed',
+    'dialogue:elara_gift': "Accepted Elara's gift",
+    'dialogue:press_decision': 'Decided at the press',
+    'wave:reach_wave': 'Wave reached',
+    'raum:hunt': 'Pack leaders slain',
+    'raum:defend': 'Held the altar'
+  };
+
+  // Was der Spieler entschieden hat, in der Reihenfolge der Geschichte.
+  // Nur die Wahl, nie ihre Folge: das Journal verraet nichts.
+  var ENTSCHEIDUNGEN = [
+    ['verification_sealed', 'Du hast Aldric das Siegel unversehrt abgeliefert.', 'You handed Aldric the seal intact.'],
+    ['verification_refused', 'Du hast das Siegel unbemerkt beschädigt.', 'You damaged the seal unnoticed.'],
+    ['petitions_surrendered', 'Du hast Aldric die beschlagnahmten Gesuche abgegeben.', 'You handed the confiscated petitions to Aldric.'],
+    ['petitions_kept', 'Du hast die Gesuche heimlich behalten.', 'You secretly kept the petitions.'],
+    ['convoy_silent', 'Am Konvoi bist Du still geblieben.', 'At the convoy you stayed silent.'],
+    ['convoy_blade_drawn', 'Am Konvoi hast Du die Klinge gezogen.', 'At the convoy you drew your blade.'],
+    ['namen_abgeliefert', 'Du hast dem Priester die Namensliste abgeliefert.', 'You handed the list of names to the priest.'],
+    ['namen_gewarnt', 'Du hast die Leute auf der Liste zuerst gewarnt.', 'You warned the people on the list first.'],
+    ['klerus_ringe_abgeliefert', 'Du hast dem Priester alle drei Ringe gegeben.', 'You gave the priest all three rings.'],
+    ['klerus_ring_thom', 'Du hast den schweren Ring Thom zugesteckt.', 'You slipped the heavy ring to Thom.'],
+    ['eskorte_seite_gemerkt', 'An der Waage hast Du Dir die Seite eingeprägt.', 'At the scale you memorized the page.'],
+    ['eskorte_seite_gerissen', 'An der Waage hast Du die Seite herausgerissen.', 'At the scale you tore out the page.'],
+    ['branka_ally', 'Du hast Branka gesagt, dass Du weisst, wo Du stehst.', 'You told Branka you know where you stand.'],
+    ['thom_ally', 'Du hast Thom gesagt, dass Du hinter der Presse stehst.', 'You told Thom you stand behind the press.'],
+    ['wachtmeister_wahrheit', 'Du hast dem Hauptmann die Wahrheit über seinen Sohn gesagt.', 'You told the captain the truth about his son.'],
+    ['wachtmeister_trost', 'Du hast dem Hauptmann gesagt, sein Sohn sei im Dienst gefallen.', 'You told the captain his son fell in service.'],
+    ['aldric_erzaehlt', 'Du hast Aldric gesagt, wer er war.', 'You told Aldric who he was.'],
+    ['aldric_verschwiegen', 'Du hast Aldric nicht gesagt, wer er war.', 'You did not tell Aldric who he was.'],
+    ['phiolen_zerschlagen', 'Du hast die Phiolen der letzten Fuhre unten zerschlagen.', 'You smashed the vials of the last load down below.'],
+    ['phiolen_gebunden', 'Du hast die Phiolen der letzten Fuhre zu Branka gebracht.', 'You took the vials of the last load to Branka.'],
+    ['elara_spared', 'Du hast Elara verschont.', 'You spared Elara.'],
+    ['elara_killed', 'Du hast Elara gerichtet.', 'You judged Elara.']
+  ];
+
+  if (window.i18n) {
+    var _jDe = {
+      'story.journal.ziel.fund': '{item} gefunden',
+      'story.journal.ziel.allgemein': 'Fortschritt',
+      'story.journal.ziel.tiefe': 'ab Tiefe {n}',
+      'story.journal.geber': 'Auftrag von {name}',
+      'story.journal.abgabe': 'Abgabe: {name}',
+      'story.journal.abgabe_elara': 'Sie findet Dich im Keller',
+      'story.journal.tafel': 'der Anschlagtafel',
+      'story.journal.abgabe_tafel': 'an der Anschlagtafel',
+      'story.journal.naechster': 'Nächster Schritt:',
+      'story.journal.naechster.angebot': 'Bei {namen} wartet ein neuer Auftrag.',
+      'story.journal.naechster.elara': 'Elara wartet unten im Keller auf Dich.',
+      'story.journal.naechster.voraus': 'Erst muss erledigt sein: {liste}.',
+      'story.journal.naechster.tiefe': 'Steig an die Grenze hinab und schliess den Lauf ab. Neue Aufträge folgen mit der Tiefe.',
+      'story.journal.naechster.tiefe_n': 'Der nächste wartet ab Tiefe {n}.',
+      'story.journal.und': ' und ',
+      'story.journal.entschieden': 'Was Du entschieden hast:'
+    };
+    var _jEn = {
+      'story.journal.ziel.fund': '{item} found',
+      'story.journal.ziel.allgemein': 'Progress',
+      'story.journal.ziel.tiefe': 'from depth {n}',
+      'story.journal.geber': 'Task from {name}',
+      'story.journal.abgabe': 'Turn in: {name}',
+      'story.journal.abgabe_elara': 'She finds you in the cellar',
+      'story.journal.tafel': 'the notice board',
+      'story.journal.abgabe_tafel': 'at the notice board',
+      'story.journal.naechster': 'Next step:',
+      'story.journal.naechster.angebot': 'A new task is waiting with {namen}.',
+      'story.journal.naechster.elara': 'Elara is waiting for you down in the cellar.',
+      'story.journal.naechster.voraus': 'First this must be done: {liste}.',
+      'story.journal.naechster.tiefe': 'Descend to the boundary and finish the run. New tasks come with depth.',
+      'story.journal.naechster.tiefe_n': 'The next one waits from depth {n}.',
+      'story.journal.und': ' and ',
+      'story.journal.entschieden': 'What you decided:'
+    };
+    Object.keys(ZIEL_DE).forEach(function (k) { _jDe['story.journal.ziel.' + k] = ZIEL_DE[k]; });
+    Object.keys(ZIEL_EN).forEach(function (k) { _jEn['story.journal.ziel.' + k] = ZIEL_EN[k]; });
+    ENTSCHEIDUNGEN.forEach(function (e) {
+      _jDe['story.journal.wahl.' + e[0]] = e[1];
+      _jEn['story.journal.wahl.' + e[0]] = e[2];
+    });
+    window.i18n.register('de', _jDe);
+    window.i18n.register('en', _jEn);
+  }
   var AKT_ANZAHL = STORY_ACTS.length - 1;   // nummerierte Akte nach dem Prolog
   function _einsetzen(s, werte) {
     return String(s).replace(/\{(\w+)\}/g, function (m, k) { return (werte[k] != null) ? werte[k] : m; });
@@ -626,6 +795,123 @@
 
   // ---- Journal Data ----
 
+  function _npcName(npcId) {
+    if (npcId === 'anschlagtafel') return _i18nLookup('story.journal.tafel', 'der Anschlagtafel');
+    return _i18nLookup('hub.npc.' + npcId + '.name', npcId || '');
+  }
+
+  /** Ein Ziel als Zeile: "Kreidezeichen gelesen 1/3 · ab Tiefe 18". */
+  function _zielZeile(def, obj, i) {
+    var defObj = def && def.objectives && def.objectives[i];
+    var key = obj.type + ':' + obj.target;
+    var text;
+    if (defObj && typeof defObj.label === 'string') {
+      text = _i18nLookup('quest.' + def.id + '.ziel.' + i, defObj.label);
+    } else if (obj.type === 'fetch' && ZIEL_FUND[obj.target]) {
+      var lk = 'loot.quest_item.' + ZIEL_FUND[obj.target];
+      text = _einsetzen(_i18nLookup('story.journal.ziel.fund', '{item} gefunden'), { item: _i18nLookup(lk, obj.target) });
+    } else if (ZIEL_DE[key]) {
+      text = _i18nLookup('story.journal.ziel.' + key, ZIEL_DE[key]);
+    } else {
+      text = _i18nLookup('story.journal.ziel.allgemein', 'Fortschritt');
+    }
+    text += ' ' + Math.min(obj.current, obj.required) + '/' + obj.required;
+    if (def && typeof def.minDepth === 'number' && def.minDepth > 1) {
+      text += ' · ' + _einsetzen(_i18nLookup('story.journal.ziel.tiefe', 'ab Tiefe {n}'), { n: def.minDepth });
+    }
+    return { text: text, fertig: obj.current >= obj.required };
+  }
+
+  /** Anteil aller Ziele zusammen (der Balken soll zu den Zeilen passen). */
+  function _gesamtPct(ziele) {
+    var ist = 0, soll = 0;
+    (ziele || []).forEach(function (o) { ist += Math.min(o.current, o.required); soll += o.required; });
+    return soll ? Math.floor(ist / soll * 100) : 0;
+  }
+
+  function _aufzaehlen(liste) {
+    if (liste.length < 2) return liste.join('');
+    return liste.slice(0, -1).join(', ') + _i18nLookup('story.journal.und', ' und ') + liste[liste.length - 1];
+  }
+
+  /**
+   * Was als Naechstes zu tun ist, wenn gerade kein Story-Auftrag laeuft:
+   * wer einen anbietet, worauf einer wartet, oder dass es mit der Tiefe
+   * weitergeht. Leer, solange ein Story-Auftrag laeuft oder alles erzaehlt ist.
+   */
+  function _naechsterSchritt(qs) {
+    if (!qs || !qs.QUEST_DEFINITIONS || typeof qs.istStoryAuftrag !== 'function'
+        || typeof qs.getQuestStatus !== 'function') return '';
+    if (qs.getActiveQuests().some(function (q) { return qs.istStoryAuftrag(q); })) return '';
+    var defs = qs.QUEST_DEFINITIONS;
+    var akt = storyState.currentActIndex;
+    var offen = Object.keys(defs).filter(function (id) {
+      var d = defs[id];
+      return qs.istStoryAuftrag(d) && qs.getQuestStatus(id) === 'available'
+        && !(typeof d.requiredAct === 'number' && d.requiredAct > akt);
+    }).map(function (id) { return defs[id]; });
+    var nochWas = Object.keys(defs).some(function (id) {
+      return qs.istStoryAuftrag(defs[id]) && qs.getQuestStatus(id) === 'available';
+    });
+    if (!nochWas) return '';
+    var tiefeText = _i18nLookup('story.journal.naechster.tiefe',
+      'Steig an die Grenze hinab und schliess den Lauf ab. Neue Aufträge folgen mit der Tiefe.');
+
+    // 1. Jemand bietet jetzt einen an.
+    var angebot = offen.filter(function (d) { return qs.getAvailableQuests(d.npcId).indexOf(d) >= 0; });
+    if (angebot.length) {
+      var namen = [], elara = false;
+      angebot.forEach(function (d) {
+        if (d.npcId === 'elara') { elara = true; return; }
+        var n = _npcName(d.npcId);
+        if (namen.indexOf(n) < 0) namen.push(n);
+      });
+      var teile = [];
+      if (namen.length) teile.push(_einsetzen(_i18nLookup('story.journal.naechster.angebot', 'Bei {namen} wartet ein neuer Auftrag.'), { namen: _aufzaehlen(namen) }));
+      if (elara) teile.push(_i18nLookup('story.journal.naechster.elara', 'Elara wartet unten im Keller auf Dich.'));
+      return teile.join(' ');
+    }
+
+    var erledigt = function (id) {
+      var s = qs.getQuestStatus(id);
+      return s === 'completed' || s === 'entfallen';
+    };
+    // 2. Einer wartet auf Auftraege, die man jetzt erledigen kann.
+    for (var i = 0; i < offen.length; i++) {
+      var fehlt = (offen[i].prerequisites || []).filter(function (p) { return !erledigt(p); });
+      if (!fehlt.length) continue;
+      var machbar = fehlt.every(function (p) {
+        var s = qs.getQuestStatus(p);
+        return s === 'active' || (s === 'available' && defs[p] && qs.getAvailableQuests(defs[p].npcId).indexOf(defs[p]) >= 0);
+      });
+      if (!machbar) continue;
+      var titel = fehlt.map(function (p) { return qs.getQuestTitle ? qs.getQuestTitle(defs[p]) : defs[p].title; });
+      return _einsetzen(_i18nLookup('story.journal.naechster.voraus', 'Erst muss erledigt sein: {liste}.'), { liste: _aufzaehlen(titel) });
+    }
+
+    // 3. Es haengt an der Tiefe.
+    var tiefe = null;
+    var P = window.Persistence;
+    var erreicht = (P && typeof P.getMaxDepth === 'function') ? (P.getMaxDepth() | 0) : 1;
+    offen.forEach(function (d) {
+      var fehlt = (d.prerequisites || []).some(function (p) { return !erledigt(p); });
+      var ab = (typeof qs.angebotsTiefe === 'function') ? qs.angebotsTiefe(d) : 1;
+      if (!fehlt && ab > erreicht && (tiefe === null || ab < tiefe)) tiefe = ab;
+    });
+    if (tiefe !== null) {
+      return tiefeText + ' ' + _einsetzen(_i18nLookup('story.journal.naechster.tiefe_n', 'Der nächste wartet ab Tiefe {n}.'), { n: tiefe });
+    }
+    return tiefeText;
+  }
+
+  /** Die getroffenen Entscheidungen als kurze Saetze (nur, was gewaehlt wurde). */
+  function _entscheidungen(qs) {
+    var f = (qs && typeof qs.getFlags === 'function') ? qs.getFlags() : {};
+    return ENTSCHEIDUNGEN.filter(function (e) { return !!f[e[0]]; }).map(function (e) {
+      return _i18nLookup('story.journal.wahl.' + e[0], e[1]);
+    });
+  }
+
   function getJournalData() {
     var act = getCurrentAct();
     var completedQuests = [];
@@ -667,7 +953,16 @@
         // Fertig, aber unten abzugeben (Elara): sagen, wo.
         var hinweis = (typeof window.questSystem.getAbgabeHinweis === 'function')
           ? window.questSystem.getAbgabeHinweis(q) : '';
-        return { title: qTitle, description: qDesc, progress: progress, progressPct: progressPct, npcId: q.npcId, hinweis: hinweis };
+        var def = window.questSystem.QUEST_DEFINITIONS ? window.questSystem.QUEST_DEFINITIONS[q.id] : q;
+        var ziele = q.objectives.map(function (o, i) { return _zielZeile(def, o, i); });
+        var abgabeId = (typeof window.questSystem.abgabeNpc === 'function') ? window.questSystem.abgabeNpc(q) : q.npcId;
+        var abgabeName = abgabeId === 'elara' ? _i18nLookup('story.journal.abgabe_elara', 'Sie findet Dich im Keller')
+          : abgabeId === 'anschlagtafel' ? _i18nLookup('story.journal.abgabe_tafel', 'an der Anschlagtafel')
+          : _npcName(abgabeId);
+        var herkunft = _einsetzen(_i18nLookup('story.journal.geber', 'Auftrag von {name}'), { name: _npcName(q.npcId) })
+          + ' · ' + _einsetzen(_i18nLookup('story.journal.abgabe', 'Abgabe: {name}'), { name: abgabeName });
+        return { title: qTitle, description: qDesc, progress: progress, progressPct: progressPct, npcId: q.npcId, hinweis: hinweis,
+          ziele: ziele, herkunft: herkunft, gesamtPct: _gesamtPct(q.objectives) };
       });
       // Stufe 1b: beim Bruch entfallene Auftraege des Rats (questSystem).
       if (typeof window.questSystem.getEntfalleneQuests === 'function') {
@@ -687,6 +982,8 @@
       completedQuests: completedQuests,
       activeQuests: activeQuests,
       entfalleneQuests: entfalleneQuests,
+      naechsterSchritt: _naechsterSchritt(window.questSystem),
+      entscheidungen: _entscheidungen(window.questSystem),
       totalActs: AKT_ANZAHL,
       totalKills: storyState.totalKills || 0,
       totalRoomsCleared: storyState.totalRoomsCleared || 0,
@@ -1029,8 +1326,7 @@
       y += noActive.height + 8;
     } else {
       data.activeQuests.forEach(function (q) {
-        var line = scene.add.text(leftX + 12, y,
-          q.title + '  (' + q.progress + ')', {
+        var line = scene.add.text(leftX + 12, y, q.title, {
           fontFamily: 'monospace',
           fontSize: 13,
           color: '#d8d2c3',
@@ -1039,6 +1335,19 @@
         content.add(line);
         y += line.height + 3;
 
+        // Jedes Ziel eine Zeile, erledigte abgehakt und gedimmt.
+        (q.ziele || []).forEach(function (z) {
+          var zt = scene.add.text(leftX + 20, y, (z.fertig ? '✓ ' : '· ') + z.text, {
+            fontFamily: 'monospace',
+            fontSize: 12,
+            color: z.fertig ? '#7f9a7f' : '#c8c0ae',
+            wordWrap: { width: innerW - 28 }
+          }).setOrigin(0, 0).setName('journalZiel');
+          content.add(zt);
+          y += zt.height + 2;
+        });
+        y += 2;
+
         // Progress bar
         var barW = innerW - 16;
         var barH = 8;
@@ -1046,11 +1355,23 @@
         barBg.fillStyle(0x222230, 0.8).fillRoundedRect(leftX + 12, y, barW, barH, 3);
         content.add(barBg);
 
-        var fillW = Math.max(2, Math.floor(barW * (q.progressPct / 100)));
+        var fillW = Math.max(2, Math.floor(barW * ((q.gesamtPct != null ? q.gesamtPct : q.progressPct) / 100)));
         var barFill = scene.add.graphics();
         barFill.fillStyle(0x4488ff, 0.9).fillRoundedRect(leftX + 12, y, fillW, barH, 3);
         content.add(barFill);
         y += barH + 6;
+
+        // Wer ihn vergeben hat und wo er abgegeben wird.
+        if (q.herkunft) {
+          var herkunft = scene.add.text(leftX + 16, y, q.herkunft, {
+            fontFamily: 'monospace',
+            fontSize: 11,
+            color: '#b09a72',
+            wordWrap: { width: innerW - 24 }
+          }).setOrigin(0, 0).setName('journalHerkunft');
+          content.add(herkunft);
+          y += herkunft.height + 3;
+        }
 
         // Wo der fertige Auftrag abgegeben wird (in der Farbe des "?" im Hub).
         if (q.hinweis) {
@@ -1073,6 +1394,47 @@
         }).setOrigin(0, 0);
         content.add(desc);
         y += desc.height + 8;
+      });
+    }
+
+    // Kein Story-Auftrag laeuft: sagen, wie es weitergeht.
+    if (data.naechsterSchritt) {
+      var nsHeader = scene.add.text(leftX + 12, y, _i18nLookup('story.journal.naechster', 'Nächster Schritt:'), {
+        fontFamily: 'serif',
+        fontSize: 14,
+        color: '#ffd166'
+      }).setOrigin(0, 0);
+      content.add(nsHeader);
+      y += nsHeader.height + 2;
+      var nsText = scene.add.text(leftX + 16, y, data.naechsterSchritt, {
+        fontFamily: 'monospace',
+        fontSize: 12,
+        color: '#e0d4b8',
+        wordWrap: { width: innerW - 24 }
+      }).setOrigin(0, 0).setName('journalNaechster');
+      content.add(nsText);
+      y += nsText.height + 8;
+    }
+
+    // Was der Spieler entschieden hat (nur Gewaehltes, ohne Folgen).
+    if (data.entscheidungen && data.entscheidungen.length) {
+      y += 8;
+      var wHeader = scene.add.text(leftX, y, _i18nLookup('story.journal.entschieden', 'Was Du entschieden hast:'), {
+        fontFamily: 'serif',
+        fontSize: 16,
+        color: '#d4a543'
+      }).setOrigin(0, 0);
+      content.add(wHeader);
+      y += wHeader.height + 6;
+      data.entscheidungen.forEach(function (satz) {
+        var wl = scene.add.text(leftX + 12, y, '• ' + satz, {
+          fontFamily: 'monospace',
+          fontSize: 12,
+          color: '#c8b48a',
+          wordWrap: { width: innerW - 16 }
+        }).setOrigin(0, 0).setName('journalEntscheidung');
+        content.add(wl);
+        y += wl.height + 3;
       });
     }
     y += 6;

@@ -2011,6 +2011,22 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     });
     window.i18n.register('de', LOHN_DE);
 
+    // Warnungen vor Punkten ohne Rueckkehr (_annahmeWarnung).
+    window.i18n.register('de', {
+      'annahme.warnung.bruch': '(Wenn Du das tust, ist das Rathaus zu. Was Du dem Rat noch schuldest, bleibt liegen: {liste}.)',
+      'annahme.warnung.bruch.leer': '(Wenn Du das tust, ist das Rathaus zu. Der Rat gibt Dir danach keine Aufträge mehr.)',
+      'annahme.warnung.maulwurf': '(Findest Du den Verräter, bleibt danach liegen: {liste}. Was Du dort noch tun willst, tu vorher.)',
+      'annahme.warnung.titel': '„{titel}“',
+      'annahme.warnung.und': ' und '
+    });
+    window.i18n.register('en', {
+      'annahme.warnung.bruch': '(If you do this, the town hall is closed to you. Whatever you still owe the council stays undone: {liste}.)',
+      'annahme.warnung.bruch.leer': '(If you do this, the town hall is closed to you. The council gives you no more assignments after that.)',
+      'annahme.warnung.maulwurf': '(Once you find the traitor, this stays undone: {liste}. Whatever you still want to do there, do it first.)',
+      'annahme.warnung.titel': '"{titel}"',
+      'annahme.warnung.und': ' and '
+    });
+
     // Convert QUEST_DEFINITIONS title/description/dialogue* to live getters so
     // ANY consumer reading q.title etc. sees the active language without code
     // changes. Plain object literals are not frozen, so defineProperty works.
@@ -2022,11 +2038,15 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
         if ((field === 'dialogueProgressNext' || field === 'abgabeHinweis') && typeof q[field] !== 'string') return;
         var key = 'quest.' + id + '.' + field;
         var fallback = q[field];
+        // Vor einem Punkt ohne Rueckkehr steht die Warnung unter dem Angebot.
+        var warnt = field === 'dialogueOffer';
         try {
           Object.defineProperty(q, field, {
             get: function () {
               var v = window.i18n.t(key);
-              return (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : (fallback || '');
+              v = (typeof v === 'string' && v.indexOf('[MISSING:') !== 0) ? v : (fallback || '');
+              var w = warnt ? _annahmeWarnung(id) : '';
+              return w ? v + '\n\n' + w : v;
             },
             configurable: true, enumerable: true
           });
@@ -3206,6 +3226,57 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     return beendet;
   }
 
+  /** Status eines Auftrags: 'available' | 'active' | 'completed' | 'entfallen' (Journal). */
+  function getQuestStatus(id) {
+    var st = questState[id];
+    return st ? st.status : null;
+  }
+
+  /**
+   * Was mit diesem Auftrag fuer immer liegen bleibt, bevor man ihn annimmt:
+   * der Bruch schliesst das Rathaus (Aldric und ratsAuftrag), der Maulwurf
+   * beendet Elaras Uebung (entfaelltBeiMaulwurf) und die Kreide (Tor auf
+   * mole_evidence). Genannt wird nur, was der Spieler laufen hat oder jetzt
+   * noch bekommen koennte. Leer fuer alle anderen Auftraege.
+   */
+  var ANNAHME_WARNUNG = {
+    bruch_confrontation: {
+      betrifft: function (def) { return def.npcId === 'aldric' || def.ratsAuftrag === true; },
+      schonGeschehen: function () { return !!questFlags.enttarnt; },
+      text: 'annahme.warnung.bruch',
+      leer: 'annahme.warnung.bruch.leer'
+    },
+    espionage_informant: {
+      betrifft: function (def) { return def.entfaelltBeiMaulwurf === true || def.id === 'mara_kreide'; },
+      schonGeschehen: function () { return !!questFlags.mole_evidence; },
+      text: 'annahme.warnung.maulwurf'
+    }
+  };
+  function _annahmeWarnung(questId) {
+    var w = Object.prototype.hasOwnProperty.call(ANNAHME_WARNUNG, questId) && ANNAHME_WARNUNG[questId];
+    if (!w || w.schonGeschehen()) return '';
+    var titel = Object.keys(QUEST_DEFINITIONS).filter(function (id) {
+      var def = QUEST_DEFINITIONS[id], st = questState[id];
+      if (id === questId || !w.betrifft(def) || !st) return false;
+      if (st.status === 'active') return true;
+      if (st.status !== 'available') return false;
+      // Nie angenommen: zaehlt nur, wenn er schon zu haben waere oder bloss
+      // noch an der Tiefe haengt (nicht an Vorgaengern, die nie kommen).
+      return (def.prerequisites || []).every(function (p) {
+        return questState[p] && questState[p].status === 'completed';
+      }) && (typeof def.gate !== 'function' || def.gate());
+    });
+    var I = window.i18n;
+    if (!I) return '';
+    if (!titel.length) return w.leer ? I.t(w.leer) : '';
+    titel = titel.map(function (id) {
+      return I.t('annahme.warnung.titel', { titel: getQuestField(QUEST_DEFINITIONS[id], 'title') });
+    });
+    var liste = titel.length < 2 ? titel[0]
+      : titel.slice(0, -1).join(', ') + I.t('annahme.warnung.und') + titel[titel.length - 1];
+    return I.t(w.text, { liste: liste });
+  }
+
   /** Die Auftraege, die beim Bruch entfallen sind und die man angenommen hatte (Journal). */
   function getEntfalleneQuests() {
     return Object.keys(QUEST_DEFINITIONS).filter(function (id) {
@@ -3339,6 +3410,8 @@ dialogueComplete: 'Du bist dem Zettel gefolgt, bis in die Ratskammer. Elara, neb
     getActiveQuestsAt: getActiveQuestsAt,
     istStoryAuftrag: istStoryAuftrag,
     getEntfalleneQuests: getEntfalleneQuests,
+    getQuestStatus: getQuestStatus,
+    getAnnahmeWarnung: _annahmeWarnung,
     abgabeNpc: abgabeNpc,
     getAbgabeHinweis: getAbgabeHinweis,
     getCompletedQuests: getCompletedQuests,

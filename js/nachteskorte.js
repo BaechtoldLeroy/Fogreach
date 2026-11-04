@@ -472,7 +472,7 @@
     var ende = function (text) {
       F.wahlSeite(scene, { titel: titel, bild: bild, text: text, wahlen: [{ label: _en() ? 'Continue' : 'Weiter', callback: function () {} }] });
     };
-    F.wahlSeite(scene, { titel: titel, bild: bild, text: _t('eskorte.wahl.text'), wahlen: [
+    F.wahlSeite(scene, { titel: titel, bild: bild, text: _t('eskorte.wahl.text'), merken: true, wahlen: [
       { label: _t('eskorte.wahl.merken'), callback: function () {
         qs.setFlag('eskorte_seite_gemerkt', true);
         ende(_t('eskorte.wahl.gemerkt'));
