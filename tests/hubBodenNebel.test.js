@@ -161,9 +161,10 @@ test('die Deckung kommt in der Nebeltextur an, die Baenke sind auf dem Boden deu
   for (let p = 0; p < S * S; p++) {
     assert.strictEqual(A.bild.data[p * 4 + 3], Math.round(feld[p] * 255), 'Alpha an Punkt ' + p);
   }
-  // Weiss-blaeulich und nicht vormultipliziert: hell auch, wo die Bank duenn ist.
+  // Graublau und nicht vormultipliziert: heller als der Boden, auch wo die
+  // Bank duenn ist, aber kein leuchtendes Weiss (b518: "zu hell").
   const farbe = [A.bild.data[0], A.bild.data[1], A.bild.data[2]];
-  assert.ok(helle(...farbe) >= 210 && farbe[2] > farbe[0], 'Nebelfarbe ' + farbe);
+  assert.ok(helle(...farbe) >= 140 && helle(...farbe) <= 190 && farbe[2] > farbe[0], 'Nebelfarbe ' + farbe);
 
   assert.strictEqual(erg.length, 2);
   for (const ts of erg) {
@@ -177,7 +178,8 @@ test('die Deckung kommt in der Nebeltextur an, die Baenke sind auf dem Boden deu
   // dem Mittel des Flecks auf dem Schirm nur gut +11: unsichtbar.
   const deck = 1 - erg.reduce((p, ts) => p * (1 - ts.alpha), 1);
   const hub = deck * (helle(...farbe) - 50);
-  assert.ok(hub >= 80, 'eine dichte Bank hebt den Boden nur um ' + hub.toFixed(0) + ' an (Deckung ' + deck.toFixed(2) + ')');
+  // Sichtbar (b512: unsichtbar), aber nicht gleissend (b518: +102, "zu hell").
+  assert.ok(hub >= 50 && hub <= 80, 'eine dichte Bank hebt den Boden um ' + hub.toFixed(0) + ' an (Deckung ' + deck.toFixed(2) + ')');
 
   // Die Ebenen treiben verschieden — die Luecken wandern, ohne Naht.
   const vorher = erg.map((ts) => [ts.tilePositionX, ts.tilePositionY]);

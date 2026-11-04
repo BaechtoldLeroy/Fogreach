@@ -443,8 +443,9 @@
     return durch;
   }
 
-  // Farbe der Schwaden: weiss-blaeulich, deutlich heller als jeder Boden.
-  var NEBEL_FARBE = [222, 230, 242];
+  // Farbe der Schwaden: graublau, heller als jeder Boden, aber kein Weiss.
+  // b518 lag bei 222/230/242: die Baenke leuchteten ("zu hell").
+  var NEBEL_FARBE = [158, 168, 186];
 
   // Zwei Ebenen aus demselben Fleck. Die untere traegt grosse, dichte Baenke,
   // die obere kleinere Fetzen, die gegen sie treiben — so hat der Nebel Tiefe
