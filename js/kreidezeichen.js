@@ -157,6 +157,38 @@
    * @param {object} [opts] { erzwingen: true } ueberspringt den Wurf
    * @returns {{x:number,y:number}|null} der Platz oder null
    */
+  // Halbe Kantenlaenge des Platzes, den ein Zeichen braucht (Bild ~40 px,
+  // Ereignisschein drumherum).
+  var PLATZ_HALB = 26;
+
+  /**
+   * Liegt an (x, y) schon etwas? Gemeldet: "Kreidezeichen duerfen nicht auf
+   * anderen Objekten liegen". isSpawnPositionBlocked kennt nur Hindernisse mit
+   * Koerper; Feuerschalen, Spinnweben, Flecken, Risse und andere Ereignisse
+   * liegen ohne. Gezaehlt wird jedes Bild der Welt ausser dem gebackenen
+   * Boden/Waenden (__*), dem Spieler und den Gegnern (die laufen weg).
+   */
+  function platzBelegt(scene, x, y) {
+    if (!scene || !scene.children || !scene.children.list) return false;
+    var gegner = scene.enemies && typeof scene.enemies.contains === 'function' ? scene.enemies : null;
+    var sp = (typeof player !== 'undefined') ? player : null;
+    var liste = scene.children.list;
+    for (var i = 0; i < liste.length; i++) {
+      var o = liste[i];
+      if (!o || !o.active || o.visible === false || o === sp) continue;
+      if (o.type !== 'Image' && o.type !== 'Sprite') continue;
+      if (o.scrollFactorX === 0 || o.depth >= 1000) continue;          // Bedienung
+      var key = o.texture && o.texture.key;
+      if (!key || key.indexOf('__') === 0) continue;                    // gebackener Boden
+      if (gegner && gegner.contains(o)) continue;
+      var b = o.getBounds ? o.getBounds() : null;
+      if (!b) continue;
+      if (x + PLATZ_HALB > b.x && x - PLATZ_HALB < b.x + b.width &&
+          y + PLATZ_HALB > b.y && y - PLATZ_HALB < b.y + b.height) return true;
+    }
+    return false;
+  }
+
   function vielleichtSpawnen(scene, opts) {
     try {
       if (!laeuft()) return null;
@@ -179,6 +211,7 @@
           if (!p) continue;
           if (typeof window.isSpawnPositionBlocked === 'function' && window.isSpawnPositionBlocked(p.x, p.y, 20)) continue;
           if (typeof window.isNearStair === 'function' && window.isNearStair(scene, p.x, p.y, 60)) continue;
+          if (platzBelegt(scene, p.x, p.y)) continue;
           kandidaten.push(p);
         }
         if (ausgang) {
@@ -187,6 +220,9 @@
           platz = plaetze[plaetze.length - 1] || null;
         }
         if (!platz) platz = kandidaten[0] || null;
+        // Kein freier Platz: lieber kein Zeichen als eines auf einer Kiste.
+        // Der Auftrag faellt mit der naechsten Kammer wieder.
+        if (!platz) return null;
       }
       var o = _ziel();
       var bild = bildFuer(scene, o ? o.current : 0);
@@ -209,7 +245,8 @@
     satzListe: satzListe,
     laeuft: laeuft,
     lesen: lesen,
-    vielleichtSpawnen: vielleichtSpawnen
+    vielleichtSpawnen: vielleichtSpawnen,
+    platzBelegt: platzBelegt
   };
   window.Kreidezeichen = Kreidezeichen;
 })();

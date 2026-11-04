@@ -379,3 +379,45 @@ test('Fuhre und Schmiede: ihre Raum-Modi kommen oefter, solange sie laufen', () 
   assert.ok(altarMit >= altarOhne * 3, 'Verteidigung: ' + altarOhne + ' -> ' + altarMit);
   assert.ok(jagdMit < 0.4 && altarMit < 0.4, 'zu viele Spezialraeume: ' + jagdMit + ' / ' + altarMit);
 });
+
+// Gemeldet (b509): "Kreidezeichen duerfen nicht auf anderen Objekten liegen".
+// Ueber viele Raeume: das Bild des Zeichens schneidet kein anderes Bild der
+// Welt (Feuerschalen, Kisten, Faesser, Spinnweben, Flecken, andere Ereignisse).
+test('Kreide: ein Zeichen liegt nie auf einem anderen Objekt', () => {
+  L.setDepth(18, 18);
+  stand(3, { mara_warning: 'completed', mara_kreide: 'active' });
+  H.run(`window.Kreidezeichen.CHANCE = 1`);
+  const treffer = [];
+  let gestellt = 0;
+  try {
+    for (let i = 0; i < 60; i++) {
+      // Fortschritt zuruecksetzen, damit jedes Zimmer wieder ein Zeichen bekommt.
+      stand(3, { mara_warning: 'completed', mara_kreide: 'active' });
+      // Zeichen frueherer Raeume abraeumen (enterRoom im Test raeumt sie nicht).
+      H.run(`${GS}.children.list.slice().forEach(function (x) { if (x.texture && /^evt_kreide[0-9]?$/.test(x.texture.key)) x.destroy(); })`);
+      H.run(`enterRoom(${GS}, ${raumNr++})`);
+      H.step(2);
+      const r = JSON.parse(H.run(`(function () { var sc = ${GS};
+        var z = sc.children.list.filter(function (x) { return x.active && x.texture && /^evt_kreide[0-9]?$/.test(x.texture.key); })[0];
+        if (!z) return 'null';
+        var a = z.getBounds();
+        var drauf = sc.children.list.filter(function (o) {
+          if (o === z || !o.active || o.visible === false || o === player) return false;
+          if (o.type !== 'Image' && o.type !== 'Sprite') return false;
+          if (o.scrollFactorX === 0 || o.depth >= 1000) return false;
+          var k = o.texture && o.texture.key;
+          if (!k || k.indexOf('__') === 0 || enemies.contains(o)) return false;
+          var b = o.getBounds();
+          return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+        }).map(function (o) { return o.texture.key + '@' + Math.round(o.x) + ',' + Math.round(o.y); });
+        return JSON.stringify({ an: Math.round(z.x) + ',' + Math.round(z.y), drauf: drauf }); })()`));
+      if (!r) continue;
+      gestellt++;
+      if (r.drauf.length) treffer.push('Raum ' + i + ' ' + r.an + ': ' + r.drauf.join(' '));
+    }
+  } finally {
+    H.run(`window.Kreidezeichen.CHANCE = 0.5`);
+  }
+  assert.ok(gestellt >= 40, 'zu wenige Zeichen gestellt, der Test misst nichts: ' + gestellt);
+  assert.deepStrictEqual(treffer, []);
+});

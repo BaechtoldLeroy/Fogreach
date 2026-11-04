@@ -411,8 +411,11 @@
     tonSchnitt(900);
     scene.__esseZerbrochen = true;
     var ende = function () {
+      // Die gezeichneten Risse blieben bis b520 schwach am Boden liegen ("ein
+      // gezeichnetes Bodenartefakt, das seltsam aussieht"). Die Spalten traegt
+      // das Bild der zerbrochenen Esse; die Risse gehen mit dem Rest.
       teile.forEach(function (t) { if (t !== risse) _weg(t); });
-      scene.tweens.add({ targets: risse, alpha: 0.35, duration: 600 });
+      scene.tweens.add({ targets: risse, alpha: 0, duration: 600, onComplete: function () { _weg(risse); } });
       if (typeof fertig === 'function') fertig();
     };
     if (scene.time) scene.time.delayedCall(ZERBRECHEN_MS, ende);

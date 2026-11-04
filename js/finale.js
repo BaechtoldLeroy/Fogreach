@@ -1145,6 +1145,12 @@
     var gebrochen = schritt === 'urteil';
     if (FH && FH.esseZustand) FH.esseZustand(scene, gebrochen ? 'zerbrochen' : 'flackern');
     var e = _esse(scene);
+    // Zerbrochen glimmt nichts mehr: der gezeichnete rote Schein lag sonst
+    // unter der kalten Esse ("seltsames Bodenartefakt").
+    if (gebrochen && scene._quelleGlow) {
+      try { if (scene.tweens) scene.tweens.killTweensOf(scene._quelleGlow); scene._quelleGlow.destroy(); } catch (x) {}
+      scene._quelleGlow = null;
+    }
     if (boss && boss.active) { try { boss.destroy(); } catch (x) {} }
     var b = { esse: e, mh: _menschHoehe() };
     var key = scene.textures && scene.textures.exists(figurKey('elara_kniend', 'stand')) ? figurKey('elara_kniend', 'stand') : 'elara_right0';

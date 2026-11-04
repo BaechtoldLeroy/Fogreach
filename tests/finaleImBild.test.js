@@ -61,6 +61,12 @@ for (const schritt of ['hammer', 'harren', 'loesen', 'urteil']) {
       const l = hingehen(H);
       assert.strictEqual(l.szene, true, 'die Szene beginnt auch bei Elara nicht: ' + JSON.stringify(l));
       assert.strictEqual(l.drin, true, 'Elara liegt beim ersten Dialog nicht im Kamera-Ausschnitt: ' + JSON.stringify(l));
+      // Zu b515 gemeldet: unter der zerbrochenen Esse lag noch der gezeichnete
+      // rote Schein ("seltsames Bodenartefakt").
+      if (schritt === 'urteil') {
+        assert.strictEqual(H.run(`(function () { var g = window.game.scene.getScene('GameScene')._quelleGlow;
+          return !!(g && g.active); })()`), false, 'unter der zerbrochenen Esse glimmt noch der gezeichnete Schein');
+      }
     });
   });
 }

@@ -278,6 +278,13 @@ test('Zerbrechen: der Daemon entweicht als wabernder Bildstreifen und ist danach
   assert.ok(H.run('window.__zerbrochenFertig'), 'das Zerbrechen endet nicht: ' + H.run(`JSON.stringify({ dialog: !!window.eventChoiceOpen,
     pause: !!(window.__GAME_PAUSE && window.__GAME_PAUSE.since != null), uhr: ${GSC}.time.paused, jetzt: ${GSC}.time.now, daemon: !!${GSC}.children.getByName('esseDaemon') })`));
   assert.strictEqual(daemon(), null, 'der Daemon bleibt nach dem Zerbrechen stehen');
+  // Gemeldet zu b515: "bei der zerstoerten Esse gibt's ein gezeichnetes
+  // Bodenartefakt". Die Risse und der rote Schein gehen mit dem Zerbrechen.
+  const gezeichnet = () => H.run(`(function () { var sc = ${GSC};
+    return sc.children.list.filter(function (o) { return o.active && o.type === 'Graphics'
+      && (o.name === 'esseRisse' || o === sc._quelleGlow); }).length; })()`);
+  for (let i = 0; i < 100 && gezeichnet(); i++) H.step(2);
+  assert.strictEqual(gezeichnet(), 0, 'an der zerbrochenen Esse bleibt Gezeichnetes am Boden');
 });
 
 test('Nach dem Urteil steht die Esse zerbrochen, ohne Glut', () => {
