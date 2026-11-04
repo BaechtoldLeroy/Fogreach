@@ -406,9 +406,13 @@
     var durch = new Float32Array(S * S);       // wie viel NICHT bedeckt ist
     var i;
     for (i = 0; i < durch.length; i++) durch[i] = 1;
-    // So viele Schwaden, dass im Mittel gut 40 % bedeckt sind — wie der
-    // alte Fleck, und es bleiben Luecken zwischen den Schwaden.
-    var anzahl = Math.round(18 * (S * S) / (128 * 128));
+    // Nebel sieht man an seinen Schwaden, nicht an der mittleren Deckung.
+    // b512 verteilte 41 flache Schwaden (Spitze 0.5): gleich viel Grau wie
+    // vorher, aber so gleichmaessig, dass es nur noch wie ein Grauschleier
+    // auf dem Boden wirkte — "gar kein Nebel mehr". Darum weniger, dichtere
+    // Schwaden mit echten Luecken dazwischen: Kontrast und Luecken wie der
+    // alte Fleck (dessen Naht fehlt jetzt als Blickfang, also eher etwas mehr).
+    var anzahl = Math.round(22 * (S * S) / (192 * 192));
     for (i = 0; i < anzahl; i++) {
       var cx = streu(i, 1, 21) * S, cy = streu(i, 2, 21) * S;
       var rr = (16 + streu(i, 3, 21) * 30) * S / 128;
@@ -421,19 +425,49 @@
           var ex = bx + dx + 0.5 - cx, ey = by + dy + 0.5 - cy;
           var d = Math.sqrt(ex * ex + ey * ey) / rr;
           if (d >= 1) continue;
-          // Quadratisch auslaufen, nicht linear: kein Knick am Rand der Schwade.
+          // Weich auslaufen (smoothstep): kein Knick am Rand der Schwade und
+          // keine Spitze in ihrer Mitte.
           var t = 1 - d;
-          var a = 0.5 * t * t;
+          var a = 0.75 * t * t * (3 - 2 * t);
           var px = ((bx + dx) % S + S) % S;
           durch[py * S + px] *= (1 - a);
         }
       }
     }
-    for (i = 0; i < durch.length; i++) durch[i] = 1 - durch[i];
+    // Duenne Raender ausduennen, dichte Kerne verdichten (smoothstep 0.1..0.8):
+    // so stehen Baenke mit klaren Luecken da statt eines gleichmaessigen Grau.
+    for (i = 0; i < durch.length; i++) {
+      var k = Math.min(1, Math.max(0, (1 - durch[i] - 0.1) / 0.7));
+      durch[i] = k * k * (3 - 2 * k);
+    }
     return durch;
   }
 
-  /** Nebel: zwei langsam treibende Schleier ueber dem ganzen Platz. */
+  // Farbe der Schwaden: weiss-blaeulich, deutlich heller als jeder Boden.
+  var NEBEL_FARBE = [222, 230, 242];
+
+  // Zwei Ebenen aus demselben Fleck. Die untere traegt grosse, dichte Baenke,
+  // die obere kleinere Fetzen, die gegen sie treiben — so hat der Nebel Tiefe
+  // und die Luecken wandern. [Deckkraft, Massstab, Drift x, Drift y] (px/s).
+  // Bis b512 lagen hier 0.13 und 0.09: rechnerisch Nebel, auf dem Bildschirm
+  // nur ein Grauschleier ("seh ich jetzt gar kein nebel mehr").
+  var NEBEL_EBENEN = [[0.42, 4, 6, 1.5], [0.26, 2.5, -9, -1]];
+
+  // Bodennebel je Hub-Phase (Faktor auf die Deckkraft). Mit dem Doppelspiel
+  // und dem Bruch zieht er sich zu, im Epilog bricht er auf (#161: duenn,
+  // nicht weg). Die Vollbild-Schleier der Phasen (hubPhaseView) bleiben davon
+  // unberuehrt.
+  var NEBEL_JE_PHASE = { council: 1, doubleAgent: 1.15, broken: 1.3, epilogue: 0.5 };
+
+  /** Bodennebel auf die Hub-Phase einstellen; unbekannte Phase = council. */
+  function nebelFuerPhase(schleier, phase) {
+    var f = NEBEL_JE_PHASE[phase] || 1;
+    (schleier || []).forEach(function (ts, i) {
+      if (ts && ts.active !== false && NEBEL_EBENEN[i]) ts.setAlpha(Math.min(1, NEBEL_EBENEN[i][0] * f));
+    });
+  }
+
+  /** Nebel: zwei langsam treibende Ebenen ueber dem Boden, unter allen Figuren. */
   function _nebel(scene, w, h) {
     var key = 'hub_nebelfleck';
     if (!scene.textures.exists(key)) {
@@ -445,25 +479,31 @@
       var feld = nebelFeld(S);
       var bild = ctx.createImageData(S, S);
       for (var p = 0; p < feld.length; p++) {
-        bild.data[p * 4] = 188; bild.data[p * 4 + 1] = 198; bild.data[p * 4 + 2] = 214;
+        bild.data[p * 4] = NEBEL_FARBE[0]; bild.data[p * 4 + 1] = NEBEL_FARBE[1]; bild.data[p * 4 + 2] = NEBEL_FARBE[2];
         bild.data[p * 4 + 3] = Math.round(feld[p] * 255);
       }
       ctx.putImageData(bild, 0, 0);
       lw.refresh();
     }
     var schleier = [];
-    [[0.13, 7], [0.09, -4]].forEach(function (p, i) {
+    NEBEL_EBENEN.forEach(function (e, i) {
       var ts = scene.add.tileSprite(0, 0, w, h, key).setOrigin(0, 0);
-      ts.setAlpha(p[0]).setDepth(TIEFE_NEBEL + i);
-      ts.tileScaleX = 2.5; ts.tileScaleY = 2.5;
-      ts._driftX = p[1];
+      ts.setAlpha(e[0]).setDepth(TIEFE_NEBEL + i);
+      ts.tileScaleX = e[1]; ts.tileScaleY = e[1];
+      // Die Ebenen gegeneinander versetzen, sonst liegen ihre Baenke anfangs
+      // genau uebereinander.
+      ts.tilePositionX = i * 71; ts.tilePositionY = i * 37;
+      ts._driftX = e[2]; ts._driftY = e[3];
       schleier.push(ts);
     });
     // Der Nebel treibt. Ohne Bewegung ist er nur ein Schleier auf der Linse.
+    // Zwei Tilepositionen je Bild — auch auf dem Handy kein Aufwand.
     var treiben = function (zeit, delta) {
       var d = (delta || 16) / 1000;
       schleier.forEach(function (ts) {
-        if (ts.active) ts.tilePositionX += ts._driftX * d;
+        if (!ts.active) return;
+        ts.tilePositionX += ts._driftX * d;
+        ts.tilePositionY += ts._driftY * d;
       });
     };
     scene.events.on('update', treiben);
@@ -804,7 +844,8 @@
     layoutUebernehmen: layoutUebernehmen, bauen: bauen, truheStellen: truheStellen, phasenAnker: phasenAnker,
     aktionsbox: aktionsbox, baeume: baeume, gebaeudeFlaechen: gebaeudeFlaechen, bildFlaeche: bildFlaeche,
     _streu: streu, _festeFlaechen: _festeFlaechen, _artAn: artAn, _SCHICHTEN: SCHICHTEN,
-    _ERDE: ERDE, nebelFeld: nebelFeld, NEBEL_GROESSE: NEBEL_GROESSE
+    _ERDE: ERDE, nebelFeld: nebelFeld, NEBEL_GROESSE: NEBEL_GROESSE, _nebel: _nebel,
+    nebelFuerPhase: nebelFuerPhase, NEBEL_EBENEN: NEBEL_EBENEN, NEBEL_FARBE: NEBEL_FARBE
   };
   if (typeof window !== 'undefined') window.HubNeuWelt = HubNeuWelt;
   if (typeof module !== 'undefined' && module.exports) module.exports = HubNeuWelt;

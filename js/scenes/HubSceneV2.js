@@ -271,6 +271,8 @@ class HubSceneV2 extends Phaser.Scene {
     // haengt an EINEM Hintergrundobjekt — das ist der Kachelboden.
     const neueWelt = window.HubNeuWelt.bauen(this);
     const bg = neueWelt.boden;
+    // Bodennebel: seine Dichte folgt der Phase (_wendeHubPhaseAn).
+    this._bodenNebel = (neueWelt && neueWelt.nebel) || [];
     // Falls doch einmal ein Rand frei bleibt: Nebelgrau, nicht Schwarz.
     this.cameras.main.setBackgroundColor('#171a20');
 
@@ -2942,6 +2944,9 @@ class HubSceneV2 extends Phaser.Scene {
    * vorher gab es zwei (Aufbau und Vorschau), und nur einer raeumte auf.
    */
   _wendeHubPhaseAn(phase) {
+    if (window.HubNeuWelt && typeof window.HubNeuWelt.nebelFuerPhase === 'function') {
+      window.HubNeuWelt.nebelFuerPhase(this._bodenNebel, phase);
+    }
     if (!window.HubPhaseView || typeof window.HubPhaseView.apply !== 'function') {
       this._hubPhase = phase;
       return false;
