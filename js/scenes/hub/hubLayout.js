@@ -330,8 +330,8 @@ window.HUB_HITBOXES = {
     },
     // Epilog: Leute aus der Stadt statt Klerus und Garde. Nur mit
     // story_ending; ihre Zeilen stehen in HubPhase.npcFlavorByPhase.epilogue,
-    // die Plaetze in hubNeuKarte.npcs. Bilder: PixelLab, Blick nach Sueden
-    // wie die Vorleser (tools/rohbilder/hubidle/buerger_*).
+    // die Plaetze in hubNeuKarte.npcs. Bilder: PixelLab pro mit Thom als Stilvorlage,
+    // Blick nach Suedosten wie die anderen Hub-NPC (tools/rohbilder/hubidle/buerger_*).
     {
       id: 'epilog_baeckerin',
       name: 'Bäckerin',
@@ -364,7 +364,7 @@ window.HUB_HITBOXES = {
       name: 'Mädchen',
       x: 0, y: 0,
       texture: 'buerger_maedchen',
-      hoehe: 42,   // ein Kind
+      hoehe: 44,   // ein Kind
       visibleAfterFlag: 'story_ending',
       lines: []
     }
