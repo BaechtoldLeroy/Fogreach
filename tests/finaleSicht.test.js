@@ -44,6 +44,7 @@ for (const schritt of ['urteil', 'hammer']) {
     let H = null;
     before(async () => {
       H = await launchDungeon({ depth: 30, zusatz: '&debug=1&room=DieQuelle&boss=elara&finale=' + schritt });
+      H.lab.zuElara();   // die Szene beginnt erst, wenn Elara im Bild steht
     });
     after(async () => { if (H) await H.shutdown(); });
 

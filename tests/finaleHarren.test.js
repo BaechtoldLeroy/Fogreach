@@ -62,7 +62,7 @@ describe('In der Finalarena (DieQuelle)', () => {
 
 describe('Der ganze Weg durch die Szene (?finale=harren)', () => {
   let H = null;
-  before(async () => { H = await launchDungeon({ depth: 30, zusatz: '&debug=1&room=DieQuelle&boss=elara&finale=harren' }); H.run('window._playerInvincible = true'); });
+  before(async () => { H = await launchDungeon({ depth: 30, zusatz: '&debug=1&room=DieQuelle&boss=elara&finale=harren' }); H.run('window._playerInvincible = true'); H.lab.zuElara(); });
   after(async () => { if (H) await H.shutdown(); });
 
   test('Er kommt herein, wird gestossen und liegt frei, nicht an der Treppe', () => {

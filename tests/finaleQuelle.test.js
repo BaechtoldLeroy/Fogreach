@@ -152,6 +152,7 @@ test('Vor dem Kampf: der erhobene Hammer als Handwerk, Harren, dann nimmt die Es
   stand(FINALE_AKTIV, {});
   const b = L.spawnBoss();
   assert.strictEqual(b.type, 'elaraBesessen');
+  L.zuElara();   // Elara spricht erst, wenn sie im Bild steht
   H.step(2);
   const erste = H.run('window.__dialogLog[0]');
   assert.ok(erste && /löse die Bindung/.test(erste.text), 'die Szene an der Esse startet nicht: ' + JSON.stringify(erste));
@@ -348,6 +349,7 @@ test('Wer nach dem Sieg geht, findet Elara an der Esse wieder, ohne zweiten Kamp
   stand(FINALE_AKTIV, { harren_dead: true, elara_besiegt: true });
   assert.strictEqual(H.run('_elaraWartet()'), true, 'ohne Urteil wartet die Esse nicht mehr');
   L.spawnBoss();
+  L.zuElara();   // sie liegt an der Esse; die Seite kommt, wenn sie im Bild ist
   const d = naechsterDialog(0);
   assert.ok(d && /liegt noch dort, wo sie fiel/.test(d.text), JSON.stringify(d));
   assert.strictEqual(H.run(`enemies.getChildren().filter(function (x) { return x && x.active && x.isBoss; }).length`), 0,

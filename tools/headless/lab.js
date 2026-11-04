@@ -242,6 +242,32 @@ function attachLab(h) {
     },
 
     /**
+     * Das Finale beginnt erst, wenn Elara im Bild steht (Finale.imBild, nach
+     * b511). Stellt den Spieler knapp unter sie, holt die Kamera nach und
+     * taktet, bis sie im Bild ist. Gibt false zurueck, wenn keine Elara steht.
+     */
+    zuElara() {
+      const da = h.run(`(function () {
+        var sc = window.game.scene.getScene('${SCENE}');
+        var e = sc && (sc.children.getByName('finaleElara') || sc.children.getByName('finaleElaraFall'));
+        if (!e || !player) return false;
+        player.setPosition(e.x - 30, e.y + 60);
+        if (player.body && player.body.reset) player.body.reset(player.x, player.y);
+        sc.cameras.main.centerOn(player.x, player.y);
+        return true;
+      })()`);
+      if (!da) return false;
+      for (let i = 0; i < 60; i++) {
+        h.step(1);
+        if (h.run(`(function () { var sc = window.game.scene.getScene('${SCENE}');
+          var e = sc.children.getByName('finaleElara') || sc.children.getByName('finaleElaraFall');
+          return !e || window.Finale.imBild(sc, e); })()`)) break;
+      }
+      h.step(1);
+      return true;
+    },
+
+    /**
      * Eine Seite des Finales (Sprechblasen, FinaleBlasen) weitertippen: bis zur
      * letzten Blase echte Taps auf die Flaeche, dann Knopf n; gibt es keinen
      * Knopf (nur "Weiter"), noch einmal auf die Flaeche. false: keine Seite offen.

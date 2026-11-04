@@ -816,6 +816,46 @@
     } catch (e) {}
   }
 
+  // Elara spricht erst, wenn sie im Bild steht (gemeldet auf b511: "kommt der
+  // Dialog mit Elara, bevor sie im Bild ist"). Man betritt die Arena unten,
+  // die Esse liegt in der Mitte, ausserhalb des Ausschnitts und hinter dem
+  // Nebel. Bis man auf sie zugeht, laeuft das Spiel weiter (der Boss ist noch
+  // zurueckgehalten). Im Bild heisst: ganz im Kamera-Ausschnitt und im
+  // Sichtfeld, sonst verdeckt sie der Nebel.
+  function _imSichtfeld(scene, x, y) {
+    var poly = scene._lastVisionPolygon;
+    if (!poly || poly.length < 6) return true;
+    var drin = false;
+    for (var i = 0, j = poly.length - 2; i < poly.length; j = i, i += 2) {
+      var xi = poly[i], yi = poly[i + 1], xj = poly[j], yj = poly[j + 1];
+      if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) drin = !drin;
+    }
+    return drin;
+  }
+  // Ueber ihr bleibt Platz fuer ihre Blase und den Schacht der Esse (der ragt
+  // im Browser gemessen rund 90 px ueber ihren Kopf).
+  var IM_BILD_OBEN = 90;
+  function imBild(scene, fig) {
+    var kam = scene && scene.cameras && scene.cameras.main;
+    if (!fig || !fig.scene || !kam || !fig.getBounds) return true;
+    var v = kam.worldView, r = fig.getBounds();
+    if (r.left < v.x || r.right > v.right || r.top - IM_BILD_OBEN < v.y || r.bottom > v.bottom) return false;
+    return _imSichtfeld(scene, r.centerX, r.centerY);
+  }
+  function _wennImBild(scene, fig, los) {
+    if (imBild(scene, fig)) { los(); return; }
+    _toast(scene, 'Elara wartet an der Esse.', 'Elara is waiting at the Furnace.');
+    var fertig = false;
+    function pruefen() {
+      if (fertig || !imBild(scene, fig)) return;
+      ende();
+      los();
+    }
+    function ende() { fertig = true; scene.events.off('postupdate', pruefen); scene.events.off('shutdown', ende); }
+    scene.events.on('postupdate', pruefen);
+    scene.events.once('shutdown', ende);
+  }
+
   // Gibt true zurueck, wenn die Szene laeuft (dann ruft sie `weiter` selbst
   // und startet den Kampf, ElaraKampf.starten). Bei false startet spawnBoss
   // den Kampf sofort.
@@ -833,7 +873,7 @@
 
     var b = _buehneAufbauen(scene, boss);
     if (schritt === 'harren') {
-      _nachDerErkenntnis(scene, b, boss, weiter);
+      _wennImBild(scene, b.elara, function () { _nachDerErkenntnis(scene, b, boss, weiter); });
       return true;
     }
     if (schritt === 'erkenntnis') {
@@ -841,9 +881,11 @@
       if (p) { p.setPosition(b.esse.x - 40, b.esse.y + 50); if (p.body && p.body.reset) p.body.reset(p.x, p.y); }
     }
     var texte = vorKampfSeiten();
-    _seiten(scene, [{ text: texte[0] }], function () {
-      _hammerHeben(scene, b, function () { _nachDerErkenntnis(scene, b, boss, weiter); });
-    }, b);
+    _wennImBild(scene, b.elara, function () {
+      _seiten(scene, [{ text: texte[0] }], function () {
+        _hammerHeben(scene, b, function () { _nachDerErkenntnis(scene, b, boss, weiter); });
+      }, b);
+    });
     return true;
   }
 
@@ -1110,10 +1152,12 @@
       b.elara = knien(scene, scene.add.sprite(e.x + 80, e.y + 30, key).setDepth(FIGUR_TIEFE), b.mh, true).setName('finaleElaraFall');
     }
     scene.events.once('shutdown', function () { _weg(b.elara); });
-    if (gebrochen) { _nachDemBruch(scene, b); return; }
-    _seiten(scene, [{ text: _t('(Elara liegt noch dort, wo sie fiel, und die Esse brennt weiter. Die Bindung wartet auf Deinen Hammer.)',
-      '(Elara still lies where she fell, and the Furnace keeps burning. The binding is waiting for your hammer.)') }],
-    function () { _letzterSchlag(scene, b); }, b);
+    _wennImBild(scene, b.elara, function () {
+      if (gebrochen) { _nachDemBruch(scene, b); return; }
+      _seiten(scene, [{ text: _t('(Elara liegt noch dort, wo sie fiel, und die Esse brennt weiter. Die Bindung wartet auf Deinen Hammer.)',
+        '(Elara still lies where she fell, and the Furnace keeps burning. The binding is waiting for your hammer.)') }],
+      function () { _letzterSchlag(scene, b); }, b);
+    });
   }
 
   // Gibt true zurueck, wenn das Finale nach dem Kampf laeuft.
@@ -1202,7 +1246,7 @@
 
   window.Finale = { konvoi: konvoi, wahlSeite: _konvoiSeite, vorKampf: vorKampf, nachKampf: nachKampf, laeuftNachKampf: laeuftNachKampf,
     vorKampfSeiten: vorKampfSeiten, nachKampfSeiten: nachKampfSeiten, DEBUG_SCHRITTE: DEBUG_SCHRITTE,
-    harrenWeg: harrenWeg, treppenFrei: _treppenFrei, harrenLiegt: harrenLiegt,
+    imBild: imBild, harrenWeg: harrenWeg, treppenFrei: _treppenFrei, harrenLiegt: harrenLiegt,
     FIGUREN: FIGUREN, GEH_RICHTUNGEN: GEH_RICHTUNGEN, gehRichtung: gehRichtung,
     figurSprite: _figurSprite, gehen: _gehen, stehen: _stehen, figurKey: figurKey, figurBilder: figurBilder, bilderVorladen: bilderVorladen,
     KLINGE_BILD: KLINGE_BILD, klingeTextur: _klingeTextur };

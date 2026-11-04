@@ -136,6 +136,7 @@ describe('Vor dem Kampf', () => {
     stand(H, {});
     vorDieEsse(H);
     H.lab.spawnBoss();
+    H.lab.zuElara();   // Elara spricht erst, wenn sie im Bild steht
     H.step(2);
     const k = kam(H);
     let b = blase(H);
@@ -258,7 +259,7 @@ describe('Harren und der Stoss (?finale=harren)', () => {
 
   test('Harren ruft aus einer Blase ueber ihm, Elara antwortet ueber ihr; "Kämpfen" ist ein kleiner Knopf', () => {
     const k = kam(H);
-    vorDieEsse(H);
+    H.lab.zuElara();   // die Szene beginnt erst, wenn Elara im Bild steht
     // Blaettern, bis die Seite mit Harren offen ist.
     let b = null;
     for (let i = 0; i < 12; i++) {

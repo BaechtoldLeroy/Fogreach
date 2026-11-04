@@ -213,6 +213,7 @@ test('Letzter Schlag (loesen): lodernd an der Esse, nach dem Schlag zerbrochen; 
   arenaBetreten();
   stand({ harren_dead: true, elara_besiegt: true });
   H.lab.spawnBoss();
+  H.lab.zuElara();   // Elara spricht erst, wenn sie im Bild steht
   for (let i = 0; i < 200 && !H.run('!!window.eventChoiceOpen'); i++) H.step(1);
   assert.strictEqual(esse().zustand, 'flackern', 'an der Esse liegt Elara, die Esse lodert nicht');
   H.run('window.__knopf()');

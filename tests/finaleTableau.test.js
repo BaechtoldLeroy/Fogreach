@@ -104,6 +104,7 @@ function durch(H, bei, ende, wahl) {
   const tableaus = [];
   // Schritte, in denen Harren bzw. Mara sich bewegten: Weg, Animation, Bild.
   const schritte = { harren: [], mara: [] }, vorher = {};
+  H.lab.zuElara();   // die Szene beginnt erst, wenn Elara im Bild steht
   for (let i = 0; i < 6000; i++) {
     H.step(1);
     const l = lage(H);
