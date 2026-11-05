@@ -382,11 +382,13 @@ function spawnLoot(x, y, maybeItem, sourceEnemy) {
   // Elite enemies have higher loot chance and better tier
   // D2-like drop frequencies: trash rarely drops, elites modestly, minibosses
   // often, echte Bosse am häufigsten. Item-Drop-Chancen (Prozent): Trash 0.5%,
-  // Elite 2%, Miniboss 6%, Boss 10%. Die vier Zahlen sind die Tunables.
+  // Elite 2%, Miniboss 35%, Boss 10% (Boss ohnehin garantiert, s. unten). Die
+  // vier Zahlen sind die Tunables. Miniboss: Spieler meldeten, er lasse "gefuehlt
+  // nie etwas" fallen; bei 6 % war das gemessen eines aus siebzehn.
   const isEliteDrop = sourceEnemy && sourceEnemy.isElite;
   const isMiniBossDrop = sourceEnemy && sourceEnemy.isMiniBoss;
   const isBossDrop = sourceEnemy && sourceEnemy.isBoss;
-  const dropThresholdBase = isBossDrop ? 10 : (isMiniBossDrop ? 6 : (isEliteDrop ? 2 : 0.5));
+  const dropThresholdBase = isBossDrop ? 10 : (isMiniBossDrop ? 35 : (isEliteDrop ? 2 : 0.5));
 
   // Nachlassender Ertrag: je mehr ECHTE Ausruestung in diesem Lauf schon
   // gefallen ist, desto seltener faellt weitere. Traenke, Rollen und

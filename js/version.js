@@ -2,4 +2,4 @@
 // angezeigt, damit man pruefen kann, ob ein Release bereits live ist.
 // Bei JEDEM Deploy die Build-Nummer erhoehen (und das ?v= dieser Datei in
 // index.html bumpen).
-window.GAME_VERSION = '2026-11-05 · b531';
+window.GAME_VERSION = '2026-11-05 · b532';

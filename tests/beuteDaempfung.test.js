@@ -129,7 +129,8 @@ test('Der Miniboss ist von der Bremse AUSGENOMMEN', () => {
   // Diese Ausnahme ist — anders als der frueher hier stehende !isBossDrop-Zweig
   // — wirksam: der Wurf eines Minibosses wird wirklich befragt.
   const voll = wirksameSchwelle({ isMiniBoss: true }, 0);
-  assert.strictEqual(voll, 6, 'die Grundchance eines Minibosses ist nicht mehr 6 %: ' + voll);
+  // 35 % seit b532 (vorher 6 %: Spieler meldeten, er lasse nie etwas fallen).
+  assert.strictEqual(voll, 35, 'die Grundchance eines Minibosses ist nicht mehr 35 %: ' + voll);
   [3, 6, 12].forEach((schon) => {
     assert.strictEqual(wirksameSchwelle({ isMiniBoss: true }, schon), voll,
       'nach ' + schon + ' Stuecken faellt der Miniboss auf '
