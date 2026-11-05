@@ -266,10 +266,13 @@
       scene.load.image(k, ORDNER + k + '.png');
     });
     // Ebenso die Beute-Varianten (chest_small0..7, goldPile0..7, ...).
+    // ?v= fuer Bilder, die nachtraeglich geaendert wurden, sonst zeigt der
+    // Browser-Cache das alte (floor_stain3: b533 dezenter, war hellgrauer Schleier).
+    var BILD_STAND = { floor_stain3: 2 };
     Object.keys(VARIANTEN).forEach(function (basis) {
       _variantenVon(basis).forEach(function (k) {
         if (scene.textures.exists(k)) return;
-        scene.load.image(k, ORDNER + k + '.png');
+        scene.load.image(k, ORDNER + k + '.png' + (BILD_STAND[k] ? '?v=' + BILD_STAND[k] : ''));
       });
     });
     // #183: Pixelpartikel je Zweck (js/particleEffects.js), eine Tafel.
