@@ -407,7 +407,7 @@
       var m = marken[mi], e = it.e, mk = (e && !e.knocked) ? e._mark : null;
       if (!mk) { m.setVisible(false); return; }
       var top = e.y - it.h / 2 - 8;
-      m.setVisible(true).setText(mk).setColor(mk === '!' ? '#ff4a3a' : '#ffd24a').setPosition(e.x, top).setScale(puls);
+      _farbe(m.setVisible(true).setText(mk), mk === '!' ? '#ff4a3a' : '#ffd24a').setPosition(e.x, top).setScale(puls);
       // Wie weit ist die Figur? Kleiner Balken unter dem "?".
       if (mk === '?' && typeof e._notice === 'number' && e._notice > 0) {
         var bw = 26;
@@ -489,6 +489,14 @@
               : 'Geh in den goldenen Kreis zum Abhören. Meide die ROTEN Kegel — oder kämpf dich durch die roten Wachen.';
   }
 
+  // Phaser zeichnet einen Text bei JEDEM setColor neu und laedt ihn als Textur
+  // hoch, auch bei gleicher Farbe (setText prueft selbst). sync laeuft jedes
+  // Bild: auf schwachen Handys kostete das allein spuerbar Bildrate.
+  function _farbe(t, farbe) {
+    if (t && t.style && t.style.color !== farbe) t.setColor(farbe);
+    return t;
+  }
+
   function sync(scene) {
     scene = scene || _scene();
     var active = !!(window.EspionageSystem && typeof window.EspionageSystem.isActive === 'function'
@@ -546,6 +554,11 @@
       if (gd.knocked) return;
       var range = gd.range || 0;
       if (range <= 0) return;
+      // Kegel ganz ausserhalb des Bildes: nicht abtasten (19 Strahlen je Wache
+      // und Bild, im Lager mit vielen Wachen der groesste Brocken).
+      var wv = cam && cam.worldView;
+      if (wv && wv.width > 0 && (gd.x + range < wv.x || gd.x - range > wv.right
+        || gd.y + range < wv.y || gd.y - range > wv.bottom)) return;
       var isAlert = !!gd.alert;
       var coneCol = st.exposed ? 0xff2020
         : isAlert ? 0xff4040                              // rot: durchschaut Verkleidung
@@ -648,7 +661,7 @@
       if (z._done) {
         g.fillStyle(0x33dd88, 0.20); g.fillCircle(z.x, z.y, r);
         g.lineStyle(4, 0x44ee99, 0.95); g.strokeCircle(z.x, z.y, r);
-        if (zoneLabels[i]) { zoneLabels[i].setText(en ? '✓ HEARD' : '✓ ABGEHOERT'); zoneLabels[i].setColor('#7dffb0'); }
+        if (zoneLabels[i]) { zoneLabels[i].setText(en ? '✓ HEARD' : '✓ ABGEHOERT'); _farbe(zoneLabels[i], '#7dffb0'); }
       } else {
         g.fillStyle(0xffc23a, 0.12 + 0.16 * pulse); g.fillCircle(z.x, z.y, r);
         g.lineStyle(4, 0xffd966, 0.6 + 0.4 * pulse); g.strokeCircle(z.x, z.y, r);
@@ -698,12 +711,12 @@
     // --- HUD: Status-Chip + Aktionszeile ------------------------------------
     var si = _statusInfo(st, allDone);
     chipText.setText(si.txt);
-    chipText.setColor(si.tcol);
+    _farbe(chipText, si.tcol);
     chipBg.setSize(Math.max(120, chipText.width + 26), 26);
     chipBg.setFillStyle(si.col, si.hot ? (0.75 + 0.25 * pulse) : 0.95);
     banner.setText(_actionText(st, allDone));
     var _nkWarnt = !!(window.Nachteskorte && window.Nachteskorte.warnt && window.Nachteskorte.warnt());
-    banner.setColor((st.exposed || _nkWarnt) ? '#ff9a9a' : '#ffe6a8');
+    _farbe(banner, (st.exposed || _nkWarnt) ? '#ff9a9a' : '#ffe6a8');
     // Box an den (evtl. umgebrochenen) Text anpassen, damit er nie ueberlaeuft.
     if (bannerBg && typeof bannerBg.setSize === 'function') {
       var _camW = (cam && cam.width) ? cam.width : 800;

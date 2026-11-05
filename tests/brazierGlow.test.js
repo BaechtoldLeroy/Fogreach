@@ -1,36 +1,46 @@
-// Unit tests for RoomTemplates.removeBrazierGlow (js/roomTemplates.js).
+// Unit tests for RoomTemplates.registerBrazierGlow/removeBrazierGlow
+// (js/roomTemplates.js).
 //
-// Alle Brazier-Lichter landen aus Perf-Gruenden in EINEM geteilten Graphics
-// (ein Draw-Call). Ein zerstoertes Brazier kann sein Licht daher nur verlieren,
-// indem die verbliebenen Glows neu gezeichnet werden. Diese Tests decken genau
-// diese Buchfuehrung ab — DOM-frei ueber ein Fake-Graphics, das seine Aufrufe
-// mitschreibt.
+// Jedes Brazier-Licht ist ein Bild derselben Textur (seit b528; vorher Kreise
+// in einem geteilten Graphics, die Phaser jedes Bild neu triangulierte). Ein
+// zerstoertes Brazier nimmt genau sein Bild mit. Diese Tests decken die
+// Buchfuehrung ab — DOM-frei ueber eine Fake-Szene, die ihre Bilder mitschreibt.
 
 const { test, beforeEach } = require('node:test');
 const assert = require('node:assert');
 const { loadGameModule } = require('./loadGameModule');
 
-// Fake-Graphics: zaehlt clear() und sammelt die Mittelpunkte der Fuellkreise.
-function makeGfx() {
-  return {
-    clears: 0,
-    circles: [],
-    clear() { this.clears++; this.circles.length = 0; return this; },
-    fillStyle() { return this; },
-    fillCircle(x, y, r) { this.circles.push({ x, y, r }); return this; }
+// Fake-Szene: die Glut-Textur wird einmal "gezeichnet", Bilder merken sich,
+// ob sie zerstoert sind.
+function makeScene() {
+  const sc = {
+    bilder: [],
+    gezeichnet: 0,
+    textures: { _k: {}, exists(k) { return !!this._k[k]; } },
+    make: {
+      graphics() {
+        return {
+          fillStyle() { return this; }, fillCircle() { return this; },
+          generateTexture(k) { sc.gezeichnet++; sc.textures._k[k] = true; }, destroy() {}
+        };
+      }
+    },
+    add: {
+      image(x, y, key) {
+        const b = { x, y, key, weg: false, setDepth() { return this; }, destroy() { this.weg = true; } };
+        sc.bilder.push(b);
+        return b;
+      }
+    }
   };
+  return sc;
 }
 
-// Eindeutige Glow-Mittelpunkte (jeder Glow malt mehrere Ringe auf denselben Punkt).
-function centers(gfx) {
-  const seen = new Set();
-  const out = [];
-  for (const c of gfx.circles) {
-    const k = c.x + '|' + c.y;
-    if (!seen.has(k)) { seen.add(k); out.push({ x: c.x, y: c.y }); }
-  }
-  return out;
+// Lichter, die noch stehen.
+function lichter(sc) {
+  return sc.bilder.filter((b) => !b.weg).map((b) => ({ x: b.x, y: b.y }));
 }
+const punkte = (pts) => pts.map((p) => ({ x: p.x, y: p.y }));
 
 let RT = null;
 beforeEach(() => {
@@ -41,92 +51,86 @@ beforeEach(() => {
   }
 });
 
-// Szene mit drei Braziers, wie sie der Raum-Aufbau hinterlaesst.
+// Szene mit Braziers, wie sie der Raum-Aufbau hinterlaesst.
 function sceneWith(points) {
-  const gfx = makeGfx();
-  return {
-    _brazierGlowGfx: gfx,
-    _brazierGlowPoints: points.map((p) => ({ x: p.x, y: p.y })),
-    gfx
-  };
+  const sc = makeScene();
+  sc._brazierGlowPoints = [];
+  points.forEach((p) => RT.registerBrazierGlow(sc, sc._brazierGlowPoints, p.x, p.y));
+  return sc;
 }
 
 // Regression: _paintBrazierGlow lag zuerst in der IIFE am Dateikopf, der
 // zeichnende Aufrufer (applyRoomTemplate) steht aber auf Top-Level und sah das
 // Binding nicht -> "ReferenceError: _paintBrazierGlow is not defined" beim
-// Betreten des ersten Raums mit Brazier. Die alten Tests riefen nur
-// removeBrazierGlow auf (gleicher Scope) und waren deshalb blind dafuer.
-// Diese Tests gehen ueber den ECHTEN Zeichen-Pfad.
-test('registerBrazierGlow ist erreichbar und zeichnet (Scope-Regression)', () => {
+// Betreten des ersten Raums mit Brazier. Dieser Test geht ueber den ECHTEN
+// Zeichen-Pfad (die Glut-Textur malt _paintBrazierGlow).
+test('registerBrazierGlow ist erreichbar und legt ein Licht hin (Scope-Regression)', () => {
   assert.strictEqual(typeof RT.registerBrazierGlow, 'function');
-  const gfx = makeGfx();
+  const sc = makeScene();
   const pts = [];
-  assert.doesNotThrow(function () { RT.registerBrazierGlow(gfx, pts, 120, 240); });
-  assert.deepStrictEqual(pts, [{ x: 120, y: 240 }]);
-  assert.deepStrictEqual(centers(gfx), [{ x: 120, y: 240 }]);
+  let bild = null;
+  assert.doesNotThrow(function () { bild = RT.registerBrazierGlow(sc, pts, 120, 240); });
+  assert.ok(bild, 'kein Bild');
+  assert.deepStrictEqual(punkte(pts), [{ x: 120, y: 240 }]);
+  assert.deepStrictEqual(lichter(sc), [{ x: 120, y: 240 }]);
+});
+
+test('die Glut-Textur wird nur einmal gezeichnet, alle Lichter teilen sie', () => {
+  const sc = sceneWith([{ x: 100, y: 100 }, { x: 300, y: 100 }, { x: 500, y: 100 }]);
+  assert.strictEqual(sc.gezeichnet, 1);
+  assert.strictEqual(new Set(sc.bilder.map((b) => b.key)).size, 1);
 });
 
 test('hinzufuegen und wieder entfernen greift ineinander', () => {
-  const gfx = makeGfx();
+  const sc = makeScene();
   const pts = [];
-  RT.registerBrazierGlow(gfx, pts, 100, 100);
-  RT.registerBrazierGlow(gfx, pts, 300, 100);
-  assert.deepStrictEqual(centers(gfx), [{ x: 100, y: 100 }, { x: 300, y: 100 }]);
+  RT.registerBrazierGlow(sc, pts, 100, 100);
+  RT.registerBrazierGlow(sc, pts, 300, 100);
+  assert.deepStrictEqual(lichter(sc), [{ x: 100, y: 100 }, { x: 300, y: 100 }]);
 
-  const scene = { _brazierGlowGfx: gfx, _brazierGlowPoints: pts };
-  assert.strictEqual(RT.removeBrazierGlow(scene, 100, 100), true);
-  assert.deepStrictEqual(centers(gfx), [{ x: 300, y: 100 }]);
+  sc._brazierGlowPoints = pts;
+  assert.strictEqual(RT.removeBrazierGlow(sc, 100, 100), true);
+  assert.deepStrictEqual(lichter(sc), [{ x: 300, y: 100 }]);
   assert.strictEqual(pts.length, 1);
 });
 
-test('registerBrazierGlow ist robust ohne Graphics/Liste', () => {
+test('registerBrazierGlow ist robust ohne Szene/Liste', () => {
   assert.strictEqual(RT.registerBrazierGlow(null, [], 1, 1), false);
-  assert.strictEqual(RT.registerBrazierGlow(makeGfx(), null, 1, 1), false);
+  assert.strictEqual(RT.registerBrazierGlow(makeScene(), null, 1, 1), false);
 });
 
 test('removeBrazierGlow entfernt genau den getroffenen Glow', () => {
-  const scene = sceneWith([{ x: 100, y: 100 }, { x: 300, y: 100 }, { x: 500, y: 100 }]);
-  const removed = RT.removeBrazierGlow(scene, 300, 100);
-  assert.strictEqual(removed, true);
-  assert.strictEqual(scene._brazierGlowPoints.length, 2);
-  const left = centers(scene.gfx);
-  assert.deepStrictEqual(left, [{ x: 100, y: 100 }, { x: 500, y: 100 }]);
-});
-
-test('das geteilte Graphics wird vor dem Neuzeichnen geleert', () => {
-  const scene = sceneWith([{ x: 100, y: 100 }, { x: 300, y: 100 }]);
-  RT.removeBrazierGlow(scene, 100, 100);
-  assert.strictEqual(scene.gfx.clears, 1);
-  assert.deepStrictEqual(centers(scene.gfx), [{ x: 300, y: 100 }]);
+  const sc = sceneWith([{ x: 100, y: 100 }, { x: 300, y: 100 }, { x: 500, y: 100 }]);
+  assert.strictEqual(RT.removeBrazierGlow(sc, 300, 100), true);
+  assert.strictEqual(sc._brazierGlowPoints.length, 2);
+  assert.deepStrictEqual(lichter(sc), [{ x: 100, y: 100 }, { x: 500, y: 100 }]);
 });
 
 test('leichte Positionsabweichung trifft trotzdem (Toleranz)', () => {
-  const scene = sceneWith([{ x: 100, y: 100 }]);
+  const sc = sceneWith([{ x: 100, y: 100 }]);
   // Der Obstacle-Mittelpunkt weicht um wenige Pixel vom Glow-Zentrum ab.
-  assert.strictEqual(RT.removeBrazierGlow(scene, 112, 108), true);
-  assert.strictEqual(scene._brazierGlowPoints.length, 0);
+  assert.strictEqual(RT.removeBrazierGlow(sc, 112, 108), true);
+  assert.strictEqual(sc._brazierGlowPoints.length, 0);
+  assert.deepStrictEqual(lichter(sc), []);
 });
 
 test('zu weit entfernt entfernt nichts', () => {
-  const scene = sceneWith([{ x: 100, y: 100 }]);
-  assert.strictEqual(RT.removeBrazierGlow(scene, 900, 900), false);
-  assert.strictEqual(scene._brazierGlowPoints.length, 1);
-  // Kein Neuzeichnen, wenn nichts entfernt wurde.
-  assert.strictEqual(scene.gfx.clears, 0);
+  const sc = sceneWith([{ x: 100, y: 100 }]);
+  assert.strictEqual(RT.removeBrazierGlow(sc, 900, 900), false);
+  assert.strictEqual(sc._brazierGlowPoints.length, 1);
+  assert.deepStrictEqual(lichter(sc), [{ x: 100, y: 100 }]);
 });
 
 test('zweimal dasselbe Brazier entfernt nicht den Nachbarn', () => {
-  const scene = sceneWith([{ x: 100, y: 100 }, { x: 300, y: 100 }]);
-  assert.strictEqual(RT.removeBrazierGlow(scene, 100, 100), true);
-  assert.strictEqual(RT.removeBrazierGlow(scene, 100, 100), false);
-  assert.deepStrictEqual(scene._brazierGlowPoints, [{ x: 300, y: 100 }]);
+  const sc = sceneWith([{ x: 100, y: 100 }, { x: 300, y: 100 }]);
+  assert.strictEqual(RT.removeBrazierGlow(sc, 100, 100), true);
+  assert.strictEqual(RT.removeBrazierGlow(sc, 100, 100), false);
+  assert.deepStrictEqual(punkte(sc._brazierGlowPoints), [{ x: 300, y: 100 }]);
+  assert.deepStrictEqual(lichter(sc), [{ x: 300, y: 100 }]);
 });
 
 test('robust ohne Glow-State (Raum ohne Braziers)', () => {
   assert.strictEqual(RT.removeBrazierGlow({}, 100, 100), false);
   assert.strictEqual(RT.removeBrazierGlow(null, 100, 100), false);
-  assert.strictEqual(
-    RT.removeBrazierGlow({ _brazierGlowGfx: makeGfx(), _brazierGlowPoints: [] }, 1, 1),
-    false
-  );
+  assert.strictEqual(RT.removeBrazierGlow({ _brazierGlowPoints: [] }, 1, 1), false);
 });

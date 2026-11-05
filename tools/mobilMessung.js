@@ -26,6 +26,10 @@ const opt = (n, d) => { const i = args.indexOf('--' + n); return i >= 0 ? args[i
 const BREMSEN = opt('bremse', '4,6').split(',').map(Number);
 const SEKUNDEN = +opt('sekunden', 12);
 const SICHTBAR = args.includes('--sichtbar');
+// --profil: CPU-Profil waehrend der Messung, Eigenzeit je Funktion (Top 30).
+const PROFIL = args.includes('--profil');
+// Fester Zufall (Raum, Gegner, Deko): sonst misst jeder Lauf einen anderen Raum.
+const SEED = +opt('seed', 1);
 const WURZEL = path.join(__dirname, '..');
 
 // Ein Mittelklasse-Android quer gehalten (Pixel-7-Masse).
@@ -119,11 +123,61 @@ function auswerten(t) {
   };
 }
 
+// Adresse -> Pfad im Repo ohne ?v=.
+function kurz(u) { return (u || '').replace(/^.*\/\/[^/]+\//, '').replace(/\?.*$/, ''); }
+
+// Eigenzeit je Funktion (Datei:Zeile) aus den Stichproben.
+function eigenzeit(profil, titel) {
+  const knoten = new Map(profil.nodes.map((n) => [n.id, n]));
+  const zaehl = new Map();
+  const dt = profil.timeDeltas || [];
+  let gesamt = 0;
+  profil.samples.forEach((id, i) => {
+    const n = knoten.get(id), cf = n.callFrame, d = dt[i] || 0;
+    gesamt += d;
+    const datei = (cf.url || '').replace(/^.*\/\/[^/]+\//, '').replace(/\?.*$/, '');
+    const name = (cf.functionName || '(anonym)') + (datei ? '  ' + datei + ':' + (cf.lineNumber + 1) : '');
+    zaehl.set(name, (zaehl.get(name) || 0) + d);
+  });
+  const liste = [...zaehl.entries()].sort((a, b) => b[1] - a[1]).slice(0, 30);
+  console.log('\n--- Profil ' + titel + ' (Eigenzeit, ' + Math.round(gesamt / 1000) + ' ms gesamt) ---');
+  liste.forEach(([n, d]) => console.log(String((100 * d / gesamt).toFixed(1)).padStart(5) + ' %  ' + n));
+  // Dasselbe, aber jede Stichprobe der naechsten EIGENEN Funktion im Stapel
+  // zugeschrieben: so zaehlt Phaser-Arbeit (Zeichnen, Physik) bei dem Spielcode,
+  // der sie ausloest. Was keinen eigenen Aufrufer hat, ist Phasers Schleife.
+  const eltern = new Map();
+  profil.nodes.forEach((n) => (n.children || []).forEach((c) => eltern.set(c, n.id)));
+  const eigen = new Map();
+  profil.samples.forEach((id, i) => {
+    const d = dt[i] || 0;
+    let k = id, name = null;
+    while (k != null) {
+      const cf = knoten.get(k).callFrame, u = cf.url || '';
+      if (u.indexOf('/js/') >= 0 && u.indexOf('vendor') < 0) {
+        name = (cf.functionName || '(anonym)') + '  ' + kurz(u) + ':' + (cf.lineNumber + 1);
+        break;
+      }
+      k = eltern.get(k);
+    }
+    const n0 = knoten.get(id).callFrame.functionName;
+    if (!name) name = ['(program)', '(idle)', '(garbage collector)'].indexOf(n0) >= 0 ? n0 : '[Phaser-Schleife: Zeichnen, Physik, Tweens]';
+    eigen.set(name, (eigen.get(name) || 0) + d);
+  });
+  console.log('--- ' + titel + ': der naechsten eigenen Funktion zugeschrieben ---');
+  [...eigen.entries()].sort((a, b) => b[1] - a[1]).slice(0, 25)
+    .forEach(([n, d]) => console.log(String((100 * d / gesamt).toFixed(1)).padStart(5) + ' %  ' + n));
+  console.log('');
+}
+
 async function messen(browser, stelle, bremse, port) {
   const ctx = await browser.newContext(GERAET);
   const page = await ctx.newPage();
   const fehler = [];
   page.on('pageerror', (e) => fehler.push(e.message));
+  await page.addInitScript((seed) => {
+    let a = seed >>> 0;
+    Math.random = function () { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }, SEED);
   await page.addInitScript(ZAEHLER);
   await page.goto(`http://127.0.0.1:${port}${STELLEN[stelle].url}`, { waitUntil: 'load' });
   // Laden ungebremst; gebremst wird nur gemessen.
@@ -140,7 +194,12 @@ async function messen(browser, stelle, bremse, port) {
   const cdp = await ctx.newCDPSession(page);
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: bremse });
   await page.waitForTimeout(1500);   // einschwingen
-  await page.evaluate(() => { window.__mm.t = []; window.__mm.an = true; window.__mm.weg = 0;
+  if (PROFIL) { await cdp.send('Profiler.enable'); await cdp.send('Profiler.setSamplingInterval', { interval: 200 }); await cdp.send('Profiler.start'); }
+  // Rechenzeit je Spielschritt (Update + Zeichnen): springt nicht in Vsync-Stufen
+  // wie die Bildrate und taugt darum besser zum Vergleich vorher/nachher.
+  await page.evaluate(() => { const lp = window.game.loop; if (!lp.__mmCb) { const cb = lp.__mmCb = lp.callback;
+    lp.callback = function (a, b) { const s = performance.now(); cb(a, b); if (window.__mm.an) window.__mm.schritt.push(performance.now() - s); }; } });
+  await page.evaluate(() => { window.__mm.t = []; window.__mm.schritt = []; window.__mm.an = true; window.__mm.weg = 0;
     const pl = () => window.player || (window.game.scene.getScene('HubSceneV2') || {}).player;
     let a = pl(); window.__mm.ort = a ? [a.x, a.y] : null;
     window.__mm.uhr = setInterval(() => { const b = pl(), o = window.__mm.ort; if (b && o) { window.__mm.weg += Math.hypot(b.x - o[0], b.y - o[1]); window.__mm.ort = [b.x, b.y]; } }, 100); });
@@ -163,9 +222,13 @@ async function messen(browser, stelle, bremse, port) {
     await page.waitForTimeout(800);
     await finger('touchEnd');
   }
-  const { t, weg } = await page.evaluate(() => { window.__mm.an = false; clearInterval(window.__mm.uhr); return { t: window.__mm.t, weg: Math.round(window.__mm.weg) }; });
+  const profil = PROFIL ? (await cdp.send('Profiler.stop')).profile : null;
+  const { t, schritt, weg } = await page.evaluate(() => { window.__mm.an = false; clearInterval(window.__mm.uhr); return { t: window.__mm.t, schritt: window.__mm.schritt, weg: Math.round(window.__mm.weg) }; });
   await ctx.close();
-  return Object.assign({ stelle, bremse, weg, fehler: fehler[0] || '' }, info, auswerten(t));
+  if (profil) eigenzeit(profil, stelle + ' ' + bremse + 'x');
+  const ss = schritt.slice().sort((a, b) => a - b);
+  const rechnen = ss.length ? { ms: +(schritt.reduce((a, b) => a + b, 0) / schritt.length).toFixed(1), ms95: +ss[Math.floor(ss.length * 0.95)].toFixed(1) } : {};
+  return Object.assign({ stelle, bremse, weg, fehler: fehler[0] || '' }, info, auswerten(t), rechnen);
 }
 
 (async () => {
@@ -179,12 +242,12 @@ async function messen(browser, stelle, bremse, port) {
         const r = await messen(browser, stelle, bremse, port);
         zeilen.push(r);
         console.log(r.fps != null
-          ? `${stelle.padEnd(9)} ${String(bremse + 'x').padEnd(4)} ${String(r.fps).padStart(3)} fps   1%-tief ${String(r.tief1).padStart(3)}   Haenger>50ms ${String(r.haenger).padStart(3)}   max ${String(r.max).padStart(3)} ms   gelaufen ${r.weg} px${r.mobil ? '' : '   (NICHT mobil!)'}${r.fehler ? '   Fehler: ' + r.fehler : ''}`
+          ? `${stelle.padEnd(9)} ${String(bremse + 'x').padEnd(4)} ${String(r.fps).padStart(3)} fps   Rechnen ${String(r.ms).padStart(5)} ms (95%: ${String(r.ms95).padStart(5)})   1%-tief ${String(r.tief1).padStart(3)}   Haenger>50ms ${String(r.haenger).padStart(3)}   max ${String(r.max).padStart(3)} ms   gelaufen ${r.weg} px${r.mobil ? '' : '   (NICHT mobil!)'}${r.fehler ? '   Fehler: ' + r.fehler : ''}`
           : `${stelle.padEnd(9)} ${bremse}x   ${r.fehler}`);
       }
     }
     const z = zeilen.find((r) => r.gpu);
-    if (z) console.log(`\nGPU: ${z.gpu} · ${z.renderer} · ${z.version} · ${SEKUNDEN} s je Messung · ${GERAET.viewport.width}x${GERAET.viewport.height} @${GERAET.deviceScaleFactor}`);
+    if (z) console.log(`\nGPU: ${z.gpu} · ${z.renderer} · ${z.version} · ${SEKUNDEN} s je Messung · seed ${SEED} · ${GERAET.viewport.width}x${GERAET.viewport.height} @${GERAET.deviceScaleFactor}`);
   } finally {
     await browser.close();
     srv.close();

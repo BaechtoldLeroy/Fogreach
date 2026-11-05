@@ -54,8 +54,14 @@ function initMinimap(scene) {
   const _rpX = SCREEN_W - MAP_W - RIGHT_MARGIN;
   const _rpY = 10 + MAP_H + 7;
   window._roomProgressGeom = { x: _rpX, y: _rpY, w: MAP_W };
+  // Ein BILD, kein Graphics: die abgerundeten Segmente zerlegte Phaser in
+  // jedem Bild neu in Dreiecke — auf gebremster CPU der groesste einzelne
+  // Grafik-Posten (b528). Gezeichnet wird nur bei Aenderung, in eine Textur.
   if (!window._roomProgressGfx || !window._roomProgressGfx.scene) {
-    window._roomProgressGfx = scene.add.graphics().setScrollFactor(0).setDepth(1501);
+    window._roomProgressGfx = scene.add.image(_rpX - RAND_BALKEN, _rpY - RAND_BALKEN, '__DEFAULT')
+      .setOrigin(0, 0).setScrollFactor(0).setDepth(1501);
+  } else {
+    window._roomProgressGfx.setPosition(_rpX - RAND_BALKEN, _rpY - RAND_BALKEN);
   }
   if (window._roomCounterText) {
     window._roomCounterText.setPosition(_rpX + MAP_W / 2, _rpY + 11);
@@ -68,19 +74,25 @@ function initMinimap(scene) {
 // #49: Zeichnet den segmentierten Raum-Fortschrittsbalken (grün = geschafft,
 // gold = aktueller Raum, grau = kommend). Daten aus window._roomProgress,
 // Geometrie aus window._roomProgressGeom (in initMinimap gesetzt).
+const RAND_BALKEN = 2;   // Platz fuer die Kontur des aktuellen Segments
+let _balkenNr = 0;
 function drawRoomProgress() {
-  const g = window._roomProgressGfx;
+  const bild = window._roomProgressGfx;
   const geom = window._roomProgressGeom;
   const p = window._roomProgress;
-  if (!g || !g.scene) return;
-  if (!geom || !p || !(p.total > 0)) { try { g.clear(); } catch (e) {} return; }
+  if (!bild || !bild.scene) return;
+  const scene = bild.scene;
+  const alt = bild.texture && bild.texture.key;
+  const weg = () => { if (alt && alt.indexOf('__raumbalken_') === 0) { try { scene.textures.remove(alt); } catch (e) {} } };
+  if (!geom || !p || !(p.total > 0)) { bild.setTexture('__DEFAULT'); weg(); return; }
+  // Gezeichnet wird in Bildkoordinaten (0,0 = links oben am Balken).
+  const g = scene.make.graphics({ x: 0, y: 0, add: false });
   const total = Math.max(1, p.total | 0);
   const cur = Math.max(1, Math.min(total, p.cur | 0));
-  const x0 = geom.x, y = geom.y, w = geom.w, h = 7;
+  const x0 = RAND_BALKEN, y = RAND_BALKEN, w = geom.w, h = 7;
   const gap = total > 1 ? Math.max(2, Math.min(4, Math.floor((w / total) * 0.18))) : 0;
   const segW = (w - gap * (total - 1)) / total;
   const r = Math.max(1, Math.min(3, segW / 2));
-  g.clear();
   for (let i = 0; i < total; i++) {
     const sx = x0 + i * (segW + gap);
     const n = i + 1;
@@ -95,6 +107,10 @@ function drawRoomProgress() {
       g.strokeRoundedRect(sx - 0.5, y - 0.5, segW + 1, h + 1, r);
     }
   }
+  const key = '__raumbalken_' + (++_balkenNr);
+  try { g.generateTexture(key, w + 2 * RAND_BALKEN, h + 2 * RAND_BALKEN); } catch (e) {}
+  g.destroy();
+  if (scene.textures.exists(key)) { bild.setTexture(key); weg(); }
 }
 if (typeof window !== 'undefined') window._drawRoomProgress = drawRoomProgress;
 

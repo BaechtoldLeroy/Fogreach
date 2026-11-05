@@ -195,10 +195,12 @@
 })(window);
 
 // ========== Brazier-Glow ==========
-// Alle Brazier-Lichter landen aus Perf-Gründen in EINEM geteilten Graphics
-// (ein Draw-Call, Depth -3). Deshalb lässt sich ein einzelnes Licht nicht
-// "weglöschen" — wird ein Brazier zerstört, müssen die verbliebenen Lichter
-// neu gezeichnet werden. Dafür führen wir die Positionen mit.
+// Jedes Brazier-Licht ist ein Bild derselben, einmal gezeichneten Textur
+// (gleiche Textur = ein gemeinsamer Draw-Call). Bis b527 lagen alle Lichter
+// als Kreise in einem geteilten Graphics: Phaser zerlegte die vier Kreise je
+// Licht in JEDEM Bild neu in Dreiecke — auf gebremster CPU der zweitgroesste
+// Grafik-Posten (tools/mobilMessung.js). Ein zerstoertes Brazier nimmt sein
+// Bild mit; dafuer fuehren wir Positionen und Bilder mit.
 //
 // WICHTIG: Diese Funktionen stehen bewusst auf TOP-LEVEL, nicht in der IIFE
 // oben. applyRoomTemplate (der einzige Zeichen-Aufrufer) ist selbst top-level
@@ -216,22 +218,60 @@ function _paintBrazierGlow(gfx, cx, cy) {
   gfx.fillCircle(cx, cy, 24);
 }
 
-// Zeichnet einen Glow UND merkt sich seine Position. `points` ist die Liste,
-// die später removeBrazierGlow braucht.
-function registerBrazierGlow(gfx, points, cx, cy) {
-  if (!gfx || !Array.isArray(points)) return false;
-  points.push({ x: cx, y: cy });
-  _paintBrazierGlow(gfx, cx, cy);
-  return true;
+// Die Ellipse unter einem Prop (T*0.7 x T*0.25, Schwarz 25 %) als Textur,
+// einmal je Kachelgroesse. null ohne Graphics (Testattrappen): dann kein Schatten.
+function _propSchattenTextur(scene, T) {
+  var key = '__prop_schatten_' + T;
+  if (scene.textures && scene.textures.exists(key)) return key;
+  if (!scene.add || !scene.add.graphics || !scene.make || !scene.make.graphics) return null;
+  var w = Math.max(2, Math.round(T * 0.7)), h = Math.max(2, Math.round(T * 0.25));
+  try {
+    var g = scene.make.graphics({ x: 0, y: 0, add: false });
+    g.fillStyle(0x000000, 0.25);
+    g.fillEllipse(w / 2, h / 2, w, h);
+    g.generateTexture(key, w, h);
+    g.destroy();
+  } catch (e) { return null; }
+  return scene.textures.exists(key) ? key : null;
 }
 
-// Entfernt das Licht des Braziers, der (x,y) am nächsten liegt, und zeichnet
-// die restlichen Glows neu. Gibt true zurück, wenn eines entfernt wurde.
+var GLUT_R = 80;   // Radius des aeussersten Kreises in _paintBrazierGlow
+
+// Das Licht eines Braziers als Textur, einmal je Spiel. null ohne Graphics.
+function _glutTextur(scene) {
+  var key = '__brazier_glut';
+  if (scene.textures && scene.textures.exists(key)) return key;
+  if (!scene.make || !scene.make.graphics) return null;
+  try {
+    var g = scene.make.graphics({ x: 0, y: 0, add: false });
+    _paintBrazierGlow(g, GLUT_R, GLUT_R);
+    g.generateTexture(key, GLUT_R * 2, GLUT_R * 2);
+    g.destroy();
+  } catch (e) { return null; }
+  return scene.textures.exists(key) ? key : null;
+}
+
+// Legt das Licht eines Braziers hin UND merkt es sich. `points` ist die
+// Liste, die spaeter removeBrazierGlow braucht. Liefert das Bild (oder false).
+function registerBrazierGlow(scene, points, cx, cy) {
+  if (!scene || !scene.add || !scene.add.image || !Array.isArray(points)) return false;
+  var key = _glutTextur(scene);
+  if (!key) return false;
+  var bild = scene.add.image(cx, cy, key);
+  if (bild && bild.setDepth && window.WELT_TIEFEN) bild.setDepth(window.WELT_TIEFEN.UEBER_PROP);
+  // isFloor: Licht ist kein Hindernis. Ohne die Marke sah die Treppensuche
+  // (roomManager, checkBucket) 160 px grosse Bloecke um jedes Brazier.
+  if (bild && bild.setData) bild.setData('isFloor', true);
+  points.push({ x: cx, y: cy, bild: bild });
+  return bild;
+}
+
+// Entfernt das Licht des Braziers, der (x,y) am nächsten liegt. Gibt true
+// zurück, wenn eines entfernt wurde.
 function removeBrazierGlow(scene, x, y, tolerance) {
   if (!scene) return false;
-  var gfx = scene._brazierGlowGfx;
   var pts = scene._brazierGlowPoints;
-  if (!gfx || !Array.isArray(pts) || !pts.length) return false;
+  if (!Array.isArray(pts) || !pts.length) return false;
   var tol = (typeof tolerance === 'number') ? tolerance : 48;
   var bestIdx = -1, bestDist = Infinity;
   for (var i = 0; i < pts.length; i++) {
@@ -240,9 +280,8 @@ function removeBrazierGlow(scene, x, y, tolerance) {
     if (d < bestDist) { bestDist = d; bestIdx = i; }
   }
   if (bestIdx < 0 || bestDist > tol) return false;
-  pts.splice(bestIdx, 1);
-  if (typeof gfx.clear === 'function') gfx.clear();
-  for (var j = 0; j < pts.length; j++) _paintBrazierGlow(gfx, pts[j].x, pts[j].y);
+  var weg = pts.splice(bestIdx, 1)[0];
+  if (weg && weg.bild && typeof weg.bild.destroy === 'function') { try { weg.bild.destroy(); } catch (e) {} }
   return true;
 }
 
@@ -631,23 +670,31 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
   // eigener Draw-Call. Render-Order kommt aus setDepth, daher ist die
   // Insertion-Reihenfolge egal; visuell identisch (Alpha-Blending der
   // einzelnen Fills bleibt gleich).
-  const obstacleShadowGfx = scene.add?.graphics
-    ? scene.add.graphics().setDepth(window.WELT_TIEFEN.PROP_SCHATTEN) : null;
+  //
+  // Die Schatten sind seit b528 Bilder einer einmal erzeugten Ellipse statt
+  // Ellipsen in einem Graphics: Phaser zerlegt jede Graphics-Ellipse in JEDEM
+  // Bild neu in Dreiecke (bis 4000 Befehle je Raum). Auf gebremster CPU war
+  // das der groesste einzelne Posten (tools/mobilMessung.js --profil). Gleiche
+  // Textur = ein gemeinsamer Draw-Call, wie zuvor das geteilte Graphics.
+  const schattenKey = _propSchattenTextur(scene, T);
+  const propSchatten = (x, y) => {
+    if (!schattenKey) return;
+    // isFloor: wer Bilder als Hindernis liest (Treppen-Platzierung), uebergeht ihn.
+    templateWalls.push(scene.add.image(x, y + T * 0.35, schattenKey)
+      .setDepth(window.WELT_TIEFEN.PROP_SCHATTEN).setData('isFloor', true));
+  };
   // Brazier-Glow ueber Treppe und Props legen, damit das warme Licht auch VOR
   // einer Treppe sichtbar ist. Bleibt unter Gegnern und Spieler. Vorher -3 ->
   // lag hinter allem, die Treppe verdeckte es.
-  const brazierGlowGfx = scene.add?.graphics
-    ? scene.add.graphics().setDepth(window.WELT_TIEFEN.UEBER_PROP) : null;
-  if (obstacleShadowGfx) templateWalls.push(obstacleShadowGfx);
-  if (brazierGlowGfx) templateWalls.push(brazierGlowGfx);
-
   // Glow-Positionen mitführen, damit ein zerstörtes Brazier sein Licht
-  // verlieren kann (siehe removeBrazierGlow oben). Pro Raum-Aufbau frisch.
+  // verlieren kann (siehe removeBrazierGlow oben). Pro Raum-Aufbau frisch;
+  // die Bilder raeumt der Raumwechsel mit templateWalls ab.
   const brazierGlowPoints = [];
-  scene._brazierGlowGfx = brazierGlowGfx;
   scene._brazierGlowPoints = brazierGlowPoints;
-  const addBrazierGlow = (cx, cy) =>
-    registerBrazierGlow(brazierGlowGfx, brazierGlowPoints, cx, cy);
+  const addBrazierGlow = (cx, cy) => {
+    const bild = registerBrazierGlow(scene, brazierGlowPoints, cx, cy);
+    if (bild) templateWalls.push(bild);
+  };
 
   for (let y = 0; y < H; y++) {
     // #113: die KOPIE lesen, nicht tpl.layout.walls. Aus dieser Schleife
@@ -695,10 +742,7 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
           const obstacleY = oy + y * T + T / 2;
 
           // Drop shadow under auto-obstacle
-          if (obstacleShadowGfx) {
-            obstacleShadowGfx.fillStyle(0x000000, 0.25);
-            obstacleShadowGfx.fillEllipse(obstacleX, obstacleY + T * 0.35, T * 0.7, T * 0.25);
-          }
+          propSchatten(obstacleX, obstacleY);
 
           // Ambient glow for braziers in grid
           if (key === 'brazier' || key === 'brazer') {
@@ -1038,10 +1082,7 @@ function applyRoomTemplate(scene, tpl, originX = 0, originY = 0) {
     }
 
     // Drop shadow under obstacle — in dasselbe geteilte Graphics (053 WP02)
-    if (obstacleShadowGfx) {
-      obstacleShadowGfx.fillStyle(0x000000, 0.25);
-      obstacleShadowGfx.fillEllipse(px, py + T * 0.35, T * 0.7, T * 0.25);
-    }
+    propSchatten(px, py);
 
     // Ambient glow for braziers — large, warm, and visible
     if (o.type === 'brazier' || o.type === 'brazer') {
