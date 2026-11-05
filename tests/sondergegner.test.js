@@ -262,13 +262,45 @@ const gerufene = (ref) => H.run(`(function () {
   return enemies.getChildren().filter(function (e) {
     return e && e.active && e._beschworenVon === b;
   }).map(function (e) {
-    return { d: Math.round(Math.hypot(e.x - b.x, e.y - b.y)), typ: e.enemyType, elite: !!(e.isElite || e._eliteApplied) };
+    return {
+      d: Math.round(Math.hypot(e.x - b.x, e.y - b.y)), x: Math.round(e.x), y: Math.round(e.y),
+      typ: e.enemyType, elite: !!(e.isElite || e._eliteApplied)
+    };
   });
 })()`);
 const rufJetzt = (ref) => H.run(`(function () { var b = window.__lab.refs[${ref}]; b._naechsterRuf = 0; b.speed = 0; })()`);
 
+// Der Raum ist zufaellig: 330 px rechts vom Spieler kann Wand sein. Dort
+// findet der Beschwoerer keinen freien Rufplatz und ruft (gewollt) auf seine
+// eigene Stelle — die Wichte schieben sich dann auseinander. Fuer die
+// Abstandspruefung also eine Stelle suchen, deren ganzer Rufkreis frei ist.
+const freieRufstelle = () => H.run(`(function () {
+  var sc = window.game.scene.getScene('GameScene');
+  var frei = function (x, y) {
+    return sc.isPointAccessible(x, y) && !isBlockedByObstacle(x, y);
+  };
+  // Den ganzen Raum im Raster absuchen: mindestens 180 px vom Spieler,
+  // sonst moeglichst nah an den ueblichen 330 px.
+  var bd = sc.physics.world.bounds, best = null, bestFehl = Infinity;
+  for (var x = bd.x + 16; x < bd.right; x += 16) {
+    for (var y = bd.y + 16; y < bd.bottom; y += 16) {
+      var d = Math.hypot(x - player.x, y - player.y);
+      if (d < 180 || Math.abs(d - 330) >= bestFehl || !frei(x, y)) continue;
+      var ok = true;
+      for (var k = 0; k < 8 && ok; k++) {
+        var v = Math.PI * 2 * k / 8;
+        ok = frei(x + Math.cos(v) * 48, y + Math.sin(v) * 48);
+      }
+      if (ok) { best = { dx: Math.round(x - player.x), dy: Math.round(y - player.y) }; bestFehl = Math.abs(d - 330); }
+    }
+  }
+  return best;
+})()`);
+
 test('Beschwoerer steht still, ruft, und nach einer Sekunde stehen zwei Wichte bei ihm', () => {
-  const b = setze(13, 330, 0);
+  const s = freieRufstelle();
+  assert.ok(s, 'keine Stelle mit freiem Rufkreis im Raum');
+  const b = setze(13, s.dx, s.dy);
   rufJetzt(b);
   H.step(10);
   assert.ok(H.run(`window.__lab.refs[${b}]._castingUntil > 0`), 'hat nicht zu rufen begonnen');
@@ -277,6 +309,12 @@ test('Beschwoerer steht still, ruft, und nach einer Sekunde stehen zwei Wichte b
   const w = gerufene(b);
   assert.strictEqual(w.length, 2, 'gerufen: ' + JSON.stringify(w));
   assert.ok(w.every((x) => x.typ === 1 && x.d < 90), 'nicht bei ihm: ' + JSON.stringify(w));
+  // Auf den Kreisen, nicht auf seiner Stelle: die beiden Kreise liegen sich
+  // gegenueber (96 px). Ohne freie Orte stuenden beide auf ihm und schoeben
+  // sich nur ein Stueck auseinander.
+  assert.ok(w.every((x) => x.d >= 30), 'auf ihm statt auf den Kreisen: ' + JSON.stringify(w));
+  const zwischen = Math.round(Math.hypot(w[0].x - w[1].x, w[0].y - w[1].y));
+  assert.ok(zwischen >= 50, 'beide auf einem Fleck (' + zwischen + ' px): ' + JSON.stringify(w));
 });
 
 test('Erschlagen waehrend des Rufens: es kommt niemand', () => {
