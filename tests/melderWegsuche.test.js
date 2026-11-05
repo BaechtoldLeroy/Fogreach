@@ -150,7 +150,9 @@ RAEUME.forEach((raum) => {
     });
 
     if (raum.kurz === 'lager') {
-      test('wer sich an die Ecke seines Umwegs stellt, faengt ihn ab', async () => {
+      // Spieler meldeten: der Spaeher fiel um, sobald er in einen hineinlief.
+      // Jetzt laeuft er um den Spieler an seiner Ecke herum und meldet.
+      test('wer sich an die Ecke seines Umwegs stellt, wird umlaufen', async () => {
         const start = JSON.parse(H.run(startAusSeed(SEEDS[0])));
         H.run(`(function () {
           var s = window.EspionageSystem.getState(), a = s.actors.filter(function (o) { return o.type === 'ratsbote'; })[0];
@@ -162,9 +164,14 @@ RAEUME.forEach((raum) => {
         // Ein Takt, dann steht der Umweg fest: der Spieler wartet an dessen erster Ecke.
         assert.ok(await bis(H, '!!(window.__melder._weg && window.__melder._weg.punkte.length)', 30), 'kein Umweg berechnet');
         H.run('(function () { var w = window.__melder._weg.punkte[0]; player.setPosition(w.x, w.y); })()');
-        const ok = await bis(H, `(function () { var a = window.__melder; return a.knocked || a._state !== 'report'; })()`, 400);
-        const r = JSON.parse(H.run(`JSON.stringify({ knocked: window.__melder.knocked, quiet: window.__melder.quiet })`));
-        assert.ok(ok && r.knocked && r.quiet, 'nicht abgefangen: ' + JSON.stringify(r));
+        const ok = await bis(H, `(function () { var a = window.__melder;
+          if (a._state === 'report') window.__naechst = Math.min(window.__naechst || 1e9, Math.hypot(a.x - player.x, a.y - player.y));
+          return a.knocked || a._state !== 'report'; })()`, 400);
+        const r = JSON.parse(H.run(`JSON.stringify({ knocked: window.__melder.knocked, runT: window.__melder._runT,
+          naechst: window.__naechst, alert: window.EspionageSystem.getState().guards.some(function (g) { return g.alert; }) })`));
+        assert.ok(ok && !r.knocked, 'faellt um, als er in den Spieler laeuft: ' + JSON.stringify(r));
+        assert.ok(r.naechst >= 25, 'laeuft durch den Spieler: ' + JSON.stringify(r));
+        assert.ok(r.alert && r.runT < 6, 'kommt nicht an der Wache an (oder nur per Notfall): ' + JSON.stringify(r));
       });
     }
   });

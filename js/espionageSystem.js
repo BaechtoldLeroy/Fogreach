@@ -52,7 +52,8 @@
   //              dem ruft er die Wache (Verkleidung schuetzt nur kurz)
   //   diener     Ritualdiener, geht von Feuerschale zu Feuerschale, wie oben
   //   spitzel    wandert, erkennt Dich schnell und rennt zur naechsten Wache:
-  //              fang ihn ab (beruehren), bevor er sie erreicht, sonst enttarnt
+  //              halt ihn (per Schlag) auf, bevor er sie erreicht, sonst enttarnt;
+  //              laeuft er in Dich hinein, weicht er aus
   //   ratsbote   eilt mit Depeschen von Tuer zu Tuer, sieht nur kurz nach vorn;
   //              erkennt er Dich, eilt er zur Wache und macht sie WACHSAM (roter
   //              Kegel, durchschaut die Verkleidung), enttarnt aber nicht sofort
@@ -80,7 +81,7 @@
   var INFORMER_REPORT_R = 40;       // so nah muss er an die Wache
   var INFORMER_COOLDOWN = 8;        // s nach einer Meldung
   var BOTE_ALARM = 0.35;            // Meldung des Ratsboten: Verdacht +0.35, Wache wachsam
-  var INTERCEPT_R = 38;             // Spitzel beruehren = leise abfangen
+  var AUSWEICH_R = 30;              // so weit haelt ein rennender Melder Abstand zum Spieler
   var PORTER_BLOCK_R = 22;          // Traeger mit Kiste: verdeckt die Sichtlinie
   var PORTER_BUMP_SUSPICION = 0.12;
   var PORTER_BUMP_CD = 3;
@@ -421,6 +422,31 @@
     return weg;
   }
 
+  // Wie _laufeZu, aber der nahe Spieler zaehlt als Hindernis: der Melder plant
+  // um ihn herum, statt an ihm haengenzubleiben.
+  function _laufeZuOhne(ent, p, tx, ty, speed, dt) {
+    var R = state.raster;
+    var nah = p && R && Math.abs(p.x - ent.x) + Math.abs(p.y - ent.y) < 200;
+    if (!nah) { ent._wegMeidet = false; return _laufeZu(ent, tx, ty, speed, dt); }
+    var r = AUSWEICH_R + R.T * 0.5, k = _rKachel(R, p.x, p.y), n = Math.ceil(r / R.T), alt = [];
+    for (var oy = -n; oy <= n; oy++) {
+      for (var ox = -n; ox <= n; ox++) {
+        var kx = k.x + ox, ky = k.y + oy;
+        if (!_rFrei(R, kx, ky)) continue;
+        var cx = R.x + (kx + 0.5) * R.T, cy = R.y + (ky + 0.5) * R.T;
+        if ((cx - p.x) * (cx - p.x) + (cy - p.y) * (cy - p.y) > r * r) continue;
+        R.frei[ky * R.cols + kx] = false; alt.push(ky * R.cols + kx);
+      }
+    }
+    // Ein Weg von vorher kennt den Spieler nicht: neu rechnen, wenn er im Weg steht.
+    if (ent._weg && !ent._wegMeidet) ent._wegT = 0;
+    try { return _laufeZu(ent, tx, ty, speed, dt); }
+    finally {
+      for (var i = 0; i < alt.length; i++) R.frei[alt[i]] = true;
+      ent._wegMeidet = !!ent._weg;
+    }
+  }
+
   // Ein Stueck Weg Richtung Ziel (tx,ty), um Hindernisse herum.
   function _laufeZu(ent, tx, ty, speed, dt) {
     var R = state.raster;
@@ -438,6 +464,19 @@
     if (w.punkte.length === 1) { ziel.x = tx; ziel.y = ty; }   // letzter Punkt folgt der Wache
     if (_walkTo(ent, ziel.x, ziel.y, speed, dt)) w.punkte.shift();
     return false;
+  }
+
+  // Spieler meldeten: der Spaeher soll nicht umfallen, nur weil er in Dich
+  // hineinlaeuft. Er weicht aus: aus Deinem Radius heraus und seitlich an Dir
+  // vorbei, auf der Seite seines Ziels. Aufhalten nur noch per Schlag (laut).
+  function _umgeheSpieler(a, p, zx, zy, speed, dt) {
+    var dx = a.x - p.x, dy = a.y - p.y, d = Math.sqrt(dx * dx + dy * dy);
+    if (d >= AUSWEICH_R) return;
+    if (d < 0.001) { dx = 1; dy = 0; d = 1; }
+    var ux = dx / d, uy = dy / d, sx = -uy, sy = ux;
+    if ((zx - a.x) * sx + (zy - a.y) * sy < 0) { sx = -sx; sy = -sy; }
+    var seit = speed * dt;
+    _moveGuard(a, p.x + ux * AUSWEICH_R + sx * seit, p.y + uy * AUSWEICH_R + sy * seit);
   }
 
   function _nearestGuard(x, y) {
@@ -757,17 +796,11 @@
         a._halt = null; a._sieht = false;
         if (!a._target || a._target.knocked) a._target = _nearestGuard(a.x, a.y);
         a._runT += dt;
-        if (a._target) _laufeZu(a, a._target.x, a._target.y, T.runSpeed, dt);
-        var gd = a._target ? Math.sqrt((a._target.x - a.x) * (a._target.x - a.x) + (a._target.y - a.y) * (a._target.y - a.y)) : 0;
-        // Leise abfangen: wer ihn auf dem Weg erwischt, haelt ihm den Mund zu.
-        if (p) {
-          var ix = p.x - a.x, iy = p.y - a.y;
-          if (ix * ix + iy * iy <= INTERCEPT_R * INTERCEPT_R) {
-            a.knocked = true; a.quiet = true; a._state = 'idle'; a._target = null; a._mark = null;
-            _bark(a, 'abgefangen');
-            continue;
-          }
+        if (a._target) {
+          _laufeZuOhne(a, p, a._target.x, a._target.y, T.runSpeed, dt);
+          if (p) _umgeheSpieler(a, p, a._target.x, a._target.y, T.runSpeed, dt);
         }
+        var gd = a._target ? Math.sqrt((a._target.x - a.x) * (a._target.x - a.x) + (a._target.y - a.y) * (a._target.y - a.y)) : 0;
         if (!a._target || gd <= INFORMER_REPORT_R || a._runT >= INFORMER_MAX_RUN) _informerReports(a, scene);
         a._mark = '!';
         continue;

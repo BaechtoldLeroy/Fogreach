@@ -239,16 +239,38 @@ describe('Verhalten je Figurentyp', () => {
     assert.ok(ruf, 'kein Ruf des Boten');
   });
 
-  test('Ratsbote abfangen: wer ihn auf dem Weg erwischt, haelt ihn auf, die Wache bleibt ahnungslos', () => {
+  // Spieler meldeten: der Spaeher fiel um, sobald er in einen hineinlief.
+  // Jetzt weicht er aus und meldet trotzdem.
+  ['spitzel', 'ratsbote'].forEach((typ) => {
+    test(typ + ': wer ihm im Weg steht, wird umlaufen, er faellt nicht um und meldet', () => {
+      const E = globalThis.window.EspionageSystem;
+      const p = spieler(50, 0);
+      const a = mitFigur(E, typ);
+      let rannte = false, naechst = Infinity;
+      takt(E, 10, () => {
+        if (!rannte && a._state === 'report') { rannte = true; p.x = 0; p.y = 160; }
+        if (!rannte) { a._facing = 0; p.x = a.x + 50; p.y = a.y; }
+        else if (a._state === 'report') naechst = Math.min(naechst, Math.hypot(a.x - p.x, a.y - p.y));
+      });
+      const g = E.getState().guards[0];
+      assert.ok(rannte, typ + ' rennt nie los');
+      assert.strictEqual(a.knocked, false, typ + ' faellt um, als er in den Spieler laeuft');
+      assert.ok(naechst >= 25, typ + ' laeuft durch den Spieler (' + naechst.toFixed(1) + ' px)');
+      assert.ok(typ === 'spitzel' ? g.hostile || E.isDetected() : g.alert === true, typ + ' kommt nicht an der Wache an');
+    });
+  });
+
+  test('Ratsbote aufhalten: ein Schlag streckt ihn nieder, die Wache bleibt ahnungslos', () => {
     const E = globalThis.window.EspionageSystem;
     const p = spieler(50, 0);
     const a = mitFigur(E, 'ratsbote');
+    let geschlagen = false;
     takt(E, 8, () => {
-      if (a._state === 'report' || a.knocked) { p.x = a.x; p.y = a.y; }
-      else { a._facing = 0; p.x = a.x + 50; p.y = a.y; }
+      if (a._state === 'report' && !geschlagen) { geschlagen = true; E.attackGuards(a.x - 20, a.y, 1, 0); }
+      if (!geschlagen) { a._facing = 0; p.x = a.x + 50; p.y = a.y; } else { p.x = -900; p.y = -900; }
     });
-    assert.strictEqual(a.knocked, true, 'der Bote laesst sich nicht abfangen');
-    assert.strictEqual(a.quiet, true, 'das Abfangen ist nicht leise');
+    assert.ok(geschlagen, 'der Bote rennt nie los');
+    assert.strictEqual(a.knocked, true, 'der Schlag haelt den Boten nicht auf');
     assert.notStrictEqual(E.getState().guards[0].alert, true, 'die Wache wurde trotzdem gewarnt');
   });
 

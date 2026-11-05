@@ -121,8 +121,8 @@
     'spion.ruf.rempler': 'He! Pass doch auf!',
     'spion.ruf.laerm': 'Was war das?',
     'spion.ruf.bote_meldet': 'Hauptmann, da treibt sich einer herum. Haltet die Augen offen!',
-    'spion.hinweis.spitzel': 'Der Spitzel rennt zur Wache! Fang ihn ab, bevor er sie erreicht.',
-    'spion.hinweis.ratsbote': 'Der Ratsbote eilt zur Wache! Fang ihn ab, sonst wird sie wachsam.'
+    'spion.hinweis.spitzel': 'Der Spitzel rennt zur Wache! Halt ihn mit einem Schlag auf, bevor er sie erreicht.',
+    'spion.hinweis.ratsbote': 'Der Ratsbote eilt zur Wache! Halt ihn mit einem Schlag auf, sonst wird sie wachsam.'
   };
   var RUF_EN = {
     'spion.ruf.ruf_schreiber': 'Guard! That one is snooping in the files!',
@@ -133,8 +133,8 @@
     'spion.ruf.rempler': 'Hey! Watch it!',
     'spion.ruf.laerm': 'What was that?',
     'spion.ruf.bote_meldet': 'Captain, someone is lurking about. Keep your eyes open!',
-    'spion.hinweis.spitzel': 'The informer is running to a guard! Catch him before he gets there.',
-    'spion.hinweis.ratsbote': 'The council messenger is hurrying to a guard! Catch him, or the guard turns watchful.'
+    'spion.hinweis.spitzel': 'The informer is running to a guard! Strike him down before he gets there.',
+    'spion.hinweis.ratsbote': 'The council messenger is hurrying to a guard! Strike him down, or the guard turns watchful.'
   };
   try {
     if (window.i18n && typeof window.i18n.register === 'function') {
