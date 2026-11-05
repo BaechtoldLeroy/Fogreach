@@ -69,6 +69,47 @@ after(async () => { if (H) await H.shutdown(); });
 
 const GSC = "window.game.scene.getScene('GameScene')";
 
+/**
+ * Die Esse auf freien Boden weit weg von jeder Treppe: wer dort E haelt, soll
+ * nicht die Treppe nehmen. Elara steht rechts neben der Esse (Mitte ihres
+ * Bildes +74/+18, rund 50x55 px), L.zuElara stellt den Spieler links unter
+ * sie (+44/+78); sie spricht erst, wenn sie im Bild steht (Finale.imBild):
+ * ganz im Sichtfeld und samt 90 px darueber im Kamera-Ausschnitt. Lag sie im
+ * Zufallsraum in einem Hindernis, dahinter oder nah am oberen Weltrand (die
+ * Kamera kann nicht darueber hinaus), wurde sie nie "im Bild" (rund 4 von 10
+ * Laeufen fielen). Hat der Raum keinen solchen Fleck, waehlte
+ * FinaleHandwerk.ort einen ungeprueften neben dem Spieler (dort lag auch mal
+ * die Treppe): dann den naechsten Raum bauen.
+ */
+function esseOrtWaehlen() {
+  for (let versuch = 0; versuch < 20; versuch++) {
+    const ort = H.run(`(function () { var sc = ${GSC};
+      sc.__esseOrt = null;
+      function sichtFrei(x, y) {
+        var px = x + 44, py = y + 78;
+        for (var ox = -25; ox <= 25; ox += 25) for (var oy = -25; oy <= 25; oy += 25) {
+          var ex = x + 74 + ox, ey = y + 18 + oy;
+          for (var t = 0; t <= 1; t += 0.05) if (isBlockedByObstacle(px + (ex - px) * t, py + (ey - py) * t)) return false;
+        }
+        var kb = sc.cameras.main.getBounds();
+        if (x + 74 - 40 < kb.x || x + 74 + 40 > kb.right || y + 18 - 30 - 100 < kb.y || y + 18 + 40 > kb.bottom) return false;
+        return sc.isPointAccessible(px, py) && sc.isPointAccessible(x + 74, y + 18);
+      }
+      var b = sc.physics.world.bounds;
+      for (var gy = 0.15; gy <= 0.85 && !sc.__esseOrt; gy += 0.025) for (var gx = 0.15; gx <= 0.85 && !sc.__esseOrt; gx += 0.025) {
+        var x = b.x + b.width * gx, y = b.y + b.height * gy;
+        if (sc.isPointAccessible(x, y) && sc.isPointAccessible(x, y + 20) && sichtFrei(x, y) && window.Finale.treppenFrei(sc, x, y, 160)) sc.__esseOrt = { x: x, y: y };
+      }
+      return sc.__esseOrt; })()`);
+    if (ort) return ort;
+    H.run(`window.enterRoom(${GSC})`);
+    H.run('window.EventSystem.reset()');
+    H.step(16);
+    L.clearEnemies();
+  }
+  assert.fail('in 20 Raeumen kein freier Fleck fuer die Esse');
+}
+
 beforeEach(() => {
   esseHalten(false);
   L.clearEnemies();
@@ -83,14 +124,8 @@ beforeEach(() => {
   tableaus = [];
   H.run(`(function () { var sc = ${GSC};
     ['__finaleHammer', '__finaleLoesen'].forEach(function (k) { if (sc[k]) { sc[k].abbrechen(); sc[k] = null; } });
-    sc.__finaleNachKampf = false; sc.__esseOrt = null;
-    // Die Esse auf freien Boden weit weg von jeder Treppe: wer dort E haelt,
-    // soll nicht die Treppe nehmen (im Zufallsraum lag sie sonst manchmal daneben).
-    var b = sc.physics.world.bounds;
-    for (var gy = 0.2; gy <= 0.8 && !sc.__esseOrt; gy += 0.05) for (var gx = 0.2; gx <= 0.8 && !sc.__esseOrt; gx += 0.05) {
-      var x = b.x + b.width * gx, y = b.y + b.height * gy;
-      if (sc.isPointAccessible(x, y) && sc.isPointAccessible(x, y + 20) && window.Finale.treppenFrei(sc, x, y, 160)) sc.__esseOrt = { x: x, y: y };
-    } })()`);
+    sc.__finaleNachKampf = false; })()`);
+  esseOrtWaehlen();
   H.run('window.__dialogLog.length = 0');
 });
 
@@ -155,7 +190,14 @@ test('Vor dem Kampf: der erhobene Hammer als Handwerk, Harren, dann nimmt die Es
   L.zuElara();   // Elara spricht erst, wenn sie im Bild steht
   H.step(2);
   const erste = H.run('window.__dialogLog[0]');
-  assert.ok(erste && /löse die Bindung/.test(erste.text), 'die Szene an der Esse startet nicht: ' + JSON.stringify(erste));
+  assert.ok(erste && /löse die Bindung/.test(erste.text), 'die Szene an der Esse startet nicht: ' + JSON.stringify(erste) + ' ' + H.run(`(function () {
+    var sc = ${GSC}, e = sc.children.getByName('finaleElara'), v = sc.cameras.main.worldView, r = e && e.getBounds();
+    var blockiert = null;
+    if (r) for (var t = 0; t <= 1; t += 0.02) { var x = player.x + (r.centerX - player.x) * t, y = player.y + (r.centerY - player.y) * t;
+      if (isBlockedByObstacle(x, y)) { blockiert = [Math.round(x), Math.round(y)]; break; } }
+    return JSON.stringify({ ort: sc.__esseOrt, glut: !!(sc._quelleGlow && sc._quelleGlow.active), bild: !!(sc._esseBild && sc._esseBild.active),
+      elara: e && [e.x, e.y], r: r && [r.left, r.top, r.right, r.bottom], kam: [v.x, v.y, v.right, v.bottom], p: [player.x, player.y],
+      imBild: e && window.Finale.imBild(sc, e), blockiert: blockiert, poly: (sc._lastVisionPolygon || []).length }); })()`));
   assert.strictEqual(H.run('!!window.eventChoiceOpen'), true, 'das Spiel laeuft waehrend der Szene weiter');
   // Bis die Esse sie nimmt, ist die besessene Elara nicht im Raum.
   const boss = () => H.run(`(function () { var b = enemies.getChildren().filter(function (x) { return x && x.isBoss; })[0];
