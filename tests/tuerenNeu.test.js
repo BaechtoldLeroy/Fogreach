@@ -35,11 +35,19 @@ async function bis(H, js, runden) {
  * kam er durch das offene nicht hindurch (Saat 5, 22). Das Zweite war ein
  * echter Fehler des Spiels (roomManager truheHaeltTuerFrei), das Erste eine
  * Annahme des Tests.
+ *
+ * Die Spur liegt auf der Mitte des KOERPERS, nicht auf player.x/y: der
+ * Koerper sitzt 26 px ueber dem Sprite-Punkt (y-54 bis y+2). Bis b532 war
+ * die Spur um player.y gelegt; lag die freie Spur 40 px neben der Tormitte,
+ * streifte die Oberkante des Koerpers die Wand neben dem Tor und blieb vor
+ * dem offenen Tor haengen (Saat 31, 38, 41).
  */
 function raumMitToren(H) {
   return H.run(`(function () {
     window._playerInvincible = true;
-    var sc = ${GS};
+    var sc = ${GS}, pb = window.player.body;
+    // Versatz der Koerpermitte gegen den Sprite-Punkt, auf den gesetzt wird.
+    var kx = pb.center.x - window.player.x, ky = pb.center.y - window.player.y;
     function spur(o) {
       var waag = o === 'horizontal';
       var t = (sc._doors || []).filter(function (d) { return d && d.active && d.getData('orientation') === o; });
@@ -63,7 +71,11 @@ function raumMitToren(H) {
               if (b === d.body) return true;
               return b.right <= rx || b.x >= rx + rw || b.bottom <= ry || b.y >= ry + rh;
             });
-            if (frei) return { tor: d, x: lx, y: ly };
+            // Der Spieler wird so gesetzt, dass sein Koerper auf der Spur liegt.
+            var px = lx - kx, py = ly - ky;
+            // [E] misst vom Sprite-Punkt: vom Startpunkt 70 vor dem Tor in Reichweite bleiben.
+            var seit = waag ? Math.abs(px - d.x) : Math.abs(py - d.y);
+            if (frei && Math.hypot(70, seit) < 95) return { tor: d, x: px, y: py };
           }
         }
       }
