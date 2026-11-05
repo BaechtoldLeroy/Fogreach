@@ -384,6 +384,10 @@ function _mobilText(de, en) {
         const dx = e.x - p.x, dy = e.y - p.y;
         if (dx * dx + dy * dy >= r2) continue;
         if (_lineBlockedByClosedDoor(scene, p.x, p.y, e.x, e.y)) continue; // hinter zu-Tür -> zaehlt nicht
+        // Spieler meldeten den Knopf wieder auf "Kampf" vor einer Tuer: der
+        // Gegner stand schraeg dahinter, die Linie lief durch die Wand neben
+        // dem Tor. Es zaehlt nur, wen das Sichtfeld (Nebel) zeigt.
+        if (typeof window.hasLineOfSightToTarget === 'function' && !window.hasLineOfSightToTarget(e)) continue;
         return true;
       }
     } catch (e) { /* defensiv */ }
