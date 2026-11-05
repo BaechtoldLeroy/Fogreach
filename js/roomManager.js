@@ -3388,6 +3388,7 @@ function _resetElaraEncounterRunState() {
   // jenseits des letzten Raums (Raum 8+ bei 7 Raeumen), wartete sie im
   // naechsten Lauf auf einen Raum, der nie kam.
   _elaraSpaetSpawnZiel = null;
+  _elaraSpaetGesprochen = null;
   _hinterhaltAbbrechen();
 }
 
@@ -3718,6 +3719,8 @@ function _maybeFireElaraCellarEncounter(scene, roomId) {
 var ELARA_AUFTRAEGE = ['resistance_fetch_01', 'widerstand_proof', 'elara_meeting', 'elara_ritual', 'elara_blade', 'elara_second_truth', 'elara_schloesser'];
 if (typeof window !== 'undefined') window.ELARA_AUFTRAEGE = ELARA_AUFTRAEGE;   // ?auftrag= (js/debugAuftrag.js)
 var _elaraSpaetSpawnZiel = null;
+var _elaraSpaetGesprochen = null;    // 'id/modus', ueber das man in diesem Lauf schon mit ihr sprach
+var ELARA_WIEDER = 2;                // Raeume bis zum naechsten Auftritt, wenn man vorbeiging
 
 function _elaraSpaetereAuftraege(scene, roomId) {
   var qs = window.questSystem;
@@ -3739,12 +3742,20 @@ function _elaraSpaetereAuftraege(scene, roomId) {
     if (offen) { faellig = { id: id, modus: 'angebot', quest: offen }; break; }
   }
   if (!faellig) { _elaraSpaetSpawnZiel = null; return; }
+  // Gemeldet: "Bei Tiefe 19 kommt Elara viel zu selten oder nie." Sie kam
+  // einmal je Lauf, 3..5 Raeume weiter, an einem freien Punkt irgendwo im
+  // Raum; wer an ihr vorbeiging, sah sie den ganzen Lauf nicht mehr. Jetzt
+  // wartet sie im naechsten Raum und, solange man nicht mit ihr gesprochen
+  // hat, ELARA_WIEDER Raeume spaeter erneut.
+  // Ueber DIESES Anliegen schon gesprochen (auch abgelehnt): nicht nachlaufen.
+  // Ein neues (naechster Auftrag, Abgabe) bringt sie wieder.
+  if (_elaraSpaetGesprochen === faellig.id + '/' + faellig.modus) return;
 
   if (_elaraSpaetSpawnZiel === null || roomId > _elaraSpaetSpawnZiel) {
-    _elaraSpaetSpawnZiel = roomId + (faellig.modus === 'abgabe' ? _abgabeAbstand() : _rollDistance());
+    _elaraSpaetSpawnZiel = roomId + _abgabeAbstand();
   }
   if (roomId !== _elaraSpaetSpawnZiel) return;
-  _elaraSpaetSpawnZiel = null;                   // verbraucht; naechster Bedarf wuerfelt neu
+  _elaraSpaetSpawnZiel = roomId + ELARA_WIEDER;   // falls man an ihr vorbeigeht
   _spawnElaraSprite(scene, faellig);
 }
 
@@ -4924,6 +4935,9 @@ function _spawnElaraSprite(scene, stage, platz) {
   // Subtle violet glow to match the Widerstand-faction colour key.
   // Groesse an der Figur gemessen, wie im Versteck (#192).
   window.EventSystem.spawnEventObject(scene, 'elara_right0', 0xffffff, 0x8866cc, promptLabel, function () {
+    // Spaetere Auftraege: wer mit ihr gesprochen hat, dem laeuft sie in diesem
+    // Lauf nicht mehr nach (auch wenn er ablehnt).
+    if (stage && typeof stage === 'object') _elaraSpaetGesprochen = stage.id + '/' + stage.modus;
     _showElaraDialog(scene, stage);
     // `platz` setzt sie gezielt (nach der Rettung: wo die Wache stand).
     // Ohne ihn zieht spawnEventObject wie bisher einen freien Punkt.
