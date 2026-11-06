@@ -298,9 +298,17 @@
     // Tasten im Feld gehoeren dem Feld, nicht Phaser (der lauscht am window).
     var halt = function (e) { if (e && e.stopPropagation) e.stopPropagation(); };
     ['keydown', 'keyup', 'keypress'].forEach(function (t) { el.addEventListener(t, halt); });
-    d.body.appendChild(el);
+    // Im Vollbild zeigt der Browser nur das Vollbild-Element (Phaser legt den
+    // Canvas dafuer in einen eigenen Behaelter). Ein Feld unter body bliebe
+    // unsichtbar und bekaeme keinen Klick: darum dorthin, wo gerade Vollbild ist.
+    function wirt() {
+      var fe = d.fullscreenElement || d.webkitFullscreenElement || d.msFullscreenElement;
+      return (fe && fe.appendChild && fe.tagName !== 'CANVAS') ? fe : d.body;
+    }
     function lage() {
       try {
+        var ziel = wirt();
+        if (el.parentNode !== ziel) ziel.appendChild(el);
         var cv = scene.sys.game.canvas;
         var r = cv.getBoundingClientRect();
         var sx = r.width / scene.scale.width, sy = r.height / scene.scale.height;
@@ -310,12 +318,16 @@
       } catch (e) { /* ohne Canvas bleibt das Feld, wo es ist */ }
     }
     lage();
+    if (!el.parentNode) d.body.appendChild(el);
     window.addEventListener('resize', lage);
+    var VB = ['fullscreenchange', 'webkitfullscreenchange'];
+    VB.forEach(function (t) { if (d.addEventListener) d.addEventListener(t, lage); });
     return {
       el: el,
       wert: function () { return String(el.value || '').trim(); },
       weg: function () {
         window.removeEventListener('resize', lage);
+        VB.forEach(function (t) { if (d.removeEventListener) d.removeEventListener(t, lage); });
         ['keydown', 'keyup', 'keypress'].forEach(function (t) { el.removeEventListener(t, halt); });
         if (el.parentNode) el.parentNode.removeChild(el);
       }

@@ -95,6 +95,20 @@ describe('Hub', () => {
     assert.deepStrictEqual(n, { pause: false, kb: true, panel: false });
   });
 
+  test('Im Vollbild sitzt das Textfeld im Vollbild-Element, sonst waere es unsichtbar', () => {
+    const r = run(H, `(function () {
+      var d = window.document, vb = d.createElement('div'); d.body.appendChild(vb);
+      d.fullscreenElement = vb;
+      ${HUB}.children.getByName('feedbackKnopf').emit('pointerdown', {}, 0, 0, { stopPropagation: function () {} });
+      var o = window.Feedback._offen(), imVollbild = !!(o && o.textarea.parentNode === vb);
+      d.fullscreenElement = null;
+      window.Feedback.schliessen();
+      return { offen: !!o, imVollbild: imVollbild };
+    })()`);
+    assert.ok(r.offen, 'Panel nicht offen');
+    assert.ok(r.imVollbild, 'Textfeld liegt im Vollbild nicht im Vollbild-Element');
+  });
+
   test('F8 oeffnet und schliesst', () => {
     run(H, `${HUB}.input.keyboard.emit('keydown-F8')`);
     assert.ok(bis(H, `window.Feedback.istOffen()`), 'F8 oeffnet nicht');
